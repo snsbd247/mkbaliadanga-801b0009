@@ -253,7 +253,34 @@ class RpcController extends Controller
 
         $farmer = DB::table('farmers')->where('id', $farmerId)->first();
 
+        $cascade = (bool) ($p['_cascade'] ?? $p['cascade'] ?? false);
+        $user = $request->user();
+        $isDeveloper = $user && method_exists($user, 'hasRole') ? $user->hasRole('developer') : false;
+
         $blocking = $this->farmerBlockingCounts($farmerId);
+
+        // Cascade delete: developer role only — wipes the farmer AND every
+        // related transactional record in a single atomic operation.
+        if ($cascade) {
+            if (! $isDeveloper) {
+                $message = 'ক্যাসকেড পারমানেন্ট ডিলিট শুধুমাত্র ডেভেলপার রোলের ইউজার করতে পারবেন।';
+                $this->logFarmerDeletion($request, $farmerId, 'blocked', $blocking, $message, $farmer);
+                return ['ok' => false, 'reason' => 'forbidden', 'message' => $message];
+            }
+
+            DB::transaction(function () use ($farmerId) {
+                foreach (self::FARMER_TXN_TABLES as $tbl) {
+                    if (! Schema::hasTable($tbl) || ! Schema::hasColumn($tbl, 'farmer_id')) {
+                        continue;
+                    }
+                    DB::table($tbl)->where('farmer_id', $farmerId)->delete();
+                }
+                DB::table('farmers')->where('id', $farmerId)->delete();
+            });
+
+            $this->logFarmerDeletion($request, $farmerId, 'deleted', $blocking, 'cascade', $farmer);
+            return ['ok' => true, 'cascade' => true, 'message' => 'ফার্মার এবং তার সকল ট্রানজেকশন পারমানেন্টভাবে ডিলিট করা হয়েছে।'];
+        }
 
         if (! empty($blocking)) {
             [, $summary] = $this->farmerBlockingDetails($blocking);

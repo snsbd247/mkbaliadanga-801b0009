@@ -1,7 +1,9 @@
 import { useState } from "react";
 import { db } from "@/lib/db";
 import { toast } from "sonner";
+import { useAuth } from "@/auth/AuthProvider";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Loader2, CheckCircle2, AlertTriangle } from "lucide-react";
 import {
   AlertDialog,
@@ -14,6 +16,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+
 
 type BlockingItem = { table: string; label: string; count: number };
 type Precheck = {
@@ -37,6 +40,8 @@ export function PermanentDeleteDialog({
   const [loading, setLoading] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [check, setCheck] = useState<Precheck | null>(null);
+  const [cascade, setCascade] = useState(false);
+  const { isDeveloper } = useAuth();
 
   async function runPrecheck() {
     setLoading(true);
@@ -52,7 +57,10 @@ export function PermanentDeleteDialog({
 
   async function confirmDelete() {
     setDeleting(true);
-    const { data, error } = await db.rpc("farmer_permanent_delete", { _farmer_id: farmerId });
+    const { data, error } = await db.rpc("farmer_permanent_delete", {
+      _farmer_id: farmerId,
+      _cascade: cascade,
+    });
     setDeleting(false);
     if (error) return toast.error(error.message);
     const res = (data as any)?.result ?? data;
@@ -67,7 +75,9 @@ export function PermanentDeleteDialog({
     onDeleted();
   }
 
-  const canDelete = check?.can_delete === true;
+  // Developer may force-delete (cascade) even when blocking records exist.
+  const canDelete = check?.can_delete === true || (isDeveloper && cascade);
+
 
   return (
     <AlertDialog
@@ -75,7 +85,10 @@ export function PermanentDeleteDialog({
       onOpenChange={(o) => {
         setOpen(o);
         if (o) runPrecheck();
-        else setCheck(null);
+        else {
+          setCheck(null);
+          setCascade(false);
+        }
       }}
     >
       <AlertDialogTrigger asChild>
@@ -94,7 +107,7 @@ export function PermanentDeleteDialog({
             <div className="flex items-center gap-2 text-muted-foreground">
               <Loader2 className="h-4 w-4 animate-spin" /> ট্রানজেকশন চেক করা হচ্ছে…
             </div>
-          ) : canDelete ? (
+          ) : check?.can_delete === true ? (
             <div className="flex items-center gap-2 text-green-600">
               <CheckCircle2 className="h-4 w-4" /> কোনো ট্রানজেকশন নেই — ডিলিট করা যাবে।
             </div>
@@ -114,8 +127,22 @@ export function PermanentDeleteDialog({
               ) : (
                 <p className="text-muted-foreground">{check.message}</p>
               )}
+              {isDeveloper && (
+                <label className="mt-2 flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/5 p-2 text-destructive">
+                  <Checkbox
+                    checked={cascade}
+                    onCheckedChange={(v) => setCascade(v === true)}
+                    className="mt-0.5"
+                  />
+                  <span>
+                    ক্যাসকেড ডিলিট — ফার্মারসহ উপরের সব ট্রানজেকশন স্থায়ীভাবে মুছে যাবে।
+                    এটি ফিরিয়ে আনা যাবে না। (শুধুমাত্র ডেভেলপার)
+                  </span>
+                </label>
+              )}
             </div>
           ) : null}
+
         </div>
 
         <AlertDialogFooter>
