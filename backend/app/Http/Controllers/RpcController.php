@@ -6,6 +6,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Str;
 
 /**
  * RPC dispatcher — a Laravel/MySQL replacement for Supabase Postgres
@@ -50,7 +51,7 @@ class RpcController extends Controller
         if ($candidate === null) return false;
 
         $cols = array_values(array_filter(
-            ['farmer_code', 'member_no', 'account_number', 'voter_number'],
+            ['farmer_code', 'member_no', 'account_number', 'voter_number', 'code'],
             fn ($c) => Schema::hasColumn('farmers', $c)
         ));
         if (empty($cols)) return false;
@@ -114,11 +115,124 @@ class RpcController extends Controller
 
     protected function rpc_count_farmer_invoices(array $p): int
     {
-        return DB::table('irrigation_invoices')
-            ->where('farmer_id', $p['_farmer_id'] ?? null)
-            ->whereNull('deleted_at')
-            ->where('invoice_status', '<>', 'cancelled')
-            ->count();
+        $q = DB::table('irrigation_invoices')->where('farmer_id', $p['_farmer_id'] ?? null);
+        if (Schema::hasColumn('irrigation_invoices', 'deleted_at')) {
+            $q->whereNull('deleted_at');
+        }
+        if (Schema::hasColumn('irrigation_invoices', 'invoice_status')) {
+            $q->where('invoice_status', '<>', 'cancelled');
+        } elseif (Schema::hasColumn('irrigation_invoices', 'status')) {
+            $q->where('status', '<>', 'cancelled');
+        }
+
+        return $q->count();
+    }
+
+    protected function rpc_farmer_dues_summary(array $p, Request $request): array
+    {
+        if (! Schema::hasTable('farmers')) {
+            return [];
+        }
+
+        $farmers = DB::table('farmers')->select('id');
+        if (Schema::hasColumn('farmers', 'deleted_at')) {
+            $farmers->whereNull('deleted_at');
+        }
+        $officeId = $request->attributes->get('scope_office_id');
+        if (! $request->attributes->get('is_super_admin') && $officeId && Schema::hasColumn('farmers', 'office_id')) {
+            $farmers->where('office_id', $officeId);
+        }
+
+        $summary = [];
+        foreach ($farmers->pluck('id') as $id) {
+            $summary[$id] = [
+                'farmer_id' => $id,
+                'loan_due' => 0.0,
+                'irr_due' => 0.0,
+                'savings_bal' => 0.0,
+                'net_due' => 0.0,
+            ];
+        }
+
+        if (Schema::hasTable('loans') && Schema::hasColumn('loans', 'farmer_id')) {
+            $loanDueExpr = Schema::hasColumn('loans', 'total_payable')
+                ? 'GREATEST(COALESCE(total_payable,0) - COALESCE(SUM_PAID,0), 0)'
+                : (Schema::hasColumn('loans', 'outstanding') ? 'GREATEST(COALESCE(outstanding,0), 0)' : 'GREATEST(COALESCE(principal,0), 0)');
+
+            if (Schema::hasTable('loan_payments') && Schema::hasColumn('loan_payments', 'loan_id')) {
+                $paidSub = DB::table('loan_payments')
+                    ->select('loan_id', DB::raw('COALESCE(SUM(amount),0) as paid'))
+                    ->groupBy('loan_id');
+                $loans = DB::table('loans')
+                    ->leftJoinSub($paidSub, 'lp', 'lp.loan_id', '=', 'loans.id')
+                    ->select('loans.farmer_id', DB::raw('COALESCE(SUM('.str_replace('SUM_PAID', 'lp.paid', $loanDueExpr).'),0) as due'));
+            } elseif (Schema::hasTable('loan_repayments') && Schema::hasColumn('loan_repayments', 'loan_id')) {
+                $paidSub = DB::table('loan_repayments')
+                    ->select('loan_id', DB::raw('COALESCE(SUM(amount),0) as paid'))
+                    ->groupBy('loan_id');
+                $loans = DB::table('loans')
+                    ->leftJoinSub($paidSub, 'lr', 'lr.loan_id', '=', 'loans.id')
+                    ->select('loans.farmer_id', DB::raw('COALESCE(SUM('.str_replace('SUM_PAID', 'lr.paid', $loanDueExpr).'),0) as due'));
+            } else {
+                $loans = DB::table('loans')
+                    ->select('farmer_id', DB::raw('COALESCE(SUM('.str_replace('SUM_PAID', '0', $loanDueExpr).'),0) as due'));
+            }
+            if (Schema::hasColumn('loans', 'deleted_at')) {
+                $loans->whereNull('loans.deleted_at');
+            }
+            if (Schema::hasColumn('loans', 'status')) {
+                $loans->whereIn('loans.status', ['approved', 'active', 'defaulted']);
+            }
+            foreach ($loans->groupBy('loans.farmer_id')->get() as $row) {
+                if (isset($summary[$row->farmer_id])) {
+                    $summary[$row->farmer_id]['loan_due'] = (float) $row->due;
+                }
+            }
+        }
+
+        $irrigationTable = Schema::hasTable('irrigation_charges') ? 'irrigation_charges' : (Schema::hasTable('irrigation_invoices') ? 'irrigation_invoices' : null);
+        if ($irrigationTable && Schema::hasColumn($irrigationTable, 'farmer_id')) {
+            $amountCol = Schema::hasColumn($irrigationTable, 'due_amount') ? 'due_amount' : (Schema::hasColumn($irrigationTable, 'amount') ? 'amount' : null);
+            if ($amountCol) {
+                $ir = DB::table($irrigationTable)
+                    ->select('farmer_id', DB::raw("COALESCE(SUM($amountCol),0) as due"));
+                if (Schema::hasColumn($irrigationTable, 'deleted_at')) {
+                    $ir->whereNull('deleted_at');
+                }
+                foreach ($ir->groupBy('farmer_id')->get() as $row) {
+                    if (isset($summary[$row->farmer_id])) {
+                        $summary[$row->farmer_id]['irr_due'] = (float) $row->due;
+                    }
+                }
+            }
+        }
+
+        if (Schema::hasTable('savings_transactions') && Schema::hasColumn('savings_transactions', 'farmer_id') && Schema::hasColumn('savings_transactions', 'amount')) {
+            $sv = DB::table('savings_transactions')->select('farmer_id');
+            if (Schema::hasColumn('savings_transactions', 'type')) {
+                $sv->selectRaw("COALESCE(SUM(CASE WHEN type IN ('deposit','credit') THEN amount WHEN type IN ('withdraw','withdrawal','debit') THEN -amount ELSE 0 END),0) as bal");
+            } else {
+                $sv->selectRaw('COALESCE(SUM(amount),0) as bal');
+            }
+            if (Schema::hasColumn('savings_transactions', 'deleted_at')) {
+                $sv->whereNull('deleted_at');
+            }
+            if (Schema::hasColumn('savings_transactions', 'status')) {
+                $sv->where('status', 'approved');
+            }
+            foreach ($sv->groupBy('farmer_id')->get() as $row) {
+                if (isset($summary[$row->farmer_id])) {
+                    $summary[$row->farmer_id]['savings_bal'] = (float) $row->bal;
+                }
+            }
+        }
+
+        foreach ($summary as &$row) {
+            $row['net_due'] = max(($row['loan_due'] + $row['irr_due']) - $row['savings_bal'], 0);
+        }
+        unset($row);
+
+        return array_values($summary);
     }
 
     protected function rpc_list_collector_users(array $p, Request $request): array

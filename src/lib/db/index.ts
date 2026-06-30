@@ -90,6 +90,8 @@ class LaravelQueryBuilder<T = any> implements PromiseLike<Result<T>> {
   ilike(c: string, v: unknown) { return this.addFilter(c, "ilike", v); }
   in(c: string, v: unknown[]) { return this.addFilter(c, "in", v); }
   is(c: string, v: unknown) { return this.addFilter(c, "is", v); }
+  not(c: string, op: string, v: unknown) { return this.addFilter(c, `not.${op}`, v); }
+  or(expr: string) { return this.addFilter("__or", "or", expr); }
   match(obj: Record<string, unknown>) {
     Object.entries(obj).forEach(([c, v]) => this.addFilter(c, "eq", v));
     return this;

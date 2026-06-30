@@ -53,6 +53,10 @@ class GenericTableController extends Controller
             $col = $f['column'] ?? null;
             $op = $f['op'] ?? 'eq';
             $val = $f['value'] ?? null;
+            if ($op === 'or') {
+                $this->applyOrFilter($query, $table, (string) $val);
+                continue;
+            }
             if (! $col || ! preg_match('/^[a-z0-9_]+$/i', $col)) {
                 continue;
             }
@@ -65,20 +69,99 @@ class GenericTableController extends Controller
             switch ($op) {
                 case 'eq':    $query->where($col, $val); break;
                 case 'neq':   $query->where($col, '!=', $val); break;
+                case 'not.eq': $query->where($col, '!=', $val); break;
+                case 'not.neq': $query->where($col, '=', $val); break;
                 case 'gt':    $query->where($col, '>', $val); break;
                 case 'gte':   $query->where($col, '>=', $val); break;
                 case 'lt':    $query->where($col, '<', $val); break;
                 case 'lte':   $query->where($col, '<=', $val); break;
                 case 'like':  $query->where($col, 'like', $val); break;
                 case 'ilike': $query->where($col, 'like', $val); break;
+                case 'not.like':
+                case 'not.ilike': $query->where($col, 'not like', $val); break;
                 case 'in':    $query->whereIn($col, (array) $val); break;
+                case 'not.in': $query->whereNotIn($col, (array) $val); break;
                 case 'is':
                     if ($val === null || $val === 'null') $query->whereNull($col);
                     else $query->where($col, $val);
                     break;
+                case 'not.is':
+                    if ($val === null || $val === 'null') $query->whereNotNull($col);
+                    else $query->where($col, '!=', $val);
+                    break;
                 default:      $query->where($col, $val);
             }
         }
+    }
+
+    private function splitOrExpression(string $expr): array
+    {
+        $parts = [];
+        $depth = 0;
+        $buf = '';
+        foreach (str_split($expr) as $ch) {
+            if ($ch === '(') $depth++;
+            if ($ch === ')') $depth = max(0, $depth - 1);
+            if ($ch === ',' && $depth === 0) {
+                if (trim($buf) !== '') $parts[] = trim($buf);
+                $buf = '';
+                continue;
+            }
+            $buf .= $ch;
+        }
+        if (trim($buf) !== '') $parts[] = trim($buf);
+        return $parts;
+    }
+
+    private function applyOrFilter($query, string $table, string $expr): void
+    {
+        $clauses = $this->splitOrExpression($expr);
+        if (empty($clauses)) return;
+
+        $query->where(function ($or) use ($clauses, $table) {
+            $applied = false;
+            foreach ($clauses as $clause) {
+                $bits = explode('.', $clause, 3);
+                if (count($bits) < 3) continue;
+                [$col, $op, $raw] = $bits;
+                if ($op === 'not') {
+                    $more = explode('.', $raw, 2);
+                    if (count($more) < 2) continue;
+                    $op = 'not.'.$more[0];
+                    $raw = $more[1];
+                }
+                if (! preg_match('/^[a-z0-9_]+$/i', $col) || ! Schema::hasColumn($table, $col)) {
+                    continue;
+                }
+                $val = $raw === 'null' ? null : $raw;
+                $method = $applied ? 'orWhere' : 'where';
+                switch ($op) {
+                    case 'eq': $or->{$method}($col, $val); break;
+                    case 'neq':
+                    case 'not.eq': $or->{$method}($col, '!=', $val); break;
+                    case 'gt': $or->{$method}($col, '>', $val); break;
+                    case 'gte': $or->{$method}($col, '>=', $val); break;
+                    case 'lt': $or->{$method}($col, '<', $val); break;
+                    case 'lte': $or->{$method}($col, '<=', $val); break;
+                    case 'like':
+                    case 'ilike': $or->{$method}($col, 'like', $val); break;
+                    case 'in':
+                        $vals = preg_match('/^\((.*)\)$/', $raw, $m) ? explode(',', $m[1]) : explode(',', $raw);
+                        $applied ? $or->orWhereIn($col, $vals) : $or->whereIn($col, $vals);
+                        break;
+                    case 'is':
+                        if ($val === null) $applied ? $or->orWhereNull($col) : $or->whereNull($col);
+                        else $or->{$method}($col, $val);
+                        break;
+                    case 'not.is':
+                        if ($val === null) $applied ? $or->orWhereNotNull($col) : $or->whereNotNull($col);
+                        else $or->{$method}($col, '!=', $val);
+                        break;
+                    default: continue 2;
+                }
+                $applied = true;
+            }
+        });
     }
 
     private function scope(Request $request, $query, string $table): void
@@ -94,6 +177,56 @@ class GenericTableController extends Controller
         if ($officeId && Schema::hasColumn($table, 'office_id')) {
             $query->where('office_id', $officeId);
         }
+    }
+
+    /**
+     * Bridge frontend/Supabase column names to legacy Laravel/MySQL aliases.
+     *
+     * This is intentionally additive: when the new column exists we keep it,
+     * and when the old required alias exists we mirror the value into it. That
+     * prevents NOT NULL failures on older VPS schemas while preserving all new
+     * data for migrated schemas.
+     */
+    private function normalizeWriteRow(string $table, array $row): array
+    {
+        if ($table !== 'farmers') {
+            return $row;
+        }
+
+        $copy = function (array &$row, string $from, string $to): void {
+            if (! array_key_exists($from, $row) || array_key_exists($to, $row)) {
+                return;
+            }
+            if (Schema::hasColumn('farmers', $to)) {
+                $row[$to] = $row[$from];
+            }
+        };
+
+        $copy($row, 'name_en', 'name');
+        $copy($row, 'name', 'name_en');
+        $copy($row, 'mobile', 'phone');
+        $copy($row, 'phone', 'mobile');
+
+        // Farmer ID is called member_no/farmer_code in the frontend and code in
+        // the original Laravel table. Keep all aliases in sync on writes.
+        foreach (['member_no', 'farmer_code', 'code'] as $source) {
+            if (! array_key_exists($source, $row) || $row[$source] === null || $row[$source] === '') {
+                continue;
+            }
+            foreach (['member_no', 'farmer_code', 'code'] as $target) {
+                if ($target !== $source && ! array_key_exists($target, $row) && Schema::hasColumn('farmers', $target)) {
+                    $row[$target] = $row[$source];
+                }
+            }
+            break;
+        }
+
+        // Last-resort protection for older databases where `name` is NOT NULL.
+        if (Schema::hasColumn('farmers', 'name') && (! array_key_exists('name', $row) || $row['name'] === null || $row['name'] === '')) {
+            $row['name'] = $row['name_en'] ?? $row['name_bn'] ?? 'Unnamed Farmer';
+        }
+
+        return $row;
     }
 
     /** Parse a supabase-style select string, returning [columns, embeds]. */
@@ -224,7 +357,7 @@ class GenericTableController extends Controller
 
         $prepared = [];
         foreach ($rows as $row) {
-            $row = (array) $row;
+            $row = $this->normalizeWriteRow($table, (array) $row);
             // Drop columns that don't exist on this table (schema drift between
             // the React app and MySQL) instead of failing the whole insert.
             foreach (array_keys($row) as $col) {
@@ -263,7 +396,7 @@ class GenericTableController extends Controller
     public function update(Request $request, string $table): JsonResponse
     {
         $table = $this->table($table);
-        $values = (array) $request->input('values', []);
+        $values = $this->normalizeWriteRow($table, (array) $request->input('values', []));
         $filters = $request->input('filters', []);
 
         // Safety: never allow an unfiltered mass-update (would rewrite the

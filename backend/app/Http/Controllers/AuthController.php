@@ -28,10 +28,15 @@ class AuthController extends Controller
         ]);
 
         $identifier = $data['identifier'] ?? $data['login'];
+        // Historical typo compatibility: older deployment notes created the
+        // canonical account as `suparadmin`, but admins naturally type
+        // `superadmin`. Treat both as the same login name without creating a
+        // duplicate user or changing existing data.
+        $lookupIdentifier = strtolower(trim($identifier)) === 'superadmin' ? 'suparadmin' : $identifier;
         try {
             $user = User::query()
-                ->where('username', $identifier)
-                ->orWhere('email', $identifier)
+                ->where('username', $lookupIdentifier)
+                ->orWhere('email', $lookupIdentifier)
                 ->first();
 
             if (! $user || ! Hash::check($data['password'], $user->password)) {
