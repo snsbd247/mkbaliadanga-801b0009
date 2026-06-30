@@ -16,6 +16,7 @@ class IrrigationInvoice extends Model
         'office_id', 'farmer_id', 'season_id', 'land_id', 'invoice_no',
         'area_decimal', 'rate_per_decimal', 'amount', 'paid_amount',
         'due_amount', 'status', 'issue_date', 'due_date', 'extra',
+        'discount_amount', 'discount_reason',
     ];
     protected $casts = [
         'area_decimal' => 'float',
