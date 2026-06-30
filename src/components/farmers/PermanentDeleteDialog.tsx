@@ -57,7 +57,10 @@ export function PermanentDeleteDialog({
 
   async function confirmDelete() {
     setDeleting(true);
-    const { data, error } = await db.rpc("farmer_permanent_delete", { _farmer_id: farmerId });
+    const { data, error } = await db.rpc("farmer_permanent_delete", {
+      _farmer_id: farmerId,
+      _cascade: cascade,
+    });
     setDeleting(false);
     if (error) return toast.error(error.message);
     const res = (data as any)?.result ?? data;
@@ -72,7 +75,9 @@ export function PermanentDeleteDialog({
     onDeleted();
   }
 
-  const canDelete = check?.can_delete === true;
+  // Developer may force-delete (cascade) even when blocking records exist.
+  const canDelete = check?.can_delete === true || (isDeveloper && cascade);
+
 
   return (
     <AlertDialog
