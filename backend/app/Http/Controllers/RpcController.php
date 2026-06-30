@@ -586,17 +586,23 @@ class RpcController extends Controller
                 return ['ok' => false, 'reason' => 'forbidden', 'message' => $message];
             }
 
-            $deletedCounts = [];
-            DB::transaction(function () use ($farmerId, $farmer, &$deletedCounts) {
-                $ctx = $this->farmerCascadeContext($farmerId, $farmer);
-                foreach ($this->farmerCascadePlan($farmerId, $ctx, $farmer) as $tbl => $criteria) {
-                    $deleted = $this->deleteMatching($tbl, $criteria);
-                    if ($deleted > 0) {
-                        $deletedCounts[$tbl] = $deleted;
+            try {
+                $deletedCounts = [];
+                DB::transaction(function () use ($farmerId, $farmer, &$deletedCounts) {
+                    $ctx = $this->farmerCascadeContext($farmerId, $farmer);
+                    foreach ($this->farmerCascadePlan($farmerId, $ctx, $farmer) as $tbl => $criteria) {
+                        $deleted = $this->deleteMatching($tbl, $criteria);
+                        if ($deleted > 0) {
+                            $deletedCounts[$tbl] = $deleted;
+                        }
                     }
-                }
-                DB::table('farmers')->where('id', $farmerId)->delete();
-            });
+                    DB::table('farmers')->where('id', $farmerId)->delete();
+                });
+            } catch (\Throwable $e) {
+                $message = 'ক্যাসকেড ডিলিট ব্যর্থ হয়েছে: ' . $e->getMessage();
+                $this->logFarmerDeletion($request, $farmerId, 'blocked', $blocking, $message, $farmer);
+                return ['ok' => false, 'reason' => 'cascade_failed', 'message' => $message];
+            }
 
             $this->logFarmerDeletion($request, $farmerId, 'deleted', $deletedCounts ?: $blocking, 'cascade', $farmer);
             return [
