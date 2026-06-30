@@ -882,7 +882,29 @@ export default function Farmers() {
                     <ViewButton title={t("viewTip")} onClick={() => nav(`/farmers/${f.id}`)} />
                     {!f.deleted_at && <EditButton title={t("editTip")} onClick={() => nav(`/farmers/${f.id}`)} />}
                     {isSuper && f.deleted_at && (
-                      <Button size="sm" variant="outline" onClick={() => restore(f.id)}>{t("restore")}</Button>
+                      <>
+                        <Button size="sm" variant="outline" onClick={() => restore(f.id)}>{t("restore")}</Button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button size="sm" variant="destructive">{tx("Delete permanently", "পারমানেন্ট ডিলিট")}</Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>{tx("Permanently delete farmer?", "ফার্মার পারমানেন্ট ডিলিট?")}</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                {tx(
+                                  "This permanently removes the farmer from the database. Only allowed when the farmer has no transactions. This cannot be undone.",
+                                  "এটি ফার্মারকে ডাটাবেজ থেকে স্থায়ীভাবে মুছে ফেলবে। শুধুমাত্র কোনো লেনদেন না থাকলে সম্ভব। এটি ফিরিয়ে আনা যাবে না।"
+                                )}
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>{t("cancel")}</AlertDialogCancel>
+                              <AlertDialogAction onClick={() => permanentDelete(f.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">{tx("Delete permanently", "পারমানেন্ট ডিলিট")}</AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </>
                     )}
                     {isSuper && !f.deleted_at && (
                       <AlertDialog>
