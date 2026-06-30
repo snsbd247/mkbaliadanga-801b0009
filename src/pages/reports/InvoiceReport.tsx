@@ -87,6 +87,7 @@ export default function InvoiceReport() {
   const head = [
     tx("Invoice", "ইনভয়েস"), tx("Farmer", "কৃষক"), tx("Mouza/Dag", "মৌজা/দাগ"),
     tx("Season", "সিজন"), tx("Type", "ধরন"),
+    tx("Discount", "ডিসকাউন্ট"), tx("Discount reason", "ডিসকাউন্টের কারণ"),
     tx("Payable", "প্রদেয়"), tx("Paid", "জমা"), tx("Due", "বকেয়া"),
     tx("Late fee", "বিলম্ব ফি"), tx("Status", "অবস্থা"),
   ];
@@ -96,6 +97,7 @@ export default function InvoiceReport() {
     `${r.lands?.mouza ?? ""}/${formatDagNumbers(r.lands?.dag_no)}`,
     r.seasons ? `${r.seasons.name ?? r.seasons.type} ${r.seasons.year}` : "—",
     r.is_borga ? tx("Sharecropper", "বর্গা") : tx("Owner", "নিজ"),
+    money(r.discount_amount), r.discount_reason ?? "",
     money(r.payable_amount), money(r.paid_amount), money(r.due_amount), money(r.delay_fee),
     r.invoice_status,
   ]);
