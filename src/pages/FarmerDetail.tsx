@@ -546,7 +546,7 @@ export default function FarmerDetail() {
       if (allocIds.length) {
         const { data } = await db
           .from("irrigation_invoices")
-          .select("id,invoice_no,irrigation_amount,maintenance_amount,canal_amount,delay_fee,due_amount,season_rate,is_borga,note,seasons(name,year,status),land_type_name,irrigation_category_name,lands(mouza,dag_no,land_size,field_type,land_type_id,owner_type,owner_farmer_id,notes,patwaris(name,name_bn,mobile),owner:farmers!lands_owner_farmer_id_fkey(name_bn,name_en,member_no,farmer_code))")
+          .select("id,invoice_no,irrigation_amount,maintenance_amount,canal_amount,delay_fee,due_amount,discount_amount,season_rate,is_borga,note,seasons(name,year,status),land_type_name,irrigation_category_name,lands(mouza,dag_no,land_size,field_type,land_type_id,owner_type,owner_farmer_id,notes,patwaris(name,name_bn,mobile),owner:farmers!lands_owner_farmer_id_fkey(name_bn,name_en,member_no,farmer_code))")
           .in("id", allocIds);
         invoiceRows = data ?? [];
       }
@@ -581,6 +581,7 @@ export default function FarmerDetail() {
         current_penalty: invoiceRows.reduce((s, inv) => s + Number(inv?.delay_fee || 0), 0),
         maintenance_charge: invoiceRows.reduce((s, inv) => s + Number(inv?.maintenance_amount || 0), 0),
         canal_charge: invoiceRows.reduce((s, inv) => s + Number(inv?.canal_amount || 0), 0),
+        discount_amount: invoiceRows.reduce((s, inv) => s + Number(inv?.discount_amount || 0), 0),
         total_outstanding: invoiceRows.reduce((s, inv) => s + Number(inv?.due_amount || 0), 0),
         holding_description: [...new Set(invoiceRows.map((inv) => inv?.lands?.notes?.trim()).filter(Boolean))].join(" / ") || null,
         patwari_name: patwari ? (patwari.name_bn || patwari.name) : null,
