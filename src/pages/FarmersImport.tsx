@@ -447,7 +447,15 @@ export default function FarmersImport() {
                   <TableCell>{String(r.raw.father_name ?? "")}</TableCell>
                   <TableCell>{String(r.raw.mobile ?? "")}</TableCell>
                   <TableCell>{String(r.raw.village ?? "")}</TableCell>
-                  <TableCell className="text-xs text-destructive max-w-[300px]">{r.errorMsg}</TableCell>
+                  <TableCell>{String(r.raw.nominee_name ?? "")}</TableCell>
+                  <TableCell className="font-mono text-xs">{String(r.raw.nominee_mobile ?? "")}</TableCell>
+                  <TableCell>{String(r.raw.nominee_relation ?? "")}</TableCell>
+                  <TableCell className="font-mono text-xs">{String(r.raw.nominee_nid ?? "")}</TableCell>
+                  <TableCell className="max-w-[200px] truncate">{String(r.raw.nominee_address ?? "")}</TableCell>
+                  <TableCell className="text-xs max-w-[300px]">
+                    {r.errorMsg && <span className="text-destructive">{r.errorMsg}</span>}
+                    {r.warnMsg && <span className="block text-amber-600">⚠ {r.warnMsg}</span>}
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>
