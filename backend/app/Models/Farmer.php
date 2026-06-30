@@ -18,6 +18,7 @@ class Farmer extends Model
     protected $fillable = [
         'office_id', 'code', 'name', 'father_name', 'mother_name', 'phone',
         'nid', 'address', 'village', 'union', 'upazila', 'district', 'status', 'extra',
+        'nominee_name', 'nominee_mobile', 'nominee_relation', 'nominee_nid', 'nominee_address',
     ];
 
     protected $casts = ['extra' => 'array'];
