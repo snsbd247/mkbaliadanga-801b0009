@@ -42,6 +42,11 @@ return Application::configure(basePath: dirname(__DIR__))
             if (! ($request->is('api/*') || $request->expectsJson())) {
                 return null;
             }
+            // Auth failures must return 401 (not a 500 caused by Laravel
+            // trying to redirect to a non-existent 'login' route).
+            if ($e instanceof \Illuminate\Auth\AuthenticationException) {
+                return response()->json(['message' => 'Unauthenticated.'], 401);
+            }
             if ($e instanceof \Symfony\Component\HttpKernel\Exception\HttpExceptionInterface) {
                 $status = $e->getStatusCode();
                 return response()->json([
