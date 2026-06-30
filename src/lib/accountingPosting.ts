@@ -41,6 +41,29 @@ async function accountId(meta: { code: string; name: string; name_bn: string; ty
 
 type Line = { account_id: string; debit: number; credit: number; description?: string | null; position: number };
 
+export interface BalanceResult {
+  balanced: boolean;
+  totalDebit: number;
+  totalCredit: number;
+  difference: number;
+}
+
+/** Pure double-entry balance check usable by callers to warn the user. */
+export function checkBalanced(lines: Array<{ debit: number; credit: number }>): BalanceResult {
+  const totalDebit = lines.reduce((s, l) => s + (Number(l.debit) || 0), 0);
+  const totalCredit = lines.reduce((s, l) => s + (Number(l.credit) || 0), 0);
+  const difference = Math.round((totalDebit - totalCredit) * 100) / 100;
+  return { balanced: totalDebit > 0 && difference === 0, totalDebit, totalCredit, difference };
+}
+
+/** Last balance issue observed during posting, consumable by the UI for a warning. */
+let lastImbalance: BalanceResult | null = null;
+export function takeLastImbalance(): BalanceResult | null {
+  const v = lastImbalance;
+  lastImbalance = null;
+  return v;
+}
+
 async function createJournal(opts: {
   reference?: string | null;
   description?: string | null;
@@ -49,9 +72,11 @@ async function createJournal(opts: {
   lines: Line[];
 }): Promise<void> {
   // Guard: lines must balance and be non-trivial.
-  const totalDr = opts.lines.reduce((s, l) => s + (Number(l.debit) || 0), 0);
-  const totalCr = opts.lines.reduce((s, l) => s + (Number(l.credit) || 0), 0);
-  if (totalDr <= 0 || Math.round(totalDr) !== Math.round(totalCr)) return;
+  const bal = checkBalanced(opts.lines);
+  if (!bal.balanced) {
+    lastImbalance = bal;
+    return;
+  }
   try {
     const { data: je, error } = await db
       .from("journal_entries")
