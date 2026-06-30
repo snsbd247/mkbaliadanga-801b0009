@@ -205,11 +205,13 @@ export default function FarmersImport() {
           farmerIdErr = `Duplicate member no in file: ${normalizedId}`;
         }
         const errorMsg = !nameEn ? "name_en is required" : farmerIdErr;
+        const warnings = validateNominee(raw);
         return {
           idx,
           raw,
           status: errorMsg ? "invalid" : "valid",
           errorMsg,
+          warnMsg: warnings.length ? warnings.join("; ") : null,
           action: farmerIdRaw && !farmerIdErr ? "update" : "insert",
         };
       });
