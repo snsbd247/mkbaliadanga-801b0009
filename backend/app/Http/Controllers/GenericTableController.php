@@ -272,10 +272,13 @@ class GenericTableController extends Controller
             abort(400, 'ফিল্টার ছাড়া আপডেট করা যাবে না।');
         }
 
-        // Reject unknown / malformed column names in the payload.
+        // Drop columns that don't exist on this table instead of failing.
         foreach (array_keys($values) as $col) {
-            if (! preg_match('/^[a-z0-9_]+$/i', (string) $col) || ! Schema::hasColumn($table, $col)) {
+            if (! preg_match('/^[a-z0-9_]+$/i', (string) $col)) {
                 abort(422, "অবৈধ কলাম: $col");
+            }
+            if (! Schema::hasColumn($table, $col)) {
+                unset($values[$col]);
             }
         }
 
