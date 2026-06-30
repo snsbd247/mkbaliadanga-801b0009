@@ -108,16 +108,24 @@ return new class extends Migration {
         // Backfill new Supabase-compatible columns from old Laravel aliases.
         if (Schema::hasColumn('farmers', 'name') && Schema::hasColumn('farmers', 'name_en')) {
             DB::statement("UPDATE farmers SET name_en = name WHERE (name_en IS NULL OR name_en = '') AND name IS NOT NULL");
+            DB::statement("UPDATE farmers SET name = name_en WHERE (name IS NULL OR name = '') AND name_en IS NOT NULL");
         }
         if (Schema::hasColumn('farmers', 'phone') && Schema::hasColumn('farmers', 'mobile')) {
             DB::statement("UPDATE farmers SET mobile = phone WHERE (mobile IS NULL OR mobile = '') AND phone IS NOT NULL");
+            DB::statement("UPDATE farmers SET phone = mobile WHERE (phone IS NULL OR phone = '') AND mobile IS NOT NULL");
         }
         if (Schema::hasColumn('farmers', 'code')) {
             if (Schema::hasColumn('farmers', 'member_no')) {
                 DB::statement("UPDATE farmers SET member_no = code WHERE (member_no IS NULL OR member_no = '') AND code IS NOT NULL");
+                DB::statement("UPDATE farmers SET code = member_no WHERE (code IS NULL OR code = '') AND member_no IS NOT NULL");
             }
             if (Schema::hasColumn('farmers', 'farmer_code')) {
                 DB::statement("UPDATE farmers SET farmer_code = code WHERE (farmer_code IS NULL OR farmer_code = '') AND code IS NOT NULL");
+                DB::statement("UPDATE farmers SET code = farmer_code WHERE (code IS NULL OR code = '') AND farmer_code IS NOT NULL");
+            }
+            if (Schema::hasColumn('farmers', 'member_no') && Schema::hasColumn('farmers', 'farmer_code')) {
+                DB::statement("UPDATE farmers SET farmer_code = member_no WHERE (farmer_code IS NULL OR farmer_code = '') AND member_no IS NOT NULL");
+                DB::statement("UPDATE farmers SET member_no = farmer_code WHERE (member_no IS NULL OR member_no = '') AND farmer_code IS NOT NULL");
             }
         }
     }
