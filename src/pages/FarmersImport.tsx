@@ -224,6 +224,7 @@ export default function FarmersImport() {
 
   const validRows = useMemo(() => rows.filter((r) => r.status === "valid"), [rows]);
   const invalidRows = useMemo(() => rows.filter((r) => r.status === "invalid"), [rows]);
+  const warnRows = useMemo(() => rows.filter((r) => r.warnMsg), [rows]);
 
   async function importValid() {
     if (validRows.length === 0) { toast.error("No valid rows to import."); return; }
