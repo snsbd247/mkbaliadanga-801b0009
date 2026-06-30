@@ -41,8 +41,31 @@ type RowState = {
   raw: RowMap;
   status: "pending" | "valid" | "invalid" | "saving" | "saved" | "error";
   errorMsg: string | null;
+  warnMsg: string | null;
   action: "insert" | "update" | null;
 };
+
+// Nominee field validation — returns non-blocking warnings with clear Bengali messages.
+function validateNominee(raw: RowMap): string[] {
+  const warnings: string[] = [];
+  const val = (k: string) => String(raw[k] ?? "").trim();
+  const name = val("nominee_name");
+  const mobile = val("nominee_mobile");
+  const nid = val("nominee_nid");
+  const relation = val("nominee_relation");
+  const address = val("nominee_address");
+  const anyNominee = name || mobile || nid || relation || address;
+  if (!anyNominee) return warnings; // nominee optional — nothing filled, no warning
+
+  if (!name) warnings.push("নমিনির তথ্য আছে কিন্তু নমিনির নাম খালি");
+  if (mobile && !/^01[3-9]\d{8}$/.test(mobile))
+    warnings.push(`নমিনির মোবাইল সঠিক নয় (১১-ডিজিট 01XXXXXXXXX হতে হবে): ${mobile}`);
+  if (nid && !/^\d{10,17}$/.test(nid.replace(/\s/g, "")))
+    warnings.push(`নমিনির NID সঠিক নয় (১০-১৭ ডিজিট): ${nid}`);
+  if (name && !relation)
+    warnings.push("নমিনির সম্পর্ক (relation) খালি");
+  return warnings;
+}
 
 const COLUMNS = [
   "farmer_id", "account_number", "is_voter", "voter_number", "name_en", "name_bn",
@@ -182,11 +205,13 @@ export default function FarmersImport() {
           farmerIdErr = `Duplicate member no in file: ${normalizedId}`;
         }
         const errorMsg = !nameEn ? "name_en is required" : farmerIdErr;
+        const warnings = validateNominee(raw);
         return {
           idx,
           raw,
           status: errorMsg ? "invalid" : "valid",
           errorMsg,
+          warnMsg: warnings.length ? warnings.join("; ") : null,
           action: farmerIdRaw && !farmerIdErr ? "update" : "insert",
         };
       });
@@ -199,6 +224,7 @@ export default function FarmersImport() {
 
   const validRows = useMemo(() => rows.filter((r) => r.status === "valid"), [rows]);
   const invalidRows = useMemo(() => rows.filter((r) => r.status === "invalid"), [rows]);
+  const warnRows = useMemo(() => rows.filter((r) => r.warnMsg), [rows]);
 
   async function importValid() {
     if (validRows.length === 0) { toast.error("No valid rows to import."); return; }
@@ -364,6 +390,7 @@ export default function FarmersImport() {
             <Badge variant="default">Total: {rows.length}</Badge>
             <Badge variant="secondary">Valid: {validRows.length}</Badge>
             <Badge variant="destructive">Invalid: {invalidRows.length}</Badge>
+            {warnRows.length > 0 && <Badge className="bg-amber-500 text-white hover:bg-amber-500">নমিনি সতর্কতা: {warnRows.length}</Badge>}
             {savedCount > 0 && <Badge>Saved: {savedCount}</Badge>}
           </div>
         </Card>
@@ -394,6 +421,11 @@ export default function FarmersImport() {
                 <TableHead>{t("fatherName")}</TableHead>
                 <TableHead>{t("mobile")}</TableHead>
                 <TableHead>{t("village")}</TableHead>
+                <TableHead>নমিনি নাম</TableHead>
+                <TableHead>নমিনি মোবাইল</TableHead>
+                <TableHead>নমিনি সম্পর্ক</TableHead>
+                <TableHead>নমিনি NID</TableHead>
+                <TableHead>নমিনি ঠিকানা</TableHead>
                 <TableHead>{t("issueCol")}</TableHead>
               </TableRow>
             </TableHeader>
@@ -417,7 +449,15 @@ export default function FarmersImport() {
                   <TableCell>{String(r.raw.father_name ?? "")}</TableCell>
                   <TableCell>{String(r.raw.mobile ?? "")}</TableCell>
                   <TableCell>{String(r.raw.village ?? "")}</TableCell>
-                  <TableCell className="text-xs text-destructive max-w-[300px]">{r.errorMsg}</TableCell>
+                  <TableCell>{String(r.raw.nominee_name ?? "")}</TableCell>
+                  <TableCell className="font-mono text-xs">{String(r.raw.nominee_mobile ?? "")}</TableCell>
+                  <TableCell>{String(r.raw.nominee_relation ?? "")}</TableCell>
+                  <TableCell className="font-mono text-xs">{String(r.raw.nominee_nid ?? "")}</TableCell>
+                  <TableCell className="max-w-[200px] truncate">{String(r.raw.nominee_address ?? "")}</TableCell>
+                  <TableCell className="text-xs max-w-[300px]">
+                    {r.errorMsg && <span className="text-destructive">{r.errorMsg}</span>}
+                    {r.warnMsg && <span className="block text-amber-600">⚠ {r.warnMsg}</span>}
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>
