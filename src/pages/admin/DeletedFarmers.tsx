@@ -41,24 +41,6 @@ export default function DeletedFarmers() {
 
   const fmtDate = (v: string | null) => (v ? new Date(v).toLocaleString("bn-BD") : "—");
 
-  const TABLE_BN: Record<string, string> = {
-    shares: "শেয়ার",
-    savings_accounts: "সঞ্চয় হিসাব",
-    savings_transactions: "সঞ্চয় লেনদেন",
-    loans: "ঋণ",
-    loan_repayments: "ঋণ পরিশোধ",
-    lands: "জমি",
-    land_relations: "জমির সম্পর্ক",
-    irrigation_invoices: "সেচ ইনভয়েস",
-    irrigation_invoice_payments: "সেচ পেমেন্ট",
-    payments: "পেমেন্ট",
-    payment_allocations: "পেমেন্ট বণ্টন",
-    journal_entries: "জার্নাল এন্ট্রি",
-    journal_lines: "জার্নাল লাইন",
-    sms_logs: "এসএমএস লগ",
-  };
-  const tableLabel = (k: string) => TABLE_BN[k] || k;
-
   return (
     <div className="space-y-4">
       <PageHeader
