@@ -543,6 +543,10 @@ export default function Payments() {
             officeId: (inv as any).office_id ?? null,
             createdBy: user?.id ?? null,
           });
+          const imb = takeLastImbalance();
+          if (imb) {
+            toast.warning(`জার্নাল সমান হয়নি (ডেবিট ${imb.totalDebit} ≠ ক্রেডিট ${imb.totalCredit})`);
+          }
         }
       } else if (a.kind === "savings") {
         await db.from("savings_transactions").insert({ farmer_id: fId, type: "deposit", amount: Number(a.amount), status: "approved", created_by: user?.id, note: noteText });
