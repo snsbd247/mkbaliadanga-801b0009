@@ -586,6 +586,18 @@ export default function Farmers() {
     load();
   }
 
+  async function permanentDelete(id: string) {
+    const { data, error } = await db.rpc("farmer_permanent_delete", { _farmer_id: id });
+    if (error) return toast.error(error.message);
+    const res = (data as any)?.result ?? data;
+    if (!res?.ok) {
+      return toast.error(res?.message || tx("Cannot permanently delete this farmer.", "এই ফার্মার পারমানেন্ট ডিলিট করা যাবে না।"));
+    }
+    toast.success(res.message || tx("Farmer permanently deleted.", "ফার্মার পারমানেন্টভাবে ডিলিট করা হয়েছে।"));
+    load();
+  }
+
+
   async function toggleStatus(id: string, current: string) {
     const next = current === "active" ? "inactive" : "active";
     setList((prev) => prev.map((r) => (r.id === id ? { ...r, status: next } : r)));
