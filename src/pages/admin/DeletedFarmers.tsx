@@ -23,6 +23,7 @@ type DeletionLog = {
 };
 
 export default function DeletedFarmers() {
+  const { lang } = useLang();
   const [rows, setRows] = useState<DeletionLog[]>([]);
   const [loading, setLoading] = useState(true);
 
