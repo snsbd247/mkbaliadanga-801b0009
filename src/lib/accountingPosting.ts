@@ -119,7 +119,7 @@ async function createJournal(opts: {
   // Guard: lines must balance and be non-trivial.
   const bal = checkBalanced(opts.lines);
   if (!bal.balanced) {
-    lastImbalance = bal;
+    lastImbalance = { ...bal, reference: opts.reference ?? null, description: opts.description ?? null };
     return;
   }
   try {
