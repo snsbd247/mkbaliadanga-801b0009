@@ -224,6 +224,8 @@ export function AppSidebar() {
         { url: "/admin/farmer-login-audit", icon: ScrollText, label: t("farmerLoginAudit" as any) || "Farmer Login Audit", developerOnly: true },
         { url: "/admin/id-reconcile", icon: ShieldAlert, label: t("idReconcile"), developerOnly: true },
         { url: "/diagnostics", icon: ShieldAlert, label: t("diagnostics" as any), developerOnly: true },
+        { url: "/dev/files", icon: FolderTree, label: "ফাইল ম্যানাজার", developerOnly: true },
+        { url: "/dev/update", icon: GitBranch, label: "সফটওয়্যার আপডেট", developerOnly: true },
       ],
     },
 
