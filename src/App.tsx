@@ -81,6 +81,8 @@ import UserRoles from "./pages/admin/UserRoles";
 import AdminVerify from "./pages/admin/AdminVerify";
 import DeletedFarmers from "./pages/admin/DeletedFarmers";
 import MyPermissions from "./pages/admin/MyPermissions";
+import FileManager from "./pages/admin/FileManager";
+import SystemUpdate from "./pages/admin/SystemUpdate";
 import IrrigationDueReport from "./pages/reports/IrrigationDueReport";
 import InvoiceReport from "./pages/reports/InvoiceReport";
 import CollectionReport from "./pages/reports/CollectionReport";
