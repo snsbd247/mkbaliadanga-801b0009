@@ -537,6 +537,8 @@ export default function Payments() {
             created_by: user?.id,
           });
           // Chart of accounts: Dr Cash / Cr Irrigation Income for the collected amount.
+          const acc = await checkRequiredAccounts();
+          if (!acc.ok) toast.error(acc.message!);
           await postIrrigationCollection({
             amount: Number(a.amount),
             receiptNo: receiptNo ?? null,
