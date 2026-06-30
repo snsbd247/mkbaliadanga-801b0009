@@ -547,7 +547,7 @@ export default function Payments() {
           });
           const imb = takeLastImbalance();
           if (imb) {
-            toast.warning(`জার্নাল সমান হয়নি (ডেবিট ${imb.totalDebit} ≠ ক্রেডিট ${imb.totalCredit})`);
+            toast.warning(formatImbalance(imb, tx("en", "bn") as "en" | "bn"));
           }
         }
       } else if (a.kind === "savings") {
