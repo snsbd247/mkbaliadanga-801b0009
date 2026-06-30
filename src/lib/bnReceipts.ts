@@ -347,6 +347,7 @@ const STR = {
     totalSav: "Amount deposited:",
     totalLoan: "Installment received:",
     totalIrr: "Total collected:",
+    discount: "Discount:",
     remark: "Remark / Note:",
     memberSig: "Member signature",
     collectorSig: "Collector signature",
