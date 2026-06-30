@@ -2747,6 +2747,8 @@ export type Database = {
           created_at: string
           delay_fee: number
           deleted_at: string | null
+          discount_amount: number
+          discount_reason: string | null
           due_amount: number
           due_date: string
           farmer_id: string
@@ -2793,6 +2795,8 @@ export type Database = {
           created_at?: string
           delay_fee?: number
           deleted_at?: string | null
+          discount_amount?: number
+          discount_reason?: string | null
           due_amount?: number
           due_date: string
           farmer_id: string
@@ -2839,6 +2843,8 @@ export type Database = {
           created_at?: string
           delay_fee?: number
           deleted_at?: string | null
+          discount_amount?: number
+          discount_reason?: string | null
           due_amount?: number
           due_date?: string
           farmer_id?: string
@@ -6684,6 +6690,8 @@ export type Database = {
           created_at: string
           delay_fee: number
           deleted_at: string | null
+          discount_amount: number
+          discount_reason: string | null
           due_amount: number
           due_date: string
           farmer_id: string
