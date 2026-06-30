@@ -128,6 +128,56 @@ class RpcController extends Controller
         return $q->count();
     }
 
+    /**
+     * Permanently delete a farmer from the database, but ONLY when the farmer
+     * has no transactional records. Returns a status payload the frontend can
+     * use to show a clear message.
+     */
+    protected function rpc_farmer_permanent_delete(array $p, Request $request): array
+    {
+        $farmerId = $p['_farmer_id'] ?? $p['farmer_id'] ?? null;
+        if (! $farmerId) {
+            return ['ok' => false, 'reason' => 'missing_id', 'message' => 'ফার্মার আইডি পাওয়া যায়নি।'];
+        }
+
+        // Tables that represent real activity/transactions for a farmer.
+        $txnTables = [
+            'irrigation_invoices', 'irrigation_charges', 'irrigation_invoice_payments',
+            'savings_transactions', 'loans', 'loan_payments', 'payments',
+            'shares', 'office_incomes', 'lands', 'land_relations',
+            'land_transfers', 'land_history', 'receipts',
+        ];
+
+        $blocking = [];
+        foreach ($txnTables as $tbl) {
+            if (! Schema::hasTable($tbl) || ! Schema::hasColumn($tbl, 'farmer_id')) {
+                continue;
+            }
+            $q = DB::table($tbl)->where('farmer_id', $farmerId);
+            if (Schema::hasColumn($tbl, 'deleted_at')) {
+                $q->whereNull('deleted_at');
+            }
+            $count = $q->count();
+            if ($count > 0) {
+                $blocking[$tbl] = $count;
+            }
+        }
+
+        if (! empty($blocking)) {
+            return [
+                'ok' => false,
+                'reason' => 'has_transactions',
+                'blocking' => $blocking,
+                'message' => 'এই ফার্মারের লেনদেন/রেকর্ড থাকায় পারমানেন্ট ডিলিট করা যাবে না।',
+            ];
+        }
+
+        DB::table('farmers')->where('id', $farmerId)->delete();
+
+        return ['ok' => true, 'message' => 'ফার্মার পারমানেন্টভাবে ডিলিট করা হয়েছে।'];
+    }
+
+
     protected function rpc_farmer_dues_summary(array $p, Request $request): array
     {
         if (! Schema::hasTable('farmers')) {
