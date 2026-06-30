@@ -3,7 +3,7 @@ import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { db } from "@/lib/db";
 import { fetchReceiptAuditLogs } from "@/lib/receiptAudit";
-import { postIrrigationCollection, takeLastImbalance, checkRequiredAccounts } from "@/lib/accountingPosting";
+import { postIrrigationCollection, takeLastImbalance, checkRequiredAccounts, formatImbalance } from "@/lib/accountingPosting";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
