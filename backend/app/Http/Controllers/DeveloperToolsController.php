@@ -215,9 +215,13 @@ class DeveloperToolsController extends Controller
 
     public function pull(Request $request): JsonResponse
     {
+        $request->validate(['branch' => 'nullable|string|max:120|regex:/^[\w.\-\/]+$/']);
+
         $fetch = $this->git(['fetch', 'origin'], 180);
-        $branch = $this->git(['rev-parse', '--abbrev-ref', 'HEAD']);
-        $br = $branch['ok'] ? trim($branch['output']) : 'main';
+        $current = $this->git(['rev-parse', '--abbrev-ref', 'HEAD']);
+        $br = $request->filled('branch')
+            ? trim($request->input('branch'))
+            : ($current['ok'] ? trim($current['output']) : 'main');
         $pull = $this->git(['pull', 'origin', $br], 240);
 
         $this->logDev($request, 'git.pull', $br);
