@@ -528,7 +528,7 @@ class RpcController extends Controller
      * Dry-run precheck: count blocking transactional records for a farmer
      * WITHOUT deleting anything. Used by the UI before showing the delete action.
      */
-    protected function rpc_farmer_delete_precheck(array $p): array
+    protected function rpc_farmer_delete_precheck(array $p, Request $request): array
     {
         $farmerId = $p['_farmer_id'] ?? $p['farmer_id'] ?? null;
         if (! $farmerId) {
@@ -538,11 +538,13 @@ class RpcController extends Controller
         $blocking = $this->farmerBlockingCounts($farmerId);
         [$items, $summary] = $this->farmerBlockingDetails($blocking);
         $total = array_sum($blocking);
+        $isDeveloper = $this->isDeveloperUser($request->user());
 
         return [
             'ok'           => true,
             'farmer_id'    => $farmerId,
             'can_delete'   => empty($blocking),
+            'can_cascade'  => $isDeveloper,
             'blocking'     => $blocking,
             'items'        => $items,
             'total'        => $total,
