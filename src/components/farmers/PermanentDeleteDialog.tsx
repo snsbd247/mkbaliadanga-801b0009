@@ -107,7 +107,7 @@ export function PermanentDeleteDialog({
             <div className="flex items-center gap-2 text-muted-foreground">
               <Loader2 className="h-4 w-4 animate-spin" /> ট্রানজেকশন চেক করা হচ্ছে…
             </div>
-          ) : canDelete ? (
+          ) : check?.can_delete === true ? (
             <div className="flex items-center gap-2 text-green-600">
               <CheckCircle2 className="h-4 w-4" /> কোনো ট্রানজেকশন নেই — ডিলিট করা যাবে।
             </div>
@@ -127,8 +127,22 @@ export function PermanentDeleteDialog({
               ) : (
                 <p className="text-muted-foreground">{check.message}</p>
               )}
+              {isDeveloper && (
+                <label className="mt-2 flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/5 p-2 text-destructive">
+                  <Checkbox
+                    checked={cascade}
+                    onCheckedChange={(v) => setCascade(v === true)}
+                    className="mt-0.5"
+                  />
+                  <span>
+                    ক্যাসকেড ডিলিট — ফার্মারসহ উপরের সব ট্রানজেকশন স্থায়ীভাবে মুছে যাবে।
+                    এটি ফিরিয়ে আনা যাবে না। (শুধুমাত্র ডেভেলপার)
+                  </span>
+                </label>
+              )}
             </div>
           ) : null}
+
         </div>
 
         <AlertDialogFooter>
