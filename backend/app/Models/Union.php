@@ -11,6 +11,6 @@ class Union extends Model
     protected $keyType = 'string';
     public $incrementing = false;
     protected $table = 'unions';
-    protected $fillable = ['upazila_id', 'name', 'bn_name', 'extra'];
+    protected $fillable = ['upazila_id', 'name', 'name_bn', 'extra'];
     protected $casts = ['extra' => 'array'];
 }

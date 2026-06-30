@@ -10,6 +10,6 @@ class Division extends Model
     use HasUuids;
     protected $keyType = 'string';
     public $incrementing = false;
-    protected $fillable = ['name', 'bn_name', 'extra'];
+    protected $fillable = ['name', 'name_bn', 'extra'];
     protected $casts = ['extra' => 'array'];
 }
