@@ -78,7 +78,7 @@ export default function OpeningDueReport() {
           season_label: r.seasons ? `${r.seasons.name}${r.seasons.year ? ` (${r.seasons.year})` : ""}` : "",
           land_id: r.land_id,
           mouza: land.mouza ?? "",
-          dag: formatDagNumbers(land.dag_no, land.dag_numbers),
+          dag: formatDagNumbers(Array.isArray(land.dag_numbers) && land.dag_numbers.length ? land.dag_numbers.join(",") : (land.dag_no ?? "")),
           land_size: Number(land.land_size ?? 0),
           owner_name: owner.name_bn || owner.name_en || "",
           owner_code: owner.farmer_code ?? "",
