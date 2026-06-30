@@ -115,6 +115,13 @@ export function PermanentDeleteDialog({
             <div className="flex items-center gap-2 text-muted-foreground">
               <Loader2 className="h-4 w-4 animate-spin" /> ট্রানজেকশন চেক করা হচ্ছে…
             </div>
+          ) : check?.ok === false ? (
+            <div className="space-y-2 text-destructive">
+              <div className="flex items-center gap-2 font-medium">
+                <AlertTriangle className="h-4 w-4" /> প্রিচেক ব্যর্থ হয়েছে
+              </div>
+              <p>{check.message}</p>
+            </div>
           ) : check?.can_delete === true ? (
             <div className="flex items-center gap-2 text-green-600">
               <CheckCircle2 className="h-4 w-4" /> কোনো ট্রানজেকশন নেই — ডিলিট করা যাবে।
