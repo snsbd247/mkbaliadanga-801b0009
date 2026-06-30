@@ -25,7 +25,7 @@ function dbg(...args: unknown[]) {
 const tx = (en: string, bn: string) => bn; // receipts are Bengali
 
 export const IRRIGATION_INVOICE_SELECT =
-  "id,invoice_no,payable_amount,paid_amount,due_amount,irrigation_amount,maintenance_amount,canal_amount,delay_fee,other_charge,is_borga,land_id,note,due_date,season_rate,land_type_name,irrigation_category_name,seasons(name,year,status),lands(mouza,dag_no,land_size,field_type,owner_type,owner_farmer_id,notes,patwaris(name,name_bn,mobile),owner:farmers!lands_owner_farmer_id_fkey(name_bn,name_en,member_no,farmer_code))";
+  "id,invoice_no,payable_amount,paid_amount,due_amount,discount_amount,discount_reason,irrigation_amount,maintenance_amount,canal_amount,delay_fee,other_charge,is_borga,land_id,note,due_date,season_rate,land_type_name,irrigation_category_name,seasons(name,year,status),lands(mouza,dag_no,land_size,field_type,owner_type,owner_farmer_id,notes,patwaris(name,name_bn,mobile),owner:farmers!lands_owner_farmer_id_fkey(name_bn,name_en,member_no,farmer_code))";
 
 export interface IrrigationEnrichInput {
   farmerId: string | null;
