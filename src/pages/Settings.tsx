@@ -51,7 +51,7 @@ export default function Settings() {
       if (up.error) { setBusy(false); return toast.error(up.error.message); }
       editor_signature_url = db.storage.from("branding").getPublicUrl(path).data.publicUrl;
     }
-    const { error } = await db.from("company_settings").update({
+    const payload = {
       company_name: form.company_name,
       company_name_bn: form.company_name_bn,
       logo_url,
@@ -67,14 +67,28 @@ export default function Settings() {
       pdf_footer_show_address: !!form.pdf_footer_show_address,
       pdf_footer_show_contact: !!form.pdf_footer_show_contact,
       updated_at: new Date().toISOString(),
-    } as any).eq("id", 1);
+    };
+    const { data: updated, error } = await db
+      .from("company_settings")
+      .update(payload as any)
+      .eq("id", 1)
+      .select();
+    if (error) { setBusy(false); return toast.error(error.message); }
+    // If no row with id=1 existed (e.g. after data migration), create it so the
+    // settings actually persist instead of silently updating zero rows.
+    if (!updated || (Array.isArray(updated) && updated.length === 0)) {
+      const { error: insErr } = await db
+        .from("company_settings")
+        .insert({ id: 1, ...payload } as any);
+      if (insErr) { setBusy(false); return toast.error(insErr.message); }
+    }
     setBusy(false);
-    if (error) return toast.error(error.message);
     toast.success(t("saved"));
     notifyBrandingChange();
     setLogo(null);
     setSignature(null);
   }
+
 
   return (
     <>
