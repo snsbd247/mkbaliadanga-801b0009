@@ -59,4 +59,20 @@ describe("multi-land note integration (receipt PDF source + Excel)", () => {
     expect(html).toContain("জমি ১ নোট || জমি ৩ নোট");
     expect(html).not.toContain("||  ||");
   });
+
+  it("trims leading/trailing whitespace around each land note", () => {
+    const trimmed = joinNotes("  জমি ১ নোট  ", "\tজমি ২ নোট\n");
+    expect(trimmed).toBe("জমি ১ নোট || জমি ২ নোট");
+    const row = irrigationReceiptToExcelRow(makeReceipt(trimmed));
+    expect(row["নোট"]).toBe("জমি ১ নোট || জমি ২ নোট");
+  });
+
+  it("yields an empty note (no separator) when every land note is null/blank", () => {
+    const empty = joinNotes(null, undefined, "   ", "");
+    expect(empty).toBe("");
+    const row = irrigationReceiptToExcelRow(makeReceipt(empty));
+    expect(row["নোট"]).toBe("");
+    const html = buildReceiptCopyHtmlForTest(makeReceipt(empty), "farmer", "bn");
+    expect(html).not.toContain("||");
+  });
 });
