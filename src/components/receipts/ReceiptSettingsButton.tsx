@@ -12,8 +12,9 @@ import { useLang } from "@/i18n/LanguageProvider";
 
 export function ReceiptSettingsButton() {
   const opts = useReceiptOptions();
-  const { t } = useLang();
+  const { t, lang } = useLang();
   const [open, setOpen] = useState(false);
+  const [preset, setPreset] = useState<string>(() => detectActiveReceiptPreset());
   const [pdfPaper, setPdfPaper] = useState<PaperSize>(() => getReceiptLayoutSettings().defaultPaperSize);
   const [pdfOrientation, setPdfOrientation] = useState<PaperOrientation>(() => getReceiptLayoutSettings().defaultOrientation);
   const [wmEnabled, setWmEnabled] = useState<boolean>(() => getReceiptLayoutSettings().watermarkEnabled);
@@ -21,6 +22,22 @@ export function ReceiptSettingsButton() {
   const [pagePad, setPagePad] = useState<number>(() => getReceiptLayoutSettings().irrigationPagePaddingPx);
   const [bottomPad, setBottomPad] = useState<number>(() => getReceiptLayoutSettings().irrigationBottomPaddingPx);
   const [holdingPad, setHoldingPad] = useState<number>(() => getReceiptLayoutSettings().holdingBottomPaddingPx);
+  // Persist to profile + keep local edits in sync whenever layout changes.
+  const saveLayout = (next: Parameters<typeof setReceiptLayoutSettings>[0]) => {
+    setReceiptLayoutSettings(next);
+    scheduleReceiptLayoutPersist();
+    setPreset(detectActiveReceiptPreset());
+  };
+  const onSelectPreset = (id: string) => {
+    const s = applyReceiptPreset(id);
+    scheduleReceiptLayoutPersist();
+    setPreset(id);
+    setPdfPaper(s.defaultPaperSize);
+    setPdfOrientation(s.defaultOrientation);
+    setPagePad(s.irrigationPagePaddingPx);
+    setBottomPad(s.irrigationBottomPaddingPx);
+    setHoldingPad(s.holdingBottomPaddingPx);
+  };
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
