@@ -270,20 +270,39 @@ npm install
 npm run build
 
 # ──────────────────────────────────────────────────────────────────────────
-# 5. Reload services
+# 5. Final verification (BEFORE reloading services)
 # ──────────────────────────────────────────────────────────────────────────
-log "Reloading PHP-FPM & Nginx…"
-systemctl reload "php${PHP_VER}-fpm" || systemctl restart "php${PHP_VER}-fpm" || true
+cd "${APP_DIR}/backend"
+log "Final admin verification report (detected roles + active status)…"
+php artisan admin:verify --fix || warn "  ✗ final admin verification reported problems — check output above"
+
+# ──────────────────────────────────────────────────────────────────────────
+# 6. Reload services — DETACHED
+# ──────────────────────────────────────────────────────────────────────────
+# Reloading PHP-FPM / Nginx tears down the very PHP-FPM worker that is streaming
+# this output to the browser, which severs the connection before the final
+# "✅ সম্পন্ন হয়েছে" success line can be flushed — the UI then reports a false
+# "network error" even though the deploy fully succeeded. To avoid this we emit
+# the success marker FIRST, then perform the reloads in a detached background
+# process (after a short delay) so the HTTP response completes cleanly.
+log "Reloading PHP-FPM & Nginx (detached — deploy already complete)…"
 # Patch legacy SPA fallback (`$uri $uri/` caused 404/redirect loops on routes
 # like /help/). Rewrite to a clean single-page fallback if present.
 for conf in /etc/nginx/sites-enabled/*.conf /etc/nginx/sites-available/*.conf; do
   [ -f "$conf" ] || continue
   sed -i 's#try_files \$uri \$uri/ /index.html;#try_files \$uri /index.html;#' "$conf" 2>/dev/null || true
 done
-nginx -t && systemctl reload nginx
 
-cd "${APP_DIR}/backend"
-log "Final admin verification report (detected roles + active status)…"
-php artisan admin:verify --fix || warn "  ✗ final admin verification reported problems — check output above"
+# ✅ Success marker is printed BEFORE the reload so the stream can flush it.
+log "✅ Update complete — existing data preserved, no sample data seeded. সম্পন্ন হয়েছে।"
 
-log "✅ Update complete — existing data preserved, no sample data seeded."
+# Detach the reloads: wait 3s (lets the HTTP stream finish) then reload services.
+# Fully detached from the current process so ending this script/response won't
+# interrupt the reload, and reloading FPM won't interrupt the response.
+nohup bash -c "
+  sleep 3
+  systemctl reload 'php${PHP_VER}-fpm' || systemctl restart 'php${PHP_VER}-fpm' || true
+  nginx -t && systemctl reload nginx || true
+" </dev/null >/dev/null 2>&1 &
+disown 2>/dev/null || true
+
