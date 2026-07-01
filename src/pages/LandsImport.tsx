@@ -82,6 +82,13 @@ const FIELD_TYPE_MAP: Record<string, string> = {
   "অন্যান্য": "other", "other": "other",
 };
 
+/** Derive the DB field_type enum from a single land_type value (উচু/নিচু/মাঝারি → high/low/medium). */
+export function deriveFieldType(landType: unknown): string {
+  const raw = String(landType ?? "").trim();
+  const key = raw.toLowerCase();
+  return FIELD_TYPE_MAP[key] ?? FIELD_TYPE_MAP[raw] ?? "medium_land";
+}
+
 function normalizeKey(k: string) {
   return k.trim().toLowerCase().replace(/\s+/g, "_");
 }
@@ -554,7 +561,7 @@ export default function LandsImport() {
           const ltKey = ltRaw.toLowerCase();
           const landTypeId = ltKey ? landTypeMap.get(ltKey) ?? null : null;
           // Derive the field_type enum from the single land_type value (উচু/নিচু/মাঝারি → high/low/medium).
-          const fieldType = FIELD_TYPE_MAP[ltKey] ?? FIELD_TYPE_MAP[ltRaw] ?? "medium_land";
+          const fieldType = deriveFieldType(ltRaw);
           const borga = isBorgaType(r.raw.owner_type);
 
           const landPayload: any = {
