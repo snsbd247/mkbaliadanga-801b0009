@@ -278,14 +278,27 @@ chmod -R 775 "${APP_DIR}/backend/storage" "${APP_DIR}/backend/bootstrap/cache"
 
 # Allow www-data to run the deploy script via sudo (in-app "Pull & Deploy").
 DEPLOY_SUDOERS="/etc/sudoers.d/mk-deploy"
-{
-  echo "# Managed by MK ERP — lets www-data run the deploy script for in-app Pull & Deploy"
-  echo "www-data ALL=(root) NOPASSWD: ${APP_DIR}/scripts/update.sh"
-  echo "www-data ALL=(root) NOPASSWD: /bin/bash ${APP_DIR}/scripts/update.sh"
-  echo "www-data ALL=(root) NOPASSWD: /usr/bin/bash ${APP_DIR}/scripts/update.sh"
-} > "${DEPLOY_SUDOERS}"
-chmod 0440 "${DEPLOY_SUDOERS}"
-visudo -cf "${DEPLOY_SUDOERS}" >/dev/null 2>&1 || rm -f "${DEPLOY_SUDOERS}"
+if [ -d /etc/sudoers.d ] && [ -w /etc/sudoers.d ]; then
+  DEPLOY_SUDOERS_TMP="${DEPLOY_SUDOERS}.tmp"
+  if {
+    echo "# Managed by MK ERP — lets www-data run the deploy script for in-app Pull & Deploy"
+    echo "www-data ALL=(root) NOPASSWD: ${APP_DIR}/scripts/update.sh"
+    echo "www-data ALL=(root) NOPASSWD: /bin/bash ${APP_DIR}/scripts/update.sh"
+    echo "www-data ALL=(root) NOPASSWD: /usr/bin/bash ${APP_DIR}/scripts/update.sh"
+  } > "${DEPLOY_SUDOERS_TMP}"; then
+    if chmod 0440 "${DEPLOY_SUDOERS_TMP}" && visudo -cf "${DEPLOY_SUDOERS_TMP}" >/dev/null 2>&1; then
+      mv "${DEPLOY_SUDOERS_TMP}" "${DEPLOY_SUDOERS}"
+    else
+      warn "Invalid deploy sudoers rule — keeping existing rule if present."
+      rm -f "${DEPLOY_SUDOERS_TMP}" 2>/dev/null || true
+    fi
+  else
+    warn "Cannot write deploy sudoers rule — keeping existing rule if present."
+    rm -f "${DEPLOY_SUDOERS_TMP}" 2>/dev/null || true
+  fi
+else
+  warn "/etc/sudoers.d is not writable — skipping deploy sudoers refresh."
+fi
 
 
 
