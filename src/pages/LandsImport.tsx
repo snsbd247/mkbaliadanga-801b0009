@@ -609,6 +609,12 @@ export default function LandsImport() {
             <Button onClick={() => downloadTemplate("csv")} variant="outline">
               <Download className="h-4 w-4 mr-2" /> টেমপ্লেট (CSV)
             </Button>
+            <Button onClick={() => downloadSample("xlsx")} variant="secondary">
+              <Download className="h-4 w-4 mr-2" /> নমুনা ডেটাসহ (XLSX)
+            </Button>
+            <Button onClick={() => downloadSample("csv")} variant="secondary">
+              <Download className="h-4 w-4 mr-2" /> নমুনা ডেটাসহ (CSV)
+            </Button>
             <Button onClick={() => setStep(1)} className="ml-auto">
               পরবর্তী <ArrowRight className="h-4 w-4 ml-2" />
             </Button>
