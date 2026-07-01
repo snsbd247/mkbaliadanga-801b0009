@@ -161,6 +161,20 @@ export default function LandsImport() {
     document.title = "জমি ইমপোর্ট — Lands Import";
   }, []);
 
+  /** Record a download event in the import audit log (best-effort). */
+  async function logDownload(kind: string, format: "xlsx" | "csv") {
+    try {
+      await db.from("import_audit_logs").insert({
+        office_id: officeId ?? null,
+        module: "lands",
+        mode: "download",
+        summary: { kind, format, at: new Date().toISOString() },
+      });
+    } catch {
+      /* non-blocking */
+    }
+  }
+
   function downloadTemplate(format: "xlsx" | "csv") {
     const cols = [...COLUMNS];
     const sample = [
