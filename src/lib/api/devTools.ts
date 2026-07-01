@@ -124,4 +124,6 @@ export const DevToolsApi = {
       .post<{ ok: boolean; last_commit: string | null; output: string }>("/dev/git/rollback", {})
       .then((r) => r.data),
   auditLogs: () => api.get<{ logs: DevAuditLog[] }>("/dev/git/logs").then((r) => r.data),
+  exportLogs: (params: ExportLogFilter = {}) =>
+    api.get<{ logs: DevAuditLog[] }>("/dev/git/logs/export", { params }).then((r) => r.data),
 };
