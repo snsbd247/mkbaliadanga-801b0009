@@ -245,7 +245,6 @@ export function AppSidebar() {
     {
       key: "tools", icon: Upload, label: t("toolsImports"),
       children: [
-        { url: "/import", icon: Upload, label: t("universalImport"), permKey: "farmers" },
         { url: "/farmers/import", icon: Upload, label: t("bulkFarmerImport"), permKey: "farmers" },
         { url: "/lands/import", icon: Upload, label: lang === "bn" ? "জমি ইমপোর্ট" : "Land Import", permKey: "lands" },
         { url: "/admin/import-audit", icon: ScrollText, label: lang === "bn" ? "ইমপোর্ট অডিট লগ" : "Import Audit Logs", adminOnly: true },
