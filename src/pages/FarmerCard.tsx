@@ -51,8 +51,6 @@ export default function FarmerCard() {
   async function load(rotate: boolean) {
     setLoading(true);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) { toast.error("Please sign in"); return; }
       const { data: f, error } = await db
         .from("farmers")
         .select("id, name_en, name_bn, farmer_code, member_no, account_number, voter_number, mobile, village, address, photo_url")
@@ -62,9 +60,13 @@ export default function FarmerCard() {
       const acc = (f as any).account_number as string | null;
       let j: any = { token: acc || f.farmer_code, issued_at: new Date().toISOString() };
 
-      // Only fall back to token issuance if there is no stable account number
-      // (or admin explicitly asked to rotate the legacy token).
-      if (!acc || rotate) {
+      // On the Supabase backend, fall back to the token-issuance edge function
+      // when there is no stable account number (or admin asked to rotate).
+      // The Laravel/VPS backend has no such function — build the card directly
+      // from account_number / farmer_code so it never blocks on a Supabase session.
+      if (!isLaravelBackend && (!acc || rotate)) {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) { toast.error("Please sign in"); return; }
         try {
           const res = await fetch(`${FN}/farmer-card-token`, {
             method: "POST",
