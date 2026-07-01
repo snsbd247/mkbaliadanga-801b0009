@@ -690,7 +690,7 @@ export default function LandsImport() {
           </div>
           <div className="text-sm">
             <b>{tx("owner_type supported values:", "owner_type সমর্থিত মান:")}</b> own / owner / {tx("নিজে (owner)", "নিজে (মালিক)")}, borga / borgadar / {tx("বর্গা (sharecropper)", "বর্গা (বর্গাদার)")}।<br />
-            <b>{tx("field_type supported values:", "field_type সমর্থিত মান:")}</b> {tx("উচু, নিচু, মাঝারি, others", "উচু, নিচু, মাঝারি, অন্যান্য")}।
+            <b>{tx("land_type supported values:", "land_type সমর্থিত মান:")}</b> {tx("উচু, নিচু, মাঝারি, পুকুর, সবজি, বাগান …", "উচু, নিচু, মাঝারি, পুকুর, সবজি, বাগান …")}।
           </div>
           <div>
             <h3 className="font-semibold mb-2">{tx("Template preview", "টেমপ্লেট প্রিভিউ")}</h3>
