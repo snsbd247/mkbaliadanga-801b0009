@@ -216,11 +216,13 @@ export default function SystemUpdate() {
     const controller = new AbortController();
     abortRef.current = controller;
     try {
-      const r = await DevToolsApi.pull(branch.trim() || undefined, {
-        signal: controller.signal,
-        timeout: GIT_OP_TIMEOUT_MS,
-      });
-      setOutput(r.output);
+      // Stream a real deploy (git pull + composer + migrate + build + reload)
+      // so the console shows live progress as scripts/update.sh runs.
+      const r = await deployStream(
+        branch.trim() || undefined,
+        (chunk) => setOutput((prev) => prev + chunk),
+        controller.signal,
+      );
       if (r.ok) {
         toast.success("Pull & Deploy সম্পন্ন হয়েছে");
       } else {
