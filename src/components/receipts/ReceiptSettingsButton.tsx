@@ -22,21 +22,34 @@ export function ReceiptSettingsButton() {
   const [pagePad, setPagePad] = useState<number>(() => getReceiptLayoutSettings().irrigationPagePaddingPx);
   const [bottomPad, setBottomPad] = useState<number>(() => getReceiptLayoutSettings().irrigationBottomPaddingPx);
   const [holdingPad, setHoldingPad] = useState<number>(() => getReceiptLayoutSettings().holdingBottomPaddingPx);
+  const [fitToPage, setFitToPage] = useState<boolean>(() => getReceiptLayoutSettings().fitToPage);
   // Persist to profile + keep local edits in sync whenever layout changes.
   const saveLayout = (next: Parameters<typeof setReceiptLayoutSettings>[0]) => {
     setReceiptLayoutSettings(next);
     scheduleReceiptLayoutPersist();
     setPreset(detectActiveReceiptPreset());
   };
+  const syncLocalFrom = (s: ReturnType<typeof getReceiptLayoutSettings>) => {
+    setPdfPaper(s.defaultPaperSize);
+    setPdfOrientation(s.defaultOrientation);
+    setWmEnabled(s.watermarkEnabled);
+    setWmText(s.watermarkText);
+    setPagePad(s.irrigationPagePaddingPx);
+    setBottomPad(s.irrigationBottomPaddingPx);
+    setHoldingPad(s.holdingBottomPaddingPx);
+    setFitToPage(s.fitToPage);
+  };
   const onSelectPreset = (id: string) => {
     const s = applyReceiptPreset(id);
     scheduleReceiptLayoutPersist();
     setPreset(id);
-    setPdfPaper(s.defaultPaperSize);
-    setPdfOrientation(s.defaultOrientation);
-    setPagePad(s.irrigationPagePaddingPx);
-    setBottomPad(s.irrigationBottomPaddingPx);
-    setHoldingPad(s.holdingBottomPaddingPx);
+    syncLocalFrom(s);
+  };
+  const onResetDefaults = () => {
+    const s = resetReceiptLayoutSettings();
+    scheduleReceiptLayoutPersist();
+    setPreset(detectActiveReceiptPreset(s));
+    syncLocalFrom(s);
   };
   return (
     <Popover open={open} onOpenChange={setOpen}>
