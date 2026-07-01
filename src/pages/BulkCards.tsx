@@ -21,6 +21,8 @@ import { downloadBulkCardsPdf } from "@/components/card/cardPdf";
 import { useCardSettings } from "@/lib/cardSettings";
 import { MembershipCard, type CardData } from "@/components/card/MembershipCard";
 
+import { isLaravelBackend } from "@/lib/backend";
+
 const FN = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1`;
 
 interface FarmerRow {
