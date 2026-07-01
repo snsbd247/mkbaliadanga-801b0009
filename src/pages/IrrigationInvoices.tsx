@@ -449,6 +449,7 @@ function InvoiceListTab({ seasons, offices, isSuper }: any) {
       tx("Paid", "পরিশোধিত"),
       tx("Due", "বকেয়া"),
       tx("Status", "স্ট্যাটাস"),
+      tx("Note", "নোট"),
     ];
     const body = (filtered as any[])
       .filter((r) => r.invoice_status !== "carried_forward")
@@ -461,8 +462,9 @@ function InvoiceListTab({ seasons, offices, isSuper }: any) {
         money(r.paid_amount),
         money(r.due_amount),
         statusLabel(tx, r.invoice_status),
+        joinInvoiceNotes(r) || "—",
       ]);
-    body.push(["", "", "", tx("Grand total", "সর্বমোট"), money(grandTotals.payable), money(grandTotals.paid), money(grandTotals.due), ""]);
+    body.push(["", "", "", tx("Grand total", "সর্বমোট"), money(grandTotals.payable), money(grandTotals.paid), money(grandTotals.due), "", ""]);
     await exportTablePDF(tx("Irrigation Invoices", "সেচ ইনভয়েস"), head, body, undefined, { landscape: true });
   }
 
