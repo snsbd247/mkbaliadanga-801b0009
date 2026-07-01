@@ -57,6 +57,22 @@ export function ReceiptSettingsButton() {
             <RotateCcw className="h-3.5 w-3.5 mr-1" />Demo defaults
           </Button>
         </div>
+        <div className="space-y-1 rounded-md border bg-muted/40 p-2">
+          <Label className="text-xs font-semibold">{lang === "bn" ? "প্রিন্টার প্রিসেট (এক ক্লিকে)" : "Printer preset (one click)"}</Label>
+          <Select value={preset} onValueChange={onSelectPreset}>
+            <SelectTrigger><SelectValue placeholder={lang === "bn" ? "প্রিসেট নির্বাচন" : "Choose a preset"} /></SelectTrigger>
+            <SelectContent>
+              {RECEIPT_PAPER_PRESETS.map((p) => (
+                <SelectItem key={p.id} value={p.id}>{lang === "bn" ? p.labelBn : p.labelEn}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <p className="text-[11px] text-muted-foreground">
+            {lang === "bn"
+              ? "কাগজের সাইজ, orientation ও প্যাডিং একসাথে সেট হবে। সেটিং আপনার প্রোফাইলে সংরক্ষিত থাকে।"
+              : "Sets paper size, orientation and padding together. Saved to your profile."}
+          </p>
+        </div>
         <div className="space-y-1">
           <Label className="text-xs">{t("p5b_receiptLanguage")}</Label>
           <Select value={opts.lang} onValueChange={(v) => setReceiptOptions({ lang: v as any })}>
