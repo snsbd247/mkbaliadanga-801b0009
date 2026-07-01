@@ -19,6 +19,24 @@ import {
 } from "lucide-react";
 
 const REPO_RE = /^(https:\/\/[\w.-]+\/[\w.\-/]+?(\.git)?|[\w.-]+\/[\w.-]+)$/;
+const DEPLOY_REPO_URL_KEY = "deploy_repo_url";
+const DEPLOY_BRANCH_KEY = "deploy_branch";
+const DEPLOY_BASE_PATH_KEY = "deploy_base_path";
+
+function readDeploySetting(key: string, fallback = "") {
+  try {
+    return localStorage.getItem(key) || fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+function writeDeploySetting(key: string, value: string) {
+  try {
+    if (value) localStorage.setItem(key, value);
+    else localStorage.removeItem(key);
+  } catch {}
+}
 
 const PROTECTED = [
   ".git", ".env", ".env.*", "storage/app", "storage/framework/cache/data",
@@ -49,9 +67,9 @@ function repoWebUrl(remote: string | null): string | null {
 
 export default function SystemUpdate() {
   const [status, setStatus] = useState<GitStatus | null>(null);
-  const [repoUrl, setRepoUrl] = useState("");
-  const [branch, setBranch] = useState("");
-  const [basePath, setBasePath] = useState(() => localStorage.getItem("deploy_base_path") || "deploy");
+  const [repoUrl, setRepoUrl] = useState(() => readDeploySetting(DEPLOY_REPO_URL_KEY));
+  const [branch, setBranch] = useState(() => readDeploySetting(DEPLOY_BRANCH_KEY));
+  const [basePath, setBasePath] = useState(() => readDeploySetting(DEPLOY_BASE_PATH_KEY, "deploy"));
   const [loading, setLoading] = useState(false);
   const [savingRemote, setSavingRemote] = useState(false);
   const [busy, setBusy] = useState<"pull" | "dry" | "rollback" | null>(null);
@@ -60,21 +78,23 @@ export default function SystemUpdate() {
   const [showProtected, setShowProtected] = useState(false);
   const [updatedAt, setUpdatedAt] = useState<number | null>(null);
 
+  const effectiveRemote = status?.remote_url || repoUrl.trim() || readDeploySetting(DEPLOY_REPO_URL_KEY);
+  const effectiveBranch = branch.trim() || status?.branch || readDeploySetting(DEPLOY_BRANCH_KEY) || "main";
   const urlValid = REPO_RE.test(repoUrl.trim());
-  const repoWeb = repoWebUrl(status?.remote_url ?? null);
+  const repoWeb = repoWebUrl(effectiveRemote || null);
   const repoShort = useMemo(() => {
-    const w = repoWebUrl(status?.remote_url ?? null);
+    const w = repoWebUrl(effectiveRemote || null);
     if (!w) return null;
     return w.replace(/^https?:\/\/(www\.)?github\.com\//, "").replace(/\.git$/, "");
-  }, [status?.remote_url]);
+  }, [effectiveRemote]);
 
   const load = async () => {
     setLoading(true);
     try {
       const s = await DevToolsApi.gitStatus();
       setStatus(s);
-      setRepoUrl(s.remote_url ?? "");
-      setBranch(s.branch ?? "");
+      setRepoUrl((current) => s.remote_url || readDeploySetting(DEPLOY_REPO_URL_KEY) || current);
+      setBranch((current) => readDeploySetting(DEPLOY_BRANCH_KEY) || s.branch || current);
       setUpdatedAt(Date.now());
     } catch (e: any) {
       toast.error(e.message ?? "স্ট্যাটাস লোড করা যায়নি");
@@ -104,10 +124,22 @@ export default function SystemUpdate() {
     try {
       const url = repoUrl.trim();
       const full = url.startsWith("http") ? url : `https://github.com/${url}`;
+      const savedBranch = branch.trim();
+      const savedBasePath = basePath.trim() || "deploy";
       const r = await DevToolsApi.setRemote(full);
-      localStorage.setItem("deploy_base_path", basePath.trim() || "deploy");
+      writeDeploySetting(DEPLOY_REPO_URL_KEY, r.remote_url || full);
+      writeDeploySetting(DEPLOY_BRANCH_KEY, savedBranch);
+      writeDeploySetting(DEPLOY_BASE_PATH_KEY, savedBasePath);
+      setRepoUrl(r.remote_url || full);
+      setBranch(savedBranch);
+      setBasePath(savedBasePath);
       toast.success("রিপো সেটিংস সেভ হয়েছে");
-      setStatus((s) => (s ? { ...s, remote_url: r.remote_url } : s));
+      setStatus((s) => (s ? { ...s, remote_url: r.remote_url || full, branch: savedBranch || s.branch } : {
+        is_repo: true,
+        remote_url: r.remote_url || full,
+        branch: savedBranch || null,
+        last_commit: null,
+      }));
       setSettingsOpen(false);
     } catch (e: any) {
       toast.error(e.message ?? "রিমোট সেট করা যায়নি");
@@ -199,7 +231,7 @@ export default function SystemUpdate() {
 
               <AlertDialog>
                 <AlertDialogTrigger asChild>
-                  <Button size="sm" disabled={busy !== null || !status?.remote_url}
+                  <Button size="sm" disabled={busy !== null || !effectiveRemote}
                     className="bg-emerald-600 text-white hover:bg-emerald-700">
                     <Rocket className="mr-1.5 h-4 w-4" /> {busy === "pull" ? "চলছে…" : "Pull & Deploy"}
                   </Button>
@@ -209,7 +241,7 @@ export default function SystemUpdate() {
                     <AlertDialogTitle>Pull &amp; Deploy নিশ্চিত করুন</AlertDialogTitle>
                     <AlertDialogDescription>
                       <span className="font-medium">{repoShort}</span> থেকে{" "}
-                      <span className="font-medium">{branch.trim() || status?.branch || "main"}</span> ব্রাঞ্চ পুল
+                       <span className="font-medium">{effectiveBranch}</span> ব্রাঞ্চ পুল
                       করে ডিপ্লয় করা হবে। লোকাল পরিবর্তন থাকলে ব্যর্থ হতে পারে। চালিয়ে যাবেন?
                     </AlertDialogDescription>
                   </AlertDialogHeader>
@@ -220,7 +252,7 @@ export default function SystemUpdate() {
                 </AlertDialogContent>
               </AlertDialog>
 
-              <Button variant="outline" size="sm" onClick={runDry} disabled={busy !== null || !status?.remote_url}>
+              <Button variant="outline" size="sm" onClick={runDry} disabled={busy !== null || !effectiveRemote}>
                 <Play className="mr-1.5 h-4 w-4" /> {busy === "dry" ? "চলছে…" : "Dry-Run"}
               </Button>
 
@@ -307,7 +339,7 @@ export default function SystemUpdate() {
           <div className="text-sm text-muted-foreground">
             {repoShort ? (
               <>
-                {repoShort} · {status?.branch ?? "main"} · /{basePath || "deploy"}
+                {repoShort} · {effectiveBranch} · /{basePath || "deploy"}
               </>
             ) : (
               <span>কোনো রিপো সেট করা হয়নি — সেটিংস থেকে যুক্ত করুন।</span>
@@ -351,7 +383,7 @@ export default function SystemUpdate() {
                   </div>
                 </div>
                 {repoWeb && (
-                  <a href={`${repoWeb}/blob/${status?.branch ?? "main"}/${f.repoPath}`}
+                  <a href={`${repoWeb}/blob/${effectiveBranch}/${f.repoPath}`}
                     target="_blank" rel="noreferrer"
                     className="shrink-0 text-sm text-emerald-700 hover:underline dark:text-emerald-400">
                     View repo
