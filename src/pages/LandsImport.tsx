@@ -18,6 +18,7 @@ import { toast } from "sonner";
 import { decodeSpreadsheetBuffer } from "@/lib/csvDecode";
 import { normalizeFarmerCode } from "@/lib/farmerCode";
 import { useLang } from "@/i18n/LanguageProvider";
+import { analyzeDagNo, parseDagNumbers } from "@/lib/dagParser";
 
 /**
  * Bulk Lands Import wizard — owner-cultivated + barga (sharecropper) lands.
