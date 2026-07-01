@@ -127,6 +127,11 @@ export default function SystemUpdate() {
       const savedBranch = branch.trim();
       const savedBasePath = basePath.trim() || "deploy";
       const r = await DevToolsApi.setRemote(full);
+      if (r.ok === false) {
+        setOutput(r.output || "");
+        toast.error("রিমোট সেট করা যায়নি — নিচের আউটপুট দেখুন");
+        return;
+      }
       writeDeploySetting(DEPLOY_REPO_URL_KEY, r.remote_url || full);
       writeDeploySetting(DEPLOY_BRANCH_KEY, savedBranch);
       writeDeploySetting(DEPLOY_BASE_PATH_KEY, savedBasePath);
@@ -142,6 +147,7 @@ export default function SystemUpdate() {
       }));
       setSettingsOpen(false);
     } catch (e: any) {
+      setOutput(e?.data?.output ?? e.message ?? "");
       toast.error(e.message ?? "রিমোট সেট করা যায়নি");
     } finally {
       setSavingRemote(false);
