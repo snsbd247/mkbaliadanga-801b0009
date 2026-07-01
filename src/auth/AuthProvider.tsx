@@ -3,6 +3,7 @@ import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { db } from "@/lib/db";
 import { hydrateReceiptOptionsFromProfile } from "@/lib/receiptOptions";
+import { hydrateReceiptLayoutFromProfile } from "@/lib/receiptLayoutSync";
 import { isLaravelBackend } from "@/lib/backend";
 import { api, getApiToken, setApiToken } from "@/lib/api/client";
 
