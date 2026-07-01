@@ -1569,7 +1569,18 @@ export default function FarmerDetail() {
                     if (paymentFilter === "paid") return s === "paid";
                     return s === "due" || s === "partial";
                   };
-                  const ownRows = lands.filter(l => l.owner_type === "owner" && matchesFilter(l));
+                  // "Lands" tab = what the farmer actually cultivates:
+                  //  • own lands' remaining self-cultivated area (exclude fully borga-given)
+                  //  • lands taken in as a sharecropper (borga-in)
+                  const ownRows = lands
+                    .filter(l => l.owner_type === "owner" && matchesFilter(l))
+                    .map(l => {
+                      const size = Number(l.land_size || 0);
+                      const given = Math.min(size, Math.max(0, Number(borgaGivenMap[l.id] || 0)));
+                      const selfArea = Math.max(0, +(size - given).toFixed(4));
+                      return { ...l, land_size: selfArea };
+                    })
+                    .filter(l => Number(l.land_size) > 0.0001);
                   const borgaRows = lands.filter(l => l.owner_type !== "owner" && matchesFilter(l));
                   const renderRow = (l: any) => {
                     const matched = resolveRateForLand(rateMap, l);
