@@ -28,7 +28,9 @@ export const DevToolsApi = {
 
   gitStatus: () => api.get<GitStatus>("/dev/git/status").then((r) => r.data),
   setRemote: (url: string) =>
-    api.post<{ ok: boolean; remote_url: string }>("/dev/git/remote", { url }).then((r) => r.data),
+    api
+      .post<{ ok: boolean; remote_url: string; output?: string }>("/dev/git/remote", { url })
+      .then((r) => r.data),
   pull: (branch?: string) =>
     api.post<{ ok: boolean; output: string }>("/dev/git/pull", branch ? { branch } : {}).then((r) => r.data),
   dryRun: (branch?: string) =>
