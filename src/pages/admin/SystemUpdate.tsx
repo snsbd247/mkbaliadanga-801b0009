@@ -588,7 +588,9 @@ export default function SystemUpdate() {
                       </div>
                       {checks.map((c, i) => (
                         <div key={i} className="flex items-start gap-2 text-xs">
-                          {c.ok ? (
+                          {c.warn ? (
+                            <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-500" />
+                          ) : c.ok ? (
                             <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-600" />
                           ) : (
                             <XCircle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-destructive" />
