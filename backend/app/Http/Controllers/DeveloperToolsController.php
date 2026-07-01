@@ -166,7 +166,12 @@ class DeveloperToolsController extends Controller
 
     private function git(array $args, int $timeout = 120): array
     {
-        $process = new Process(array_merge(['git'], $args), $this->root());
+        // Run every git command with the project root marked as a trusted
+        // directory. Without this, git refuses ("detected dubious ownership")
+        // when the web user (www-data) operates on a root-owned checkout, which
+        // makes remote/branch/commit all come back null.
+        $cmd = array_merge(['git', '-c', 'safe.directory='.$this->root(), '-c', 'safe.directory=*'], $args);
+        $process = new Process($cmd, $this->root());
         $process->setTimeout($timeout);
         $process->run();
         return [
