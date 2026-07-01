@@ -216,6 +216,16 @@ class GenericTableController extends Controller
             }
         }
 
+        // Array values (e.g. dag_numbers) must be JSON-encoded before hitting
+        // MySQL, otherwise the PDO driver throws "Array to string conversion".
+        foreach ($row as $key => $val) {
+            if (is_array($val)) {
+                $row[$key] = json_encode(array_values($val), JSON_UNESCAPED_UNICODE);
+            }
+        }
+
+
+
         if ($table !== 'farmers') {
             return $row;
         }
