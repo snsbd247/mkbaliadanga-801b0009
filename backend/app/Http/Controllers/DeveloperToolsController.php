@@ -232,7 +232,7 @@ class DeveloperToolsController extends Controller
             : ($current['ok'] ? trim($current['output']) : 'main');
         $pull = $this->git(['pull', 'origin', $br], 240);
 
-        $this->logDev($request, 'git.pull', $br);
+        $this->logDev($request, 'git.pull', $br, $pull['ok'] ? 'ok' : 'failed', trim($fetch['output']."\n\n".$pull['output']));
 
         // Always return 200 so the client can render the real git output.
         // A non-zero git exit is reported via `ok:false`, not an HTTP error,
