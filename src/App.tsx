@@ -106,7 +106,7 @@ import FarmersImport from "./pages/FarmersImport";
 import LandsImport from "./pages/LandsImport";
 import OpeningDueImport from "./pages/OpeningDueImport";
 import FarmerMerge from "./pages/admin/FarmerMerge";
-import DataImport from "./pages/DataImport";
+
 import VoterList from "./pages/VoterList";
 import VoterAudit from "./pages/VoterAudit";
 import VoterHistory from "./pages/VoterHistory";
