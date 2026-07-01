@@ -201,6 +201,35 @@ export default function LandsImport() {
     XLSX.writeFile(wb, "lands-import-template.xlsx");
   }
 
+  /** Ready-to-fill sample with dummy farmer+land data covering every season field. */
+  function downloadSample(format: "xlsx" | "csv") {
+    const cols = [...COLUMNS];
+    const rows = [
+      ["00001", "L1", "Boaliadanga", "12,15", "আমন২৬", "উচু", "33.0000", "own", "", "", "", "আমন সিজন — মালিক নিজে চাষ"],
+      ["00002", "L2", "Boaliadanga", "18", "ইরি২৬", "নিচু", "50.0000", "borga", "00003", "20.0000", "", "ইরি সিজন — বর্গাদার ২০ শতক"],
+      ["00002", "L2", "Boaliadanga", "18", "ইরি২৬", "নিচু", "50.0000", "borga", "00004", "", "30", "একই জমিতে ২য় বর্গাদার (share %)"],
+      ["00005", "L3", "Baliadanga", "22,23", "বোরো২৬", "মাঝারি", "66.5000", "own", "", "", "", "বোরো সিজন — মালিক নিজে চাষ"],
+      ["00006", "L4", "Baliadanga", "40", "আউশ২৬", "উচু", "45.0000", "borga", "00007", "45.0000", "", "আউশ সিজন — সম্পূর্ণ জমি বর্গা"],
+      ["00008", "L5", "Baliadanga", "51", "রবি২৬", "অন্যান্য", "12.7500", "own", "", "", "", "রবি সিজন — সবজি জমি"],
+    ];
+    const filename = "lands-import-sample";
+    if (format === "csv") {
+      const csv = [cols, ...rows]
+        .map((r) => r.map((v) => /[",\n]/.test(String(v ?? "")) ? `"${String(v).replace(/"/g, '""')}"` : String(v ?? "")).join(","))
+        .join("\n");
+      const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url; a.download = `${filename}.csv`; a.click();
+      URL.revokeObjectURL(url);
+      return;
+    }
+    const ws = XLSX.utils.aoa_to_sheet([cols, ...rows]);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Lands");
+    XLSX.writeFile(wb, `${filename}.xlsx`);
+  }
+
   async function handleFile(f: File | null) {
     if (!f) return;
     try {
