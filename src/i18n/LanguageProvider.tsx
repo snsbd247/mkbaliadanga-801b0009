@@ -82,7 +82,7 @@ function fuzzyResolve(key: string, lang: Lang): string | null {
 export function LanguageProvider({ children }: { children: ReactNode }) {
   const [lang, setLangState] = useState<Lang>(() => (localStorage.getItem("lang") as Lang) || "en");
   const userIdRef = useRef<string | null>(null);
-  const remoteLoadedRef = useRef(false);
+  
 
   useEffect(() => {
     localStorage.setItem("lang", lang);
