@@ -340,6 +340,92 @@ export default function SystemUpdate() {
     loadLogs();
   };
 
+  const runDeployPreCheck = async () => {
+    setPrecheckBusy(true);
+    setChecks([]);
+    setOutput("");
+    try {
+      const r = await DevToolsApi.preCheck();
+      setChecks(r.checks || []);
+      setOutput(r.output || "");
+      r.ok
+        ? toast.success("ডিপ্লয় প্রি-চেক সফল — ডিপ্লয় করা নিরাপদ")
+        : toast.error("ডিপ্লয় প্রি-চেক ব্যর্থ — নিচের ফলাফল দেখুন");
+    } catch (e: any) {
+      setOutput(e?.data?.output ?? e.message ?? "");
+      toast.error(e?.data?.message ?? e.message ?? "প্রি-চেক ব্যর্থ");
+    } finally {
+      setPrecheckBusy(false);
+    }
+  };
+
+  const exportLogs = async (format: "pdf" | "xlsx") => {
+    setExporting(format);
+    try {
+      const r = await DevToolsApi.exportLogs({
+        from: logFrom || undefined,
+        to: logTo || undefined,
+        office_id: logOffice !== "all" ? logOffice : undefined,
+      });
+      const rows = r.logs || [];
+      if (rows.length === 0) {
+        toast.message("এই ফিল্টারে কোনো লগ নেই");
+        return;
+      }
+      const officeName =
+        logOffice !== "all" ? offices.find((o) => o.id === logOffice)?.name ?? logOffice : "সব অফিস";
+      const rangeLabel = `${logFrom || "শুরু"} — ${logTo || "আজ"}`;
+      const stamp = new Date().toISOString().slice(0, 10);
+
+      if (format === "xlsx") {
+        const XLSX = await import("xlsx");
+        const ws = XLSX.utils.json_to_sheet(
+          rows.map((l) => ({
+            তারিখ: new Date(l.created_at).toLocaleString(),
+            অ্যাকশন: l.action,
+            স্ট্যাটাস: l.status ?? "",
+            ব্যবহারকারী: l.user_name ?? "",
+            রেফারেন্স: l.repo_url ?? "",
+            নোট: l.note ?? "",
+          })),
+        );
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Update Logs");
+        XLSX.writeFile(wb, `developer-update-logs-${stamp}.xlsx`);
+        toast.success("Excel রিপোর্ট ডাউনলোড হয়েছে");
+      } else {
+        const { default: jsPDF } = await import("jspdf");
+        const autoTable = (await import("jspdf-autotable")).default;
+        const doc = new jsPDF({ orientation: "landscape" });
+        doc.setFontSize(13);
+        doc.text("Developer Update Logs", 14, 14);
+        doc.setFontSize(9);
+        doc.text(`Office: ${officeName}   Range: ${rangeLabel}`, 14, 20);
+        autoTable(doc, {
+          startY: 24,
+          styles: { fontSize: 7, cellWidth: "wrap" },
+          headStyles: { fillColor: [16, 185, 129] },
+          head: [["Date", "Action", "Status", "User", "Reference", "Note"]],
+          body: rows.map((l) => [
+            new Date(l.created_at).toLocaleString(),
+            l.action,
+            l.status ?? "",
+            l.user_name ?? "",
+            l.repo_url ?? "",
+            (l.note ?? "").slice(0, 300),
+          ]),
+        });
+        doc.save(`developer-update-logs-${stamp}.pdf`);
+        toast.success("PDF রিপোর্ট ডাউনলোড হয়েছে");
+      }
+    } catch (e: any) {
+      toast.error(e.message ?? "এক্সপোর্ট ব্যর্থ");
+    } finally {
+      setExporting(null);
+    }
+  };
+
+
 
   return (
     <div className="container mx-auto max-w-6xl space-y-6 p-4 md:p-6">
