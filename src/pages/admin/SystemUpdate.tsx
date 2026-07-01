@@ -126,6 +126,7 @@ export default function SystemUpdate() {
 
   useEffect(() => {
     load();
+    OfficesApi.list().then(setOffices).catch(() => setOffices([]));
   }, []);
 
   const updatedLabel = useMemo(() => {
