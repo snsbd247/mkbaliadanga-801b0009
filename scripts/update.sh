@@ -36,25 +36,68 @@ die()  { echo -e "\033[1;31m[x] $*\033[0m" >&2; exit 1; }
 [ -d "${APP_DIR}/.git" ] || die "No repo at ${APP_DIR}. Run setup.sh first."
 export DEBIAN_FRONTEND=noninteractive
 
+# Keep the release we started from. If a later deploy step fails after pulling
+# new code, the script itself rolls back as root (the web user cannot reliably
+# write .git/index.lock on root-owned checkouts).
+ORIGINAL_HEAD="${ORIGINAL_HEAD:-$(git -C "${APP_DIR}" rev-parse HEAD 2>/dev/null || true)}"
+export ORIGINAL_HEAD
+rollback_on_error() {
+  local status=$?
+  trap - ERR
+  [ "${status}" -eq 0 ] && return 0
+
+  if [ -n "${ORIGINAL_HEAD}" ]; then
+    local current_head
+    current_head="$(git -C "${APP_DIR}" rev-parse HEAD 2>/dev/null || true)"
+    if [ -n "${current_head}" ] && [ "${current_head}" != "${ORIGINAL_HEAD}" ]; then
+      warn "Deploy failed — auto rollback to ${ORIGINAL_HEAD}…"
+      git -C "${APP_DIR}" reset --hard "${ORIGINAL_HEAD}" || warn "Rollback git reset failed."
+      if [ -d "${APP_DIR}/backend" ]; then
+        (cd "${APP_DIR}/backend" && php artisan up >/dev/null 2>&1) || true
+      fi
+    else
+      warn "Deploy failed before changing git HEAD — rollback not needed."
+    fi
+  else
+    warn "Deploy failed and previous release commit could not be detected."
+  fi
+  exit "${status}"
+}
+trap rollback_on_error ERR
+
 # ──────────────────────────────────────────────────────────────────────────
 # 0. Allow the web user (www-data) to trigger this script via sudo, so the
 #    in-app "Pull & Deploy" button can run a full deploy without a shell.
 # ──────────────────────────────────────────────────────────────────────────
 install_deploy_sudoers() {
   local rule_file="/etc/sudoers.d/mk-deploy"
+  local tmp_file="${rule_file}.tmp"
   local script_path="${APP_DIR}/scripts/update.sh"
-  {
+
+  # Some hosting/container environments mount /etc read-only. Deploy must not
+  # fail because it cannot refresh sudoers; setup.sh is the canonical installer
+  # for this rule, and an existing rule is enough for in-app Pull & Deploy.
+  if [ ! -d /etc/sudoers.d ] || [ ! -w /etc/sudoers.d ]; then
+    warn "  ⚠ /etc/sudoers.d লেখা যাচ্ছে না — sudoers refresh skipped. Existing sudo rule will be used."
+    return 0
+  fi
+
+  if ! {
     echo "# Managed by MK ERP — lets www-data run the deploy script for in-app Pull & Deploy"
     echo "www-data ALL=(root) NOPASSWD: ${script_path}"
     echo "www-data ALL=(root) NOPASSWD: /bin/bash ${script_path}"
     echo "www-data ALL=(root) NOPASSWD: /usr/bin/bash ${script_path}"
-  } > "${rule_file}"
-  chmod 0440 "${rule_file}"
-  if visudo -cf "${rule_file}" >/dev/null 2>&1; then
+  } > "${tmp_file}"; then
+    warn "  ⚠ sudoers temp file লেখা যায়নি — refresh skipped."
+    rm -f "${tmp_file}" 2>/dev/null || true
+    return 0
+  fi
+
+  if chmod 0440 "${tmp_file}" && visudo -cf "${tmp_file}" >/dev/null 2>&1 && mv "${tmp_file}" "${rule_file}"; then
     log "  ✓ deploy sudoers rule installed (${rule_file})"
   else
-    warn "  ✗ invalid sudoers rule — removing ${rule_file}"
-    rm -f "${rule_file}"
+    warn "  ⚠ sudoers rule refresh failed — keeping existing rule if present."
+    rm -f "${tmp_file}" 2>/dev/null || true
   fi
 }
 install_deploy_sudoers

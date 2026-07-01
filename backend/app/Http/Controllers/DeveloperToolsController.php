@@ -297,12 +297,15 @@ class DeveloperToolsController extends Controller
             if (! is_file($script)) {
                 $emit("✗ update.sh পাওয়া যায়নি: {$script}\n");
             } else {
-                // Prefer sudo (needed for composer/migrate/nginx). Falls back to a
-                // plain run so at least git pull works if sudoers isn't set yet.
+                // Run only through the exact sudoers-whitelisted command. The
+                // script performs its own root-level rollback on failure; doing a
+                // web-user `git reset` here fails on root-owned checkouts because
+                // .git/index.lock cannot be created by www-data.
                 $cmd = ['sudo', '-n', 'bash', $script];
                 $process = new Process($cmd, $root, [
                     'BRANCH' => $branch,
                     'APP_DIR' => $root,
+                    'ORIGINAL_HEAD' => $beforeHead ?? '',
                     'DEBIAN_FRONTEND' => 'noninteractive',
                 ]);
                 $process->setTimeout(null);
@@ -326,12 +329,14 @@ class DeveloperToolsController extends Controller
 
             $emit("\n".($ok ? "✅ Pull & Deploy সম্পন্ন হয়েছে।\n" : "✗ Pull & Deploy ব্যর্থ হয়েছে।\n"));
 
-            // Automatic rollback: revert to the last successful release on failure.
             if (! $ok && $beforeHead) {
-                $emit("\n↩ স্বয়ংক্রিয় রোলব্যাক — শেষ সফল রিলিজে ({$beforeHead}) ফিরে যাচ্ছি…\n");
-                $rb = $this->git(['reset', '--hard', $beforeHead]);
-                $emit($rb['output']."\n");
-                $emit($rb['ok'] ? "✅ রোলব্যাক সম্পন্ন হয়েছে।\n" : "✗ রোলব্যাক ব্যর্থ হয়েছে।\n");
+                $rollbackHandled = str_contains($collected, 'auto rollback to')
+                    || str_contains($collected, 'Rollback git reset failed')
+                    || str_contains($collected, 'rollback not needed');
+                $rollbackNote = $rollbackHandled
+                    ? 'Rollback handled by update.sh with root permissions; see deploy output.'
+                    : 'Deploy failed before update.sh rollback output was available; git HEAD should be unchanged unless script output says otherwise.';
+                $emit("\n↩ {$rollbackNote}\n");
                 try {
                     if (\Illuminate\Support\Facades\Schema::hasTable('developer_update_logs')) {
                         DB::table('developer_update_logs')->insert([
@@ -339,8 +344,8 @@ class DeveloperToolsController extends Controller
                             'user_id' => $userId,
                             'action' => 'deploy.auto_rollback',
                             'repo_url' => Str::limit($beforeHead, 480, ''),
-                            'status' => $rb['ok'] ? 'ok' : 'failed',
-                            'note' => Str::limit($rb['output'], 4000, ''),
+                            'status' => $rollbackHandled ? 'ok' : 'skipped',
+                            'note' => Str::limit($rollbackNote."\n\n".$collected, 4000, ''),
                             'created_at' => now(),
                         ]);
                     }
