@@ -437,8 +437,7 @@ export default function LandsImport() {
         if (ref && (borgaAreaByRef[ref] ?? 0) > (sizeByRef[ref] ?? 0) + 0.0001) {
           errors.push(`land_ref ${ref}: বর্গা area জমির পরিমাণ অতিক্রম করেছে`);
         }
-        if (raw.field_type && !FIELD_TYPE_MAP[String(raw.field_type).trim().toLowerCase()] && !FIELD_TYPE_MAP[String(raw.field_type).trim()])
-          warns.push(`field_type চেনা যায়নি (উচু/নিচু/মাঝারি): ${raw.field_type}`);
+        // land_type is optional and free-form (resolved to land_types); no warning needed.
 
         // land_type must be a real land classification (পুকুর/সবজি/বাগান) — never a season.
         if (looksLikeSeason(raw.land_type))
