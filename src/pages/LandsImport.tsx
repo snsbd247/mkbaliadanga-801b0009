@@ -85,12 +85,21 @@ const FIELD_TYPE_MAP: Record<string, string> = {
   "অন্যান্য": "other", "other": "other",
 };
 
-/** Derive the DB field_type enum from a single land_type value (উচু/নিচু/মাঝারি → high/low/medium). */
+/** Derive the DB field_type enum from a single land_type value (উচু/নিচু/মাঝারি → high/low/medium).
+ * Tolerant of suffixes/prefixes like "উঁচু জমি", "নিচু জমি", "high land". */
 export function deriveFieldType(landType: unknown): string {
   const raw = String(landType ?? "").trim();
   const key = raw.toLowerCase();
-  return FIELD_TYPE_MAP[key] ?? FIELD_TYPE_MAP[raw] ?? "medium_land";
+  // Exact match first (fast path).
+  const exact = FIELD_TYPE_MAP[key] ?? FIELD_TYPE_MAP[raw];
+  if (exact) return exact;
+  // Substring match so values like "উঁচু জমি" / "নিচু জমি" / "high land" resolve.
+  if (/উঁচু|উচু|high/i.test(raw)) return "high_land";
+  if (/নিচু|নীচু|low/i.test(raw)) return "low_land";
+  if (/মাঝারি|মধ্যম|medium/i.test(raw)) return "medium_land";
+  return "medium_land";
 }
+
 
 function normalizeKey(k: string) {
   return k.trim().toLowerCase().replace(/\s+/g, "_");
