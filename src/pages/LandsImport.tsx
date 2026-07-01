@@ -18,6 +18,7 @@ import { toast } from "sonner";
 import { decodeSpreadsheetBuffer } from "@/lib/csvDecode";
 import { normalizeFarmerCode } from "@/lib/farmerCode";
 import { useLang } from "@/i18n/LanguageProvider";
+import { analyzeDagNo, parseDagNumbers } from "@/lib/dagParser";
 
 /**
  * Bulk Lands Import wizard — owner-cultivated + barga (sharecropper) lands.
@@ -38,6 +39,8 @@ type RowState = {
 
 // Bump when template columns/rules change so users can detect stale headers.
 export const LANDS_TEMPLATE_VERSION = "2026.07.01";
+// Bump on every LandsImport code change so testers can confirm the deployed build.
+export const LANDS_IMPORT_BUILD = "2026.07.01.2";
 
 const COLUMNS = [
   "owner_farmer_id", "land_ref", "mouza", "dag_no", "land_type",
@@ -496,14 +499,10 @@ export default function LandsImport() {
 
         // dag_no may hold multiple dag numbers. Comma/semicolon separated
         // values (or a JSON array) are supported. A slash (e.g. "1/330") is a
-        // valid single dag and kept as-is; only a pipe (|) is unsupported.
-        const dagStr = raw.dag_no == null ? "" : String(raw.dag_no).trim();
-        if (dagStr) {
-          const isJsonArray = /^\s*\[.*\]\s*$/.test(dagStr);
-          if (!isJsonArray && /\|/.test(dagStr)) {
-            warns.push(`dag_no: একাধিক দাগ কমা (,) বা সেমিকোলন (;) দিয়ে দিন — পাওয়া গেছে "${dagStr}"`);
-          }
-
+        // valid single dag and kept as-is; only a pipe (|) is warned (never blocked).
+        const dagAnalysis = analyzeDagNo(raw.dag_no);
+        if (dagAnalysis.warnMsg) {
+          warns.push(dagAnalysis.warnMsg);
         }
 
         return {
@@ -593,13 +592,7 @@ export default function LandsImport() {
 
         if (!landId) {
           const dagRaw = String(r.raw.dag_no ?? "").trim();
-          let dagNumbers: string[];
-          if (/^\s*\[.*\]\s*$/.test(dagRaw)) {
-            try { dagNumbers = (JSON.parse(dagRaw) as unknown[]).map((s) => String(s).trim()).filter(Boolean); }
-            catch { dagNumbers = []; }
-          } else {
-            dagNumbers = dagRaw ? dagRaw.split(/[,;]/).map((s) => s.trim()).filter(Boolean) : [];
-          }
+          const dagNumbers: string[] = parseDagNumbers(dagRaw);
           const mouzaName = String(r.raw.mouza ?? "").trim();
           const mouzaId = mouzaName ? mouzaMap.get(mouzaName.toLowerCase()) ?? null : null;
           const ltRaw = String(r.raw.land_type ?? "").trim();
@@ -939,7 +932,25 @@ export default function LandsImport() {
                     <TableCell className="font-mono text-xs">{String(r.raw.owner_farmer_id ?? "")}</TableCell>
                     <TableCell className="font-mono text-xs">{String(r.raw.land_ref ?? "")}</TableCell>
                     <TableCell>{String(r.raw.mouza ?? "")}</TableCell>
-                    <TableCell className="font-mono text-xs">{String(r.raw.dag_no ?? "")}</TableCell>
+                    <TableCell className="font-mono text-xs">
+                      {String(r.raw.dag_no ?? "")}
+                      {(() => {
+                        const a = analyzeDagNo(r.raw.dag_no);
+                        if (!a.raw) return null;
+                        const sepLabel: Record<string, string> = {
+                          none: tx("single dag", "একক দাগ"),
+                          comma: tx("comma-split", "কমা-বিভক্ত"),
+                          semicolon: tx("semicolon-split", "সেমিকোলন-বিভক্ত"),
+                          json: tx("JSON list", "JSON তালিকা"),
+                          pipe: tx("pipe (warn)", "পাইপ (সতর্ক)"),
+                        };
+                        return (
+                          <span className={`block ${a.warned ? "text-amber-600" : "text-muted-foreground"}`}>
+                            {sepLabel[a.separator]} · {a.numbers.length}× · {a.blocked ? tx("blocked", "ব্লকড") : tx("allowed", "অনুমোদিত")}
+                          </span>
+                        );
+                      })()}
+                    </TableCell>
                     <TableCell>{String(r.raw.land_type ?? "")}</TableCell>
                     <TableCell className="text-right">{String(r.raw.land_size ?? "")}</TableCell>
                     <TableCell>{isBorgaType(r.raw.owner_type) ? "borga" : "own"}</TableCell>
@@ -990,6 +1001,9 @@ export default function LandsImport() {
           </div>
         </Card>
       )}
+      <p className="mt-6 text-center text-xs text-muted-foreground">
+        {tx("LandsImport build", "জমি ইমপোর্ট বিল্ড")}: {LANDS_IMPORT_BUILD} · {tx("Template", "টেমপ্লেট")} v{LANDS_TEMPLATE_VERSION}
+      </p>
     </>
   );
 }
