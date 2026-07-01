@@ -17,6 +17,9 @@ export function ReceiptSettingsButton() {
   const [pdfOrientation, setPdfOrientation] = useState<PaperOrientation>(() => getReceiptLayoutSettings().defaultOrientation);
   const [wmEnabled, setWmEnabled] = useState<boolean>(() => getReceiptLayoutSettings().watermarkEnabled);
   const [wmText, setWmText] = useState<string>(() => getReceiptLayoutSettings().watermarkText);
+  const [pagePad, setPagePad] = useState<number>(() => getReceiptLayoutSettings().irrigationPagePaddingPx);
+  const [bottomPad, setBottomPad] = useState<number>(() => getReceiptLayoutSettings().irrigationBottomPaddingPx);
+  const [holdingPad, setHoldingPad] = useState<number>(() => getReceiptLayoutSettings().holdingBottomPaddingPx);
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
