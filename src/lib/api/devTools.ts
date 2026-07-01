@@ -13,16 +13,24 @@ export async function deployStream(
 ): Promise<{ ok: boolean; output: string }> {
   const base = (api.defaults.baseURL || "/api").replace(/\/$/, "");
   const token = getApiToken();
-  const res = await fetch(`${base}/dev/git/deploy`, {
-    method: "POST",
-    headers: {
-      Accept: "text/plain",
-      "Content-Type": "application/json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    },
-    body: JSON.stringify(branch ? { branch } : {}),
-    signal,
-  });
+  let res: Response;
+  try {
+    res = await fetch(`${base}/dev/git/deploy`, {
+      method: "POST",
+      headers: {
+        Accept: "text/plain",
+        "Content-Type": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: JSON.stringify(branch ? { branch } : {}),
+      signal,
+    });
+  } catch (e: any) {
+    if (e?.name === "AbortError") throw e;
+    throw new Error(
+      "নেটওয়ার্ক সংযোগ বিচ্ছিন্ন হয়েছে (স্ট্রিম টাইমআউট বা প্রক্সি)। ডিপ্লয় সার্ভারে চলতে থাকতে পারে — কিছুক্ষণ পর স্ট্যাটাস/অডিট লগ যাচাই করুন।",
+    );
+  }
 
   if (!res.ok || !res.body) {
     const text = await res.text().catch(() => "");
@@ -32,12 +40,18 @@ export async function deployStream(
   const reader = res.body.getReader();
   const decoder = new TextDecoder();
   let output = "";
-  for (;;) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    const chunk = decoder.decode(value, { stream: true });
-    output += chunk;
-    onChunk(chunk);
+  const stripBeats = (s: string) => s.replace(/^· $/gm, "").replace(/\n{3,}/g, "\n\n");
+  try {
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      const chunk = stripBeats(decoder.decode(value, { stream: true }));
+      output += chunk;
+      if (chunk) onChunk(chunk);
+    }
+  } catch (e: any) {
+    if (e?.name === "AbortError") throw e;
+    onChunk("\n⚠ স্ট্রিম সংযোগ বিচ্ছিন্ন — ডিপ্লয় সার্ভারে চলতে থাকতে পারে; অডিট লগ যাচাই করুন।\n");
   }
   output += decoder.decode();
   const ok = /সম্পন্ন হয়েছে/.test(output) && !/ব্যর্থ হয়েছে/.test(output);
