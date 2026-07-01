@@ -270,7 +270,7 @@ class DeveloperToolsController extends Controller
                 ($count === 0 ? "সবকিছু হালনাগাদ — কোনো নতুন কমিট নেই।\n\n" : "নতুন কমিট: {$count}\n\n")
                 .$incoming['output']."\n\n".$changed['output']
             ),
-        ], $fetch['ok'] ? 200 : 500);
+        ]);
     }
 
     /**
