@@ -73,7 +73,11 @@ export type DevAuditLog = {
   status: string | null;
   note: string | null;
   created_at: string;
+  user_name?: string | null;
+  office_id?: string | null;
 };
+
+export type ExportLogFilter = { from?: string; to?: string; office_id?: string };
 
 export type GitOpOptions = { signal?: AbortSignal; timeout?: number };
 
