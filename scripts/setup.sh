@@ -276,6 +276,19 @@ php artisan route:cache
 chown -R www-data:www-data "${APP_DIR}/backend/storage" "${APP_DIR}/backend/bootstrap/cache"
 chmod -R 775 "${APP_DIR}/backend/storage" "${APP_DIR}/backend/bootstrap/cache"
 
+# Allow www-data to run the deploy script via sudo (in-app "Pull & Deploy").
+DEPLOY_SUDOERS="/etc/sudoers.d/mk-deploy"
+{
+  echo "# Managed by MK ERP — lets www-data run the deploy script for in-app Pull & Deploy"
+  echo "www-data ALL=(root) NOPASSWD: ${APP_DIR}/scripts/update.sh"
+  echo "www-data ALL=(root) NOPASSWD: /bin/bash ${APP_DIR}/scripts/update.sh"
+  echo "www-data ALL=(root) NOPASSWD: /usr/bin/bash ${APP_DIR}/scripts/update.sh"
+} > "${DEPLOY_SUDOERS}"
+chmod 0440 "${DEPLOY_SUDOERS}"
+visudo -cf "${DEPLOY_SUDOERS}" >/dev/null 2>&1 || rm -f "${DEPLOY_SUDOERS}"
+
+
+
 # ──────────────────────────────────────────────────────────────────────────
 # 6. Frontend build
 # ──────────────────────────────────────────────────────────────────────────
