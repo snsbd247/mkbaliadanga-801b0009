@@ -9,9 +9,9 @@ import {
 import { setRoundingMode } from "../rounding";
 
 describe("landMath.normalizeLandSize", () => {
-  it("keeps 3-decimal values exactly", () => {
-    expect(normalizeLandSize(0.197)).toBe(0.197);
-    expect(normalizeLandSize(0.165)).toBe(0.165);
+  it("keeps 4-decimal values exactly", () => {
+    expect(normalizeLandSize(0.1975)).toBe(0.1975);
+    expect(normalizeLandSize(0.1650)).toBe(0.165);
   });
   it("does not money-round land area to 2 decimals", () => {
     expect(normalizeLandSize(0.197)).not.toBe(0.2);
@@ -20,9 +20,9 @@ describe("landMath.normalizeLandSize", () => {
   it("strips binary float noise", () => {
     expect(normalizeLandSize(0.1 + 0.097)).toBe(0.197);
   });
-  it("clamps beyond 3 decimals to LAND_DECIMALS", () => {
-    expect(normalizeLandSize(0.19749)).toBe(0.197);
-    expect(LAND_DECIMALS).toBe(3);
+  it("clamps beyond 4 decimals to LAND_DECIMALS", () => {
+    expect(normalizeLandSize(0.197493)).toBe(0.1975);
+    expect(LAND_DECIMALS).toBe(4);
   });
   it("handles invalid / negative input as 0", () => {
     expect(normalizeLandSize(-1)).toBe(0);
@@ -32,12 +32,12 @@ describe("landMath.normalizeLandSize", () => {
 });
 
 describe("landMath.parseLandInput", () => {
-  it("accepts valid 3-decimal entry", () => {
-    expect(parseLandInput("0.197")).toEqual({ value: 0.197, valid: true });
+  it("accepts valid 4-decimal entry", () => {
+    expect(parseLandInput("0.1975")).toEqual({ value: 0.1975, valid: true });
     expect(parseLandInput("0.165")).toEqual({ value: 0.165, valid: true });
   });
-  it("rejects more than 3 decimals", () => {
-    const r = parseLandInput("0.1975");
+  it("rejects more than 4 decimals", () => {
+    const r = parseLandInput("0.19755");
     expect(r.valid).toBe(false);
     expect(r.error).toBe("precision");
   });
@@ -51,11 +51,11 @@ describe("landMath.parseLandInput", () => {
 });
 
 describe("landMath.formatLand", () => {
-  it("shows exactly what was entered, trimming trailing zeros", () => {
-    expect(formatLand(0.197)).toBe("0.197");
-    expect(formatLand(0.165)).toBe("0.165");
-    expect(formatLand(5)).toBe("5");
-    expect(formatLand(2.5)).toBe("2.5");
+  it("shows exactly 4 decimal places", () => {
+    expect(formatLand(0.197)).toBe("0.1970");
+    expect(formatLand(0.165)).toBe("0.1650");
+    expect(formatLand(5)).toBe("5.0000");
+    expect(formatLand(2.5)).toBe("2.5000");
   });
 });
 

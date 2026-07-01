@@ -18,7 +18,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Plus, Printer, FileDown, Receipt, Pencil, Trash2, FileSpreadsheet, FileText, IdCard } from "lucide-react";
 import { useLang } from "@/i18n/LanguageProvider";
-import { money, fmtDate } from "@/lib/format";
+import { money, money2, fmtDate } from "@/lib/format";
 import { toast } from "sonner";
 import { QRCodeSVG } from "qrcode.react";
 import { useNavigate } from "react-router-dom";
@@ -54,7 +54,7 @@ import { LoanStatement } from "@/components/LoanStatement";
 import { downloadIrrigationInvoicePdf, loadInvoiceSettings } from "@/lib/irrigationInvoicePdf";
 import { ReceiptPreviewModal } from "@/components/irrigation/ReceiptPreviewModal";
 import { buildPaidHistory, type PaidHistoryRow } from "@/lib/irrigationReceiptHistory";
-import { formatLand, parseLandInput } from "@/lib/landMath";
+import { formatLand, parseLandInput, normalizeLandSize } from "@/lib/landMath";
 import { LandAmountBreakdown } from "@/components/LandAmountBreakdown";
 import { LandNoteCell } from "@/components/farmers/LandNoteCell";
 import { Textarea } from "@/components/ui/textarea";
@@ -279,7 +279,7 @@ export default function FarmerDetail() {
             _invoice_land_id: r.land_id,
             dag_no: parent?.dag_no ?? null,
             mouza: parent?.mouza_name ?? parent?.mouza ?? null,
-            land_size: Number(area.toFixed(3)),
+            land_size: normalizeLandSize(area),
             farmer_id: r.sharecropper_farmer_id,
           });
         });
@@ -308,7 +308,7 @@ export default function FarmerDetail() {
           inRows.push({
             ...p,
             id: r.land_id,
-            land_size: Number(area.toFixed(3)),
+            land_size: normalizeLandSize(area),
             owner_type: "borgadar",
             owner_farmer_id: r.owner_farmer_id,
             _borga_in: true,
@@ -1333,7 +1333,7 @@ export default function FarmerDetail() {
                       <div className="grid grid-cols-2 gap-3">
                         <div>
                           <Label>{t("landSize")} ({t("decimal" as any)}) <span className="text-destructive">*</span></Label>
-                          <Input disabled={savingLand} type="number" step="0.001" value={land.land_size} onChange={e => {
+                          <Input disabled={savingLand} type="number" step="0.0001" value={land.land_size} onChange={e => {
                             const r = parseLandInput(e.target.value);
                             if (r.error === "precision") toast.error(tx("Land size allows up to 3 decimals only", "জমির পরিমাণ সর্বোচ্চ ৩ দশমিক পর্যন্ত"));
                             setLand({ ...land, land_size: r.value });
@@ -1570,8 +1570,8 @@ export default function FarmerDetail() {
                         </TableCell>
                         <TableCell className="text-xs">{l.patwari_name_bn || l.patwari_name || <span className="text-muted-foreground">—</span>}</TableCell>
                         <TableCell>{landTypeLabel(landTypeRows, (l as any).land_type_id, l.field_type) || t((l.field_type as any) ?? "")}</TableCell>
-                        <TableCell className="text-right">{rate ? money(rate) : <span className="text-muted-foreground">—</span>}</TableCell>
-                        <TableCell className="text-right">{rate ? money(total) : <span className="text-muted-foreground">—</span>}</TableCell>
+                        <TableCell className="text-right">{rate ? money2(rate) : <span className="text-muted-foreground">—</span>}</TableCell>
+                        <TableCell className="text-right">{rate ? money2(total) : <span className="text-muted-foreground">—</span>}</TableCell>
                         <TableCell>
                           {(() => {
                             const m = landSeasonStatus(l.id);
@@ -1648,7 +1648,7 @@ export default function FarmerDetail() {
                         <TableCell colSpan={2} className="text-right">{label} ({tx("Subtotal", "উপ-মোট")})</TableCell>
                         <TableCell className="text-right">{fmtLand(sizeSum)}</TableCell>
                         <TableCell colSpan={5} />
-                        <TableCell className="text-right">{money(amtSum)}</TableCell>
+                        <TableCell className="text-right">{money2(amtSum)}</TableCell>
                         <TableCell />
                         <TableCell />
                         <TableCell />
@@ -1682,7 +1682,7 @@ export default function FarmerDetail() {
                         <TableCell colSpan={2} className="text-right">{tx("Grand Total", "সর্বমোট")}</TableCell>
                         <TableCell className="text-right">{fmtLand(totalSize)}</TableCell>
                         <TableCell colSpan={5} />
-                        <TableCell className="text-right">{money(totalAmt)}</TableCell>
+                        <TableCell className="text-right">{money2(totalAmt)}</TableCell>
                         <TableCell />
                         <TableCell />
                         <TableCell />
@@ -2085,7 +2085,7 @@ export default function FarmerDetail() {
                   );
                 })()}
               </div>
-              <div><Label>{t("landSize")}</Label><Input disabled={editSaving} type="number" step="0.001" value={editForm.land_size} onChange={e => {
+              <div><Label>{t("landSize")}</Label><Input disabled={editSaving} type="number" step="0.0001" value={editForm.land_size} onChange={e => {
                 const r = parseLandInput(e.target.value);
                 if (r.error === "precision") toast.error(tx("Land size allows up to 3 decimals only", "জমির পরিমাণ সর্বোচ্চ ৩ দশমিক পর্যন্ত"));
                 setEditForm({ ...editForm, land_size: r.value });

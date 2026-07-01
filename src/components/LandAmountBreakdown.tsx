@@ -1,6 +1,6 @@
-import { computeLandAmount } from "@/lib/landMath";
+import { computeLandAmount, formatLand } from "@/lib/landMath";
 import { getRoundingMode } from "@/lib/rounding";
-import { money } from "@/lib/format";
+import { money, money2 } from "@/lib/format";
 import { useLang } from "@/i18n/LanguageProvider";
 
 type Props = {
@@ -36,15 +36,15 @@ export function LandAmountBreakdown({ landSize, rate, label }: Props) {
       <div className="font-medium">{label ? `${label} — ` : ""}{tx("Calculation breakdown", "হিসাব বিবরণ")}</div>
       <div className="flex justify-between">
         <span>{tx("Land size", "জমির পরিমাণ")}</span>
-        <span className="font-mono">{b.landSize} {tx("shatak", "শতক")}</span>
+        <span className="font-mono">{formatLand(b.landSize)} {tx("shatak", "শতক")}</span>
       </div>
       <div className="flex justify-between">
         <span>{tx("Rate / shatak", "দর / শতক")}</span>
-        <span className="font-mono">{money(b.rate)}</span>
+        <span className="font-mono">{money2(b.rate)}</span>
       </div>
       <div className="flex justify-between border-t pt-1">
-        <span>{tx("Exact amount", "প্রকৃত পরিমাণ")} ({b.landSize} × {money(b.rate)})</span>
-        <span className="font-mono">{b.raw.toLocaleString("en-US", { maximumFractionDigits: 3 })}</span>
+        <span>{tx("Exact amount", "প্রকৃত পরিমাণ")} ({formatLand(b.landSize)} × {money2(b.rate)})</span>
+        <span className="font-mono">{money2(b.raw)}</span>
       </div>
       <div className="flex justify-between font-semibold">
         <span>{tx("Payable (rounded)", "প্রদেয় (রাউন্ড)")}</span>

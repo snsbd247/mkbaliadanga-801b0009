@@ -7,11 +7,11 @@
 
 import { roundTaka, type RoundingMode } from "./rounding";
 
-/** Land size is stored as numeric(12,3) — exactly 3 decimal places. */
-export const LAND_DECIMALS = 3;
+/** Land size is stored as numeric(14,4) — exactly 4 decimal places. */
+export const LAND_DECIMALS = 4;
 
 /**
- * Normalize a land-size value to exactly 3 decimals, avoiding the binary
+ * Normalize a land-size value to exactly 4 decimals, avoiding the binary
  * float artifacts that produce values like 0.19699999999998. We round at the
  * 3rd decimal (half-up) and strip the float noise via a fixed-point reparse.
  */
@@ -40,10 +40,13 @@ export function parseLandInput(raw: string): { value: number; valid: boolean; er
   return { value: normalizeLandSize(n), valid: true };
 }
 
-/** Display land size exactly as entered (up to 3 decimals), trimming trailing zeros. */
+/** Display land size with exactly 4 decimal places (e.g. 0.2310). */
 export function formatLand(value: number | string | null | undefined, lang: "en" | "bn" = "en"): string {
   const n = normalizeLandSize(value);
-  return n.toLocaleString(lang === "bn" ? "bn-BD" : "en-US", { maximumFractionDigits: LAND_DECIMALS });
+  return n.toLocaleString(lang === "bn" ? "bn-BD" : "en-US", {
+    minimumFractionDigits: LAND_DECIMALS,
+    maximumFractionDigits: LAND_DECIMALS,
+  });
 }
 
 export type AmountBreakdown = {
