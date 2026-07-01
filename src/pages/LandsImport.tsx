@@ -542,6 +542,37 @@ export default function LandsImport() {
             <b>owner_type সমর্থিত মান:</b> own / owner / নিজে (মালিক), borga / borgadar / বর্গা (বর্গাদার)।<br />
             <b>field_type সমর্থিত মান:</b> উচু, নিচু, মাঝারি, অন্যান্য।
           </div>
+          <div>
+            <h3 className="font-semibold mb-2">টেমপ্লেট প্রিভিউ / Template preview</h3>
+            <div className="overflow-x-auto rounded-md border">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>কলাম / Column</TableHead>
+                    <TableHead>আবশ্যক</TableHead>
+                    <TableHead>বাংলা</TableHead>
+                    <TableHead>English</TableHead>
+                    <TableHead>নমুনা / Sample</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {COLUMNS.map((col) => (
+                    <TableRow key={col}>
+                      <TableCell className="font-mono text-xs">{col}</TableCell>
+                      <TableCell>
+                        {COL_HELP[col].required
+                          ? <Badge variant="destructive">আবশ্যক</Badge>
+                          : <Badge variant="outline">ঐচ্ছিক</Badge>}
+                      </TableCell>
+                      <TableCell className="text-xs">{COL_HELP[col].bn}</TableCell>
+                      <TableCell className="text-xs">{COL_HELP[col].en}</TableCell>
+                      <TableCell className="font-mono text-xs">{COL_HELP[col].sample}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </div>
           <div className="flex flex-wrap gap-2">
             <Button onClick={() => downloadTemplate("xlsx")} variant="outline">
               <Download className="h-4 w-4 mr-2" /> টেমপ্লেট (XLSX)
