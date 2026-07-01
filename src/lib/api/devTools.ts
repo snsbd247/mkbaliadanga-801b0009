@@ -73,7 +73,11 @@ export type DevAuditLog = {
   status: string | null;
   note: string | null;
   created_at: string;
+  user_name?: string | null;
+  office_id?: string | null;
 };
+
+export type ExportLogFilter = { from?: string; to?: string; office_id?: string };
 
 export type GitOpOptions = { signal?: AbortSignal; timeout?: number };
 
@@ -91,6 +95,10 @@ export const DevToolsApi = {
   checkRemote: (url: string) =>
     api
       .post<{ ok: boolean; checks: RemoteCheck[]; output: string }>("/dev/git/check-remote", { url })
+      .then((r) => r.data),
+  preCheck: () =>
+    api
+      .post<{ ok: boolean; checks: RemoteCheck[]; output: string }>("/dev/git/pre-check", {})
       .then((r) => r.data),
   setRemote: (url: string) =>
     api
@@ -116,4 +124,6 @@ export const DevToolsApi = {
       .post<{ ok: boolean; last_commit: string | null; output: string }>("/dev/git/rollback", {})
       .then((r) => r.data),
   auditLogs: () => api.get<{ logs: DevAuditLog[] }>("/dev/git/logs").then((r) => r.data),
+  exportLogs: (params: ExportLogFilter = {}) =>
+    api.get<{ logs: DevAuditLog[] }>("/dev/git/logs/export", { params }).then((r) => r.data),
 };

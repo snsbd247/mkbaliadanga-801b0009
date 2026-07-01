@@ -1,10 +1,14 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { DevToolsApi, deployStream, type GitStatus, type RemoteCheck, type DevAuditLog } from "@/lib/api/devTools";
+import { OfficesApi, type Office } from "@/lib/api/admin";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
@@ -16,7 +20,7 @@ import { toast } from "sonner";
 import {
   RefreshCw, Github, CheckCircle2, Rocket, Play, RotateCcw, ExternalLink,
   Terminal, Settings, ShieldCheck, Home, ChevronRight,
-  Copy, Ban, ListChecks, ClipboardList, XCircle, RefreshCcw,
+  Copy, Ban, ListChecks, ClipboardList, XCircle, RefreshCcw, FileText, FileSpreadsheet,
 } from "lucide-react";
 
 /** How long a Pull/Deploy/Dry-Run request may run before it is aborted (ms). */
@@ -87,6 +91,12 @@ export default function SystemUpdate() {
   const [logs, setLogs] = useState<DevAuditLog[]>([]);
   const [logsOpen, setLogsOpen] = useState(false);
   const [logsLoading, setLogsLoading] = useState(false);
+  const [precheckBusy, setPrecheckBusy] = useState(false);
+  const [offices, setOffices] = useState<Office[]>([]);
+  const [logFrom, setLogFrom] = useState("");
+  const [logTo, setLogTo] = useState("");
+  const [logOffice, setLogOffice] = useState("all");
+  const [exporting, setExporting] = useState<"pdf" | "xlsx" | null>(null);
   const abortRef = useRef<AbortController | null>(null);
 
   const effectiveRemote = status?.remote_url || repoUrl.trim() || readDeploySetting(DEPLOY_REPO_URL_KEY);
@@ -116,6 +126,7 @@ export default function SystemUpdate() {
 
   useEffect(() => {
     load();
+    OfficesApi.list().then(setOffices).catch(() => setOffices([]));
   }, []);
 
   const updatedLabel = useMemo(() => {
@@ -329,6 +340,92 @@ export default function SystemUpdate() {
     loadLogs();
   };
 
+  const runDeployPreCheck = async () => {
+    setPrecheckBusy(true);
+    setChecks([]);
+    setOutput("");
+    try {
+      const r = await DevToolsApi.preCheck();
+      setChecks(r.checks || []);
+      setOutput(r.output || "");
+      r.ok
+        ? toast.success("ডিপ্লয় প্রি-চেক সফল — ডিপ্লয় করা নিরাপদ")
+        : toast.error("ডিপ্লয় প্রি-চেক ব্যর্থ — নিচের ফলাফল দেখুন");
+    } catch (e: any) {
+      setOutput(e?.data?.output ?? e.message ?? "");
+      toast.error(e?.data?.message ?? e.message ?? "প্রি-চেক ব্যর্থ");
+    } finally {
+      setPrecheckBusy(false);
+    }
+  };
+
+  const exportLogs = async (format: "pdf" | "xlsx") => {
+    setExporting(format);
+    try {
+      const r = await DevToolsApi.exportLogs({
+        from: logFrom || undefined,
+        to: logTo || undefined,
+        office_id: logOffice !== "all" ? logOffice : undefined,
+      });
+      const rows = r.logs || [];
+      if (rows.length === 0) {
+        toast.message("এই ফিল্টারে কোনো লগ নেই");
+        return;
+      }
+      const officeName =
+        logOffice !== "all" ? offices.find((o) => o.id === logOffice)?.name ?? logOffice : "সব অফিস";
+      const rangeLabel = `${logFrom || "শুরু"} — ${logTo || "আজ"}`;
+      const stamp = new Date().toISOString().slice(0, 10);
+
+      if (format === "xlsx") {
+        const XLSX = await import("xlsx");
+        const ws = XLSX.utils.json_to_sheet(
+          rows.map((l) => ({
+            তারিখ: new Date(l.created_at).toLocaleString(),
+            অ্যাকশন: l.action,
+            স্ট্যাটাস: l.status ?? "",
+            ব্যবহারকারী: l.user_name ?? "",
+            রেফারেন্স: l.repo_url ?? "",
+            নোট: l.note ?? "",
+          })),
+        );
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Update Logs");
+        XLSX.writeFile(wb, `developer-update-logs-${stamp}.xlsx`);
+        toast.success("Excel রিপোর্ট ডাউনলোড হয়েছে");
+      } else {
+        const { default: jsPDF } = await import("jspdf");
+        const autoTable = (await import("jspdf-autotable")).default;
+        const doc = new jsPDF({ orientation: "landscape" });
+        doc.setFontSize(13);
+        doc.text("Developer Update Logs", 14, 14);
+        doc.setFontSize(9);
+        doc.text(`Office: ${officeName}   Range: ${rangeLabel}`, 14, 20);
+        autoTable(doc, {
+          startY: 24,
+          styles: { fontSize: 7, cellWidth: "wrap" },
+          headStyles: { fillColor: [16, 185, 129] },
+          head: [["Date", "Action", "Status", "User", "Reference", "Note"]],
+          body: rows.map((l) => [
+            new Date(l.created_at).toLocaleString(),
+            l.action,
+            l.status ?? "",
+            l.user_name ?? "",
+            l.repo_url ?? "",
+            (l.note ?? "").slice(0, 300),
+          ]),
+        });
+        doc.save(`developer-update-logs-${stamp}.pdf`);
+        toast.success("PDF রিপোর্ট ডাউনলোড হয়েছে");
+      }
+    } catch (e: any) {
+      toast.error(e.message ?? "এক্সপোর্ট ব্যর্থ");
+    } finally {
+      setExporting(null);
+    }
+  };
+
+
 
   return (
     <div className="container mx-auto max-w-6xl space-y-6 p-4 md:p-6">
@@ -387,9 +484,15 @@ export default function SystemUpdate() {
                 </AlertDialogContent>
               </AlertDialog>
 
+              <Button variant="outline" size="sm" onClick={runDeployPreCheck}
+                disabled={busy !== null || precheckBusy}>
+                <ListChecks className="mr-1.5 h-4 w-4" /> {precheckBusy ? "চেক হচ্ছে…" : "প্রি-চেক"}
+              </Button>
+
               <Button variant="outline" size="sm" onClick={runDry} disabled={busy !== null || !effectiveRemote}>
                 <Play className="mr-1.5 h-4 w-4" /> {busy === "dry" ? "চলছে…" : "Dry-Run"}
               </Button>
+
 
               {(busy === "pull" || busy === "dry") && (
                 <Button variant="outline" size="sm" onClick={cancelOp}
@@ -635,12 +738,49 @@ export default function SystemUpdate() {
                   ))
                 )}
               </div>
+
+              {/* Export filters */}
+              <div className="rounded-md border p-3 space-y-3">
+                <div className="text-sm font-medium">রিপোর্ট এক্সপোর্ট (অফিস ও তারিখ ফিল্টার)</div>
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="log-from" className="text-xs">শুরুর তারিখ</Label>
+                    <Input id="log-from" type="date" value={logFrom} onChange={(e) => setLogFrom(e.target.value)} />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="log-to" className="text-xs">শেষ তারিখ</Label>
+                    <Input id="log-to" type="date" value={logTo} onChange={(e) => setLogTo(e.target.value)} />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">অফিস</Label>
+                    <Select value={logOffice} onValueChange={setLogOffice}>
+                      <SelectTrigger><SelectValue placeholder="সব অফিস" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">সব অফিস</SelectItem>
+                        {offices.map((o) => (
+                          <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <Button variant="outline" size="sm" onClick={() => exportLogs("pdf")} disabled={exporting !== null}>
+                    <FileText className="mr-1.5 h-4 w-4" /> {exporting === "pdf" ? "তৈরি হচ্ছে…" : "PDF এক্সপোর্ট"}
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={() => exportLogs("xlsx")} disabled={exporting !== null}>
+                    <FileSpreadsheet className="mr-1.5 h-4 w-4" /> {exporting === "xlsx" ? "তৈরি হচ্ছে…" : "Excel এক্সপোর্ট"}
+                  </Button>
+                </div>
+              </div>
+
               <DialogFooter>
                 <Button variant="outline" onClick={loadLogs} disabled={logsLoading}>
                   <RefreshCw className={`mr-1.5 h-4 w-4 ${logsLoading ? "animate-spin" : ""}`} /> রিফ্রেশ
                 </Button>
                 <Button onClick={() => setLogsOpen(false)}>বন্ধ</Button>
               </DialogFooter>
+
             </DialogContent>
           </Dialog>
         </CardContent>
