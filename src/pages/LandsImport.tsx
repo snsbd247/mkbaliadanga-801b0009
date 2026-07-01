@@ -588,8 +588,14 @@ export default function LandsImport() {
       });
     } catch { /* audit best-effort */ }
 
-    if (failed === 0) toast.success(`${inserted} টি জমি ইমপোর্ট হয়েছে`);
-    else toast.warning(`${inserted} টি সফল, ${failed} টি ব্যর্থ`);
+    if (failed === 0) {
+      toast.success(`সর্বমোট ${importable.length} সারি • সফল ${inserted} • ব্যর্থ 0`);
+    } else {
+      toast.warning(
+        `সর্বমোট ${importable.length} সারি • সফল ${inserted} • ব্যর্থ ${failed}`,
+        { duration: 10000, action: { label: "ব্যর্থ সারি CSV", onClick: () => downloadErrorCsv() } },
+      );
+    }
   }
 
   function resetAll() {
