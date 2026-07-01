@@ -326,6 +326,29 @@ class DeveloperToolsController extends Controller
 
             $emit("\n".($ok ? "✅ Pull & Deploy সম্পন্ন হয়েছে।\n" : "✗ Pull & Deploy ব্যর্থ হয়েছে।\n"));
 
+            // Automatic rollback: revert to the last successful release on failure.
+            if (! $ok && $beforeHead) {
+                $emit("\n↩ স্বয়ংক্রিয় রোলব্যাক — শেষ সফল রিলিজে ({$beforeHead}) ফিরে যাচ্ছি…\n");
+                $rb = $this->git(['reset', '--hard', $beforeHead]);
+                $emit($rb['output']."\n");
+                $emit($rb['ok'] ? "✅ রোলব্যাক সম্পন্ন হয়েছে।\n" : "✗ রোলব্যাক ব্যর্থ হয়েছে।\n");
+                try {
+                    if (\Illuminate\Support\Facades\Schema::hasTable('developer_update_logs')) {
+                        DB::table('developer_update_logs')->insert([
+                            'id' => (string) Str::uuid(),
+                            'user_id' => $userId,
+                            'action' => 'deploy.auto_rollback',
+                            'repo_url' => Str::limit($beforeHead, 480, ''),
+                            'status' => $rb['ok'] ? 'ok' : 'failed',
+                            'note' => Str::limit($rb['output'], 4000, ''),
+                            'created_at' => now(),
+                        ]);
+                    }
+                } catch (\Throwable $e) {
+                    // best-effort audit only
+                }
+            }
+
             try {
                 if (\Illuminate\Support\Facades\Schema::hasTable('developer_update_logs')) {
                     DB::table('developer_update_logs')->insert([
