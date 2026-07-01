@@ -43,6 +43,9 @@ export interface ReceiptLayoutSettings {
   irrigationBottomPaddingPx: number;
   /** Extra bottom padding (px) applied to the holding/patwari last row. 0-48. */
   holdingBottomPaddingPx: number;
+  /** When true, receipt is scaled to fit a single page (width + height) so the
+   *  preview and downloaded PDF stay aligned across printer drivers. */
+  fitToPage: boolean;
 }
 
 export const DEFAULT_RECEIPT_LAYOUT: ReceiptLayoutSettings = {
