@@ -516,6 +516,7 @@ export default function LandsImport() {
   const validRows = useMemo(() => rows.filter((r) => r.status === "valid" || r.status === "saved"), [rows]);
   const invalidRows = useMemo(() => rows.filter((r) => r.status === "invalid"), [rows]);
   const importable = useMemo(() => rows.filter((r) => r.status === "valid"), [rows]);
+  const errorCategories = useMemo(() => categorizeErrors(invalidRows), [invalidRows]);
 
   function downloadErrorCsv() {
     const bad = rows.filter((r) => r.status === "invalid" || r.status === "error");
