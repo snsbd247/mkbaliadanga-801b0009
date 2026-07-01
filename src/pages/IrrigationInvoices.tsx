@@ -1828,7 +1828,7 @@ function ManualInvoiceDialog({ open, onOpenChange, seasons, userId }: any) {
     if (!farmerId) { setLands([]); return; }
     (async () => {
       const [{ data: own }, { data: rels }] = await Promise.all([
-        db.from("lands").select("id,dag_no,land_size,mouza,owner_farmer_id,office_id,field_type").eq("farmer_id", farmerId).is("deleted_at", null),
+        db.from("lands").select("id,dag_no,land_size,mouza,owner_farmer_id,office_id,field_type,notes").eq("farmer_id", farmerId).is("deleted_at", null),
         db.from("land_relations").select("land_id, lands(id,dag_no,land_size,mouza,owner_farmer_id,office_id,field_type)").eq("sharecropper_farmer_id", farmerId).is("deleted_at", null),
       ]);
       const ids = new Set((own ?? []).map((l: any) => l.id));
