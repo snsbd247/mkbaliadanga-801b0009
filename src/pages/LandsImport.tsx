@@ -176,10 +176,15 @@ const round4 = (v: number) => Math.round(v * 10000) / 10000;
 const isBorgaType = (v: unknown) =>
   ["borga", "borgadar", "বর্গা", "বর্গাদার", "share", "sharecrop"].includes(String(v ?? "").trim().toLowerCase());
 
-const STEPS = ["নির্দেশনা", "আপলোড ও ম্যাপিং", "প্রিভিউ ও যাচাই", "সংরক্ষণ ও সারসংক্ষেপ"];
-
 export default function LandsImport() {
   const { officeId, user } = useAuth();
+  const { tx } = useLang();
+  const STEPS = [
+    tx("Instructions", "নির্দেশনা"),
+    tx("Upload & Mapping", "আপলোড ও ম্যাপিং"),
+    tx("Preview & Validate", "প্রিভিউ ও যাচাই"),
+    tx("Save & Summary", "সংরক্ষণ ও সারসংক্ষেপ"),
+  ];
   const fileRef = useRef<HTMLInputElement>(null);
   const [step, setStep] = useState(0);
   const [fileName, setFileName] = useState("");
