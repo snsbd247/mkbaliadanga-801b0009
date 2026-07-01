@@ -551,7 +551,21 @@ class DeveloperToolsController extends Controller
         $checks[] = ['label' => 'রাইট পারমিশন', 'ok' => true, 'warn' => ! $writable,
             'detail' => $writable ? 'প্রজেক্ট ডিরেক্টরিতে লেখা যায়।' : 'www-data সরাসরি লিখতে পারে না — ডিপ্লয় root (sudo) হিসেবে চলে বলে সমস্যা নেই।'];
 
-        foreach (['git', 'php', 'composer', 'npm'] as $bin) {
+        // Read-only filesystem detection: try writing a temp file under root.
+        $probe = $root.'/.mk-write-test';
+        $roWritable = @file_put_contents($probe, 'x') !== false;
+        if ($roWritable) {
+            @unlink($probe);
+        }
+        $checks[] = ['label' => 'ফাইলসিস্টেম (read-only?)', 'ok' => true, 'warn' => ! $roWritable,
+            'detail' => $roWritable ? 'প্রজেক্ট ফাইলসিস্টেম লেখার উপযোগী।' : 'প্রজেক্ট ফাইলসিস্টেম READ-ONLY — ডিপ্লয় root (sudo) হিসেবে চলে।'];
+
+        // /etc read-only: web-triggered deploy skips sudoers writes, so this is
+        // informational only (setup.sh installs the rule once as root).
+        $etcWritable = is_writable('/etc/sudoers.d');
+        $checks[] = ['label' => '/etc/sudoers.d লেখা', 'ok' => true, 'warn' => ! $etcWritable,
+            'detail' => $etcWritable ? 'লেখা যায়।' : 'read-only — ডিপ্লয়ে sudoers রিফ্রেশ এড়িয়ে যাওয়া হয় (setup.sh একবার বসায়)।'];
+
             $which = new Process(['bash', '-lc', "command -v {$bin}"], $root);
             $which->run();
             $found = $which->isSuccessful() && trim($which->getOutput()) !== '';
