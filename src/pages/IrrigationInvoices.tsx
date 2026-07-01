@@ -1896,6 +1896,7 @@ function ManualInvoiceDialog({ open, onOpenChange, seasons, userId }: any) {
         land_type_name: rateRow?.land_type_name ?? land?.field_type ?? null,
         is_manual_rate: isManualRate,
         manual_rate_reason: isManualRate ? manualReason.trim() : null,
+        note: (land?.notes ?? "").trim() || null,
         // Phase 4 hybrid engine snapshot
         rate_source: rateSource,
         applied_rate: rate,
