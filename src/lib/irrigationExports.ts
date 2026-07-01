@@ -43,6 +43,7 @@ export const IRR_BN = {
   appliedRate: "প্রযোজ্য রেট",
   standardRate: "মানক রেট",
   overrideReason: "ওভাররাইড কারণ",
+  note: "নোট",
 };
 
 export const IRR_EN: typeof IRR_BN = {
@@ -78,6 +79,7 @@ export const IRR_EN: typeof IRR_BN = {
   appliedRate: "Applied Rate",
   standardRate: "Standard Rate",
   overrideReason: "Override Reason",
+  note: "Note",
 };
 
 const STATUS_BN: Record<string, string> = {
@@ -88,6 +90,18 @@ const STATUS_EN: Record<string, string> = {
   draft: "Draft", generated: "Generated", partial_paid: "Partial",
   paid: "Paid", overdue: "Overdue", cancelled: "Cancelled",
 };
+
+/**
+ * Combines the invoice-level note and the per-land note into a single string,
+ * joined by " || ". Empty/blank notes are dropped so no stray separators or
+ * empty values appear. Returns "" when there is no note at all.
+ */
+export function joinInvoiceNotes(inv: any): string {
+  return [inv?.note, inv?.lands?.notes]
+    .map((n) => (n ?? "").toString().trim())
+    .filter(Boolean)
+    .join(" || ");
+}
 
 export function flattenInvoiceForExport(inv: any, lang: Lang = "bn") {
   const snap = inv.calculation_snapshot ?? {};
@@ -131,6 +145,7 @@ export function flattenInvoiceForExport(inv: any, lang: Lang = "bn") {
     [L.appliedRate]: r(inv.applied_rate ?? inv.season_rate ?? snap.applied_rate ?? ""),
     [L.standardRate]: r(inv.original_standard_rate ?? snap.original_standard_rate ?? ""),
     [L.overrideReason]: inv.override_reason ?? inv.manual_rate_reason ?? "",
+    [L.note]: joinInvoiceNotes(inv),
   };
 }
 
