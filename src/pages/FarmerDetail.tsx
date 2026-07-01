@@ -62,7 +62,7 @@ import { LandTypeSelect, useLandTypes, landTypeLabel } from "@/components/locati
 
 type LandRow = LandExportRow & { id: string; mouza_id?: string | null; ward_id?: string | null; owner_farmer_id?: string | null; land_type_id?: string | null };
 
-const EMPTY_LAND = { dag_no: "", land_size: 0, owner_type: "owner", field_type: "medium_land", land_type_id: "" as string, owner_farmer_id: "" as string | "", patwari_id: "" as string | "", notes: "" };
+const EMPTY_LAND = { dag_no: "", land_size: 0, owner_type: "owner", field_type: "medium_land", land_type_id: "" as string, owner_farmer_id: "" as string | "", owner_land_id: "" as string, patwari_id: "" as string | "", notes: "" };
 
 // Show land size exactly as entered (up to 3 decimals) via the shared utility.
 const fmtLand = (v: any) => formatLand(v);
@@ -825,23 +825,50 @@ export default function FarmerDetail() {
     }
     setSavingLand(true);
     try {
-      const { error } = await db.from("lands").insert({
-        farmer_id: id!,
-        mouza: (landLoc as any).mouza_name ?? "",
-        division_id: (landLoc as any).division_id ?? null,
-        district_id: (landLoc as any).district_id ?? null,
-        upazila_id: (landLoc as any).upazila_id ?? null,
-        mouza_id: (landLoc as any).mouza_id ?? null,
-        dag_no: canonicalDag,
-        land_size: land.land_size,
-        owner_type: land.owner_type as any,
-        field_type: land.field_type as any,
-        land_type_id: land.land_type_id || null,
-        owner_farmer_id: land.owner_type === "borgadar" ? land.owner_farmer_id : null,
-        patwari_id: land.patwari_id || null,
-        notes: land.notes?.trim() || null,
-      } as any);
-      if (error) { toast.error(error.message); return; }
+      // Borga (sharecropping) is stored as a single source of truth in
+      // `land_relations`, NOT as a standalone owner-billed `lands` row. This
+      // reduces the owner's billable area so a fully-shared parcel is never
+      // invoiced against the owner — only against the cultivating sharecropper.
+      if (land.owner_type === "borgadar") {
+        if (!land.owner_land_id) {
+          toast.error(tx("Please select the owner's plot (Dag) for this borga land.", "এই বর্গা জমির জন্য মালিকের দাগ নির্বাচন করুন।"));
+          return;
+        }
+        const { data: parentLand } = await db.from("lands")
+          .select("id,land_size,office_id").eq("id", land.owner_land_id).maybeSingle();
+        const parentSize = Number((parentLand as any)?.land_size || 0);
+        const area = Number(land.land_size || 0);
+        const sharePct = parentSize > 0 ? Math.min(100, +((area / parentSize) * 100).toFixed(4)) : 0;
+        const { error } = await db.from("land_relations").insert({
+          land_id: land.owner_land_id,
+          owner_farmer_id: land.owner_farmer_id,
+          sharecropper_farmer_id: id!,
+          area_decimal: area,
+          share_percentage: sharePct,
+          valid_from: new Date().toISOString().slice(0, 10),
+          office_id: (parentLand as any)?.office_id ?? (landLoc as any).office_id ?? null,
+          note: land.notes?.trim() || null,
+        } as any);
+        if (error) { toast.error(error.message); return; }
+      } else {
+        const { error } = await db.from("lands").insert({
+          farmer_id: id!,
+          mouza: (landLoc as any).mouza_name ?? "",
+          division_id: (landLoc as any).division_id ?? null,
+          district_id: (landLoc as any).district_id ?? null,
+          upazila_id: (landLoc as any).upazila_id ?? null,
+          mouza_id: (landLoc as any).mouza_id ?? null,
+          dag_no: canonicalDag,
+          land_size: land.land_size,
+          owner_type: land.owner_type as any,
+          field_type: land.field_type as any,
+          land_type_id: land.land_type_id || null,
+          owner_farmer_id: null,
+          patwari_id: land.patwari_id || null,
+          notes: land.notes?.trim() || null,
+        } as any);
+        if (error) { toast.error(error.message); return; }
+      }
       toast.success(t("saved")); setOpenLand(false);
       // #16 — show an estimated irrigation due for the new land in the active season.
       void estimateNewLandDue(land.land_size, (landLoc as any).office_id ?? null);
@@ -887,6 +914,7 @@ export default function FarmerDetail() {
       field_type: (row.field_type as any) ?? "medium_land",
       land_type_id: ((row as any).land_type_id as string) ?? "",
       owner_farmer_id: ((row as any).owner_farmer_id as string) ?? "",
+      owner_land_id: ((row as any).owner_land_id as string) ?? "",
       patwari_id: ((row as any).patwari_id as string) ?? "",
       notes: ((row as any).notes as string) ?? landSelfNotes[row.id] ?? "",
     });
@@ -1254,6 +1282,7 @@ export default function FarmerDetail() {
                               setLand({
                                 ...land,
                                 dag_no: v,
+                                owner_land_id: src.id ?? "",
                                 land_size: Number(src.land_size ?? 0),
                                 field_type: src.field_type ?? land.field_type,
                                 land_type_id: src.land_type_id ?? land.land_type_id,
@@ -1540,7 +1569,18 @@ export default function FarmerDetail() {
                     if (paymentFilter === "paid") return s === "paid";
                     return s === "due" || s === "partial";
                   };
-                  const ownRows = lands.filter(l => l.owner_type === "owner" && matchesFilter(l));
+                  // "Lands" tab = what the farmer actually cultivates:
+                  //  • own lands' remaining self-cultivated area (exclude fully borga-given)
+                  //  • lands taken in as a sharecropper (borga-in)
+                  const ownRows = lands
+                    .filter(l => l.owner_type === "owner" && matchesFilter(l))
+                    .map(l => {
+                      const size = Number(l.land_size || 0);
+                      const given = Math.min(size, Math.max(0, Number(borgaGivenMap[l.id] || 0)));
+                      const selfArea = Math.max(0, +(size - given).toFixed(4));
+                      return { ...l, land_size: selfArea };
+                    })
+                    .filter(l => Number(l.land_size) > 0.0001);
                   const borgaRows = lands.filter(l => l.owner_type !== "owner" && matchesFilter(l));
                   const renderRow = (l: any) => {
                     const matched = resolveRateForLand(rateMap, l);
