@@ -294,7 +294,7 @@ class DeveloperToolsController extends Controller
             'ok' => $reset['ok'],
             'last_commit' => $commit['ok'] ? trim($commit['output']) : null,
             'output' => trim($reset['output']),
-        ], $reset['ok'] ? 200 : 500);
+        ]);
     }
 
     private function logDev(Request $request, string $action, string $detail): void
