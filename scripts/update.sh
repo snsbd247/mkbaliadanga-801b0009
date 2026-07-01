@@ -85,14 +85,21 @@ ORIGINAL_HEAD="${ORIGINAL_HEAD:-$(git -C "${APP_DIR}" rev-parse HEAD 2>/dev/null
 export ORIGINAL_HEAD
 rollback_on_error() {
   local status=$?
-  trap - ERR
+  trap - ERR DEBUG
   [ "${status}" -eq 0 ] && return 0
+
+  echo -e "\033[1;31m[x] Deploy FAILED — exit code ${status}\033[0m" >&2
+  [ -n "${FAILED_CMD:-}" ] && echo -e "\033[1;31m[x] Failing command: ${FAILED_CMD}\033[0m" >&2
+
+  # Ensure git can write to the (root-owned) repo during rollback.
+  git config --global --add safe.directory "${APP_DIR}" >/dev/null 2>&1 || true
 
   if [ -n "${ORIGINAL_HEAD}" ]; then
     local current_head
     current_head="$(git -C "${APP_DIR}" rev-parse HEAD 2>/dev/null || true)"
     if [ -n "${current_head}" ] && [ "${current_head}" != "${ORIGINAL_HEAD}" ]; then
       warn "Deploy failed — auto rollback to ${ORIGINAL_HEAD}…"
+      rm -f "${APP_DIR}/.git/index.lock" 2>/dev/null || true
       git -C "${APP_DIR}" reset --hard "${ORIGINAL_HEAD}" || warn "Rollback git reset failed."
       if [ -d "${APP_DIR}/backend" ]; then
         (cd "${APP_DIR}/backend" && php artisan up >/dev/null 2>&1) || true
