@@ -191,6 +191,8 @@ export default function LandsImport() {
       const a = document.createElement("a");
       a.href = url; a.download = "lands-import-template.csv"; a.click();
       URL.revokeObjectURL(url);
+      toast.success("টেমপ্লেট ডাউনলোড হয়েছে: lands-import-template.csv");
+      logDownload("template", "csv");
       return;
     }
     const ws = XLSX.utils.aoa_to_sheet([cols, ...sample]);
