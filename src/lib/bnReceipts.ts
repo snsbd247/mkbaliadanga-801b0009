@@ -558,9 +558,13 @@ function copyHtml(d: BnReceiptData, copyLabel: string, signatureUrl: string | nu
        </div>` : "";
 
   if (officialIrrigationReceipt) {
-    const red = "#ff0000";
-    const blue = "#4a90e2";
-    const officialRows = rows.map(([k, v]) => {
+    const red = "#111";
+    const blue = "#111";
+    const officialRows = rows.map(([k, v], idx) => {
+      const isLast = idx === rows.length - 1;
+      const rowPadY = isLast ? "1px 0 12px 12px" : "1px 0 1px 12px";
+      const rowPadColon = isLast ? "1px 8px 12px 4px" : "1px 8px 1px 4px";
+      const rowPadVal = isLast ? "1px 12px 12px 0" : "1px 12px 1px 0";
       const label = k === t.farmerLine
         ? `<span style="color:${red};">কৃষকের নাম ও আইডি</span><span style="color:${blue};">/মালিকের নাম ও আইডি</span>`
         : k === t.landKind
@@ -583,9 +587,9 @@ function copyHtml(d: BnReceiptData, copyLabel: string, signatureUrl: string | nu
           : v;
       return `
         <tr>
-          <td style="padding:1px 0 1px 12px;vertical-align:top;width:46%;font-size:18px;line-height:1.2;white-space:normal;overflow:visible;text-overflow:clip;font-weight:600;">${label}</td>
-          <td style="padding:1px 8px 1px 4px;vertical-align:top;width:14px;font-size:18px;line-height:1.2;font-weight:700;">:</td>
-          <td style="padding:1px 12px 1px 0;vertical-align:top;font-size:18px;line-height:1.2;font-weight:600;${cellWrap}">${value}</td>
+          <td style="padding:${rowPadY};vertical-align:top;width:46%;font-size:18px;line-height:1.2;white-space:normal;overflow:visible;text-overflow:clip;font-weight:600;">${label}</td>
+          <td style="padding:${rowPadColon};vertical-align:top;width:14px;font-size:18px;line-height:1.2;font-weight:700;">:</td>
+          <td style="padding:${rowPadVal};vertical-align:top;font-size:18px;line-height:1.2;font-weight:600;${cellWrap}">${value}</td>
         </tr>`;
     }).join("");
 
