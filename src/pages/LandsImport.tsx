@@ -85,12 +85,21 @@ const FIELD_TYPE_MAP: Record<string, string> = {
   "অন্যান্য": "other", "other": "other",
 };
 
-/** Derive the DB field_type enum from a single land_type value (উচু/নিচু/মাঝারি → high/low/medium). */
+/** Derive the DB field_type enum from a single land_type value (উচু/নিচু/মাঝারি → high/low/medium).
+ * Tolerant of suffixes/prefixes like "উঁচু জমি", "নিচু জমি", "high land". */
 export function deriveFieldType(landType: unknown): string {
   const raw = String(landType ?? "").trim();
   const key = raw.toLowerCase();
-  return FIELD_TYPE_MAP[key] ?? FIELD_TYPE_MAP[raw] ?? "medium_land";
+  // Exact match first (fast path).
+  const exact = FIELD_TYPE_MAP[key] ?? FIELD_TYPE_MAP[raw];
+  if (exact) return exact;
+  // Substring match so values like "উঁচু জমি" / "নিচু জমি" / "high land" resolve.
+  if (/উঁচু|উচু|high/i.test(raw)) return "high_land";
+  if (/নিচু|নীচু|low/i.test(raw)) return "low_land";
+  if (/মাঝারি|মধ্যম|medium/i.test(raw)) return "medium_land";
+  return "medium_land";
 }
+
 
 function normalizeKey(k: string) {
   return k.trim().toLowerCase().replace(/\s+/g, "_");
@@ -485,15 +494,16 @@ export default function LandsImport() {
           errors.push(`land_type: সিজনের নাম দেওয়া যাবে না (${raw.land_type}) — সিজন ইনভয়েস ইমপোর্টে দিন`);
 
 
-        // dag_no may hold multiple dag numbers. Only comma/semicolon separated
-        // values (or a JSON array) are supported — anything else (e.g. pipe or
-        // space separated) would import as a single malformed dag.
+        // dag_no may hold multiple dag numbers. Comma/semicolon separated
+        // values (or a JSON array) are supported. A slash (e.g. "1/330") is a
+        // valid single dag and kept as-is; only a pipe (|) is unsupported.
         const dagStr = raw.dag_no == null ? "" : String(raw.dag_no).trim();
         if (dagStr) {
           const isJsonArray = /^\s*\[.*\]\s*$/.test(dagStr);
-          if (!isJsonArray && /[|/]/.test(dagStr)) {
+          if (!isJsonArray && /\|/.test(dagStr)) {
             warns.push(`dag_no: একাধিক দাগ কমা (,) বা সেমিকোলন (;) দিয়ে দিন — পাওয়া গেছে "${dagStr}"`);
           }
+
         }
 
         return {
