@@ -292,6 +292,24 @@ export default function LandsImport() {
       const wb = await readBookFromFile(f);
       const { headers: hdrs, records: recs } = parseSheet(wb);
       if (recs.length === 0) { toast.error("ফাইলে কোনো ডেটা নেই।"); return; }
+
+      // Strict schema validation: reject unknown / mismatched column names.
+      const { unknown, missingRequired } = checkSchema(hdrs);
+      if (unknown.length) {
+        toast.error(
+          `অজানা কলাম শিরোনাম (টেমপ্লেটের সাথে মিলছে না): ${unknown.join(", ")} — টেমপ্লেট ডাউনলোড করে সঠিক হেডার ব্যবহার করুন।`,
+          { duration: 8000 },
+        );
+        return;
+      }
+      if (missingRequired.length) {
+        toast.error(
+          "আবশ্যক কলাম অনুপস্থিত: " + missingRequired.map((c) => COL_LABELS[c]).join(", "),
+          { duration: 8000 },
+        );
+        return;
+      }
+
       setFileName(f.name);
       setHeaders(hdrs);
       setRecords(recs);
@@ -301,13 +319,6 @@ export default function LandsImport() {
       setSummary(null);
       setSavedCount(0);
       toast.success(`ফাইল নির্বাচিত: ${f.name} (${recs.length} সারি)`);
-      const missingReq = REQUIRED_COLS.filter((c) => !guessed[c]);
-      if (missingReq.length) {
-        toast.warning(
-          "আবশ্যক কলাম মিলছে না — ম্যাপিং ঠিক করুন: " +
-            missingReq.map((c) => COL_LABELS[c]).join(", "),
-        );
-      }
     } catch (e: any) {
       toast.error(e?.message ?? "ফাইল পড়া যায়নি");
     }
