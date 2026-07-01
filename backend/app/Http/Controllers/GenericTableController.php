@@ -267,6 +267,40 @@ class GenericTableController extends Controller
         return $row;
     }
 
+    /**
+     * Best-effort locator for the row/column that caused a MySQL insert to
+     * fail. Reads the column name out of the driver error message when
+     * present, then finds the first prepared row whose value is still a raw
+     * array (should never happen after normalizeWriteRow) or otherwise blank.
+     *
+     * @return array{0:int,1:?string} [1-based row number, column name|null]
+     */
+    private function locateBadCell(array $prepared, \Throwable $e): array
+    {
+        $msg = $e->getMessage();
+        $col = null;
+        if (preg_match("/column '([^']+)'/i", $msg, $m)) {
+            $col = $m[1];
+        } elseif (preg_match('/Array to string conversion/i', $msg)) {
+            foreach ($prepared as $i => $row) {
+                foreach ($row as $k => $v) {
+                    if (is_array($v)) {
+                        return [$i + 1, $k];
+                    }
+                }
+            }
+        }
+        if ($col) {
+            foreach ($prepared as $i => $row) {
+                if (array_key_exists($col, $row) && (is_array($row[$col]) || $row[$col] === '' || $row[$col] === null)) {
+                    return [$i + 1, $col];
+                }
+            }
+            return [1, $col];
+        }
+        return [1, null];
+    }
+
     /** Parse a supabase-style select string, returning [columns, embeds]. */
     private function parseSelect(?string $select): array
     {
