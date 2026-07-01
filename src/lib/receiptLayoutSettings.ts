@@ -37,6 +37,12 @@ export interface ReceiptLayoutSettings {
   watermarkText: string;
   /** Master on/off — overrides watermarkText. */
   watermarkEnabled: boolean;
+  /** Irrigation receipt page padding (mm-ish px) — left/right/top. 24-72. */
+  irrigationPagePaddingPx: number;
+  /** Irrigation receipt page BOTTOM padding (px). Adjust per printer. 12-96. */
+  irrigationBottomPaddingPx: number;
+  /** Extra bottom padding (px) applied to the holding/patwari last row. 0-48. */
+  holdingBottomPaddingPx: number;
 }
 
 export const DEFAULT_RECEIPT_LAYOUT: ReceiptLayoutSettings = {
