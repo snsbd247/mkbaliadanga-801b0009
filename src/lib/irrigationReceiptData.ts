@@ -1,6 +1,7 @@
 import { db } from "@/lib/db";
 import { resolveFieldTypeLabel } from "@/lib/irrigationLandType";
 import { normalizeIrrigationRatePerAcre } from "@/lib/bnReceipts";
+import { joinNotes } from "@/lib/irrigationExports";
 
 // Feature flag for tracing where receipt land/charge data comes from.
 // Enable in the browser console with: localStorage.setItem("debug:receipt-data", "1")
@@ -176,12 +177,10 @@ export async function buildIrrigationReceiptEnrichment(
       ),
     ).join("/") || "সেচ চার্জ";
   const patwari = invoiceRows.find((inv) => inv?.lands?.patwaris)?.lands?.patwaris ?? null;
-  const landNotes = invoiceRows
-    .map((inv) => (inv?.lands?.notes ?? "").trim())
-    .filter(Boolean)
-    .join(" || ");
-  const holdingDescription =
-    [landNotes || null, paymentNote?.trim() || null].filter(Boolean).join(" || ") || null;
+  const landNotes = joinNotes(
+    ...invoiceRows.map((inv) => (inv?.lands?.notes ?? "").trim()),
+  );
+  const holdingDescription = joinNotes(landNotes, paymentNote?.trim()) || null;
 
   dbg("resolved fields", {
     mouza,

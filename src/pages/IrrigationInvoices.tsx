@@ -30,7 +30,7 @@ import {
 import { loadSeasonRateMap, resolveRateForLand, type RateRow } from "@/lib/seasonRates";
 import { resolveIrrigationRate, type CategoryRateInput } from "@/lib/irrigationRateResolver";
 import { Sparkles, Plus, Eye, Ban, RefreshCw, ShieldCheck, AlertTriangle, FileSpreadsheet, FileDown, Pencil, Trash2, Printer, Settings as SettingsIcon, Share2, MessageCircle, Mail, Files, ChevronsUpDown, Check, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
-import { exportInvoicesXLSX, exportInvoicesCSV, joinInvoiceNotes } from "@/lib/irrigationExports";
+import { exportInvoicesXLSX, exportInvoicesCSV, joinInvoiceNotes, joinNotes } from "@/lib/irrigationExports";
 import { exportTablePDF } from "@/lib/exports";
 import { logAudit } from "@/lib/audit";
 import { validateDiscount, computeInvoiceTotals, grossAmount, canEditInvoice } from "@/lib/invoiceDiscount";
@@ -1750,7 +1750,7 @@ function GenerateTab({ seasons, offices, userId, isSuper }: any) {
                       <TableRow key={i}>
                         <TableCell className="text-xs">{r.land.mouza || "—"}</TableCell>
                         <TableCell className="text-xs whitespace-normal min-w-[140px]">{formatDagNumbers(r.land.dag_no) || "—"}</TableCell>
-                        <TableCell className="text-xs whitespace-normal max-w-[200px] text-muted-foreground">{(r.land.notes ?? "").trim() || "—"}</TableCell>
+                        <TableCell className="text-xs whitespace-normal max-w-[200px] text-muted-foreground">{joinNotes(r.land.notes) || "—"}</TableCell>
                         <TableCell className="text-right text-xs whitespace-nowrap">{formatLandSize(r.billedArea > 0 ? r.billedArea : r.land.land_size, "short")}{r.billedArea > 0 && r.billedArea !== Number(r.land.land_size) ? ` / ${formatLandSize(r.land.land_size, "short")}` : ""}</TableCell>
                         <TableCell className="text-xs">{r.billed.is_borga ? `🤝 ${tx("Sharecropper", "বর্গাদার")}` : `🏠 ${tx("Owner", "মালিক")}`}</TableCell>
                         <TableCell className="text-xs">{r.resolved?.categoryName || r.land.land_type_name || r.land.field_type || "—"}</TableCell>

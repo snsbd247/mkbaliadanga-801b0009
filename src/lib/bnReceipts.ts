@@ -807,6 +807,7 @@ export function irrigationReceiptToExcelRow(d: BnReceiptData): Record<string, st
     "বকেয়া": d.total_outstanding ?? d.previous_due ?? 0,
     "জরিমানা": d.penalty_amount ?? 0,
     "সংগৃহীত পরিমাণ": d.collected_amount,
+    "নোট": (d.holding_description ?? "").trim(),
     "রিমার্ক": d.remark ?? "",
   };
 }

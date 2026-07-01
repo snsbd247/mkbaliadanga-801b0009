@@ -91,16 +91,28 @@ const STATUS_EN: Record<string, string> = {
   paid: "Paid", overdue: "Overdue", cancelled: "Cancelled",
 };
 
+/** Separator used everywhere multiple land/payment notes are concatenated. */
+export const NOTE_SEPARATOR = " || ";
+
+/**
+ * Centralized note formatter: trims each part, drops empty/blank values, and
+ * joins with " || " so partially-missing notes never produce double separators
+ * or leading/trailing separators. Returns "" when nothing remains.
+ */
+export function joinNotes(...parts: Array<string | null | undefined>): string {
+  return parts
+    .map((n) => (n ?? "").toString().trim())
+    .filter(Boolean)
+    .join(NOTE_SEPARATOR);
+}
+
 /**
  * Combines the invoice-level note and the per-land note into a single string,
  * joined by " || ". Empty/blank notes are dropped so no stray separators or
  * empty values appear. Returns "" when there is no note at all.
  */
 export function joinInvoiceNotes(inv: any): string {
-  return [inv?.note, inv?.lands?.notes]
-    .map((n) => (n ?? "").toString().trim())
-    .filter(Boolean)
-    .join(" || ");
+  return joinNotes(inv?.note, inv?.lands?.notes);
 }
 
 export function flattenInvoiceForExport(inv: any, lang: Lang = "bn") {
