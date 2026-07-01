@@ -199,6 +199,7 @@ export default function LandsImport() {
   async function logDownload(kind: string, format: "xlsx" | "csv") {
     try {
       await db.from("import_audit_logs").insert({
+        user_id: user?.id ?? null,
         office_id: officeId ?? null,
         module: "lands",
         mode: "download",
