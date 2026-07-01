@@ -78,13 +78,15 @@ export default function SystemUpdate() {
   const [showProtected, setShowProtected] = useState(false);
   const [updatedAt, setUpdatedAt] = useState<number | null>(null);
 
+  const effectiveRemote = status?.remote_url || repoUrl.trim() || readDeploySetting(DEPLOY_REPO_URL_KEY);
+  const effectiveBranch = branch.trim() || status?.branch || readDeploySetting(DEPLOY_BRANCH_KEY) || "main";
   const urlValid = REPO_RE.test(repoUrl.trim());
-  const repoWeb = repoWebUrl(status?.remote_url ?? null);
+  const repoWeb = repoWebUrl(effectiveRemote || null);
   const repoShort = useMemo(() => {
-    const w = repoWebUrl(status?.remote_url ?? null);
+    const w = repoWebUrl(effectiveRemote || null);
     if (!w) return null;
     return w.replace(/^https?:\/\/(www\.)?github\.com\//, "").replace(/\.git$/, "");
-  }, [status?.remote_url]);
+  }, [effectiveRemote]);
 
   const load = async () => {
     setLoading(true);
@@ -229,7 +231,7 @@ export default function SystemUpdate() {
 
               <AlertDialog>
                 <AlertDialogTrigger asChild>
-                  <Button size="sm" disabled={busy !== null || !status?.remote_url}
+                  <Button size="sm" disabled={busy !== null || !effectiveRemote}
                     className="bg-emerald-600 text-white hover:bg-emerald-700">
                     <Rocket className="mr-1.5 h-4 w-4" /> {busy === "pull" ? "চলছে…" : "Pull & Deploy"}
                   </Button>
@@ -239,7 +241,7 @@ export default function SystemUpdate() {
                     <AlertDialogTitle>Pull &amp; Deploy নিশ্চিত করুন</AlertDialogTitle>
                     <AlertDialogDescription>
                       <span className="font-medium">{repoShort}</span> থেকে{" "}
-                      <span className="font-medium">{branch.trim() || status?.branch || "main"}</span> ব্রাঞ্চ পুল
+                       <span className="font-medium">{effectiveBranch}</span> ব্রাঞ্চ পুল
                       করে ডিপ্লয় করা হবে। লোকাল পরিবর্তন থাকলে ব্যর্থ হতে পারে। চালিয়ে যাবেন?
                     </AlertDialogDescription>
                   </AlertDialogHeader>
@@ -250,7 +252,7 @@ export default function SystemUpdate() {
                 </AlertDialogContent>
               </AlertDialog>
 
-              <Button variant="outline" size="sm" onClick={runDry} disabled={busy !== null || !status?.remote_url}>
+              <Button variant="outline" size="sm" onClick={runDry} disabled={busy !== null || !effectiveRemote}>
                 <Play className="mr-1.5 h-4 w-4" /> {busy === "dry" ? "চলছে…" : "Dry-Run"}
               </Button>
 
@@ -337,7 +339,7 @@ export default function SystemUpdate() {
           <div className="text-sm text-muted-foreground">
             {repoShort ? (
               <>
-                {repoShort} · {status?.branch ?? "main"} · /{basePath || "deploy"}
+                {repoShort} · {effectiveBranch} · /{basePath || "deploy"}
               </>
             ) : (
               <span>কোনো রিপো সেট করা হয়নি — সেটিংস থেকে যুক্ত করুন।</span>
@@ -381,7 +383,7 @@ export default function SystemUpdate() {
                   </div>
                 </div>
                 {repoWeb && (
-                  <a href={`${repoWeb}/blob/${status?.branch ?? "main"}/${f.repoPath}`}
+                  <a href={`${repoWeb}/blob/${effectiveBranch}/${f.repoPath}`}
                     target="_blank" rel="noreferrer"
                     className="shrink-0 text-sm text-emerald-700 hover:underline dark:text-emerald-400">
                     View repo
