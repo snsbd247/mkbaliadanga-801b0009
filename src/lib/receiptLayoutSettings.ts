@@ -123,6 +123,7 @@ export function getReceiptLayoutSettings(): ReceiptLayoutSettings {
     merged.irrigationPagePaddingPx = clampRange(merged.irrigationPagePaddingPx, 24, 72, 48);
     merged.irrigationBottomPaddingPx = clampRange(merged.irrigationBottomPaddingPx, 12, 96, 42);
     merged.holdingBottomPaddingPx = clampRange(merged.holdingBottomPaddingPx, 0, 48, 12);
+    merged.fitToPage = parsed?.fitToPage !== undefined ? !!parsed.fitToPage : DEFAULT_RECEIPT_LAYOUT.fitToPage;
     return merged;
   } catch {
     return { ...DEFAULT_RECEIPT_LAYOUT };
