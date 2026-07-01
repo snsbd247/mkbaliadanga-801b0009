@@ -246,6 +246,9 @@ export function AppSidebar() {
       key: "tools", icon: Upload, label: t("toolsImports"),
       children: [
         { url: "/import", icon: Upload, label: t("universalImport"), permKey: "farmers" },
+        { url: "/farmers/import", icon: Upload, label: t("bulkFarmerImport"), permKey: "farmers" },
+        { url: "/lands/import", icon: Upload, label: lang === "bn" ? "জমি ইমপোর্ট" : "Land Import", permKey: "lands" },
+        
         
         { url: "/admin/card-designer", icon: IdCard, label: t("cardDesigner"), superOnly: true },
         { url: "/admin/qr-rotation", icon: RefreshCw, label: t("qrRotation"), superOnly: true },
