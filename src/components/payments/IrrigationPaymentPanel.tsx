@@ -530,10 +530,12 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
           .filter(Boolean),
       )).join("/") || tx("Irrigation charge", "সেচ চার্জ");
       const patwari = allReceiptInvoices.find((inv) => inv.lands?.patwaris)?.lands?.patwaris ?? null;
-      const holdingDescription = [
-        ...Array.from(new Set(allReceiptInvoices.map((inv) => inv.lands?.notes?.trim()).filter(Boolean) as string[])),
-        note?.trim() || null,
-      ].filter(Boolean).join(" / ") || null;
+      const landNotes = allReceiptInvoices
+        .map((inv) => (inv.lands?.notes ?? "").trim())
+        .filter(Boolean)
+        .join(" || ");
+      const holdingDescription =
+        [landNotes || null, note?.trim() || null].filter(Boolean).join(" || ") || null;
 
 
       // Receipt — never blocks payment; failure → retry queue
