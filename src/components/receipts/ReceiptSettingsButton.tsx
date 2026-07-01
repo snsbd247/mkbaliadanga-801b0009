@@ -71,7 +71,19 @@ export function ReceiptSettingsButton() {
           </Button>
         </div>
         <div className="space-y-1 rounded-md border bg-muted/40 p-2">
-          <Label className="text-xs font-semibold">{lang === "bn" ? "প্রিন্টার প্রিসেট (এক ক্লিকে)" : "Printer preset (one click)"}</Label>
+          <div className="flex items-center justify-between">
+            <Label className="text-xs font-semibold">{lang === "bn" ? "প্রিন্টার প্রিসেট (এক ক্লিকে)" : "Printer preset (one click)"}</Label>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="h-6 px-2 text-[11px]"
+              onClick={onResetDefaults}
+              title={lang === "bn" ? "প্রিসেট ও প্যাডিং ডিফল্টে ফিরিয়ে আনুন" : "Reset presets & padding to defaults"}
+            >
+              <RotateCcw className="h-3 w-3 mr-1" />{lang === "bn" ? "রিসেট" : "Reset"}
+            </Button>
+          </div>
           <Select value={preset} onValueChange={onSelectPreset}>
             <SelectTrigger><SelectValue placeholder={lang === "bn" ? "প্রিসেট নির্বাচন" : "Choose a preset"} /></SelectTrigger>
             <SelectContent>
@@ -84,6 +96,19 @@ export function ReceiptSettingsButton() {
             {lang === "bn"
               ? "কাগজের সাইজ, orientation ও প্যাডিং একসাথে সেট হবে। সেটিং আপনার প্রোফাইলে সংরক্ষিত থাকে।"
               : "Sets paper size, orientation and padding together. Saved to your profile."}
+          </p>
+          <label className="flex items-center gap-2 text-xs cursor-pointer pt-1">
+            <input
+              type="checkbox"
+              checked={fitToPage}
+              onChange={(e) => { setFitToPage(e.target.checked); saveLayout({ fitToPage: e.target.checked }); }}
+            />
+            <span className="font-semibold">{lang === "bn" ? "ফিট-টু-পেজ স্কেলিং" : "Fit-to-page scaling"}</span>
+          </label>
+          <p className="text-[11px] text-muted-foreground">
+            {lang === "bn"
+              ? "অন থাকলে রশিদ এক পৃষ্ঠায় ফিট করে স্কেল হয় — প্রিভিউ ও PDF সব প্রিন্টারে এক রকম থাকে।"
+              : "When on, the receipt scales to fit one page so preview and PDF match across printer drivers."}
           </p>
         </div>
         <div className="space-y-1">
