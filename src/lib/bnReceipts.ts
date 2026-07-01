@@ -4,7 +4,7 @@ import QRCode from "qrcode";
 import { toBnDigits, bnAmountInWords } from "@/lib/bnNumber";
 import { parseDagNumbers } from "@/lib/dagNumbers";
 
-import { getReceiptLayoutSettings, getIrrigationLabels, getRowSpacingForKind, getSavingsLabels, getLoanLabels, getDefaultPaperSize, getDefaultOrientation, getIrrigationReceiptPadding } from "@/lib/receiptLayoutSettings";
+import { getReceiptLayoutSettings, getIrrigationLabels, getRowSpacingForKind, getSavingsLabels, getLoanLabels, getDefaultPaperSize, getDefaultOrientation, getIrrigationReceiptPadding, getReceiptFitToPage } from "@/lib/receiptLayoutSettings";
 import { DEFAULT_TEMPLATE, type ReceiptTemplate } from "@/lib/paymentReceiptPdf";
 import { loadReceiptTemplate } from "@/lib/receiptTemplate";
 
@@ -762,9 +762,10 @@ async function renderPdf(data: BnReceiptData, copy: ReceiptCopy, options?: Recei
     // Fit the rendered receipt inside ONE page without distortion. If the
     // content is taller than the printable area (long text / many dag rows),
     // scale it down proportionally so it never overflows to a second page.
+    // The fit-to-page toggle keeps the preview and PDF aligned across drivers.
     let drawW = innerW;
     let drawH = (canvas.height * innerW) / canvas.width;
-    if (drawH > innerH) {
+    if (getReceiptFitToPage() && drawH > innerH) {
       const scale = innerH / drawH;
       drawH = innerH;
       drawW = innerW * scale;

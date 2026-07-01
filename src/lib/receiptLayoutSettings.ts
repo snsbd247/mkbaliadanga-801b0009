@@ -43,6 +43,9 @@ export interface ReceiptLayoutSettings {
   irrigationBottomPaddingPx: number;
   /** Extra bottom padding (px) applied to the holding/patwari last row. 0-48. */
   holdingBottomPaddingPx: number;
+  /** When true, receipt is scaled to fit a single page (width + height) so the
+   *  preview and downloaded PDF stay aligned across printer drivers. */
+  fitToPage: boolean;
 }
 
 export const DEFAULT_RECEIPT_LAYOUT: ReceiptLayoutSettings = {
@@ -69,6 +72,7 @@ export const DEFAULT_RECEIPT_LAYOUT: ReceiptLayoutSettings = {
   irrigationPagePaddingPx: 48,
   irrigationBottomPaddingPx: 42,
   holdingBottomPaddingPx: 12,
+  fitToPage: true,
 };
 
 /** Default labels — single source of truth shared by HTML/PDF/Excel. */
@@ -119,6 +123,7 @@ export function getReceiptLayoutSettings(): ReceiptLayoutSettings {
     merged.irrigationPagePaddingPx = clampRange(merged.irrigationPagePaddingPx, 24, 72, 48);
     merged.irrigationBottomPaddingPx = clampRange(merged.irrigationBottomPaddingPx, 12, 96, 42);
     merged.holdingBottomPaddingPx = clampRange(merged.holdingBottomPaddingPx, 0, 48, 12);
+    merged.fitToPage = parsed?.fitToPage !== undefined ? !!parsed.fitToPage : DEFAULT_RECEIPT_LAYOUT.fitToPage;
     return merged;
   } catch {
     return { ...DEFAULT_RECEIPT_LAYOUT };
@@ -296,4 +301,9 @@ export function getIrrigationReceiptPadding(): {
     bottom: s.irrigationBottomPaddingPx,
     holdingBottom: s.holdingBottomPaddingPx,
   };
+}
+
+/** Whether receipts should be scaled to fit a single page (preview + PDF). */
+export function getReceiptFitToPage(): boolean {
+  return getReceiptLayoutSettings().fitToPage;
 }
