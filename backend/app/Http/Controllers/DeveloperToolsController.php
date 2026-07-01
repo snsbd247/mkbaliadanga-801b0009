@@ -275,7 +275,7 @@ class DeveloperToolsController extends Controller
 
         $userId = $request->user()?->id;
 
-        return new StreamedResponse(function () use ($script, $branch, $root, $userId) {
+        return new StreamedResponse(function () use ($script, $branch, $root, $userId, $beforeHead) {
             @set_time_limit(0);
             @ini_set('output_buffering', '0');
             @ini_set('zlib.output_compression', '0');
