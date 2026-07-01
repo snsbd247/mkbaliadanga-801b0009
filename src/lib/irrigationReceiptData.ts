@@ -1,6 +1,7 @@
 import { db } from "@/lib/db";
 import { resolveFieldTypeLabel } from "@/lib/irrigationLandType";
 import { normalizeIrrigationRatePerAcre } from "@/lib/bnReceipts";
+import { joinNotes } from "@/lib/irrigationExports";
 
 // Feature flag for tracing where receipt land/charge data comes from.
 // Enable in the browser console with: localStorage.setItem("debug:receipt-data", "1")
