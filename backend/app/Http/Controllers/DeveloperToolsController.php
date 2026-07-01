@@ -232,7 +232,62 @@ class DeveloperToolsController extends Controller
         ], $pull['ok'] ? 200 : 500);
     }
 
-    private function logDev(Request $request, string $action, string $detail): void
+    /**
+     * Dry-run: fetch origin and report the incoming commits that a Pull & Deploy
+     * would apply, without changing any local files.
+     */
+    public function dryRun(Request $request): JsonResponse
+    {
+        $request->validate(['branch' => 'nullable|string|max:120|regex:/^[\w.\-\/]+$/']);
+
+        $fetch = $this->git(['fetch', 'origin'], 180);
+        $current = $this->git(['rev-parse', '--abbrev-ref', 'HEAD']);
+        $br = $request->filled('branch')
+            ? trim($request->input('branch'))
+            : ($current['ok'] ? trim($current['output']) : 'main');
+
+        $incoming = $this->git(['log', '--oneline', "HEAD..origin/{$br}"]);
+        $changed = $this->git(['diff', '--stat', "HEAD..origin/{$br}"]);
+        $count = $incoming['ok'] && trim($incoming['output']) !== ''
+            ? count(array_filter(explode("\n", trim($incoming['output']))))
+            : 0;
+
+        $this->logDev($request, 'git.dry_run', $br);
+
+        return response()->json([
+            'ok' => $fetch['ok'],
+            'branch' => $br,
+            'incoming_count' => $count,
+            'output' => trim(
+                ($count === 0 ? "সবকিছু হালনাগাদ — কোনো নতুন কমিট নেই।\n\n" : "নতুন কমিট: {$count}\n\n")
+                .$incoming['output']."\n\n".$changed['output']
+            ),
+        ], $fetch['ok'] ? 200 : 500);
+    }
+
+    /**
+     * Rollback: hard-reset the working tree to the previous commit (HEAD@{1}).
+     * A safety tag is created before rolling back.
+     */
+    public function rollback(Request $request): JsonResponse
+    {
+        $before = $this->git(['rev-parse', 'HEAD']);
+        if ($before['ok']) {
+            $tag = 'pre-rollback-'.now()->format('Ymd-His');
+            $this->git(['tag', $tag, trim($before['output'])]);
+        }
+
+        $reset = $this->git(['reset', '--hard', 'HEAD@{1}']);
+        $commit = $this->git(['log', '-1', '--pretty=%h %s (%cr)']);
+
+        $this->logDev($request, 'git.rollback', $before['ok'] ? trim($before['output']) : 'unknown');
+
+        return response()->json([
+            'ok' => $reset['ok'],
+            'last_commit' => $commit['ok'] ? trim($commit['output']) : null,
+            'output' => trim($reset['output']),
+        ], $reset['ok'] ? 200 : 500);
+    }
     {
         try {
             if (\Illuminate\Support\Facades\Schema::hasTable('developer_update_logs')) {
