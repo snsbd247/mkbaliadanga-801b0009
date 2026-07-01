@@ -6,13 +6,15 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Settings2, RotateCcw } from "lucide-react";
 import { setReceiptOptions, useReceiptOptions, resetReceiptOptionsToDemo } from "@/lib/receiptOptions";
-import { getReceiptLayoutSettings, setReceiptLayoutSettings, type PaperSize, type PaperOrientation } from "@/lib/receiptLayoutSettings";
+import { getReceiptLayoutSettings, setReceiptLayoutSettings, applyReceiptPreset, detectActiveReceiptPreset, RECEIPT_PAPER_PRESETS, type PaperSize, type PaperOrientation } from "@/lib/receiptLayoutSettings";
+import { scheduleReceiptLayoutPersist } from "@/lib/receiptLayoutSync";
 import { useLang } from "@/i18n/LanguageProvider";
 
 export function ReceiptSettingsButton() {
   const opts = useReceiptOptions();
-  const { t } = useLang();
+  const { t, lang } = useLang();
   const [open, setOpen] = useState(false);
+  const [preset, setPreset] = useState<string>(() => detectActiveReceiptPreset());
   const [pdfPaper, setPdfPaper] = useState<PaperSize>(() => getReceiptLayoutSettings().defaultPaperSize);
   const [pdfOrientation, setPdfOrientation] = useState<PaperOrientation>(() => getReceiptLayoutSettings().defaultOrientation);
   const [wmEnabled, setWmEnabled] = useState<boolean>(() => getReceiptLayoutSettings().watermarkEnabled);
@@ -20,6 +22,22 @@ export function ReceiptSettingsButton() {
   const [pagePad, setPagePad] = useState<number>(() => getReceiptLayoutSettings().irrigationPagePaddingPx);
   const [bottomPad, setBottomPad] = useState<number>(() => getReceiptLayoutSettings().irrigationBottomPaddingPx);
   const [holdingPad, setHoldingPad] = useState<number>(() => getReceiptLayoutSettings().holdingBottomPaddingPx);
+  // Persist to profile + keep local edits in sync whenever layout changes.
+  const saveLayout = (next: Parameters<typeof setReceiptLayoutSettings>[0]) => {
+    setReceiptLayoutSettings(next);
+    scheduleReceiptLayoutPersist();
+    setPreset(detectActiveReceiptPreset());
+  };
+  const onSelectPreset = (id: string) => {
+    const s = applyReceiptPreset(id);
+    scheduleReceiptLayoutPersist();
+    setPreset(id);
+    setPdfPaper(s.defaultPaperSize);
+    setPdfOrientation(s.defaultOrientation);
+    setPagePad(s.irrigationPagePaddingPx);
+    setBottomPad(s.irrigationBottomPaddingPx);
+    setHoldingPad(s.holdingBottomPaddingPx);
+  };
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
@@ -38,6 +56,22 @@ export function ReceiptSettingsButton() {
           >
             <RotateCcw className="h-3.5 w-3.5 mr-1" />Demo defaults
           </Button>
+        </div>
+        <div className="space-y-1 rounded-md border bg-muted/40 p-2">
+          <Label className="text-xs font-semibold">{lang === "bn" ? "প্রিন্টার প্রিসেট (এক ক্লিকে)" : "Printer preset (one click)"}</Label>
+          <Select value={preset} onValueChange={onSelectPreset}>
+            <SelectTrigger><SelectValue placeholder={lang === "bn" ? "প্রিসেট নির্বাচন" : "Choose a preset"} /></SelectTrigger>
+            <SelectContent>
+              {RECEIPT_PAPER_PRESETS.map((p) => (
+                <SelectItem key={p.id} value={p.id}>{lang === "bn" ? p.labelBn : p.labelEn}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <p className="text-[11px] text-muted-foreground">
+            {lang === "bn"
+              ? "কাগজের সাইজ, orientation ও প্যাডিং একসাথে সেট হবে। সেটিং আপনার প্রোফাইলে সংরক্ষিত থাকে।"
+              : "Sets paper size, orientation and padding together. Saved to your profile."}
+          </p>
         </div>
         <div className="space-y-1">
           <Label className="text-xs">{t("p5b_receiptLanguage")}</Label>
@@ -120,7 +154,7 @@ export function ReceiptSettingsButton() {
             onValueChange={(v) => {
               const next = (v === "a4" ? "a4" : "a5") as PaperSize;
               setPdfPaper(next);
-              setReceiptLayoutSettings({ defaultPaperSize: next });
+              saveLayout({ defaultPaperSize: next });
             }}
           >
             <SelectTrigger><SelectValue /></SelectTrigger>
@@ -141,7 +175,7 @@ export function ReceiptSettingsButton() {
             onValueChange={(v) => {
               const next = (v === "l" ? "l" : "p") as PaperOrientation;
               setPdfOrientation(next);
-              setReceiptLayoutSettings({ defaultOrientation: next });
+              saveLayout({ defaultOrientation: next });
             }}
           >
             <SelectTrigger><SelectValue /></SelectTrigger>
@@ -176,7 +210,7 @@ export function ReceiptSettingsButton() {
               checked={wmEnabled}
               onChange={(e) => {
                 setWmEnabled(e.target.checked);
-                setReceiptLayoutSettings({ watermarkEnabled: e.target.checked });
+                saveLayout({ watermarkEnabled: e.target.checked });
               }}
             />
             <span className="font-semibold">Watermark (receipt background)</span>
@@ -186,7 +220,7 @@ export function ReceiptSettingsButton() {
             value={wmText}
             onChange={(e) => {
               setWmText(e.target.value);
-              setReceiptLayoutSettings({ watermarkText: e.target.value });
+              saveLayout({ watermarkText: e.target.value });
             }}
             disabled={!wmEnabled}
           />
@@ -203,7 +237,7 @@ export function ReceiptSettingsButton() {
               <Input
                 type="number" min={24} max={72}
                 value={pagePad}
-                onChange={(e) => { const n = Number(e.target.value); setPagePad(n); setReceiptLayoutSettings({ irrigationPagePaddingPx: n }); }}
+                onChange={(e) => { const n = Number(e.target.value); setPagePad(n); saveLayout({ irrigationPagePaddingPx: n }); }}
               />
             </div>
             <div>
@@ -211,7 +245,7 @@ export function ReceiptSettingsButton() {
               <Input
                 type="number" min={12} max={96}
                 value={bottomPad}
-                onChange={(e) => { const n = Number(e.target.value); setBottomPad(n); setReceiptLayoutSettings({ irrigationBottomPaddingPx: n }); }}
+                onChange={(e) => { const n = Number(e.target.value); setBottomPad(n); saveLayout({ irrigationBottomPaddingPx: n }); }}
               />
             </div>
             <div>
@@ -219,7 +253,7 @@ export function ReceiptSettingsButton() {
               <Input
                 type="number" min={0} max={48}
                 value={holdingPad}
-                onChange={(e) => { const n = Number(e.target.value); setHoldingPad(n); setReceiptLayoutSettings({ holdingBottomPaddingPx: n }); }}
+                onChange={(e) => { const n = Number(e.target.value); setHoldingPad(n); saveLayout({ holdingBottomPaddingPx: n }); }}
               />
             </div>
           </div>

@@ -220,6 +220,70 @@ export function getDefaultOrientation(): PaperOrientation {
   return getReceiptLayoutSettings().defaultOrientation;
 }
 
+/** One-click presets for common printer paper sizes. Each applies paper size,
+ *  orientation and irrigation paddings tuned for that stock. */
+export interface ReceiptPaperPreset {
+  id: string;
+  labelEn: string;
+  labelBn: string;
+  settings: Partial<ReceiptLayoutSettings>;
+}
+
+export const RECEIPT_PAPER_PRESETS: ReceiptPaperPreset[] = [
+  {
+    id: "a5-landscape",
+    labelEn: "A5 Landscape (default)",
+    labelBn: "A5 ল্যান্ডস্কেপ (ডিফল্ট)",
+    settings: {
+      defaultPaperSize: "a5", defaultOrientation: "l",
+      irrigationPagePaddingPx: 48, irrigationBottomPaddingPx: 42, holdingBottomPaddingPx: 12,
+    },
+  },
+  {
+    id: "a4-portrait",
+    labelEn: "A4 Portrait (laser/inkjet)",
+    labelBn: "A4 পোর্ট্রেট (লেজার/ইঙ্কজেট)",
+    settings: {
+      defaultPaperSize: "a4", defaultOrientation: "p",
+      irrigationPagePaddingPx: 56, irrigationBottomPaddingPx: 48, holdingBottomPaddingPx: 16,
+    },
+  },
+  {
+    id: "a4-landscape",
+    labelEn: "A4 Landscape (wide)",
+    labelBn: "A4 ল্যান্ডস্কেপ (চওড়া)",
+    settings: {
+      defaultPaperSize: "a4", defaultOrientation: "l",
+      irrigationPagePaddingPx: 48, irrigationBottomPaddingPx: 42, holdingBottomPaddingPx: 12,
+    },
+  },
+  {
+    id: "compact-thermal",
+    labelEn: "Compact / Dot-matrix (tight)",
+    labelBn: "কমপ্যাক্ট / ডট-ম্যাট্রিক্স (আঁটসাঁট)",
+    settings: {
+      defaultPaperSize: "a5", defaultOrientation: "l",
+      irrigationPagePaddingPx: 24, irrigationBottomPaddingPx: 12, holdingBottomPaddingPx: 0,
+    },
+  },
+];
+
+/** Apply a named preset and persist it. Returns the merged settings. */
+export function applyReceiptPreset(id: string): ReceiptLayoutSettings {
+  const preset = RECEIPT_PAPER_PRESETS.find((p) => p.id === id);
+  if (!preset) return getReceiptLayoutSettings();
+  return setReceiptLayoutSettings(preset.settings);
+}
+
+/** Best-effort match of the current settings to a known preset id (or ""). */
+export function detectActiveReceiptPreset(s?: ReceiptLayoutSettings): string {
+  const cur = s ?? getReceiptLayoutSettings();
+  const match = RECEIPT_PAPER_PRESETS.find((p) =>
+    Object.entries(p.settings).every(([k, v]) => (cur as any)[k] === v),
+  );
+  return match?.id ?? "";
+}
+
 /** Configurable irrigation receipt paddings (px) for printer alignment. */
 export function getIrrigationReceiptPadding(): {
   page: number;

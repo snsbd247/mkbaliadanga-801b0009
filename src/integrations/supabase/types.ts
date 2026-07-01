@@ -5072,6 +5072,7 @@ export type Database = {
           id: string
           language_pref: string
           office_id: string | null
+          receipt_layout: Json | null
           receipt_options: Json | null
           updated_at: string
           username: string | null
@@ -5083,6 +5084,7 @@ export type Database = {
           id: string
           language_pref?: string
           office_id?: string | null
+          receipt_layout?: Json | null
           receipt_options?: Json | null
           updated_at?: string
           username?: string | null
@@ -5094,6 +5096,7 @@ export type Database = {
           id?: string
           language_pref?: string
           office_id?: string | null
+          receipt_layout?: Json | null
           receipt_options?: Json | null
           updated_at?: string
           username?: string | null

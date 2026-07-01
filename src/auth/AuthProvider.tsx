@@ -3,6 +3,7 @@ import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { db } from "@/lib/db";
 import { hydrateReceiptOptionsFromProfile } from "@/lib/receiptOptions";
+import { hydrateReceiptLayoutFromProfile } from "@/lib/receiptLayoutSync";
 import { isLaravelBackend } from "@/lib/backend";
 import { api, getApiToken, setApiToken } from "@/lib/api/client";
 
@@ -54,6 +55,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setOfficeId(prof?.office_id ?? null);
     setRolesLoaded(true);
     void hydrateReceiptOptionsFromProfile();
+    void hydrateReceiptLayoutFromProfile();
   };
 
   // ── Laravel path ───────────────────────────────────────────────────
