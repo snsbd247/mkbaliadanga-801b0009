@@ -65,7 +65,7 @@ const COL_HELP: Record<ColKey, { required: boolean; bn: string; en: string; samp
   land_ref: { required: false, bn: "একই জমিতে একাধিক বর্গাদার দিতে একই ref দিন", en: "Same ref groups multiple sharecroppers on one plot", sample: "L2" },
   mouza: { required: false, bn: "মৌজার নাম", en: "Mouza name", sample: "Mouza A" },
   dag_no: { required: false, bn: "দাগ নং — একাধিক হলে কমা দিয়ে", en: "Dag no — comma-separate multiple", sample: "12,15" },
-  land_type: { required: false, bn: "জমির ধরন (code বা নাম)", en: "Land type (code or name)", sample: "আমন২৬" },
+  land_type: { required: false, bn: "জমির ধরন — land_types এর code বা নাম (পুকুর/সবজি/বাগান ইত্যাদি)", en: "Land type — land_types code or name (pond/vegetable/garden etc.)", sample: "পুকুর" },
   field_type: { required: false, bn: "উচু / নিচু / মাঝারি / অন্যান্য", en: "high / low / medium / other", sample: "উচু" },
   land_size: { required: true, bn: "জমির পরিমাণ (শতক), . এর পর ৪ ডিজিট", en: "Land size (shotok), 4 decimals", sample: "33.0000" },
   owner_type: { required: false, bn: "own / borga (ডিফল্ট own)", en: "own / borga (default own)", sample: "own" },
@@ -243,7 +243,7 @@ export default function LandsImport() {
       ["land_ref", "No", "একই জমিতে একাধিক বর্গাদার দিতে একই ref ব্যবহার করুন (যেমন L2)। খালি হলে প্রতি সারি আলাদা জমি।"],
       ["mouza", "No", "মৌজার নাম — থাকলে mouza_id রিসলভ হবে"],
       ["dag_no", "No", "দাগ নং — একাধিক হলে কমা দিয়ে: 12,15,30"],
-      ["land_type", "No", "জমির ধরন — land_types এর code বা নাম (যেমন আমন২৬)"],
+      ["land_type", "No", "জমির ধরন — land_types এর code বা নাম (যেমন পুকুর/সবজি/বাগান)। সিজন নয় — সিজন আসবে ইনভয়েস ইমপোর্টে।"],
       ["field_type", "No", "উচু / নিচু / মাঝারি / অন্যান্য (ধান হলে)"],
       ["land_size", "Yes", "জমির পরিমাণ (শতক) — . এর পর ৪ ডিজিট পর্যন্ত"],
       ["owner_type", "No", "own / borga (ডিফল্ট own)"],
@@ -260,16 +260,16 @@ export default function LandsImport() {
     logDownload("template", "xlsx");
   }
 
-  /** Ready-to-fill sample with dummy farmer+land data covering every season field. */
+  /** Ready-to-fill sample with dummy farmer+land data (no season — season belongs to invoice import). */
   function downloadSample(format: "xlsx" | "csv") {
     const cols = [...COLUMNS];
     const rows = [
-      ["00001", "L1", "Boaliadanga", "12,15", "আমন২৬", "উচু", "33.0000", "own", "", "", "", "আমন সিজন — মালিক নিজে চাষ"],
-      ["00002", "L2", "Boaliadanga", "18", "ইরি২৬", "নিচু", "50.0000", "borga", "00003", "20.0000", "", "ইরি সিজন — বর্গাদার ২০ শতক"],
-      ["00002", "L2", "Boaliadanga", "18", "ইরি২৬", "নিচু", "50.0000", "borga", "00004", "", "30", "একই জমিতে ২য় বর্গাদার (share %)"],
-      ["00005", "L3", "Baliadanga", "22,23", "বোরো২৬", "মাঝারি", "66.5000", "own", "", "", "", "বোরো সিজন — মালিক নিজে চাষ"],
-      ["00006", "L4", "Baliadanga", "40", "আউশ২৬", "উচু", "45.0000", "borga", "00007", "45.0000", "", "আউশ সিজন — সম্পূর্ণ জমি বর্গা"],
-      ["00008", "L5", "Baliadanga", "51", "রবি২৬", "অন্যান্য", "12.7500", "own", "", "", "", "রবি সিজন — সবজি জমি"],
+      ["00001", "L1", "Boaliadanga", "12,15", "", "উচু", "33.0000", "own", "", "", "", "মালিক নিজে চাষ"],
+      ["00002", "L2", "Boaliadanga", "18", "", "নিচু", "50.0000", "borga", "00003", "20.0000", "", "বর্গাদার ২০ শতক"],
+      ["00002", "L2", "Boaliadanga", "18", "", "নিচু", "50.0000", "borga", "00004", "", "30", "একই জমিতে ২য় বর্গাদার (share %)"],
+      ["00005", "L3", "Baliadanga", "22,23", "", "মাঝারি", "66.5000", "own", "", "", "", "মালিক নিজে চাষ"],
+      ["00006", "L4", "Baliadanga", "40", "", "উচু", "45.0000", "borga", "00007", "45.0000", "", "সম্পূর্ণ জমি বর্গা"],
+      ["00008", "L5", "Baliadanga", "51", "সবজি", "অন্যান্য", "12.7500", "own", "", "", "", "সবজি জমি"],
     ];
     const filename = "lands-import-sample";
     if (format === "csv") {
