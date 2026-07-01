@@ -36,6 +36,9 @@ type RowState = {
   warnMsg: string | null;
 };
 
+// Bump when template columns/rules change so users can detect stale headers.
+export const LANDS_TEMPLATE_VERSION = "2026.07.01";
+
 const COLUMNS = [
   "owner_farmer_id", "land_ref", "mouza", "dag_no", "land_type",
   "land_size", "owner_type", "sharecropper_id", "borga_area", "share_percentage", "note",
@@ -188,6 +191,36 @@ export const looksLikeSeason = (v: unknown): boolean => {
   return /(আমন|ইরি|বোরো|আউশ|রবি|aman|iri|boro|aus|robi)/i.test(s);
 };
 
+/** Bilingual labels for error categories shown in the summary panel. */
+export const ERROR_CATEGORY_LABELS: Record<string, { en: string; bn: string }> = {
+  season_as_land_type: { en: "Season name used in land_type (seasons belong to invoice import)", bn: "land_type-এ সিজনের নাম (সিজন ইনভয়েস ইমপোর্টে)" },
+  owner: { en: "Owner Farmer ID missing/invalid/not found", bn: "মালিকের Farmer ID নেই/ভুল/পাওয়া যায়নি" },
+  sharecropper: { en: "Sharecropper Farmer ID issue", bn: "বর্গাদার Farmer ID সমস্যা" },
+  land_size: { en: "Land size missing or invalid", bn: "জমির পরিমাণ নেই বা ভুল" },
+  borga: { en: "Borga area / share % / land_ref issue", bn: "বর্গা area / share % / land_ref সমস্যা" },
+  field_type: { en: "field_type derivation issue", bn: "field_type ডেরিভেশন সমস্যা" },
+  other: { en: "Other validation issue", bn: "অন্যান্য যাচাই সমস্যা" },
+};
+
+/** Group row error messages into human-readable categories for the summary panel. */
+export function categorizeErrors(rows: { errorMsg: string | null }[]): { key: string; count: number }[] {
+  const buckets: Record<string, number> = {};
+  for (const r of rows) {
+    if (!r.errorMsg) continue;
+    for (const part of r.errorMsg.split(";").map((p) => p.trim()).filter(Boolean)) {
+      let key = "other";
+      if (/land_type:.*সিজন|season/i.test(part)) key = "season_as_land_type";
+      else if (/owner_farmer_id/i.test(part)) key = "owner";
+      else if (/sharecropper_id/i.test(part)) key = "sharecropper";
+      else if (/land_size/i.test(part)) key = "land_size";
+      else if (/borga_area|share_percentage|land_ref/i.test(part)) key = "borga";
+      else if (/field_type/i.test(part)) key = "field_type";
+      buckets[key] = (buckets[key] ?? 0) + 1;
+    }
+  }
+  return Object.entries(buckets).map(([key, count]) => ({ key, count })).sort((a, b) => b.count - a.count);
+}
+
 
 
 export default function LandsImport() {
@@ -253,6 +286,7 @@ export default function LandsImport() {
     }
     const ws = XLSX.utils.aoa_to_sheet([cols, ...sample]);
     const notes = XLSX.utils.aoa_to_sheet([
+      ["template_version", LANDS_TEMPLATE_VERSION, ""],
       ["Column", "Required", "Notes"],
       ["owner_farmer_id", "Yes", "মালিকের Farmer ID (যেমন 00001)"],
       ["land_ref", "No", "একই জমিতে একাধিক বর্গাদার দিতে একই ref ব্যবহার করুন (যেমন L2)। খালি হলে প্রতি সারি আলাদা জমি।"],
@@ -482,6 +516,7 @@ export default function LandsImport() {
   const validRows = useMemo(() => rows.filter((r) => r.status === "valid" || r.status === "saved"), [rows]);
   const invalidRows = useMemo(() => rows.filter((r) => r.status === "invalid"), [rows]);
   const importable = useMemo(() => rows.filter((r) => r.status === "valid"), [rows]);
+  const errorCategories = useMemo(() => categorizeErrors(invalidRows), [invalidRows]);
 
   function downloadErrorCsv() {
     const bad = rows.filter((r) => r.status === "invalid" || r.status === "error");
@@ -657,6 +692,9 @@ export default function LandsImport() {
         description={tx("Upload owner-cultivated and sharecropper lands together", "নিজের চাষ ও বর্গা জমি একসাথে আপলোড করুন")}
         actions={
           <>
+            <Badge variant="outline" className="self-center">
+              {tx("Template", "টেমপ্লেট")} v{LANDS_TEMPLATE_VERSION}
+            </Badge>
             <Button size="sm" variant="outline" onClick={() => downloadTemplate("xlsx")}>
               <Download className="h-4 w-4 mr-2" /> {tx("Template (XLSX)", "টেমপ্লেট (XLSX)")}
             </Button>
@@ -829,6 +867,19 @@ export default function LandsImport() {
                 </AlertDescription>
               </Alert>
             )}
+            {invalidRows.length > 0 && errorCategories.length > 0 && (
+              <div className="rounded-md border p-3 text-sm space-y-1">
+                <div className="font-medium">{tx("Why rows were blocked", "কেন সারিগুলো আটকে গেছে")}</div>
+                <ul className="list-disc pl-5">
+                  {errorCategories.map(({ key, count }) => (
+                    <li key={key}>
+                      <b>{count}</b> — {tx(ERROR_CATEGORY_LABELS[key]?.en ?? key, ERROR_CATEGORY_LABELS[key]?.bn ?? key)}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
             <div className="flex flex-wrap justify-between gap-2">
               <div className="flex gap-2">
                 <Button variant="outline" onClick={() => setStep(1)}>
