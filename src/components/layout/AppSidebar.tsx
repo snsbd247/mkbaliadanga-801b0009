@@ -54,7 +54,7 @@ export function AppSidebar() {
       key: "members", icon: Users, label: t("members"),
       children: [
         { url: "/farmers", icon: Users, label: t("farmers"), permKey: "farmers" },
-        { url: "/farmers/import", icon: Upload, label: t("bulkFarmerImport"), permKey: "farmers" },
+        
         { url: "/admin/bulk-cards", icon: IdCard, label: t("bulkCards"), permKey: "farmers" },
         { url: "/admin/id-review", icon: IdCard, label: t("idReview"), permKey: "farmers" },
         { url: "/admin/farmer-merge", icon: Users, label: t("farmerMerge" as any) || "Farmer Merge", adminOnly: true },
@@ -245,6 +245,7 @@ export function AppSidebar() {
     {
       key: "tools", icon: Upload, label: t("toolsImports"),
       children: [
+        { url: "/farmers/import", icon: Upload, label: t("bulkFarmerImport"), permKey: "farmers" },
         { url: "/lands/import", icon: Upload, label: lang === "bn" ? "জমি ইমপোর্ট" : "Land Import", permKey: "lands" },
         { url: "/admin/import-audit", icon: ScrollText, label: lang === "bn" ? "ইমপোর্ট অডিট লগ" : "Import Audit Logs", adminOnly: true },
 
