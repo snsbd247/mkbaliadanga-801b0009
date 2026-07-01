@@ -389,6 +389,19 @@ export default function SystemUpdate() {
                 <Play className="mr-1.5 h-4 w-4" /> {busy === "dry" ? "চলছে…" : "Dry-Run"}
               </Button>
 
+              {(busy === "pull" || busy === "dry") && (
+                <Button variant="outline" size="sm" onClick={cancelOp}
+                  className="border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive">
+                  <Ban className="mr-1.5 h-4 w-4" /> বাতিল করুন
+                </Button>
+              )}
+
+              {lastFailed && busy === null && (
+                <Button variant="outline" size="sm" onClick={retryLast}>
+                  <RefreshCcw className="mr-1.5 h-4 w-4" /> পুনরায় চেষ্টা
+                </Button>
+              )}
+
               <AlertDialog>
                 <AlertDialogTrigger asChild>
                   <Button variant="outline" size="sm" disabled={busy !== null}
