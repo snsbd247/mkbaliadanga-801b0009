@@ -291,7 +291,7 @@ class DeveloperToolsController extends Controller
         $reset = $this->git(['reset', '--hard', 'HEAD@{1}']);
         $commit = $this->git(['log', '-1', '--pretty=%h %s (%cr)']);
 
-        $this->logDev($request, 'git.rollback', $before['ok'] ? trim($before['output']) : 'unknown');
+        $this->logDev($request, 'git.rollback', $before['ok'] ? trim($before['output']) : 'unknown', $reset['ok'] ? 'ok' : 'failed', trim($reset['output']));
 
         return response()->json([
             'ok' => $reset['ok'],
