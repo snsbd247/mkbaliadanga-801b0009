@@ -550,10 +550,11 @@ export default function LandsImport() {
           }
           const mouzaName = String(r.raw.mouza ?? "").trim();
           const mouzaId = mouzaName ? mouzaMap.get(mouzaName.toLowerCase()) ?? null : null;
-          const ltKey = String(r.raw.land_type ?? "").trim().toLowerCase();
+          const ltRaw = String(r.raw.land_type ?? "").trim();
+          const ltKey = ltRaw.toLowerCase();
           const landTypeId = ltKey ? landTypeMap.get(ltKey) ?? null : null;
-          const ftRaw = String(r.raw.field_type ?? "").trim();
-          const fieldType = FIELD_TYPE_MAP[ftRaw.toLowerCase()] ?? FIELD_TYPE_MAP[ftRaw] ?? "medium_land";
+          // Derive the field_type enum from the single land_type value (উচু/নিচু/মাঝারি → high/low/medium).
+          const fieldType = FIELD_TYPE_MAP[ltKey] ?? FIELD_TYPE_MAP[ltRaw] ?? "medium_land";
           const borga = isBorgaType(r.raw.owner_type);
 
           const landPayload: any = {
