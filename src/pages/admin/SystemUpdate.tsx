@@ -568,11 +568,79 @@ export default function SystemUpdate() {
           </div>
 
           {output && (
-            <pre id="deploy-output"
-              className="max-h-80 overflow-auto rounded-md border bg-muted p-3 text-xs whitespace-pre-wrap">
-              {output}
-            </pre>
+            <div id="deploy-output" className="space-y-2 rounded-md border bg-muted/50 p-3">
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-1.5 text-sm font-medium">
+                  <Terminal className="h-4 w-4" /> বিস্তারিত আউটপুট
+                  {lastFailed && (
+                    <Badge variant="destructive" className="ml-1">ব্যর্থ</Badge>
+                  )}
+                </div>
+                <div className="flex gap-2">
+                  {lastFailed && busy === null && (
+                    <Button variant="outline" size="sm" onClick={retryLast}>
+                      <RefreshCcw className="mr-1.5 h-4 w-4" /> পুনরায়
+                    </Button>
+                  )}
+                  <Button variant="outline" size="sm" onClick={copyOutput}>
+                    <Copy className="mr-1.5 h-4 w-4" /> কপি
+                  </Button>
+                </div>
+              </div>
+              <pre className="max-h-80 overflow-auto rounded bg-background p-3 text-xs whitespace-pre-wrap">
+                {output}
+              </pre>
+            </div>
           )}
+
+          {/* Audit log dialog */}
+          <Dialog open={logsOpen} onOpenChange={setLogsOpen}>
+            <DialogContent className="max-w-2xl">
+              <DialogHeader>
+                <DialogTitle>অডিট লগ</DialogTitle>
+                <DialogDescription>Pull / Deploy / রিমোট পরিবর্তনের সাম্প্রতিক রেকর্ড।</DialogDescription>
+              </DialogHeader>
+              <div className="max-h-[60vh] space-y-2 overflow-auto">
+                {logsLoading ? (
+                  <p className="py-6 text-center text-sm text-muted-foreground">লোড হচ্ছে…</p>
+                ) : logs.length === 0 ? (
+                  <p className="py-6 text-center text-sm text-muted-foreground">কোনো লগ নেই।</p>
+                ) : (
+                  logs.map((l) => (
+                    <div key={l.id} className="rounded-md border p-3 text-sm">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="font-mono font-medium">{l.action}</span>
+                        <div className="flex items-center gap-2">
+                          {l.status && (
+                            <Badge variant={l.status === "ok" ? "secondary" : "destructive"}>
+                              {l.status}
+                            </Badge>
+                          )}
+                          <span className="text-xs text-muted-foreground">
+                            {new Date(l.created_at).toLocaleString()}
+                          </span>
+                        </div>
+                      </div>
+                      {l.repo_url && (
+                        <div className="mt-1 truncate font-mono text-xs text-muted-foreground">{l.repo_url}</div>
+                      )}
+                      {l.note && (
+                        <pre className="mt-1 max-h-32 overflow-auto whitespace-pre-wrap text-[11px] text-muted-foreground">
+                          {l.note}
+                        </pre>
+                      )}
+                    </div>
+                  ))
+                )}
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={loadLogs} disabled={logsLoading}>
+                  <RefreshCw className={`mr-1.5 h-4 w-4 ${logsLoading ? "animate-spin" : ""}`} /> রিফ্রেশ
+                </Button>
+                <Button onClick={() => setLogsOpen(false)}>বন্ধ</Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </CardContent>
       </Card>
     </div>
