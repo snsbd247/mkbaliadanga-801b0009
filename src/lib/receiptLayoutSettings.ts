@@ -302,3 +302,8 @@ export function getIrrigationReceiptPadding(): {
     holdingBottom: s.holdingBottomPaddingPx,
   };
 }
+
+/** Whether receipts should be scaled to fit a single page (preview + PDF). */
+export function getReceiptFitToPage(): boolean {
+  return getReceiptLayoutSettings().fitToPage;
+}
