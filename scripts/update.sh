@@ -36,6 +36,48 @@ die()  { echo -e "\033[1;31m[x] $*\033[0m" >&2; exit 1; }
 [ -d "${APP_DIR}/.git" ] || die "No repo at ${APP_DIR}. Run setup.sh first."
 export DEBIAN_FRONTEND=noninteractive
 
+# ── Dry-run mode ───────────────────────────────────────────────────────────
+# `--dry-run` (or MK_DRY_RUN=1) runs every validation step (git status, sudo,
+# disk, read-only checks) WITHOUT changing any files, pulling code, or building.
+DRY_RUN="${MK_DRY_RUN:-0}"
+for arg in "$@"; do
+  case "$arg" in
+    --dry-run|-n) DRY_RUN=1 ;;
+  esac
+done
+
+# Detect a read-only project filesystem so callers get a precise error instead
+# of an opaque "Read-only file system" mid-deploy.
+FS_READONLY=0
+if ! (touch "${APP_DIR}/.mk-write-test" 2>/dev/null && rm -f "${APP_DIR}/.mk-write-test" 2>/dev/null); then
+  FS_READONLY=1
+fi
+
+if [ "${DRY_RUN}" = "1" ]; then
+  log "DRY-RUN: validation only — no files will be changed."
+  git config --global --add safe.directory "${APP_DIR}" >/dev/null 2>&1 || true
+  BRANCH_NOW="$(git -C "${APP_DIR}" rev-parse --abbrev-ref HEAD 2>/dev/null || echo '?')"
+  log "  • branch: ${BRANCH_NOW} (target: ${BRANCH})"
+  if git -C "${APP_DIR}" diff --quiet 2>/dev/null; then
+    log "  • working tree: clean"
+  else
+    warn "  • working tree: has local changes (will be reset by real deploy)"
+  fi
+  [ "${FS_READONLY}" = "1" ] && warn "  • project filesystem: READ-ONLY" || log "  • project filesystem: writable"
+  for bin in git php composer npm; do
+    command -v "$bin" >/dev/null 2>&1 && log "  • command ${bin}: $(command -v "$bin")" || warn "  • command ${bin}: MISSING"
+  done
+  df -h "${APP_DIR}" 2>/dev/null | tail -n1 | awk '{print "  • disk free on "$6": "$4" ("$5" used)"}'
+  log "✅ DRY-RUN complete — no changes made."
+  exit 0
+fi
+
+# Print the exact failing command + exit code so the live console can highlight
+# the root cause, then run the rollback.
+FAILED_CMD=""
+capture_failed_cmd() { FAILED_CMD="$BASH_COMMAND"; }
+trap 'capture_failed_cmd' DEBUG
+
 # Keep the release we started from. If a later deploy step fails after pulling
 # new code, the script itself rolls back as root (the web user cannot reliably
 # write .git/index.lock on root-owned checkouts).
