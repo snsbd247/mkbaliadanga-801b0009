@@ -421,7 +421,23 @@ class GenericTableController extends Controller
             $prepared[] = $row;
         }
 
-        DB::table($table)->insert($prepared);
+        try {
+            DB::table($table)->insert($prepared);
+        } catch (\Illuminate\Database\QueryException $e) {
+            // Pinpoint the offending row/column so the importer can fix the
+            // exact cell instead of guessing from a raw MySQL error.
+            [$rowNo, $col] = $this->locateBadCell($prepared, $e);
+            $suggestion = $col
+                ? " — কলাম '$col' (সারি $rowNo) এর মান সঠিক নয়; array হলে JSON বা কমা/সেমিকোলন দিয়ে দিন।"
+                : '';
+            return response()->json([
+                'ok' => false,
+                'error' => $e->getMessage(),
+                'row' => $rowNo,
+                'column' => $col,
+                'message' => "ইনসার্ট ব্যর্থ (টেবিল: $table)$suggestion",
+            ], 422);
+        }
 
         $ids = array_filter(array_map(fn ($r) => $r['id'] ?? null, $prepared));
         $inserted = ! empty($ids)
