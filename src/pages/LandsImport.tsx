@@ -58,6 +58,21 @@ const COL_LABELS: Record<ColKey, string> = {
   note: "মন্তব্য",
 };
 
+/** Bilingual per-column help for the template preview. */
+const COL_HELP: Record<ColKey, { required: boolean; bn: string; en: string; sample: string }> = {
+  owner_farmer_id: { required: true, bn: "মালিকের Farmer ID (যেমন 00001)", en: "Owner's Farmer ID (e.g. 00001)", sample: "00001" },
+  land_ref: { required: false, bn: "একই জমিতে একাধিক বর্গাদার দিতে একই ref দিন", en: "Same ref groups multiple sharecroppers on one plot", sample: "L2" },
+  mouza: { required: false, bn: "মৌজার নাম", en: "Mouza name", sample: "Mouza A" },
+  dag_no: { required: false, bn: "দাগ নং — একাধিক হলে কমা দিয়ে", en: "Dag no — comma-separate multiple", sample: "12,15" },
+  land_type: { required: false, bn: "জমির ধরন (code বা নাম)", en: "Land type (code or name)", sample: "আমন২৬" },
+  field_type: { required: false, bn: "উচু / নিচু / মাঝারি / অন্যান্য", en: "high / low / medium / other", sample: "উচু" },
+  land_size: { required: true, bn: "জমির পরিমাণ (শতক), . এর পর ৪ ডিজিট", en: "Land size (shotok), 4 decimals", sample: "33.0000" },
+  owner_type: { required: false, bn: "own / borga (ডিফল্ট own)", en: "own / borga (default own)", sample: "own" },
+  sharecropper_id: { required: false, bn: "borga হলে বর্গাদারের Farmer ID", en: "Sharecropper's Farmer ID if borga", sample: "00003" },
+  borga_area: { required: false, bn: "বর্গাদারকে দেয়া শতক", en: "Shotok given to sharecropper", sample: "20.0000" },
+  share_percentage: { required: false, bn: "borga_area না দিলে শতাংশ (০-১০০)", en: "Share % if borga_area empty (0-100)", sample: "30" },
+  note: { required: false, bn: "মন্তব্য", en: "Note", sample: "" },
+
 const FIELD_TYPE_MAP: Record<string, string> = {
   "উচু": "high_land", "উঁচু": "high_land", "high": "high_land", "high_land": "high_land",
   "নিচু": "low_land", "low": "low_land", "low_land": "low_land",
