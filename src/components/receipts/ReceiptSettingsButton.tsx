@@ -191,7 +191,41 @@ export function ReceiptSettingsButton() {
             Watermark on/off — on করলে receipt-এর পিছনে diagonal text বসবে।
           </p>
         </div>
+
+        <div className="border-t pt-2 space-y-2">
+          <div className="font-semibold text-xs">সেচ রশিদ স্পেসিং (প্রিন্টার অ্যাডজাস্ট)</div>{/* i18n-ignore */}
+          <div className="grid grid-cols-3 gap-2">
+            <div>
+              <Label className="text-[11px]">Page pad</Label>
+              <Input
+                type="number" min={24} max={72}
+                value={pagePad}
+                onChange={(e) => { const n = Number(e.target.value); setPagePad(n); setReceiptLayoutSettings({ irrigationPagePaddingPx: n }); }}
+              />
+            </div>
+            <div>
+              <Label className="text-[11px]">Bottom pad</Label>
+              <Input
+                type="number" min={12} max={96}
+                value={bottomPad}
+                onChange={(e) => { const n = Number(e.target.value); setBottomPad(n); setReceiptLayoutSettings({ irrigationBottomPaddingPx: n }); }}
+              />
+            </div>
+            <div>
+              <Label className="text-[11px]">Holding pad</Label>
+              <Input
+                type="number" min={0} max={48}
+                value={holdingPad}
+                onChange={(e) => { const n = Number(e.target.value); setHoldingPad(n); setReceiptLayoutSettings({ holdingBottomPaddingPx: n }); }}
+              />
+            </div>
+          </div>
+          <p className="text-[11px] text-muted-foreground">
+            হোল্ডিং/পাটুয়ারী লাইন ও রশিদের নিচের গ্যাপ প্রিন্টার অনুযায়ী ঠিক করুন।{/* i18n-ignore */}
+          </p>
+        </div>
       </PopoverContent>
+
     </Popover>
   );
 }
