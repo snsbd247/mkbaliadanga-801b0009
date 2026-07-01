@@ -176,6 +176,16 @@ const round4 = (v: number) => Math.round(v * 10000) / 10000;
 const isBorgaType = (v: unknown) =>
   ["borga", "borgadar", "বর্গা", "বর্গাদার", "share", "sharecrop"].includes(String(v ?? "").trim().toLowerCase());
 
+// Season names must never be used as land_type — seasons belong to invoice import.
+export const looksLikeSeason = (v: unknown): boolean => {
+  const s = String(v ?? "").trim().toLowerCase();
+  if (!s) return false;
+  // Bengali season keywords + English equivalents (aman/iri/boro/aus/robi)
+  return /(আমন|ইরি|বোরো|আউশ|রবি|aman|iri|boro|aus|robi)/i.test(s);
+};
+
+
+
 export default function LandsImport() {
   const { officeId, user } = useAuth();
   const { tx } = useLang();
@@ -219,9 +229,10 @@ export default function LandsImport() {
   function downloadTemplate(format: "xlsx" | "csv") {
     const cols = [...COLUMNS];
     const sample = [
-      ["00001", "L1", "Mouza A", "12,15", "আমন২৬", "উচু", "33.0000", "own", "", "", "", "মালিক নিজে চাষ"],
-      ["00002", "L2", "Mouza A", "30", "ইরি২৬", "নিচু", "50.0000", "borga", "00003", "20.0000", "", "বর্গাদার ২০ শতক"],
-      ["00002", "L2", "Mouza A", "30", "ইরি২৬", "নিচু", "50.0000", "borga", "00004", "", "30", "একই জমিতে ২য় বর্গাদার (একই land_ref)"],
+      ["00001", "L1", "Mouza A", "12,15", "পুকুর", "উচু", "33.0000", "own", "", "", "", "মালিক নিজে চাষ"],
+      ["00002", "L2", "Mouza A", "30", "সবজি", "নিচু", "50.0000", "borga", "00003", "20.0000", "", "বর্গাদার ২০ শতক"],
+      ["00002", "L2", "Mouza A", "30", "বাগান", "নিচু", "50.0000", "borga", "00004", "", "30", "একই জমিতে ২য় বর্গাদার (একই land_ref)"],
+
     ];
     if (format === "csv") {
       const csv = [cols, ...sample]
@@ -432,6 +443,11 @@ export default function LandsImport() {
         }
         if (raw.field_type && !FIELD_TYPE_MAP[String(raw.field_type).trim().toLowerCase()] && !FIELD_TYPE_MAP[String(raw.field_type).trim()])
           warns.push(`field_type চেনা যায়নি (উচু/নিচু/মাঝারি): ${raw.field_type}`);
+
+        // land_type must be a real land classification (পুকুর/সবজি/বাগান) — never a season.
+        if (looksLikeSeason(raw.land_type))
+          errors.push(`land_type: সিজনের নাম দেওয়া যাবে না (${raw.land_type}) — সিজন ইনভয়েস ইমপোর্টে দিন`);
+
 
         // dag_no may hold multiple dag numbers. Only comma/semicolon separated
         // values (or a JSON array) are supported — anything else (e.g. pipe or
