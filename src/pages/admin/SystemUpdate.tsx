@@ -738,12 +738,49 @@ export default function SystemUpdate() {
                   ))
                 )}
               </div>
+
+              {/* Export filters */}
+              <div className="rounded-md border p-3 space-y-3">
+                <div className="text-sm font-medium">রিপোর্ট এক্সপোর্ট (অফিস ও তারিখ ফিল্টার)</div>
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="log-from" className="text-xs">শুরুর তারিখ</Label>
+                    <Input id="log-from" type="date" value={logFrom} onChange={(e) => setLogFrom(e.target.value)} />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="log-to" className="text-xs">শেষ তারিখ</Label>
+                    <Input id="log-to" type="date" value={logTo} onChange={(e) => setLogTo(e.target.value)} />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">অফিস</Label>
+                    <Select value={logOffice} onValueChange={setLogOffice}>
+                      <SelectTrigger><SelectValue placeholder="সব অফিস" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">সব অফিস</SelectItem>
+                        {offices.map((o) => (
+                          <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <Button variant="outline" size="sm" onClick={() => exportLogs("pdf")} disabled={exporting !== null}>
+                    <FileText className="mr-1.5 h-4 w-4" /> {exporting === "pdf" ? "তৈরি হচ্ছে…" : "PDF এক্সপোর্ট"}
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={() => exportLogs("xlsx")} disabled={exporting !== null}>
+                    <FileSpreadsheet className="mr-1.5 h-4 w-4" /> {exporting === "xlsx" ? "তৈরি হচ্ছে…" : "Excel এক্সপোর্ট"}
+                  </Button>
+                </div>
+              </div>
+
               <DialogFooter>
                 <Button variant="outline" onClick={loadLogs} disabled={logsLoading}>
                   <RefreshCw className={`mr-1.5 h-4 w-4 ${logsLoading ? "animate-spin" : ""}`} /> রিফ্রেশ
                 </Button>
                 <Button onClick={() => setLogsOpen(false)}>বন্ধ</Button>
               </DialogFooter>
+
             </DialogContent>
           </Dialog>
         </CardContent>
