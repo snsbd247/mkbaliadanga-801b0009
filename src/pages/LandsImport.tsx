@@ -592,13 +592,7 @@ export default function LandsImport() {
 
         if (!landId) {
           const dagRaw = String(r.raw.dag_no ?? "").trim();
-          let dagNumbers: string[];
-          if (/^\s*\[.*\]\s*$/.test(dagRaw)) {
-            try { dagNumbers = (JSON.parse(dagRaw) as unknown[]).map((s) => String(s).trim()).filter(Boolean); }
-            catch { dagNumbers = []; }
-          } else {
-            dagNumbers = dagRaw ? dagRaw.split(/[,;]/).map((s) => s.trim()).filter(Boolean) : [];
-          }
+          const dagNumbers: string[] = parseDagNumbers(dagRaw);
           const mouzaName = String(r.raw.mouza ?? "").trim();
           const mouzaId = mouzaName ? mouzaMap.get(mouzaName.toLowerCase()) ?? null : null;
           const ltRaw = String(r.raw.land_type ?? "").trim();
