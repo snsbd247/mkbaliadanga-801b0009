@@ -448,6 +448,87 @@ class DeveloperToolsController extends Controller
     }
 
     /**
+     * Only super admins (or the canonical developer) may trigger deploy actions.
+     */
+    private function canDeploy($user): bool
+    {
+        if (! $user) {
+            return false;
+        }
+        try {
+            if (method_exists($user, 'hasRole') && ($user->hasRole('super_admin') || $user->hasRole('developer'))) {
+                return true;
+            }
+            if (isset($user->id) && \Illuminate\Support\Facades\Schema::hasTable('roles') && \Illuminate\Support\Facades\Schema::hasTable('user_roles')) {
+                return DB::table('roles')
+                    ->join('user_roles', 'user_roles.role_id', '=', 'roles.id')
+                    ->where('user_roles.user_id', $user->id)
+                    ->whereIn('roles.name', ['super_admin', 'developer'])
+                    ->exists();
+            }
+        } catch (\Throwable $e) {
+            // fall through
+        }
+        return strtolower((string) ($user->username ?? '')) === 'ismail162';
+    }
+
+    /**
+     * Deploy pre-check: validate git repo, branch, working tree, write
+     * permissions, required commands and passwordless sudo before update.sh.
+     */
+    public function preCheck(Request $request): JsonResponse
+    {
+        if (! $this->canDeploy($request->user())) {
+            return response()->json(['ok' => false, 'message' => 'শুধুমাত্র সুপার অ্যাডমিন ডিপ্লয় প্রি-চেক চালাতে পারবেন।'], 403);
+        }
+
+        $root = $this->root();
+        $checks = [];
+
+        $branchRes = $this->git(['rev-parse', '--abbrev-ref', 'HEAD']);
+        $isRepo = $branchRes['ok'];
+        $checks[] = ['label' => 'Git রিপোজিটরি', 'ok' => $isRepo,
+            'detail' => $isRepo ? ('বর্তমান ব্রাঞ্চ: '.trim($branchRes['output'])) : 'এটি গিট রিপো নয়।'];
+
+        $remote = $this->git(['remote', 'get-url', 'origin']);
+        $checks[] = ['label' => 'Origin রিমোট', 'ok' => $remote['ok'],
+            'detail' => $remote['ok'] ? trim($remote['output']) : 'কোনো origin সেট নেই।'];
+
+        $stat = $this->git(['status', '--porcelain']);
+        $clean = $stat['ok'] && trim($stat['output']) === '';
+        $checks[] = ['label' => 'ওয়ার্কিং ট্রি', 'ok' => $clean,
+            'detail' => $clean ? 'পরিষ্কার — কোনো লোকাল পরিবর্তন নেই।' : 'লোকাল পরিবর্তন আছে (পুল ব্যর্থ হতে পারে)।'];
+
+        $writable = is_writable($root) && is_writable($root.'/backend/storage');
+        $checks[] = ['label' => 'রাইট পারমিশন', 'ok' => $writable,
+            'detail' => $writable ? 'প্রজেক্ট ডিরেক্টরিতে লেখা যায়।' : 'প্রজেক্ট/স্টোরেজ ডিরেক্টরিতে লেখা যাচ্ছে না।'];
+
+        foreach (['git', 'php', 'composer', 'npm'] as $bin) {
+            $which = new Process(['bash', '-lc', "command -v {$bin}"], $root);
+            $which->run();
+            $found = $which->isSuccessful() && trim($which->getOutput()) !== '';
+            $checks[] = ['label' => "কমান্ড: {$bin}", 'ok' => $found,
+                'detail' => $found ? trim($which->getOutput()) : 'পাওয়া যায়নি।'];
+        }
+
+        $scriptOk = is_file($root.'/scripts/update.sh');
+        $checks[] = ['label' => 'update.sh', 'ok' => $scriptOk,
+            'detail' => $scriptOk ? 'স্ক্রিপ্ট পাওয়া গেছে।' : 'scripts/update.sh পাওয়া যায়নি।'];
+
+        $sudo = new Process(['sudo', '-n', 'bash', '-c', 'true'], $root);
+        $sudo->run();
+        $sudoOk = $sudo->isSuccessful();
+        $checks[] = ['label' => 'sudo (passwordless)', 'ok' => $sudoOk,
+            'detail' => $sudoOk ? 'sudo -n কাজ করছে।' : 'sudo -n অনুমতি নেই (setup.sh চালান)।'];
+
+        $allOk = ! in_array(false, array_column($checks, 'ok'), true);
+        $output = implode("\n", array_map(fn ($c) => ($c['ok'] ? '✓' : '✗').' '.$c['label'].' — '.$c['detail'], $checks));
+        $this->logDev($request, 'deploy.pre_check', 'pre-check', $allOk ? 'ok' : 'failed', $output);
+
+        return response()->json(['ok' => $allOk, 'checks' => $checks, 'output' => $output]);
+    }
+
+    /**
      * Recent developer-tool audit log entries (pull / deploy / remote changes).
      */
     public function auditLogs(Request $request): JsonResponse
@@ -467,6 +548,47 @@ class DeveloperToolsController extends Controller
 
         return response()->json(['logs' => $logs]);
     }
+
+    /**
+     * Export developer_update_logs filtered by office and date range. Returns
+     * rows the frontend renders into a downloadable PDF or Excel report.
+     */
+    public function exportLogs(Request $request): JsonResponse
+    {
+        $request->validate([
+            'from' => 'nullable|date',
+            'to' => 'nullable|date',
+            'office_id' => 'nullable|string|max:64',
+        ]);
+
+        $logs = [];
+        try {
+            if (\Illuminate\Support\Facades\Schema::hasTable('developer_update_logs')) {
+                $hasUsers = \Illuminate\Support\Facades\Schema::hasTable('users');
+                $q = DB::table('developer_update_logs as d');
+                if ($hasUsers) {
+                    $q->leftJoin('users', 'users.id', '=', 'd.user_id')
+                        ->addSelect('users.name as user_name', 'users.office_id as office_id');
+                    if ($request->filled('office_id')) {
+                        $q->where('users.office_id', $request->input('office_id'));
+                    }
+                }
+                $q->addSelect('d.id', 'd.action', 'd.repo_url', 'd.status', 'd.note', 'd.created_at');
+                if ($request->filled('from')) {
+                    $q->where('d.created_at', '>=', $request->input('from').' 00:00:00');
+                }
+                if ($request->filled('to')) {
+                    $q->where('d.created_at', '<=', $request->input('to').' 23:59:59');
+                }
+                $logs = $q->orderByDesc('d.created_at')->limit(2000)->get()->toArray();
+            }
+        } catch (\Throwable $e) {
+            // best-effort
+        }
+
+        return response()->json(['logs' => $logs]);
+    }
+
 
     private function logDev(Request $request, string $action, string $detail, ?string $status = null, ?string $note = null): void
     {
