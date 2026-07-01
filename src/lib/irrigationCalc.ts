@@ -144,7 +144,7 @@ export function formatLandSize(
   if (s <= 0) return variant === "ascii" ? "0 bigha (0 shatak)" : "০ বিঘা (০ শতক)";
   const b = shatakToBigha(s);
   const k = shatakToKatha(s);
-  const sf = s.toFixed(2);
+  const sf = s.toFixed(4); // land size (shatak/decimal) → 4 decimals
   const bf = b.toFixed(2);
   const kf = k.toFixed(2);
   if (variant === "ascii") return `${bf} bigha · ${kf} katha (${sf} shatak)`;
