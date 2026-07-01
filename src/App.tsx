@@ -101,6 +101,7 @@ import PromiseDueReport from "./pages/reports/PromiseDueReport";
 import IrrigationDueMismatch from "./pages/admin/IrrigationDueMismatch";
 import RetryJobs from "./pages/admin/RetryJobs";
 import AuditTimeline from "./pages/admin/AuditTimeline";
+import ImportAuditLogs from "./pages/admin/ImportAuditLogs";
 import FarmersImport from "./pages/FarmersImport";
 import LandsImport from "./pages/LandsImport";
 import OpeningDueImport from "./pages/OpeningDueImport";
