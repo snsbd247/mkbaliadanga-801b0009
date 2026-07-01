@@ -91,6 +91,18 @@ const STATUS_EN: Record<string, string> = {
   paid: "Paid", overdue: "Overdue", cancelled: "Cancelled",
 };
 
+/**
+ * Combines the invoice-level note and the per-land note into a single string,
+ * joined by " || ". Empty/blank notes are dropped so no stray separators or
+ * empty values appear. Returns "" when there is no note at all.
+ */
+export function joinInvoiceNotes(inv: any): string {
+  return [inv?.note, inv?.lands?.notes]
+    .map((n) => (n ?? "").toString().trim())
+    .filter(Boolean)
+    .join(" || ");
+}
+
 export function flattenInvoiceForExport(inv: any, lang: Lang = "bn") {
   const snap = inv.calculation_snapshot ?? {};
   const L = lang === "en" ? IRR_EN : IRR_BN;
