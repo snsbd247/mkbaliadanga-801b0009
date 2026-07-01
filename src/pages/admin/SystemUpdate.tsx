@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
-import { DevToolsApi, type GitStatus } from "@/lib/api/devTools";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { DevToolsApi, type GitStatus, type RemoteCheck, type DevAuditLog } from "@/lib/api/devTools";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,7 +16,11 @@ import { toast } from "sonner";
 import {
   RefreshCw, Github, CheckCircle2, Rocket, Play, RotateCcw, ExternalLink,
   Terminal, Settings, ShieldCheck, Home, ChevronRight,
+  Copy, Ban, ListChecks, ClipboardList, XCircle, RefreshCcw,
 } from "lucide-react";
+
+/** How long a Pull/Deploy/Dry-Run request may run before it is aborted (ms). */
+const GIT_OP_TIMEOUT_MS = 240_000;
 
 const REPO_RE = /^(https:\/\/[\w.-]+\/[\w.\-/]+?(\.git)?|[\w.-]+\/[\w.-]+)$/;
 const DEPLOY_REPO_URL_KEY = "deploy_repo_url";
