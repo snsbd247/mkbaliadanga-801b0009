@@ -66,6 +66,9 @@ export const DEFAULT_RECEIPT_LAYOUT: ReceiptLayoutSettings = {
   defaultOrientation: "p",
   watermarkText: "",
   watermarkEnabled: false,
+  irrigationPagePaddingPx: 48,
+  irrigationBottomPaddingPx: 42,
+  holdingBottomPaddingPx: 12,
 };
 
 /** Default labels — single source of truth shared by HTML/PDF/Excel. */
