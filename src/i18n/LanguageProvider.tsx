@@ -82,48 +82,29 @@ function fuzzyResolve(key: string, lang: Lang): string | null {
 export function LanguageProvider({ children }: { children: ReactNode }) {
   const [lang, setLangState] = useState<Lang>(() => (localStorage.getItem("lang") as Lang) || "en");
   const userIdRef = useRef<string | null>(null);
-  const remoteLoadedRef = useRef(false);
+  
 
   useEffect(() => {
     localStorage.setItem("lang", lang);
     document.documentElement.lang = lang;
   }, [lang]);
 
-  // --- Persist preference to profiles.language for logged-in users ---------
-  // On auth change, load the user's saved language (overrides localStorage on
-  // first read so multi-device users see the same UI). Anonymous users keep
-  // using localStorage only.
+  // --- Language on auth ----------------------------------------------------
+  // Requirement: default language is ALWAYS English right after login. The user
+  // can switch afterwards (persisted to localStorage + profile for the session),
+  // but a fresh sign-in never restores a previously saved Bengali preference.
   useEffect(() => {
-    let cancelled = false;
-
-    async function loadForUser(uid: string) {
-      const { data } = await db
-        .from("profiles")
-        .select("language_pref")
-        .eq("id", uid)
-        .maybeSingle();
-      if (cancelled) return;
-      const remote = (data as any)?.language_pref as Lang | undefined;
-      if (remote === "en" || remote === "bn") {
-        remoteLoadedRef.current = true;
-        setLangState(remote);
-      }
-    }
-
     supabase.auth.getSession().then(({ data }) => {
-      const uid = data.session?.user?.id ?? null;
-      userIdRef.current = uid;
-      if (uid) loadForUser(uid);
+      userIdRef.current = data.session?.user?.id ?? null;
     });
 
-    const { data: sub } = supabase.auth.onAuthStateChange((_evt, session) => {
-      const uid = session?.user?.id ?? null;
-      userIdRef.current = uid;
-      remoteLoadedRef.current = false;
-      if (uid) loadForUser(uid);
+    const { data: sub } = supabase.auth.onAuthStateChange((evt, session) => {
+      userIdRef.current = session?.user?.id ?? null;
+      if (evt === "SIGNED_IN") setLangState("en");
     });
-    return () => { cancelled = true; sub.subscription.unsubscribe(); };
+    return () => { sub.subscription.unsubscribe(); };
   }, []);
+
 
   const setLang = (l: Lang) => {
     setLangState(l);
