@@ -244,6 +244,99 @@ class DeveloperToolsController extends Controller
     }
 
     /**
+     * Full "Pull & Deploy": run scripts/update.sh (git pull + composer + migrate
+     * + npm build + service reload) and STREAM the combined output live so the
+     * console shows real-time progress. Runs the script via `sudo -n` because the
+     * web user (www-data) needs root for composer/migrate/nginx; the sudoers rule
+     * is installed by scripts/setup.sh & scripts/update.sh.
+     */
+    public function deploy(Request $request): StreamedResponse
+    {
+        $request->validate(['branch' => 'nullable|string|max:120|regex:/^[\w.\-\/]+$/']);
+
+        $root = $this->root();
+        $script = $root.'/scripts/update.sh';
+        $current = $this->git(['rev-parse', '--abbrev-ref', 'HEAD']);
+        $branch = $request->filled('branch')
+            ? trim($request->input('branch'))
+            : ($current['ok'] ? trim($current['output']) : 'main');
+
+        $userId = $request->user()?->id;
+
+        return new StreamedResponse(function () use ($script, $branch, $root, $userId) {
+            @set_time_limit(0);
+            @ini_set('output_buffering', '0');
+            @ini_set('zlib.output_compression', '0');
+            while (ob_get_level() > 0) {
+                @ob_end_flush();
+            }
+
+            $emit = function (string $line) {
+                echo $line;
+                @flush();
+            };
+
+            $emit("▶ Pull & Deploy শুরু — branch: {$branch}\n");
+            $emit("▶ স্ক্রিপ্ট: {$script}\n\n");
+
+            $collected = '';
+            $ok = false;
+
+            if (! is_file($script)) {
+                $emit("✗ update.sh পাওয়া যায়নি: {$script}\n");
+            } else {
+                // Prefer sudo (needed for composer/migrate/nginx). Falls back to a
+                // plain run so at least git pull works if sudoers isn't set yet.
+                $cmd = ['sudo', '-n', 'bash', $script];
+                $process = new Process($cmd, $root, [
+                    'BRANCH' => $branch,
+                    'APP_DIR' => $root,
+                    'DEBIAN_FRONTEND' => 'noninteractive',
+                ]);
+                $process->setTimeout(null);
+
+                try {
+                    $process->run(function ($type, $buffer) use ($emit, &$collected) {
+                        $collected .= $buffer;
+                        $emit($buffer);
+                    });
+                    $ok = $process->isSuccessful();
+                } catch (\Throwable $e) {
+                    $emit("\n✗ চালাতে ব্যর্থ: ".$e->getMessage()."\n");
+                }
+
+                if (! $ok && str_contains($collected, 'sudo:')) {
+                    $emit("\n⚠ sudo অনুমতি নেই। সার্ভারে একবার নিচের কমান্ড চালান (root):\n");
+                    $emit("  sudo bash {$root}/scripts/update.sh\n");
+                    $emit("  (setup.sh/update.sh স্বয়ংক্রিয়ভাবে sudoers রুল বসিয়ে দেয়)\n");
+                }
+            }
+
+            $emit("\n".($ok ? "✅ Pull & Deploy সম্পন্ন হয়েছে।\n" : "✗ Pull & Deploy ব্যর্থ হয়েছে।\n"));
+
+            try {
+                if (\Illuminate\Support\Facades\Schema::hasTable('developer_update_logs')) {
+                    DB::table('developer_update_logs')->insert([
+                        'id' => (string) Str::uuid(),
+                        'user_id' => $userId,
+                        'action' => 'git.deploy',
+                        'repo_url' => Str::limit($branch, 480, ''),
+                        'status' => $ok ? 'ok' : 'failed',
+                        'note' => Str::limit($collected, 4000, ''),
+                        'created_at' => now(),
+                    ]);
+                }
+            } catch (\Throwable $e) {
+                // best-effort audit only
+            }
+        }, 200, [
+            'Content-Type' => 'text/plain; charset=utf-8',
+            'Cache-Control' => 'no-cache, no-transform',
+            'X-Accel-Buffering' => 'no',
+            'Connection' => 'keep-alive',
+        ]);
+    }
+
      * Dry-run: fetch origin and report the incoming commits that a Pull & Deploy
      * would apply, without changing any local files.
      */
