@@ -36,6 +36,48 @@ die()  { echo -e "\033[1;31m[x] $*\033[0m" >&2; exit 1; }
 [ -d "${APP_DIR}/.git" ] || die "No repo at ${APP_DIR}. Run setup.sh first."
 export DEBIAN_FRONTEND=noninteractive
 
+# ── Dry-run mode ───────────────────────────────────────────────────────────
+# `--dry-run` (or MK_DRY_RUN=1) runs every validation step (git status, sudo,
+# disk, read-only checks) WITHOUT changing any files, pulling code, or building.
+DRY_RUN="${MK_DRY_RUN:-0}"
+for arg in "$@"; do
+  case "$arg" in
+    --dry-run|-n) DRY_RUN=1 ;;
+  esac
+done
+
+# Detect a read-only project filesystem so callers get a precise error instead
+# of an opaque "Read-only file system" mid-deploy.
+FS_READONLY=0
+if ! (touch "${APP_DIR}/.mk-write-test" 2>/dev/null && rm -f "${APP_DIR}/.mk-write-test" 2>/dev/null); then
+  FS_READONLY=1
+fi
+
+if [ "${DRY_RUN}" = "1" ]; then
+  log "DRY-RUN: validation only — no files will be changed."
+  git config --global --add safe.directory "${APP_DIR}" >/dev/null 2>&1 || true
+  BRANCH_NOW="$(git -C "${APP_DIR}" rev-parse --abbrev-ref HEAD 2>/dev/null || echo '?')"
+  log "  • branch: ${BRANCH_NOW} (target: ${BRANCH})"
+  if git -C "${APP_DIR}" diff --quiet 2>/dev/null; then
+    log "  • working tree: clean"
+  else
+    warn "  • working tree: has local changes (will be reset by real deploy)"
+  fi
+  [ "${FS_READONLY}" = "1" ] && warn "  • project filesystem: READ-ONLY" || log "  • project filesystem: writable"
+  for bin in git php composer npm; do
+    command -v "$bin" >/dev/null 2>&1 && log "  • command ${bin}: $(command -v "$bin")" || warn "  • command ${bin}: MISSING"
+  done
+  df -h "${APP_DIR}" 2>/dev/null | tail -n1 | awk '{print "  • disk free on "$6": "$4" ("$5" used)"}'
+  log "✅ DRY-RUN complete — no changes made."
+  exit 0
+fi
+
+# Print the exact failing command + exit code so the live console can highlight
+# the root cause, then run the rollback.
+FAILED_CMD=""
+capture_failed_cmd() { FAILED_CMD="$BASH_COMMAND"; }
+trap 'capture_failed_cmd' DEBUG
+
 # Keep the release we started from. If a later deploy step fails after pulling
 # new code, the script itself rolls back as root (the web user cannot reliably
 # write .git/index.lock on root-owned checkouts).
@@ -43,14 +85,21 @@ ORIGINAL_HEAD="${ORIGINAL_HEAD:-$(git -C "${APP_DIR}" rev-parse HEAD 2>/dev/null
 export ORIGINAL_HEAD
 rollback_on_error() {
   local status=$?
-  trap - ERR
+  trap - ERR DEBUG
   [ "${status}" -eq 0 ] && return 0
+
+  echo -e "\033[1;31m[x] Deploy FAILED — exit code ${status}\033[0m" >&2
+  [ -n "${FAILED_CMD:-}" ] && echo -e "\033[1;31m[x] Failing command: ${FAILED_CMD}\033[0m" >&2
+
+  # Ensure git can write to the (root-owned) repo during rollback.
+  git config --global --add safe.directory "${APP_DIR}" >/dev/null 2>&1 || true
 
   if [ -n "${ORIGINAL_HEAD}" ]; then
     local current_head
     current_head="$(git -C "${APP_DIR}" rev-parse HEAD 2>/dev/null || true)"
     if [ -n "${current_head}" ] && [ "${current_head}" != "${ORIGINAL_HEAD}" ]; then
       warn "Deploy failed — auto rollback to ${ORIGINAL_HEAD}…"
+      rm -f "${APP_DIR}/.git/index.lock" 2>/dev/null || true
       git -C "${APP_DIR}" reset --hard "${ORIGINAL_HEAD}" || warn "Rollback git reset failed."
       if [ -d "${APP_DIR}/backend" ]; then
         (cd "${APP_DIR}/backend" && php artisan up >/dev/null 2>&1) || true
@@ -100,7 +149,14 @@ install_deploy_sudoers() {
     rm -f "${tmp_file}" 2>/dev/null || true
   fi
 }
-install_deploy_sudoers
+# Web-triggered deploys (Pull & Deploy button) must NEVER attempt to write
+# sudoers or touch /etc — the sudoers rule is installed once by setup.sh. The
+# controller sets MK_SKIP_SUDOERS=1 so a read-only /etc can't abort a deploy.
+if [ "${MK_SKIP_SUDOERS:-0}" = "1" ]; then
+  log "Skipping sudoers refresh (web-triggered deploy — managed by setup.sh)."
+else
+  install_deploy_sudoers
+fi
 
 # ──────────────────────────────────────────────────────────────────────────
 # 1. Safety DB backup (so existing data is never at risk)
