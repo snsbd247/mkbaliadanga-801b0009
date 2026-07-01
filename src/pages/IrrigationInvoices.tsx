@@ -1728,6 +1728,7 @@ function GenerateTab({ seasons, offices, userId, isSuper }: any) {
                   <TableRow>
                     <TableHead>{tx("Mouza", "মৌজা")}</TableHead>
                     <TableHead>{tx("Dag No", "দাগ নং")}</TableHead>
+                    <TableHead>{tx("Note", "নোট")}</TableHead>
                     <TableHead className="text-right">{tx("Land size", "জমির পরিমাণ")}</TableHead>
                     <TableHead>{tx("Farmer/Owner member", "কৃষক/মালিক সভ্য সদস্য")}</TableHead>
                     <TableHead>{tx("Land type", "জমির ধরন")}</TableHead>
