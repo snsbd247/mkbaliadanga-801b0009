@@ -133,6 +133,7 @@ export function flattenInvoiceForExport(inv: any, lang: Lang = "bn") {
     [L.appliedRate]: r(inv.applied_rate ?? inv.season_rate ?? snap.applied_rate ?? ""),
     [L.standardRate]: r(inv.original_standard_rate ?? snap.original_standard_rate ?? ""),
     [L.overrideReason]: inv.override_reason ?? inv.manual_rate_reason ?? "",
+    [L.note]: joinInvoiceNotes(inv),
   };
 }
 
