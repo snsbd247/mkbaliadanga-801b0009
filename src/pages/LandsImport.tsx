@@ -1001,6 +1001,9 @@ export default function LandsImport() {
           </div>
         </Card>
       )}
+      <p className="mt-6 text-center text-xs text-muted-foreground">
+        {tx("LandsImport build", "জমি ইমপোর্ট বিল্ড")}: {LANDS_IMPORT_BUILD} · {tx("Template", "টেমপ্লেট")} v{LANDS_TEMPLATE_VERSION}
+      </p>
     </>
   );
 }
