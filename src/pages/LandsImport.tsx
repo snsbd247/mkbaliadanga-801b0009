@@ -444,6 +444,11 @@ export default function LandsImport() {
         if (raw.field_type && !FIELD_TYPE_MAP[String(raw.field_type).trim().toLowerCase()] && !FIELD_TYPE_MAP[String(raw.field_type).trim()])
           warns.push(`field_type চেনা যায়নি (উচু/নিচু/মাঝারি): ${raw.field_type}`);
 
+        // land_type must be a real land classification (পুকুর/সবজি/বাগান) — never a season.
+        if (looksLikeSeason(raw.land_type))
+          errors.push(`land_type: সিজনের নাম দেওয়া যাবে না (${raw.land_type}) — সিজন ইনভয়েস ইমপোর্টে দিন`);
+
+
         // dag_no may hold multiple dag numbers. Only comma/semicolon separated
         // values (or a JSON array) are supported — anything else (e.g. pipe or
         // space separated) would import as a single malformed dag.
