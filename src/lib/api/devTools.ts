@@ -96,6 +96,10 @@ export const DevToolsApi = {
     api
       .post<{ ok: boolean; checks: RemoteCheck[]; output: string }>("/dev/git/check-remote", { url })
       .then((r) => r.data),
+  preCheck: () =>
+    api
+      .post<{ ok: boolean; checks: RemoteCheck[]; output: string }>("/dev/git/pre-check", {})
+      .then((r) => r.data),
   setRemote: (url: string) =>
     api
       .post<{ ok: boolean; remote_url: string; output?: string }>("/dev/git/remote", { url })
