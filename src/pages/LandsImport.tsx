@@ -191,6 +191,25 @@ export const looksLikeSeason = (v: unknown): boolean => {
   return /(আমন|ইরি|বোরো|আউশ|রবি|aman|iri|boro|aus|robi)/i.test(s);
 };
 
+/** Group row error messages into human-readable categories for the summary panel. */
+export function categorizeErrors(rows: { errorMsg: string | null }[]): { key: string; count: number }[] {
+  const buckets: Record<string, number> = {};
+  for (const r of rows) {
+    if (!r.errorMsg) continue;
+    for (const part of r.errorMsg.split(";").map((p) => p.trim()).filter(Boolean)) {
+      let key = "other";
+      if (/land_type:.*সিজন|season/i.test(part)) key = "season_as_land_type";
+      else if (/owner_farmer_id/i.test(part)) key = "owner";
+      else if (/sharecropper_id/i.test(part)) key = "sharecropper";
+      else if (/land_size/i.test(part)) key = "land_size";
+      else if (/borga_area|share_percentage|land_ref/i.test(part)) key = "borga";
+      else if (/field_type/i.test(part)) key = "field_type";
+      buckets[key] = (buckets[key] ?? 0) + 1;
+    }
+  }
+  return Object.entries(buckets).map(([key, count]) => ({ key, count })).sort((a, b) => b.count - a.count);
+}
+
 
 
 export default function LandsImport() {
