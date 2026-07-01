@@ -494,15 +494,16 @@ export default function LandsImport() {
           errors.push(`land_type: সিজনের নাম দেওয়া যাবে না (${raw.land_type}) — সিজন ইনভয়েস ইমপোর্টে দিন`);
 
 
-        // dag_no may hold multiple dag numbers. Only comma/semicolon separated
-        // values (or a JSON array) are supported — anything else (e.g. pipe or
-        // space separated) would import as a single malformed dag.
+        // dag_no may hold multiple dag numbers. Comma/semicolon separated
+        // values (or a JSON array) are supported. A slash (e.g. "1/330") is a
+        // valid single dag and kept as-is; only a pipe (|) is unsupported.
         const dagStr = raw.dag_no == null ? "" : String(raw.dag_no).trim();
         if (dagStr) {
           const isJsonArray = /^\s*\[.*\]\s*$/.test(dagStr);
-          if (!isJsonArray && /[|/]/.test(dagStr)) {
+          if (!isJsonArray && /\|/.test(dagStr)) {
             warns.push(`dag_no: একাধিক দাগ কমা (,) বা সেমিকোলন (;) দিয়ে দিন — পাওয়া গেছে "${dagStr}"`);
           }
+
         }
 
         return {
