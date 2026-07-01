@@ -855,6 +855,19 @@ export default function LandsImport() {
                 </AlertDescription>
               </Alert>
             )}
+            {invalidRows.length > 0 && errorCategories.length > 0 && (
+              <div className="rounded-md border p-3 text-sm space-y-1">
+                <div className="font-medium">{tx("Why rows were blocked", "কেন সারিগুলো আটকে গেছে")}</div>
+                <ul className="list-disc pl-5">
+                  {errorCategories.map(({ key, count }) => (
+                    <li key={key}>
+                      <b>{count}</b> — {tx(ERROR_CATEGORY_LABELS[key]?.en ?? key, ERROR_CATEGORY_LABELS[key]?.bn ?? key)}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
             <div className="flex flex-wrap justify-between gap-2">
               <div className="flex gap-2">
                 <Button variant="outline" onClick={() => setStep(1)}>
