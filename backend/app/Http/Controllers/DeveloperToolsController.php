@@ -566,6 +566,7 @@ class DeveloperToolsController extends Controller
         $checks[] = ['label' => '/etc/sudoers.d লেখা', 'ok' => true, 'warn' => ! $etcWritable,
             'detail' => $etcWritable ? 'লেখা যায়।' : 'read-only — ডিপ্লয়ে sudoers রিফ্রেশ এড়িয়ে যাওয়া হয় (setup.sh একবার বসায়)।'];
 
+        foreach (['git', 'php', 'composer', 'npm'] as $bin) {
             $which = new Process(['bash', '-lc', "command -v {$bin}"], $root);
             $which->run();
             $found = $which->isSuccessful() && trim($which->getOutput()) !== '';
