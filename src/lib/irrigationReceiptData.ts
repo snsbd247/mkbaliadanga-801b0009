@@ -176,15 +176,12 @@ export async function buildIrrigationReceiptEnrichment(
       ),
     ).join("/") || "সেচ চার্জ";
   const patwari = invoiceRows.find((inv) => inv?.lands?.patwaris)?.lands?.patwaris ?? null;
+  const landNotes = invoiceRows
+    .map((inv) => (inv?.lands?.notes ?? "").trim())
+    .filter(Boolean)
+    .join(" || ");
   const holdingDescription =
-    [
-      ...Array.from(
-        new Set(invoiceRows.map((inv) => inv?.lands?.notes?.trim()).filter(Boolean)),
-      ),
-      paymentNote?.trim() || null,
-    ]
-      .filter(Boolean)
-      .join(" / ") || null;
+    [landNotes || null, paymentNote?.trim() || null].filter(Boolean).join(" || ") || null;
 
   dbg("resolved fields", {
     mouza,

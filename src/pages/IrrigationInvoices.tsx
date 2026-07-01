@@ -1328,7 +1328,7 @@ function GenerateTab({ seasons, offices, userId, isSuper }: any) {
     setBusy(true);
     setSkippedNoRate(0);
     try {
-      let lq = db.from("lands").select("id, farmer_id, owner_farmer_id, land_size, office_id, dag_no, mouza, field_type, land_type_id").is("deleted_at", null);
+      let lq = db.from("lands").select("id, farmer_id, owner_farmer_id, land_size, office_id, dag_no, mouza, field_type, land_type_id, notes").is("deleted_at", null);
       if (officeId) lq = lq.eq("office_id", officeId);
       const { data: lands, error: lerr } = await lq;
       if (lerr) throw lerr;
@@ -1492,6 +1492,7 @@ function GenerateTab({ seasons, offices, userId, isSuper }: any) {
             irrigation_category_name: row.resolved?.categoryName ?? null,
             is_manual_rate: hasManual,
             manual_rate_reason: hasManual ? row.manualReason.trim() : null,
+            note: (row.land.notes ?? "").trim() || null,
             override_reason: hasManual ? row.manualReason.trim() : null,
             calculation_snapshot: {
               rate_per_shotok: appliedRate,
@@ -1727,6 +1728,7 @@ function GenerateTab({ seasons, offices, userId, isSuper }: any) {
                   <TableRow>
                     <TableHead>{tx("Mouza", "মৌজা")}</TableHead>
                     <TableHead>{tx("Dag No", "দাগ নং")}</TableHead>
+                    <TableHead>{tx("Note", "নোট")}</TableHead>
                     <TableHead className="text-right">{tx("Land size", "জমির পরিমাণ")}</TableHead>
                     <TableHead>{tx("Farmer/Owner member", "কৃষক/মালিক সভ্য সদস্য")}</TableHead>
                     <TableHead>{tx("Land type", "জমির ধরন")}</TableHead>
@@ -1746,6 +1748,7 @@ function GenerateTab({ seasons, offices, userId, isSuper }: any) {
                       <TableRow key={i}>
                         <TableCell className="text-xs">{r.land.mouza || "—"}</TableCell>
                         <TableCell className="text-xs whitespace-normal min-w-[140px]">{formatDagNumbers(r.land.dag_no) || "—"}</TableCell>
+                        <TableCell className="text-xs whitespace-normal max-w-[200px] text-muted-foreground">{(r.land.notes ?? "").trim() || "—"}</TableCell>
                         <TableCell className="text-right text-xs whitespace-nowrap">{formatLandSize(r.billedArea > 0 ? r.billedArea : r.land.land_size, "short")}{r.billedArea > 0 && r.billedArea !== Number(r.land.land_size) ? ` / ${formatLandSize(r.land.land_size, "short")}` : ""}</TableCell>
                         <TableCell className="text-xs">{r.billed.is_borga ? `🤝 ${tx("Sharecropper", "বর্গাদার")}` : `🏠 ${tx("Owner", "মালিক")}`}</TableCell>
                         <TableCell className="text-xs">{r.resolved?.categoryName || r.land.land_type_name || r.land.field_type || "—"}</TableCell>
@@ -1825,7 +1828,7 @@ function ManualInvoiceDialog({ open, onOpenChange, seasons, userId }: any) {
     if (!farmerId) { setLands([]); return; }
     (async () => {
       const [{ data: own }, { data: rels }] = await Promise.all([
-        db.from("lands").select("id,dag_no,land_size,mouza,owner_farmer_id,office_id,field_type").eq("farmer_id", farmerId).is("deleted_at", null),
+        db.from("lands").select("id,dag_no,land_size,mouza,owner_farmer_id,office_id,field_type,notes").eq("farmer_id", farmerId).is("deleted_at", null),
         db.from("land_relations").select("land_id, lands(id,dag_no,land_size,mouza,owner_farmer_id,office_id,field_type)").eq("sharecropper_farmer_id", farmerId).is("deleted_at", null),
       ]);
       const ids = new Set((own ?? []).map((l: any) => l.id));
@@ -1893,6 +1896,7 @@ function ManualInvoiceDialog({ open, onOpenChange, seasons, userId }: any) {
         land_type_name: rateRow?.land_type_name ?? land?.field_type ?? null,
         is_manual_rate: isManualRate,
         manual_rate_reason: isManualRate ? manualReason.trim() : null,
+        note: (land?.notes ?? "").trim() || null,
         // Phase 4 hybrid engine snapshot
         rate_source: rateSource,
         applied_rate: rate,
