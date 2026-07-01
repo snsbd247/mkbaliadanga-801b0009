@@ -275,6 +275,7 @@ export default function LandsImport() {
     }
     const ws = XLSX.utils.aoa_to_sheet([cols, ...sample]);
     const notes = XLSX.utils.aoa_to_sheet([
+      ["template_version", LANDS_TEMPLATE_VERSION, ""],
       ["Column", "Required", "Notes"],
       ["owner_farmer_id", "Yes", "মালিকের Farmer ID (যেমন 00001)"],
       ["land_ref", "No", "একই জমিতে একাধিক বর্গাদার দিতে একই ref ব্যবহার করুন (যেমন L2)। খালি হলে প্রতি সারি আলাদা জমি।"],
