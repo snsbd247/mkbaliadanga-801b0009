@@ -490,13 +490,7 @@ export default function FarmerDetail() {
 
   function farmerLocationLine(fr: any): string {
     if (!fr) return "—";
-    const pick = (n: any) => n?.name_bn || n?.name || null;
-    const parts = [
-      pick(fr.divisions), pick(fr.districts), pick(fr.upazilas),
-      pick(fr.unions), pick(fr.wards), pick(fr.villages), pick(fr.mouzas),
-    ].filter(Boolean);
-    if (parts.length) return parts.join(" › ");
-    return fr.village || fr.address || "—";
+    return fr.village || fr.villages?.name_bn || fr.villages?.name || "—";
   }
 
 
