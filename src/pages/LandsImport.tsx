@@ -215,6 +215,8 @@ export default function LandsImport() {
     XLSX.utils.book_append_sheet(wb, ws, "Lands");
     XLSX.utils.book_append_sheet(wb, notes, "Instructions");
     XLSX.writeFile(wb, "lands-import-template.xlsx");
+    toast.success("টেমপ্লেট ডাউনলোড হয়েছে: lands-import-template.xlsx");
+    logDownload("template", "xlsx");
   }
 
   /** Ready-to-fill sample with dummy farmer+land data covering every season field. */
