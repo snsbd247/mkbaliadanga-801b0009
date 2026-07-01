@@ -563,9 +563,32 @@ export default function LandsImport() {
         db.from("mouzas").select("id,name,name_bn,code"),
       ]);
       (fm ?? []).forEach((f: any) => { if (f.farmer_code) farmerMap.set(String(f.farmer_code).trim(), f.id); });
+      const landTypeByCode = new Map<string, string>();
       (lt ?? []).forEach((l: any) => {
-        [l.code, l.name, l.name_bn, l.name_en].forEach((k) => { if (k) landTypeMap.set(String(k).trim().toLowerCase(), l.id); });
+        if (l.code) landTypeByCode.set(String(l.code).trim().toLowerCase(), l.id);
+        [l.code, l.name, l.name_bn, l.name_en].forEach((k) => {
+          if (!k) return;
+          const norm = String(k).trim().toLowerCase();
+          landTypeMap.set(norm, l.id);
+          // Alias without the " জমি"/"land" suffix so "উচু" matches "উঁচু জমি".
+          const stripped = norm.replace(/\s*(জমি|land)\s*$/i, "").trim();
+          if (stripped && !landTypeMap.has(stripped)) landTypeMap.set(stripped, l.id);
+        });
       });
+      // Resolve a free-form land_type value to a land_types.id — exact/normalized
+      // first, then a fuzzy fallback via the derived field_type enum.
+      const FIELD_TYPE_TO_CODE: Record<string, string> = {
+        high_land: "high", low_land: "low", medium_land: "medium",
+      };
+      var resolveLandTypeId = (raw: string): string | null => {
+        const key = raw.trim().toLowerCase();
+        if (!key) return null;
+        const direct = landTypeMap.get(key) ?? landTypeMap.get(key.replace(/\s*(জমি|land)\s*$/i, "").trim());
+        if (direct) return direct;
+        const ft = deriveFieldType(raw);
+        const code = FIELD_TYPE_TO_CODE[ft];
+        return (code && landTypeByCode.get(code)) ?? null;
+      };
       (mz ?? []).forEach((m: any) => {
         [m.name, m.name_bn, m.code].forEach((k) => { if (k) mouzaMap.set(String(k).trim().toLowerCase(), m.id); });
       });
