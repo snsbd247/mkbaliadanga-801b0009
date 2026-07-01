@@ -615,15 +615,15 @@ export default function LandsImport() {
   return (
     <>
       <PageHeader
-        title="জমি ইমপোর্ট"
-        description="নিজের চাষ ও বর্গা জমি একসাথে আপলোড করুন"
+        title={tx("Land Import", "জমি ইমপোর্ট")}
+        description={tx("Upload owner-cultivated and sharecropper lands together", "নিজের চাষ ও বর্গা জমি একসাথে আপলোড করুন")}
         actions={
           <>
             <Button size="sm" variant="outline" onClick={() => downloadTemplate("xlsx")}>
-              <Download className="h-4 w-4 mr-2" /> টেমপ্লেট (XLSX)
+              <Download className="h-4 w-4 mr-2" /> {tx("Template (XLSX)", "টেমপ্লেট (XLSX)")}
             </Button>
             <Button size="sm" variant="outline" onClick={() => downloadTemplate("csv")}>
-              <Download className="h-4 w-4 mr-2" /> টেমপ্লেট (CSV)
+              <Download className="h-4 w-4 mr-2" /> {tx("Template (CSV)", "টেমপ্লেট (CSV)")}
             </Button>
           </>
         }
@@ -647,31 +647,31 @@ export default function LandsImport() {
       {step === 0 && (
         <Card className="mt-4 p-4 space-y-4">
           <div>
-            <h3 className="font-semibold mb-2">নিয়মাবলী</h3>
+            <h3 className="font-semibold mb-2">{tx("Instructions", "নিয়মাবলী")}</h3>
             <ul className="list-disc pl-5 text-sm space-y-1">
-              <li>প্রথমে ফার্মার ইমপোর্ট করুন — জমি বিদ্যমান ফার্মারের সাথে যুক্ত হয়।</li>
-              <li>প্রতি সারি = একটি জমি। <b>owner_farmer_id</b> ও <b>land_size</b> আবশ্যক।</li>
-              <li>একই জমিতে একাধিক বর্গাদার দিতে সব সারিতে একই <b>land_ref</b> দিন — প্রথম সারি জমি তৈরি করে, বাকিগুলো শুধু বর্গা সম্পর্ক যোগ করে।</li>
-              <li>এক ফার্মারের একাধিক জমি হলে আলাদা সারি ব্যবহার করুন (আলাদা বা খালি land_ref)।</li>
-              <li>দাগ একাধিক হলে কমা দিয়ে লিখুন: <code>12,15,30</code></li>
-              <li>জমির পরিমাণ শতকে, দশমিকের পর ৪ ডিজিট পর্যন্ত: <code>33.0000</code></li>
+              <li>{tx("Import farmers first — lands attach to existing farmers.", "প্রথমে ফার্মার ইমপোর্ট করুন — জমি বিদ্যমান ফার্মারের সাথে যুক্ত হয়।")}</li>
+              <li>{tx("Each row = one land.", "প্রতি সারি = একটি জমি।")} <b>owner_farmer_id</b> {tx("and", "ও")} <b>land_size</b> {tx("are required.", "আবশ্যক।")}</li>
+              <li>{tx("For multiple sharecroppers on the same land, use the same", "একই জমিতে একাধিক বর্গাদার দিতে সব সারিতে একই")} <b>land_ref</b> {tx("in all rows — the first row creates the land, the rest only add sharecropper relations.", "দিন — প্রথম সারি জমি তৈরি করে, বাকিগুলো শুধু বর্গা সম্পর্ক যোগ করে।")}</li>
+              <li>{tx("For multiple lands of one farmer use separate rows (different or empty land_ref).", "এক ফার্মারের একাধিক জমি হলে আলাদা সারি ব্যবহার করুন (আলাদা বা খালি land_ref)।")}</li>
+              <li>{tx("For multiple dag numbers, separate with commas:", "দাগ একাধিক হলে কমা দিয়ে লিখুন:")} <code>12,15,30</code></li>
+              <li>{tx("Land size in decimals (shatak), up to 4 digits after point:", "জমির পরিমাণ শতকে, দশমিকের পর ৪ ডিজিট পর্যন্ত:")} <code>33.0000</code></li>
             </ul>
           </div>
           <div className="text-sm">
-            <b>owner_type সমর্থিত মান:</b> own / owner / নিজে (মালিক), borga / borgadar / বর্গা (বর্গাদার)।<br />
-            <b>field_type সমর্থিত মান:</b> উচু, নিচু, মাঝারি, অন্যান্য।
+            <b>{tx("owner_type supported values:", "owner_type সমর্থিত মান:")}</b> own / owner / {tx("নিজে (owner)", "নিজে (মালিক)")}, borga / borgadar / {tx("বর্গা (sharecropper)", "বর্গা (বর্গাদার)")}।<br />
+            <b>{tx("field_type supported values:", "field_type সমর্থিত মান:")}</b> {tx("উচু, নিচু, মাঝারি, others", "উচু, নিচু, মাঝারি, অন্যান্য")}।
           </div>
           <div>
-            <h3 className="font-semibold mb-2">টেমপ্লেট প্রিভিউ / Template preview</h3>
+            <h3 className="font-semibold mb-2">{tx("Template preview", "টেমপ্লেট প্রিভিউ")}</h3>
             <div className="overflow-x-auto rounded-md border">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>কলাম / Column</TableHead>
-                    <TableHead>আবশ্যক</TableHead>
-                    <TableHead>বাংলা</TableHead>
+                    <TableHead>{tx("Column", "কলাম")}</TableHead>
+                    <TableHead>{tx("Required", "আবশ্যক")}</TableHead>
+                    <TableHead>{tx("Bangla", "বাংলা")}</TableHead>
                     <TableHead>English</TableHead>
-                    <TableHead>নমুনা / Sample</TableHead>
+                    <TableHead>{tx("Sample", "নমুনা")}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -680,8 +680,8 @@ export default function LandsImport() {
                       <TableCell className="font-mono text-xs">{col}</TableCell>
                       <TableCell>
                         {COL_HELP[col].required
-                          ? <Badge variant="destructive">আবশ্যক</Badge>
-                          : <Badge variant="outline">ঐচ্ছিক</Badge>}
+                          ? <Badge variant="destructive">{tx("Required", "আবশ্যক")}</Badge>
+                          : <Badge variant="outline">{tx("Optional", "ঐচ্ছিক")}</Badge>}
                       </TableCell>
                       <TableCell className="text-xs">{COL_HELP[col].bn}</TableCell>
                       <TableCell className="text-xs">{COL_HELP[col].en}</TableCell>
@@ -694,19 +694,19 @@ export default function LandsImport() {
           </div>
           <div className="flex flex-wrap gap-2">
             <Button onClick={() => downloadTemplate("xlsx")} variant="outline">
-              <Download className="h-4 w-4 mr-2" /> টেমপ্লেট (XLSX)
+              <Download className="h-4 w-4 mr-2" /> {tx("Template (XLSX)", "টেমপ্লেট (XLSX)")}
             </Button>
             <Button onClick={() => downloadTemplate("csv")} variant="outline">
-              <Download className="h-4 w-4 mr-2" /> টেমপ্লেট (CSV)
+              <Download className="h-4 w-4 mr-2" /> {tx("Template (CSV)", "টেমপ্লেট (CSV)")}
             </Button>
             <Button onClick={() => downloadSample("xlsx")} variant="secondary">
-              <Download className="h-4 w-4 mr-2" /> নমুনা ডেটাসহ (XLSX)
+              <Download className="h-4 w-4 mr-2" /> {tx("With sample data (XLSX)", "নমুনা ডেটাসহ (XLSX)")}
             </Button>
             <Button onClick={() => downloadSample("csv")} variant="secondary">
-              <Download className="h-4 w-4 mr-2" /> নমুনা ডেটাসহ (CSV)
+              <Download className="h-4 w-4 mr-2" /> {tx("With sample data (CSV)", "নমুনা ডেটাসহ (CSV)")}
             </Button>
             <Button onClick={() => setStep(1)} className="ml-auto">
-              পরবর্তী <ArrowRight className="h-4 w-4 ml-2" />
+              {tx("Next", "পরবর্তী")} <ArrowRight className="h-4 w-4 ml-2" />
             </Button>
           </div>
         </Card>
@@ -724,32 +724,32 @@ export default function LandsImport() {
           />
           <div className="flex flex-wrap items-center gap-2">
             <Button onClick={() => fileRef.current?.click()} variant="default">
-              <Upload className="h-4 w-4 mr-2" /> ফাইল নির্বাচন করুন
+              <Upload className="h-4 w-4 mr-2" /> {tx("Select file", "ফাইল নির্বাচন করুন")}
             </Button>
-            {fileName && <Badge variant="secondary">{fileName} — {records.length} সারি</Badge>}
+            {fileName && <Badge variant="secondary">{fileName} — {records.length} {tx("rows", "সারি")}</Badge>}
           </div>
 
           {headers.length > 0 && (
             <div>
-              <h3 className="font-semibold mb-2">কলাম ম্যাপিং</h3>
+              <h3 className="font-semibold mb-2">{tx("Column mapping", "কলাম ম্যাপিং")}</h3>
               <p className="text-sm text-muted-foreground mb-3">
-                আপনার ফাইলের কলাম সিস্টেমের ফিল্ডের সাথে মিলিয়ে দিন। মিলে গেলে স্বয়ংক্রিয়ভাবে সেট হয়ে যায়।
+                {tx("Map your file columns to system fields. Matches are set automatically.", "আপনার ফাইলের কলাম সিস্টেমের ফিল্ডের সাথে মিলিয়ে দিন। মিলে গেলে স্বয়ংক্রিয়ভাবে সেট হয়ে যায়।")}
               </p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {COLUMNS.map((col) => (
                   <div key={col} className="flex items-center gap-2">
                     <label className="text-sm w-44 shrink-0">
-                      {COL_LABELS[col]}
+                      {tx(COL_HELP[col].en, COL_HELP[col].bn)}
                     </label>
                     <Select
                       value={mapping[col] || "__none__"}
                       onValueChange={(v) => setMapping((m) => ({ ...m, [col]: v === "__none__" ? "" : v }))}
                     >
                       <SelectTrigger className="flex-1">
-                        <SelectValue placeholder="— কলাম নির্বাচন —" />
+                        <SelectValue placeholder={tx("— select column —", "— কলাম নির্বাচন —")} />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="__none__">— নেই —</SelectItem>
+                        <SelectItem value="__none__">{tx("— none —", "— নেই —")}</SelectItem>
                         {headers.map((h) => (
                           <SelectItem key={h} value={h}>{h}</SelectItem>
                         ))}
@@ -763,11 +763,11 @@ export default function LandsImport() {
 
           <div className="flex justify-between gap-2">
             <Button variant="outline" onClick={() => setStep(0)}>
-              <ArrowLeft className="h-4 w-4 mr-2" /> পূর্ববর্তী
+              <ArrowLeft className="h-4 w-4 mr-2" /> {tx("Previous", "পূর্ববর্তী")}
             </Button>
             <Button onClick={validateRows} disabled={records.length === 0 || validating}>
               {validating ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
-              যাচাই করুন <ArrowRight className="h-4 w-4 ml-2" />
+              {tx("Validate", "যাচাই করুন")} <ArrowRight className="h-4 w-4 ml-2" />
             </Button>
           </div>
         </Card>
@@ -778,33 +778,33 @@ export default function LandsImport() {
         <>
           <Card className="mt-4 p-4 space-y-3">
             <div className="flex flex-wrap gap-2 text-sm">
-              <Badge variant="secondary">মোট: {rows.length}</Badge>
-              <Badge variant="default">প্রস্তুত: {importable.length}</Badge>
-              <Badge variant="destructive">ত্রুটি: {invalidRows.length}</Badge>
+              <Badge variant="secondary">{tx("Total", "মোট")}: {rows.length}</Badge>
+              <Badge variant="default">{tx("Ready", "প্রস্তুত")}: {importable.length}</Badge>
+              <Badge variant="destructive">{tx("Errors", "ত্রুটি")}: {invalidRows.length}</Badge>
             </div>
             {invalidRows.length > 0 && (
               <Alert variant="destructive">
                 <AlertTriangle className="h-4 w-4" />
-                <AlertTitle>কিছু সারিতে ত্রুটি আছে</AlertTitle>
+                <AlertTitle>{tx("Some rows have errors", "কিছু সারিতে ত্রুটি আছে")}</AlertTitle>
                 <AlertDescription>
-                  ত্রুটিপূর্ণ সারি ইমপোর্ট হবে না। নিচের টেবিলে কারণ দেখুন অথবা ত্রুটি রিপোর্ট ডাউনলোড করে ঠিক করুন।
+                  {tx("Rows with errors will not be imported. See the reason in the table below or download the error report to fix them.", "ত্রুটিপূর্ণ সারি ইমপোর্ট হবে না। নিচের টেবিলে কারণ দেখুন অথবা ত্রুটি রিপোর্ট ডাউনলোড করে ঠিক করুন।")}
                 </AlertDescription>
               </Alert>
             )}
             <div className="flex flex-wrap justify-between gap-2">
               <div className="flex gap-2">
                 <Button variant="outline" onClick={() => setStep(1)}>
-                  <ArrowLeft className="h-4 w-4 mr-2" /> পূর্ববর্তী
+                  <ArrowLeft className="h-4 w-4 mr-2" /> {tx("Previous", "পূর্ববর্তী")}
                 </Button>
                 {invalidRows.length > 0 && (
                   <Button variant="outline" onClick={downloadErrorCsv}>
-                    <FileWarning className="h-4 w-4 mr-2" /> ত্রুটি রিপোর্ট (CSV)
+                    <FileWarning className="h-4 w-4 mr-2" /> {tx("Error report (CSV)", "ত্রুটি রিপোর্ট (CSV)")}
                   </Button>
                 )}
               </div>
               <Button onClick={importValid} disabled={saving || importable.length === 0}>
                 {saving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
-                {importable.length} টি জমি ইমপোর্ট করুন
+                {tx(`Import ${importable.length} lands`, `${importable.length} টি জমি ইমপোর্ট করুন`)}
               </Button>
             </div>
           </Card>
@@ -814,16 +814,16 @@ export default function LandsImport() {
               <TableHeader>
                 <TableRow>
                   <TableHead>#</TableHead>
-                  <TableHead>অবস্থা</TableHead>
-                  <TableHead>মালিক ID</TableHead>
+                  <TableHead>{tx("Status", "অবস্থা")}</TableHead>
+                  <TableHead>{tx("Owner ID", "মালিক ID")}</TableHead>
                   <TableHead>land_ref</TableHead>
-                  <TableHead>মৌজা</TableHead>
-                  <TableHead>দাগ</TableHead>
-                  <TableHead>ধরন</TableHead>
-                  <TableHead>পরিমাণ</TableHead>
+                  <TableHead>{tx("Mouza", "মৌজা")}</TableHead>
+                  <TableHead>{tx("Dag", "দাগ")}</TableHead>
+                  <TableHead>{tx("Type", "ধরন")}</TableHead>
+                  <TableHead>{tx("Size", "পরিমাণ")}</TableHead>
                   <TableHead>own/borga</TableHead>
-                  <TableHead>বর্গাদার</TableHead>
-                  <TableHead>সমস্যা</TableHead>
+                  <TableHead>{tx("Sharecropper", "বর্গাদার")}</TableHead>
+                  <TableHead>{tx("Issue", "সমস্যা")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -831,11 +831,11 @@ export default function LandsImport() {
                   <TableRow key={r.idx} className={r.status === "invalid" || r.status === "error" ? "bg-destructive/10" : ""}>
                     <TableCell>{r.idx + 1}</TableCell>
                     <TableCell>
-                      {r.status === "saved" && <Badge>সংরক্ষিত</Badge>}
+                      {r.status === "saved" && <Badge>{tx("Saved", "সংরক্ষিত")}</Badge>}
                       {r.status === "saving" && <Badge variant="secondary"><Loader2 className="h-3 w-3 animate-spin mr-1" />…</Badge>}
-                      {r.status === "valid" && <Badge variant="secondary">প্রস্তুত</Badge>}
-                      {r.status === "invalid" && <Badge variant="destructive">ত্রুটি</Badge>}
-                      {r.status === "error" && <Badge variant="destructive">ব্যর্থ</Badge>}
+                      {r.status === "valid" && <Badge variant="secondary">{tx("Ready", "প্রস্তুত")}</Badge>}
+                      {r.status === "invalid" && <Badge variant="destructive">{tx("Error", "ত্রুটি")}</Badge>}
+                      {r.status === "error" && <Badge variant="destructive">{tx("Failed", "ব্যর্থ")}</Badge>}
                     </TableCell>
                     <TableCell className="font-mono text-xs">{String(r.raw.owner_farmer_id ?? "")}</TableCell>
                     <TableCell className="font-mono text-xs">{String(r.raw.land_ref ?? "")}</TableCell>
@@ -862,32 +862,32 @@ export default function LandsImport() {
         <Card className="mt-4 p-6 space-y-4">
           <div className="flex items-center gap-2">
             <CheckCircle2 className="h-6 w-6 text-green-600" />
-            <h3 className="text-lg font-semibold">ইমপোর্ট সারসংক্ষেপ</h3>
+            <h3 className="text-lg font-semibold">{tx("Import summary", "ইমপোর্ট সারসংক্ষেপ")}</h3>
           </div>
           <div className="grid grid-cols-3 gap-4">
             <div className="rounded-lg border p-4 text-center">
               <div className="text-2xl font-bold">{summary.processed}</div>
-              <div className="text-sm text-muted-foreground">প্রসেস হয়েছে</div>
+              <div className="text-sm text-muted-foreground">{tx("Processed", "প্রসেস হয়েছে")}</div>
             </div>
             <div className="rounded-lg border p-4 text-center">
               <div className="text-2xl font-bold text-green-600">{summary.inserted}</div>
-              <div className="text-sm text-muted-foreground">সফল</div>
+              <div className="text-sm text-muted-foreground">{tx("Successful", "সফল")}</div>
             </div>
             <div className="rounded-lg border p-4 text-center">
               <div className="text-2xl font-bold text-destructive">{summary.failed}</div>
-              <div className="text-sm text-muted-foreground">ব্যর্থ</div>
+              <div className="text-sm text-muted-foreground">{tx("Failed", "ব্যর্থ")}</div>
             </div>
           </div>
           {(summary.failed > 0 || invalidRows.length > 0) && (
             <Button variant="outline" onClick={downloadErrorCsv}>
-              <FileWarning className="h-4 w-4 mr-2" /> ব্যর্থ সারি রিপোর্ট (CSV)
+              <FileWarning className="h-4 w-4 mr-2" /> {tx("Failed rows report (CSV)", "ব্যর্থ সারি রিপোর্ট (CSV)")}
             </Button>
           )}
           <div className="flex gap-2">
             <Button variant="outline" onClick={() => setStep(2)}>
-              <ArrowLeft className="h-4 w-4 mr-2" /> টেবিলে ফিরে যান
+              <ArrowLeft className="h-4 w-4 mr-2" /> {tx("Back to table", "টেবিলে ফিরে যান")}
             </Button>
-            <Button onClick={resetAll}>নতুন ইমপোর্ট</Button>
+            <Button onClick={resetAll}>{tx("New import", "নতুন ইমপোর্ট")}</Button>
           </div>
         </Card>
       )}
