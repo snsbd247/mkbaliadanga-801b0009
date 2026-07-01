@@ -73,7 +73,7 @@ export const MENU_SHORTCUTS: MenuShortcut[] = [
   { code: "M69", url: "/admin/farmer-login-audit",                labelKey: "farmerLoginAudit", parentKey: "adminGroup", developerOnly: true },
 
   // Tools & Imports
-  { code: "M71", url: "/import",                                  labelKey: "universalImport",  parentKey: "toolsImports", permKey: "farmers" },
+
   
   { code: "M73", url: "/admin/card-designer",                     labelKey: "cardDesigner",     parentKey: "toolsImports", superOnly: true },
   { code: "M74", url: "/admin/qr-rotation",                       labelKey: "qrRotation",       parentKey: "toolsImports", superOnly: true },
