@@ -1255,6 +1255,7 @@ export default function FarmerDetail() {
                               setLand({
                                 ...land,
                                 dag_no: v,
+                                owner_land_id: src.id ?? "",
                                 land_size: Number(src.land_size ?? 0),
                                 field_type: src.field_type ?? land.field_type,
                                 land_type_id: src.land_type_id ?? land.land_type_id,
