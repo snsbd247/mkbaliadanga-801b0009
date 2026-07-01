@@ -91,6 +91,12 @@ export default function SystemUpdate() {
   const [logs, setLogs] = useState<DevAuditLog[]>([]);
   const [logsOpen, setLogsOpen] = useState(false);
   const [logsLoading, setLogsLoading] = useState(false);
+  const [precheckBusy, setPrecheckBusy] = useState(false);
+  const [offices, setOffices] = useState<Office[]>([]);
+  const [logFrom, setLogFrom] = useState("");
+  const [logTo, setLogTo] = useState("");
+  const [logOffice, setLogOffice] = useState("all");
+  const [exporting, setExporting] = useState<"pdf" | "xlsx" | null>(null);
   const abortRef = useRef<AbortController | null>(null);
 
   const effectiveRemote = status?.remote_url || repoUrl.trim() || readDeploySetting(DEPLOY_REPO_URL_KEY);
