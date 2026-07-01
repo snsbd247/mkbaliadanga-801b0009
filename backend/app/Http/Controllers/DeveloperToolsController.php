@@ -231,10 +231,13 @@ class DeveloperToolsController extends Controller
 
         $this->logDev($request, 'git.pull', $br);
 
+        // Always return 200 so the client can render the real git output.
+        // A non-zero git exit is reported via `ok:false`, not an HTTP error,
+        // otherwise the axios wrapper masks the reason as a generic 500.
         return response()->json([
             'ok' => $pull['ok'],
             'output' => trim($fetch['output']."\n\n".$pull['output']),
-        ], $pull['ok'] ? 200 : 500);
+        ]);
     }
 
     /**
@@ -267,7 +270,7 @@ class DeveloperToolsController extends Controller
                 ($count === 0 ? "সবকিছু হালনাগাদ — কোনো নতুন কমিট নেই।\n\n" : "নতুন কমিট: {$count}\n\n")
                 .$incoming['output']."\n\n".$changed['output']
             ),
-        ], $fetch['ok'] ? 200 : 500);
+        ]);
     }
 
     /**
@@ -291,7 +294,7 @@ class DeveloperToolsController extends Controller
             'ok' => $reset['ok'],
             'last_commit' => $commit['ok'] ? trim($commit['output']) : null,
             'output' => trim($reset['output']),
-        ], $reset['ok'] ? 200 : 500);
+        ]);
     }
 
     private function logDev(Request $request, string $action, string $detail): void
