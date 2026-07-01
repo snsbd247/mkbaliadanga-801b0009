@@ -191,6 +191,17 @@ export const looksLikeSeason = (v: unknown): boolean => {
   return /(আমন|ইরি|বোরো|আউশ|রবি|aman|iri|boro|aus|robi)/i.test(s);
 };
 
+/** Bilingual labels for error categories shown in the summary panel. */
+export const ERROR_CATEGORY_LABELS: Record<string, { en: string; bn: string }> = {
+  season_as_land_type: { en: "Season name used in land_type (seasons belong to invoice import)", bn: "land_type-এ সিজনের নাম (সিজন ইনভয়েস ইমপোর্টে)" },
+  owner: { en: "Owner Farmer ID missing/invalid/not found", bn: "মালিকের Farmer ID নেই/ভুল/পাওয়া যায়নি" },
+  sharecropper: { en: "Sharecropper Farmer ID issue", bn: "বর্গাদার Farmer ID সমস্যা" },
+  land_size: { en: "Land size missing or invalid", bn: "জমির পরিমাণ নেই বা ভুল" },
+  borga: { en: "Borga area / share % / land_ref issue", bn: "বর্গা area / share % / land_ref সমস্যা" },
+  field_type: { en: "field_type derivation issue", bn: "field_type ডেরিভেশন সমস্যা" },
+  other: { en: "Other validation issue", bn: "অন্যান্য যাচাই সমস্যা" },
+};
+
 /** Group row error messages into human-readable categories for the summary panel. */
 export function categorizeErrors(rows: { errorMsg: string | null }[]): { key: string; count: number }[] {
   const buckets: Record<string, number> = {};
