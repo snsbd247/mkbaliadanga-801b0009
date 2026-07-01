@@ -209,7 +209,7 @@ class DeveloperToolsController extends Controller
             ? $this->git(['remote', 'set-url', 'origin', $url])
             : $this->git(['remote', 'add', 'origin', $url]);
 
-        $this->logDev($request, 'git.set_remote', $url);
+        $this->logDev($request, 'git.set_remote', $url, $res['ok'] ? 'ok' : 'failed', $res['output']);
 
         // Always return 200 so the client can render the real git output.
         // A non-zero git exit is reported via `ok:false`, not an HTTP error,
