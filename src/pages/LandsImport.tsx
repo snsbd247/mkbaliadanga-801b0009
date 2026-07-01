@@ -37,7 +37,7 @@ type RowState = {
 };
 
 const COLUMNS = [
-  "owner_farmer_id", "land_ref", "mouza", "dag_no", "land_type", "field_type",
+  "owner_farmer_id", "land_ref", "mouza", "dag_no", "land_type",
   "land_size", "owner_type", "sharecropper_id", "borga_area", "share_percentage", "note",
 ] as const;
 type ColKey = (typeof COLUMNS)[number];
