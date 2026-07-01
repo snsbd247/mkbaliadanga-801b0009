@@ -154,7 +154,7 @@ export function ReceiptSettingsButton() {
             onValueChange={(v) => {
               const next = (v === "a4" ? "a4" : "a5") as PaperSize;
               setPdfPaper(next);
-              setReceiptLayoutSettings({ defaultPaperSize: next });
+              saveLayout({ defaultPaperSize: next });
             }}
           >
             <SelectTrigger><SelectValue /></SelectTrigger>
@@ -175,7 +175,7 @@ export function ReceiptSettingsButton() {
             onValueChange={(v) => {
               const next = (v === "l" ? "l" : "p") as PaperOrientation;
               setPdfOrientation(next);
-              setReceiptLayoutSettings({ defaultOrientation: next });
+              saveLayout({ defaultOrientation: next });
             }}
           >
             <SelectTrigger><SelectValue /></SelectTrigger>
@@ -210,7 +210,7 @@ export function ReceiptSettingsButton() {
               checked={wmEnabled}
               onChange={(e) => {
                 setWmEnabled(e.target.checked);
-                setReceiptLayoutSettings({ watermarkEnabled: e.target.checked });
+                saveLayout({ watermarkEnabled: e.target.checked });
               }}
             />
             <span className="font-semibold">Watermark (receipt background)</span>
@@ -220,7 +220,7 @@ export function ReceiptSettingsButton() {
             value={wmText}
             onChange={(e) => {
               setWmText(e.target.value);
-              setReceiptLayoutSettings({ watermarkText: e.target.value });
+              saveLayout({ watermarkText: e.target.value });
             }}
             disabled={!wmEnabled}
           />
@@ -237,7 +237,7 @@ export function ReceiptSettingsButton() {
               <Input
                 type="number" min={24} max={72}
                 value={pagePad}
-                onChange={(e) => { const n = Number(e.target.value); setPagePad(n); setReceiptLayoutSettings({ irrigationPagePaddingPx: n }); }}
+                onChange={(e) => { const n = Number(e.target.value); setPagePad(n); saveLayout({ irrigationPagePaddingPx: n }); }}
               />
             </div>
             <div>
@@ -245,7 +245,7 @@ export function ReceiptSettingsButton() {
               <Input
                 type="number" min={12} max={96}
                 value={bottomPad}
-                onChange={(e) => { const n = Number(e.target.value); setBottomPad(n); setReceiptLayoutSettings({ irrigationBottomPaddingPx: n }); }}
+                onChange={(e) => { const n = Number(e.target.value); setBottomPad(n); saveLayout({ irrigationBottomPaddingPx: n }); }}
               />
             </div>
             <div>
@@ -253,7 +253,7 @@ export function ReceiptSettingsButton() {
               <Input
                 type="number" min={0} max={48}
                 value={holdingPad}
-                onChange={(e) => { const n = Number(e.target.value); setHoldingPad(n); setReceiptLayoutSettings({ holdingBottomPaddingPx: n }); }}
+                onChange={(e) => { const n = Number(e.target.value); setHoldingPad(n); saveLayout({ holdingBottomPaddingPx: n }); }}
               />
             </div>
           </div>
