@@ -176,6 +176,16 @@ const round4 = (v: number) => Math.round(v * 10000) / 10000;
 const isBorgaType = (v: unknown) =>
   ["borga", "borgadar", "বর্গা", "বর্গাদার", "share", "sharecrop"].includes(String(v ?? "").trim().toLowerCase());
 
+// Season names must never be used as land_type — seasons belong to invoice import.
+export const looksLikeSeason = (v: unknown): boolean => {
+  const s = String(v ?? "").trim().toLowerCase();
+  if (!s) return false;
+  // Bengali season keywords + English equivalents (aman/iri/boro/aus/robi)
+  return /(আমন|ইরি|বোরো|আউশ|রবি|aman|iri|boro|aus|robi)/i.test(s);
+};
+
+
+
 export default function LandsImport() {
   const { officeId, user } = useAuth();
   const { tx } = useLang();
