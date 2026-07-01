@@ -197,7 +197,7 @@ export default function FarmerDetail() {
 
   async function loadAll() {
     const [f, l, s, ln, ir, sh, pm] = await Promise.all([
-      db.from("farmers").select("*, offices(name), divisions(name,name_bn), districts(name,name_bn), upazilas(name,name_bn), unions(name,name_bn), mouzas(name,name_bn)").eq("id", id!).maybeSingle(),
+      db.from("farmers").select("*, offices(name), divisions(name,name_bn), districts(name,name_bn), upazilas(name,name_bn)").eq("id", id!).maybeSingle(),
       (db.from as any)("lands_with_location").select("*").eq("farmer_id", id!).order("created_at"),
       db.from("savings_transactions").select("*").eq("farmer_id", id!).is("deleted_at", null).order("txn_date", { ascending: false }),
       db.from("loans").select("*, loan_payments(amount,paid_on)").eq("farmer_id", id!).is("deleted_at", null).order("issued_on", { ascending: false }),
