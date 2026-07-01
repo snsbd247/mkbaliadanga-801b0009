@@ -178,7 +178,7 @@ const isBorgaType = (v: unknown) =>
 const STEPS = ["নির্দেশনা", "আপলোড ও ম্যাপিং", "প্রিভিউ ও যাচাই", "সংরক্ষণ ও সারসংক্ষেপ"];
 
 export default function LandsImport() {
-  const { officeId } = useAuth();
+  const { officeId, user } = useAuth();
   const fileRef = useRef<HTMLInputElement>(null);
   const [step, setStep] = useState(0);
   const [fileName, setFileName] = useState("");
