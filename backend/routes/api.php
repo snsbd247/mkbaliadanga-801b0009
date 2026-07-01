@@ -217,6 +217,8 @@ Route::middleware(['auth:sanctum', 'developer'])->prefix('dev')->group(function 
     Route::get('/git/status', [DeveloperToolsController::class, 'gitStatus']);
     Route::post('/git/remote', [DeveloperToolsController::class, 'setRemote']);
     Route::post('/git/pull', [DeveloperToolsController::class, 'pull']);
+    Route::post('/git/dry-run', [DeveloperToolsController::class, 'dryRun']);
+    Route::post('/git/rollback', [DeveloperToolsController::class, 'rollback']);
 });
 
 // ── Farmer portal (self-service: code login or phone + OTP) ───────────
