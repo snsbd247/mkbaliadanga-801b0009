@@ -106,7 +106,7 @@ import FarmersImport from "./pages/FarmersImport";
 import LandsImport from "./pages/LandsImport";
 import OpeningDueImport from "./pages/OpeningDueImport";
 import FarmerMerge from "./pages/admin/FarmerMerge";
-import DataImport from "./pages/DataImport";
+
 import VoterList from "./pages/VoterList";
 import VoterAudit from "./pages/VoterAudit";
 import VoterHistory from "./pages/VoterHistory";
@@ -298,7 +298,7 @@ const App = () => (
                 <Route path="/admin/audit-timeline" element={<RequireRole roles={["admin","super_admin"]}><AuditTimeline /></RequireRole>} />
                 <Route path="/admin/import-audit" element={<RequireRole roles={["admin","super_admin"]}><ImportAuditLogs /></RequireRole>} />
                 <Route path="/farmers/import" element={<RequirePerm module="farmers" action="can_add"><FarmersImport /></RequirePerm>} />
-                <Route path="/import" element={<RequirePerm module="farmers" action="can_add"><DataImport /></RequirePerm>} />
+                
                 <Route path="/users" element={<RequireRole roles={["super_admin"]}><Users /></RequireRole>} />
                 <Route path="/settings" element={<RequireRole roles={["super_admin"]}><Settings /></RequireRole>} />
                 <Route path="/scan" element={<RequirePerm module="payments"><Scan /></RequirePerm>} />
