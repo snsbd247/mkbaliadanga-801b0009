@@ -278,7 +278,6 @@ export default function IrrigationInvoiceImport() {
             owner_farmer_id: r.ownerId,
             farmer_id: inv.billedFarmerId,
             is_borga: inv.isBorga,
-            billed_area: inv.area,
             irrigation_amount: inv.irrigationAmount,
             maintenance_amount: inv.maintenanceAmount,
             canal_amount: inv.canalAmount,
