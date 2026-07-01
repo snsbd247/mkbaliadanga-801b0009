@@ -1492,6 +1492,7 @@ function GenerateTab({ seasons, offices, userId, isSuper }: any) {
             irrigation_category_name: row.resolved?.categoryName ?? null,
             is_manual_rate: hasManual,
             manual_rate_reason: hasManual ? row.manualReason.trim() : null,
+            note: (row.land.notes ?? "").trim() || null,
             override_reason: hasManual ? row.manualReason.trim() : null,
             calculation_snapshot: {
               rate_per_shotok: appliedRate,
