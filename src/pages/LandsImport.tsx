@@ -495,7 +495,20 @@ export default function LandsImport() {
 
   return (
     <>
-      <PageHeader title="জমি ইমপোর্ট" description="নিজের চাষ ও বর্গা জমি একসাথে আপলোড করুন" />
+      <PageHeader
+        title="জমি ইমপোর্ট"
+        description="নিজের চাষ ও বর্গা জমি একসাথে আপলোড করুন"
+        actions={
+          <>
+            <Button size="sm" variant="outline" onClick={() => downloadTemplate("xlsx")}>
+              <Download className="h-4 w-4 mr-2" /> টেমপ্লেট (XLSX)
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => downloadTemplate("csv")}>
+              <Download className="h-4 w-4 mr-2" /> টেমপ্লেট (CSV)
+            </Button>
+          </>
+        }
+      />
 
       {/* Stepper */}
       <Card className="p-4">
