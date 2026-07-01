@@ -680,6 +680,9 @@ export default function LandsImport() {
         description={tx("Upload owner-cultivated and sharecropper lands together", "নিজের চাষ ও বর্গা জমি একসাথে আপলোড করুন")}
         actions={
           <>
+            <Badge variant="outline" className="self-center">
+              {tx("Template", "টেমপ্লেট")} v{LANDS_TEMPLATE_VERSION}
+            </Badge>
             <Button size="sm" variant="outline" onClick={() => downloadTemplate("xlsx")}>
               <Download className="h-4 w-4 mr-2" /> {tx("Template (XLSX)", "টেমপ্লেট (XLSX)")}
             </Button>
