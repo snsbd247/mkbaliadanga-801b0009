@@ -36,6 +36,9 @@ type RowState = {
   warnMsg: string | null;
 };
 
+// Bump when template columns/rules change so users can detect stale headers.
+export const LANDS_TEMPLATE_VERSION = "2026.07.01";
+
 const COLUMNS = [
   "owner_farmer_id", "land_ref", "mouza", "dag_no", "land_type",
   "land_size", "owner_type", "sharecropper_id", "borga_area", "share_percentage", "note",
