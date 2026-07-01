@@ -92,6 +92,11 @@ function clampSpacing(v: any, fallback = 4): number {
   return Number.isFinite(n) ? Math.max(2, Math.min(12, Math.round(n))) : fallback;
 }
 
+function clampRange(v: any, min: number, max: number, fallback: number): number {
+  const n = Number(v);
+  return Number.isFinite(n) ? Math.max(min, Math.min(max, Math.round(n))) : fallback;
+}
+
 export function getReceiptLayoutSettings(): ReceiptLayoutSettings {
   if (typeof localStorage === "undefined") return { ...DEFAULT_RECEIPT_LAYOUT };
   try {
