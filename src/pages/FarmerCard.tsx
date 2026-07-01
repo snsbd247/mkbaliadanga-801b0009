@@ -19,6 +19,7 @@ import { MembershipCard, CardData } from "@/components/card/MembershipCard";
 import { downloadCardPdf } from "@/components/card/cardPdf";
 import { TEMPLATE_LIST, type TemplateId } from "@/components/card/templates";
 import { useCardSettings } from "@/lib/cardSettings";
+import { isLaravelBackend } from "@/lib/backend";
 import { toast } from "sonner";
 
 const FN = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1`;
