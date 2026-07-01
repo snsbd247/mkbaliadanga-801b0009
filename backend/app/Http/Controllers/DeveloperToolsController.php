@@ -306,6 +306,7 @@ class DeveloperToolsController extends Controller
                     'BRANCH' => $branch,
                     'APP_DIR' => $root,
                     'ORIGINAL_HEAD' => $beforeHead ?? '',
+                    'MK_SKIP_SUDOERS' => '1',
                     'DEBIAN_FRONTEND' => 'noninteractive',
                 ]);
                 $process->setTimeout(null);
