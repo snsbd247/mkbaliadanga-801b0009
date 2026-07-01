@@ -19,6 +19,24 @@ import {
 } from "lucide-react";
 
 const REPO_RE = /^(https:\/\/[\w.-]+\/[\w.\-/]+?(\.git)?|[\w.-]+\/[\w.-]+)$/;
+const DEPLOY_REPO_URL_KEY = "deploy_repo_url";
+const DEPLOY_BRANCH_KEY = "deploy_branch";
+const DEPLOY_BASE_PATH_KEY = "deploy_base_path";
+
+function readDeploySetting(key: string, fallback = "") {
+  try {
+    return localStorage.getItem(key) || fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+function writeDeploySetting(key: string, value: string) {
+  try {
+    if (value) localStorage.setItem(key, value);
+    else localStorage.removeItem(key);
+  } catch {}
+}
 
 const PROTECTED = [
   ".git", ".env", ".env.*", "storage/app", "storage/framework/cache/data",
@@ -49,9 +67,9 @@ function repoWebUrl(remote: string | null): string | null {
 
 export default function SystemUpdate() {
   const [status, setStatus] = useState<GitStatus | null>(null);
-  const [repoUrl, setRepoUrl] = useState("");
-  const [branch, setBranch] = useState("");
-  const [basePath, setBasePath] = useState(() => localStorage.getItem("deploy_base_path") || "deploy");
+  const [repoUrl, setRepoUrl] = useState(() => readDeploySetting(DEPLOY_REPO_URL_KEY));
+  const [branch, setBranch] = useState(() => readDeploySetting(DEPLOY_BRANCH_KEY));
+  const [basePath, setBasePath] = useState(() => readDeploySetting(DEPLOY_BASE_PATH_KEY, "deploy"));
   const [loading, setLoading] = useState(false);
   const [savingRemote, setSavingRemote] = useState(false);
   const [busy, setBusy] = useState<"pull" | "dry" | "rollback" | null>(null);
@@ -73,8 +91,8 @@ export default function SystemUpdate() {
     try {
       const s = await DevToolsApi.gitStatus();
       setStatus(s);
-      setRepoUrl(s.remote_url ?? "");
-      setBranch(s.branch ?? "");
+      setRepoUrl((current) => s.remote_url || readDeploySetting(DEPLOY_REPO_URL_KEY) || current);
+      setBranch((current) => readDeploySetting(DEPLOY_BRANCH_KEY) || s.branch || current);
       setUpdatedAt(Date.now());
     } catch (e: any) {
       toast.error(e.message ?? "স্ট্যাটাস লোড করা যায়নি");
@@ -104,10 +122,22 @@ export default function SystemUpdate() {
     try {
       const url = repoUrl.trim();
       const full = url.startsWith("http") ? url : `https://github.com/${url}`;
+      const savedBranch = branch.trim();
+      const savedBasePath = basePath.trim() || "deploy";
       const r = await DevToolsApi.setRemote(full);
-      localStorage.setItem("deploy_base_path", basePath.trim() || "deploy");
+      writeDeploySetting(DEPLOY_REPO_URL_KEY, r.remote_url || full);
+      writeDeploySetting(DEPLOY_BRANCH_KEY, savedBranch);
+      writeDeploySetting(DEPLOY_BASE_PATH_KEY, savedBasePath);
+      setRepoUrl(r.remote_url || full);
+      setBranch(savedBranch);
+      setBasePath(savedBasePath);
       toast.success("রিপো সেটিংস সেভ হয়েছে");
-      setStatus((s) => (s ? { ...s, remote_url: r.remote_url } : s));
+      setStatus((s) => (s ? { ...s, remote_url: r.remote_url || full, branch: savedBranch || s.branch } : {
+        is_repo: true,
+        remote_url: r.remote_url || full,
+        branch: savedBranch || null,
+        last_commit: null,
+      }));
       setSettingsOpen(false);
     } catch (e: any) {
       toast.error(e.message ?? "রিমোট সেট করা যায়নি");
