@@ -310,12 +310,27 @@ class DeveloperToolsController extends Controller
                     'DEBIAN_FRONTEND' => 'noninteractive',
                 ]);
                 $process->setTimeout(null);
+                $process->setIdleTimeout(null);
 
                 try {
-                    $process->run(function ($type, $buffer) use ($emit, &$collected) {
+                    // Start non-blocking so we can emit a heartbeat during long
+                    // silent steps (composer/npm build). Without periodic bytes
+                    // the reverse proxy idle-times-out the stream and the browser
+                    // fetch dies with a bare "network error".
+                    $process->start(function ($type, $buffer) use ($emit, &$collected) {
                         $collected .= $buffer;
                         $emit($buffer);
                     });
+
+                    $lastBeat = microtime(true);
+                    while ($process->isRunning()) {
+                        usleep(200000); // 0.2s
+                        if (microtime(true) - $lastBeat >= 10) {
+                            $emit("· \n"); // keep-alive tick; ignored by log view
+                            $lastBeat = microtime(true);
+                        }
+                    }
+                    $process->wait();
                     $ok = $process->isSuccessful();
                 } catch (\Throwable $e) {
                     $emit("\n✗ চালাতে ব্যর্থ: ".$e->getMessage()."\n");
