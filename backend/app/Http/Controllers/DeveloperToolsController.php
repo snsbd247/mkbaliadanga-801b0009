@@ -338,6 +338,7 @@ class DeveloperToolsController extends Controller
         ]);
     }
 
+    /**
      * Dry-run: fetch origin and report the incoming commits that a Pull & Deploy
      * would apply, without changing any local files.
      */
