@@ -439,6 +439,9 @@ export default function SystemUpdate() {
                 onClick={() => document.getElementById("deploy-output")?.scrollIntoView({ behavior: "smooth" })}>
                 <Terminal className="h-4 w-4" />
               </Button>
+              <Button variant="ghost" size="icon" title="Audit log" onClick={openLogs}>
+                <ClipboardList className="h-4 w-4" />
+              </Button>
 
               <Dialog open={settingsOpen} onOpenChange={setSettingsOpen}>
                 <DialogTrigger asChild>
