@@ -126,6 +126,32 @@ export default function SystemUpdate() {
     return `Updated ${mins} minute${mins > 1 ? "s" : ""} ago`;
   }, [updatedAt, loading]);
 
+  const runPreCheck = async (): Promise<boolean> => {
+    if (!urlValid) {
+      toast.error("সঠিক পাবলিক গিট URL অথবা owner/repo দিন");
+      return false;
+    }
+    setChecking(true);
+    setChecks([]);
+    try {
+      const url = repoUrl.trim();
+      const full = url.startsWith("http") ? url : `https://github.com/${url}`;
+      const r = await DevToolsApi.checkRemote(full);
+      setChecks(r.checks || []);
+      setOutput(r.output || "");
+      r.ok
+        ? toast.success("প্রি-চেক সফল — রিমোট সেট করা নিরাপদ")
+        : toast.error("প্রি-চেক ব্যর্থ — নিচের ফলাফল দেখুন");
+      return r.ok;
+    } catch (e: any) {
+      setOutput(e?.data?.output ?? e.message ?? "");
+      toast.error(e.message ?? "প্রি-চেক ব্যর্থ");
+      return false;
+    } finally {
+      setChecking(false);
+    }
+  };
+
   const saveRemote = async () => {
     if (!urlValid) {
       toast.error("সঠিক পাবলিক গিট URL অথবা owner/repo দিন");
@@ -137,6 +163,16 @@ export default function SystemUpdate() {
       const full = url.startsWith("http") ? url : `https://github.com/${url}`;
       const savedBranch = branch.trim();
       const savedBasePath = basePath.trim() || "deploy";
+
+      // Pre-check the remote before committing it.
+      const pre = await DevToolsApi.checkRemote(full);
+      setChecks(pre.checks || []);
+      if (!pre.ok) {
+        setOutput(pre.output || "");
+        toast.error("প্রি-চেক ব্যর্থ — রিমোট সেট করা হয়নি");
+        return;
+      }
+
       const r = await DevToolsApi.setRemote(full);
       if (r.ok === false) {
         setOutput(r.output || "");
@@ -165,18 +201,44 @@ export default function SystemUpdate() {
     }
   };
 
+  const cancelOp = () => {
+    abortRef.current?.abort();
+    toast.message("অপারেশন বাতিল করার অনুরোধ পাঠানো হয়েছে…");
+  };
+
+  const isAbort = (e: any) =>
+    e?.code === "ERR_CANCELED" || e?.name === "CanceledError" || e?.message === "canceled";
+
   const runPull = async () => {
     setBusy("pull");
     setOutput("");
+    setLastFailed(null);
+    const controller = new AbortController();
+    abortRef.current = controller;
     try {
-      const r = await DevToolsApi.pull(branch.trim() || undefined);
+      const r = await DevToolsApi.pull(branch.trim() || undefined, {
+        signal: controller.signal,
+        timeout: GIT_OP_TIMEOUT_MS,
+      });
       setOutput(r.output);
-      r.ok ? toast.success("Pull & Deploy সম্পন্ন হয়েছে") : toast.error("Pull & Deploy ব্যর্থ হয়েছে");
+      if (r.ok) {
+        toast.success("Pull & Deploy সম্পন্ন হয়েছে");
+      } else {
+        setLastFailed("pull");
+        toast.error("Pull & Deploy ব্যর্থ হয়েছে");
+      }
       load();
     } catch (e: any) {
-      setOutput(e?.data?.output ?? e.message ?? "");
-      toast.error(e.message ?? "Pull ব্যর্থ");
+      if (isAbort(e)) {
+        setOutput("অপারেশন বাতিল করা হয়েছে।");
+        toast.message("Pull & Deploy বাতিল করা হয়েছে");
+      } else {
+        setOutput(e?.data?.output ?? e.message ?? "");
+        setLastFailed("pull");
+        toast.error(e.message ?? "Pull ব্যর্থ");
+      }
     } finally {
+      abortRef.current = null;
       setBusy(null);
     }
   };
@@ -184,14 +246,27 @@ export default function SystemUpdate() {
   const runDry = async () => {
     setBusy("dry");
     setOutput("");
+    setLastFailed(null);
+    const controller = new AbortController();
+    abortRef.current = controller;
     try {
-      const r = await DevToolsApi.dryRun(branch.trim() || undefined);
+      const r = await DevToolsApi.dryRun(branch.trim() || undefined, {
+        signal: controller.signal,
+        timeout: GIT_OP_TIMEOUT_MS,
+      });
       setOutput(r.output);
       toast.success(r.incoming_count > 0 ? `${r.incoming_count} টি নতুন কমিট পাওয়া গেছে` : "সবকিছু হালনাগাদ");
     } catch (e: any) {
-      setOutput(e?.data?.output ?? e.message ?? "");
-      toast.error(e.message ?? "Dry-Run ব্যর্থ");
+      if (isAbort(e)) {
+        setOutput("অপারেশন বাতিল করা হয়েছে।");
+        toast.message("Dry-Run বাতিল করা হয়েছে");
+      } else {
+        setOutput(e?.data?.output ?? e.message ?? "");
+        setLastFailed("dry");
+        toast.error(e.message ?? "Dry-Run ব্যর্থ");
+      }
     } finally {
+      abortRef.current = null;
       setBusy(null);
     }
   };
@@ -199,16 +274,58 @@ export default function SystemUpdate() {
   const runRollback = async () => {
     setBusy("rollback");
     setOutput("");
+    setLastFailed(null);
     try {
       const r = await DevToolsApi.rollback();
       setOutput(r.output);
-      r.ok ? toast.success("রোলব্যাক সম্পন্ন হয়েছে") : toast.error("রোলব্যাক ব্যর্থ হয়েছে");
+      if (r.ok) {
+        toast.success("রোলব্যাক সম্পন্ন হয়েছে");
+      } else {
+        setLastFailed("rollback");
+        toast.error("রোলব্যাক ব্যর্থ হয়েছে");
+      }
       load();
     } catch (e: any) {
       setOutput(e?.data?.output ?? e.message ?? "");
+      setLastFailed("rollback");
       toast.error(e.message ?? "রোলব্যাক ব্যর্থ");
     } finally {
       setBusy(null);
+    }
+  };
+
+  const retryLast = () => {
+    if (lastFailed === "pull") runPull();
+    else if (lastFailed === "dry") runDry();
+    else if (lastFailed === "rollback") runRollback();
+  };
+
+  const copyOutput = async () => {
+    if (!output) return;
+    try {
+      await navigator.clipboard.writeText(output);
+      toast.success("আউটপুট কপি হয়েছে");
+    } catch {
+      toast.error("কপি করা যায়নি");
+    }
+  };
+
+  const loadLogs = async () => {
+    setLogsLoading(true);
+    try {
+      const r = await DevToolsApi.auditLogs();
+      setLogs(r.logs || []);
+    } catch (e: any) {
+      toast.error(e.message ?? "অডিট লগ লোড করা যায়নি");
+    } finally {
+      setLogsLoading(false);
+    }
+  };
+
+  const openLogs = () => {
+    setLogsOpen(true);
+    loadLogs();
+  };
     }
   };
 
