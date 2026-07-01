@@ -499,14 +499,10 @@ export default function LandsImport() {
 
         // dag_no may hold multiple dag numbers. Comma/semicolon separated
         // values (or a JSON array) are supported. A slash (e.g. "1/330") is a
-        // valid single dag and kept as-is; only a pipe (|) is unsupported.
-        const dagStr = raw.dag_no == null ? "" : String(raw.dag_no).trim();
-        if (dagStr) {
-          const isJsonArray = /^\s*\[.*\]\s*$/.test(dagStr);
-          if (!isJsonArray && /\|/.test(dagStr)) {
-            warns.push(`dag_no: একাধিক দাগ কমা (,) বা সেমিকোলন (;) দিয়ে দিন — পাওয়া গেছে "${dagStr}"`);
-          }
-
+        // valid single dag and kept as-is; only a pipe (|) is warned (never blocked).
+        const dagAnalysis = analyzeDagNo(raw.dag_no);
+        if (dagAnalysis.warnMsg) {
+          warns.push(dagAnalysis.warnMsg);
         }
 
         return {
