@@ -26,9 +26,19 @@ export function setApiToken(t: string | null) {
   } catch {}
 }
 
-const baseURL =
-  (import.meta as any).env?.VITE_API_URL ||
-  (typeof window !== "undefined" ? `${window.location.protocol}//${window.location.hostname}:8080/api` : "/api");
+function resolveBaseURL(): string {
+  const explicit = (import.meta as any).env?.VITE_API_URL as string | undefined;
+  if (explicit) return explicit;
+  if (typeof window === "undefined") return "/api";
+  // Local Vite dev server (port 8080): talk to the Laravel backend on the same host.
+  if (window.location.port === "8080") {
+    return `${window.location.protocol}//${window.location.hostname}:8080/api`;
+  }
+  // Deployed (VPS/preview): API is proxied same-origin under /api.
+  return "/api";
+}
+
+const baseURL = resolveBaseURL();
 
 export const api: AxiosInstance = axios.create({
   baseURL,
