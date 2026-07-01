@@ -534,12 +534,16 @@ class DeveloperToolsController extends Controller
 
         $stat = $this->git(['status', '--porcelain']);
         $clean = $stat['ok'] && trim($stat['output']) === '';
-        $checks[] = ['label' => 'ওয়ার্কিং ট্রি', 'ok' => $clean,
-            'detail' => $clean ? 'পরিষ্কার — কোনো লোকাল পরিবর্তন নেই।' : 'লোকাল পরিবর্তন আছে (পুল ব্যর্থ হতে পারে)।'];
+        // Not blocking: update.sh runs `git reset --hard origin/BRANCH`, which
+        // discards local changes, so a dirty tree never prevents the pull.
+        $checks[] = ['label' => 'ওয়ার্কিং ট্রি', 'ok' => true, 'warn' => ! $clean,
+            'detail' => $clean ? 'পরিষ্কার — কোনো লোকাল পরিবর্তন নেই।' : 'লোকাল পরিবর্তন আছে — ডিপ্লয়ের সময় git reset --hard দিয়ে বাতিল হবে।'];
 
+        // Not blocking: deploy runs as root via sudo, so www-data's own write
+        // permission is not required for the script to succeed.
         $writable = is_writable($root) && is_writable($root.'/backend/storage');
-        $checks[] = ['label' => 'রাইট পারমিশন', 'ok' => $writable,
-            'detail' => $writable ? 'প্রজেক্ট ডিরেক্টরিতে লেখা যায়।' : 'প্রজেক্ট/স্টোরেজ ডিরেক্টরিতে লেখা যাচ্ছে না।'];
+        $checks[] = ['label' => 'রাইট পারমিশন', 'ok' => true, 'warn' => ! $writable,
+            'detail' => $writable ? 'প্রজেক্ট ডিরেক্টরিতে লেখা যায়।' : 'www-data সরাসরি লিখতে পারে না — ডিপ্লয় root (sudo) হিসেবে চলে বলে সমস্যা নেই।'];
 
         foreach (['git', 'php', 'composer', 'npm'] as $bin) {
             $which = new Process(['bash', '-lc', "command -v {$bin}"], $root);
