@@ -79,6 +79,7 @@ export const IRR_EN: typeof IRR_BN = {
   appliedRate: "Applied Rate",
   standardRate: "Standard Rate",
   overrideReason: "Override Reason",
+  note: "Note",
 };
 
 const STATUS_BN: Record<string, string> = {
