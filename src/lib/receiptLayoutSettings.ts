@@ -219,3 +219,17 @@ export function getDefaultPaperSize(): PaperSize {
 export function getDefaultOrientation(): PaperOrientation {
   return getReceiptLayoutSettings().defaultOrientation;
 }
+
+/** Configurable irrigation receipt paddings (px) for printer alignment. */
+export function getIrrigationReceiptPadding(): {
+  page: number;
+  bottom: number;
+  holdingBottom: number;
+} {
+  const s = getReceiptLayoutSettings();
+  return {
+    page: s.irrigationPagePaddingPx,
+    bottom: s.irrigationBottomPaddingPx,
+    holdingBottom: s.holdingBottomPaddingPx,
+  };
+}
