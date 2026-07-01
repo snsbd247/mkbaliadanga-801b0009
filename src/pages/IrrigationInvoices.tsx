@@ -1328,7 +1328,7 @@ function GenerateTab({ seasons, offices, userId, isSuper }: any) {
     setBusy(true);
     setSkippedNoRate(0);
     try {
-      let lq = db.from("lands").select("id, farmer_id, owner_farmer_id, land_size, office_id, dag_no, mouza, field_type, land_type_id").is("deleted_at", null);
+      let lq = db.from("lands").select("id, farmer_id, owner_farmer_id, land_size, office_id, dag_no, mouza, field_type, land_type_id, notes").is("deleted_at", null);
       if (officeId) lq = lq.eq("office_id", officeId);
       const { data: lands, error: lerr } = await lq;
       if (lerr) throw lerr;
