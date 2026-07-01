@@ -534,12 +534,16 @@ class DeveloperToolsController extends Controller
 
         $stat = $this->git(['status', '--porcelain']);
         $clean = $stat['ok'] && trim($stat['output']) === '';
-        $checks[] = ['label' => 'ওয়ার্কিং ট্রি', 'ok' => $clean,
-            'detail' => $clean ? 'পরিষ্কার — কোনো লোকাল পরিবর্তন নেই।' : 'লোকাল পরিবর্তন আছে (পুল ব্যর্থ হতে পারে)।'];
+        // Not blocking: update.sh runs `git reset --hard origin/BRANCH`, which
+        // discards local changes, so a dirty tree never prevents the pull.
+        $checks[] = ['label' => 'ওয়ার্কিং ট্রি', 'ok' => true, 'warn' => ! $clean,
+            'detail' => $clean ? 'পরিষ্কার — কোনো লোকাল পরিবর্তন নেই।' : 'লোকাল পরিবর্তন আছে — ডিপ্লয়ের সময় git reset --hard দিয়ে বাতিল হবে।'];
 
+        // Not blocking: deploy runs as root via sudo, so www-data's own write
+        // permission is not required for the script to succeed.
         $writable = is_writable($root) && is_writable($root.'/backend/storage');
-        $checks[] = ['label' => 'রাইট পারমিশন', 'ok' => $writable,
-            'detail' => $writable ? 'প্রজেক্ট ডিরেক্টরিতে লেখা যায়।' : 'প্রজেক্ট/স্টোরেজ ডিরেক্টরিতে লেখা যাচ্ছে না।'];
+        $checks[] = ['label' => 'রাইট পারমিশন', 'ok' => true, 'warn' => ! $writable,
+            'detail' => $writable ? 'প্রজেক্ট ডিরেক্টরিতে লেখা যায়।' : 'www-data সরাসরি লিখতে পারে না — ডিপ্লয় root (sudo) হিসেবে চলে বলে সমস্যা নেই।'];
 
         foreach (['git', 'php', 'composer', 'npm'] as $bin) {
             $which = new Process(['bash', '-lc', "command -v {$bin}"], $root);
@@ -553,11 +557,16 @@ class DeveloperToolsController extends Controller
         $checks[] = ['label' => 'update.sh', 'ok' => $scriptOk,
             'detail' => $scriptOk ? 'স্ক্রিপ্ট পাওয়া গেছে।' : 'scripts/update.sh পাওয়া যায়নি।'];
 
-        $sudo = new Process(['sudo', '-n', 'bash', '-c', 'true'], $root);
+        // Verify the EXACT deploy command is permitted, not `sudo -n bash -c true`
+        // (the narrow sudoers rule only whitelists `bash <script>`, so a generic
+        // probe would always fail even when Pull & Deploy works). `sudo -n -l`
+        // checks the allowed command without executing it.
+        $script = $root.'/scripts/update.sh';
+        $sudo = new Process(['sudo', '-n', '-l', 'bash', $script], $root);
         $sudo->run();
         $sudoOk = $sudo->isSuccessful();
         $checks[] = ['label' => 'sudo (passwordless)', 'ok' => $sudoOk,
-            'detail' => $sudoOk ? 'sudo -n কাজ করছে।' : 'sudo -n অনুমতি নেই (setup.sh চালান)।'];
+            'detail' => $sudoOk ? 'sudo -n bash update.sh অনুমোদিত।' : 'sudo -n অনুমতি নেই — সার্ভারে একবার root হিসেবে: sudo bash '.$script];
 
         $allOk = ! in_array(false, array_column($checks, 'ok'), true);
         $output = implode("\n", array_map(fn ($c) => ($c['ok'] ? '✓' : '✗').' '.$c['label'].' — '.$c['detail'], $checks));

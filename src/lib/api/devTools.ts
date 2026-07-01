@@ -63,6 +63,7 @@ export type GitStatus = {
 export type RemoteCheck = {
   label: string;
   ok: boolean;
+  warn?: boolean;
   detail: string;
 };
 

@@ -20,7 +20,7 @@ import { toast } from "sonner";
 import {
   RefreshCw, Github, CheckCircle2, Rocket, Play, RotateCcw, ExternalLink,
   Terminal, Settings, ShieldCheck, Home, ChevronRight,
-  Copy, Ban, ListChecks, ClipboardList, XCircle, RefreshCcw, FileText, FileSpreadsheet,
+  Copy, Ban, ListChecks, ClipboardList, XCircle, RefreshCcw, FileText, FileSpreadsheet, AlertTriangle,
 } from "lucide-react";
 
 /** How long a Pull/Deploy/Dry-Run request may run before it is aborted (ms). */
@@ -588,7 +588,9 @@ export default function SystemUpdate() {
                       </div>
                       {checks.map((c, i) => (
                         <div key={i} className="flex items-start gap-2 text-xs">
-                          {c.ok ? (
+                          {c.warn ? (
+                            <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-500" />
+                          ) : c.ok ? (
                             <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-600" />
                           ) : (
                             <XCircle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-destructive" />
