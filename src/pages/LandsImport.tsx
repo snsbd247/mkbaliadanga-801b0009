@@ -72,6 +72,9 @@ const COL_HELP: Record<ColKey, { required: boolean; bn: string; en: string; samp
   borga_area: { required: false, bn: "বর্গাদারকে দেয়া শতক", en: "Shotok given to sharecropper", sample: "20.0000" },
   share_percentage: { required: false, bn: "borga_area না দিলে শতাংশ (০-১০০)", en: "Share % if borga_area empty (0-100)", sample: "30" },
   note: { required: false, bn: "মন্তব্য", en: "Note", sample: "" },
+};
+
+
 
 const FIELD_TYPE_MAP: Record<string, string> = {
   "উচু": "high_land", "উঁচু": "high_land", "high": "high_land", "high_land": "high_land",
