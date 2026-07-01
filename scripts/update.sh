@@ -149,7 +149,14 @@ install_deploy_sudoers() {
     rm -f "${tmp_file}" 2>/dev/null || true
   fi
 }
-install_deploy_sudoers
+# Web-triggered deploys (Pull & Deploy button) must NEVER attempt to write
+# sudoers or touch /etc — the sudoers rule is installed once by setup.sh. The
+# controller sets MK_SKIP_SUDOERS=1 so a read-only /etc can't abort a deploy.
+if [ "${MK_SKIP_SUDOERS:-0}" = "1" ]; then
+  log "Skipping sudoers refresh (web-triggered deploy — managed by setup.sh)."
+else
+  install_deploy_sudoers
+fi
 
 # ──────────────────────────────────────────────────────────────────────────
 # 1. Safety DB backup (so existing data is never at risk)
