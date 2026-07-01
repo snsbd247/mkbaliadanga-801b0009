@@ -17,6 +17,7 @@ import { Upload, Download, AlertTriangle, Loader2, CheckCircle2, FileWarning, Ar
 import { toast } from "sonner";
 import { decodeSpreadsheetBuffer } from "@/lib/csvDecode";
 import { normalizeFarmerCode } from "@/lib/farmerCode";
+import { useLang } from "@/i18n/LanguageProvider";
 
 /**
  * Bulk Lands Import wizard — owner-cultivated + barga (sharecropper) lands.
