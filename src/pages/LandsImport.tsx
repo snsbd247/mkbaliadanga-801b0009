@@ -39,6 +39,8 @@ type RowState = {
 
 // Bump when template columns/rules change so users can detect stale headers.
 export const LANDS_TEMPLATE_VERSION = "2026.07.01";
+// Bump on every LandsImport code change so testers can confirm the deployed build.
+export const LANDS_IMPORT_BUILD = "2026.07.01.2";
 
 const COLUMNS = [
   "owner_farmer_id", "land_ref", "mouza", "dag_no", "land_type",
