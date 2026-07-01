@@ -495,7 +495,6 @@ export default function SystemUpdate() {
                       ))}
                     </div>
                   )}
-                  </div>
                   <DialogFooter className="gap-2 sm:justify-between">
                     <Button variant="secondary" onClick={runPreCheck} disabled={checking || !urlValid}>
                       <ListChecks className="mr-1.5 h-4 w-4" /> {checking ? "চেক হচ্ছে…" : "প্রি-চেক"}
