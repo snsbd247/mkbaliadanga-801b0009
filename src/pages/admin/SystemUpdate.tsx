@@ -20,7 +20,7 @@ import { toast } from "sonner";
 import {
   RefreshCw, Github, CheckCircle2, Rocket, Play, RotateCcw, ExternalLink,
   Terminal, Settings, ShieldCheck, Home, ChevronRight,
-  Copy, Ban, ListChecks, ClipboardList, XCircle, RefreshCcw, FileText, FileSpreadsheet,
+  Copy, Ban, ListChecks, ClipboardList, XCircle, RefreshCcw, FileText, FileSpreadsheet, AlertTriangle,
 } from "lucide-react";
 
 /** How long a Pull/Deploy/Dry-Run request may run before it is aborted (ms). */
