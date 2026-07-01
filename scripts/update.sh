@@ -37,6 +37,29 @@ die()  { echo -e "\033[1;31m[x] $*\033[0m" >&2; exit 1; }
 export DEBIAN_FRONTEND=noninteractive
 
 # ──────────────────────────────────────────────────────────────────────────
+# 0. Allow the web user (www-data) to trigger this script via sudo, so the
+#    in-app "Pull & Deploy" button can run a full deploy without a shell.
+# ──────────────────────────────────────────────────────────────────────────
+install_deploy_sudoers() {
+  local rule_file="/etc/sudoers.d/mk-deploy"
+  local script_path="${APP_DIR}/scripts/update.sh"
+  {
+    echo "# Managed by MK ERP — lets www-data run the deploy script for in-app Pull & Deploy"
+    echo "www-data ALL=(root) NOPASSWD: ${script_path}"
+    echo "www-data ALL=(root) NOPASSWD: /bin/bash ${script_path}"
+    echo "www-data ALL=(root) NOPASSWD: /usr/bin/bash ${script_path}"
+  } > "${rule_file}"
+  chmod 0440 "${rule_file}"
+  if visudo -cf "${rule_file}" >/dev/null 2>&1; then
+    log "  ✓ deploy sudoers rule installed (${rule_file})"
+  else
+    warn "  ✗ invalid sudoers rule — removing ${rule_file}"
+    rm -f "${rule_file}"
+  fi
+}
+install_deploy_sudoers
+
+# ──────────────────────────────────────────────────────────────────────────
 # 1. Safety DB backup (so existing data is never at risk)
 # ──────────────────────────────────────────────────────────────────────────
 read_cred() { grep "^$1=" "${CRED_FILE}" 2>/dev/null | cut -d= -f2- || true; }

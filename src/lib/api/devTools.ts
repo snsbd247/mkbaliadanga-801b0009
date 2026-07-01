@@ -1,4 +1,48 @@
 import { api } from "./client";
+import { getApiToken } from "./client";
+
+/**
+ * Run a full "Pull & Deploy" (scripts/update.sh) and stream the combined
+ * console output live via fetch/ReadableStream. `onChunk` receives text as it
+ * arrives; resolves with `ok` derived from the final output.
+ */
+export async function deployStream(
+  branch: string | undefined,
+  onChunk: (text: string) => void,
+  signal?: AbortSignal,
+): Promise<{ ok: boolean; output: string }> {
+  const base = (api.defaults.baseURL || "/api").replace(/\/$/, "");
+  const token = getApiToken();
+  const res = await fetch(`${base}/dev/git/deploy`, {
+    method: "POST",
+    headers: {
+      Accept: "text/plain",
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: JSON.stringify(branch ? { branch } : {}),
+    signal,
+  });
+
+  if (!res.ok || !res.body) {
+    const text = await res.text().catch(() => "");
+    throw new Error(text || `Deploy failed (HTTP ${res.status})`);
+  }
+
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let output = "";
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    const chunk = decoder.decode(value, { stream: true });
+    output += chunk;
+    onChunk(chunk);
+  }
+  output += decoder.decode();
+  const ok = /সম্পন্ন হয়েছে/.test(output) && !/ব্যর্থ হয়েছে/.test(output);
+  return { ok, output };
+}
 
 export type FileEntry = {
   name: string;
