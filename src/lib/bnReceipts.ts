@@ -558,8 +558,8 @@ function copyHtml(d: BnReceiptData, copyLabel: string, signatureUrl: string | nu
        </div>` : "";
 
   if (officialIrrigationReceipt) {
-    const red = "#ff0000";
-    const blue = "#4a90e2";
+    const red = "#111";
+    const blue = "#111";
     const officialRows = rows.map(([k, v]) => {
       const label = k === t.farmerLine
         ? `<span style="color:${red};">কৃষকের নাম ও আইডি</span><span style="color:${blue};">/মালিকের নাম ও আইডি</span>`
