@@ -288,6 +288,8 @@ class DeveloperToolsController extends Controller
             'output' => trim($reset['output']),
         ], $reset['ok'] ? 200 : 500);
     }
+
+    private function logDev(Request $request, string $action, string $detail): void
     {
         try {
             if (\Illuminate\Support\Facades\Schema::hasTable('developer_update_logs')) {
