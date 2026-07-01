@@ -54,6 +54,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setOfficeId(prof?.office_id ?? null);
     setRolesLoaded(true);
     void hydrateReceiptOptionsFromProfile();
+    void hydrateReceiptLayoutFromProfile();
   };
 
   // ── Laravel path ───────────────────────────────────────────────────
