@@ -475,9 +475,35 @@ export default function SystemUpdate() {
                       </div>
                     </div>
                   </div>
-                  <DialogFooter>
-                    <Button variant="outline" onClick={() => setSettingsOpen(false)}>বাতিল</Button>
-                    <Button onClick={saveRemote} disabled={savingRemote || !urlValid}>সেভ</Button>
+
+                  {checks.length > 0 && (
+                    <div className="mt-3 space-y-1.5 rounded-md border p-3">
+                      <div className="flex items-center gap-1.5 text-sm font-medium">
+                        <ListChecks className="h-4 w-4" /> প্রি-চেক ফলাফল
+                      </div>
+                      {checks.map((c, i) => (
+                        <div key={i} className="flex items-start gap-2 text-xs">
+                          {c.ok ? (
+                            <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-600" />
+                          ) : (
+                            <XCircle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-destructive" />
+                          )}
+                          <span>
+                            <span className="font-medium">{c.label}:</span> {c.detail}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  </div>
+                  <DialogFooter className="gap-2 sm:justify-between">
+                    <Button variant="secondary" onClick={runPreCheck} disabled={checking || !urlValid}>
+                      <ListChecks className="mr-1.5 h-4 w-4" /> {checking ? "চেক হচ্ছে…" : "প্রি-চেক"}
+                    </Button>
+                    <div className="flex gap-2">
+                      <Button variant="outline" onClick={() => setSettingsOpen(false)}>বাতিল</Button>
+                      <Button onClick={saveRemote} disabled={savingRemote || !urlValid}>সেভ</Button>
+                    </div>
                   </DialogFooter>
                 </DialogContent>
               </Dialog>
