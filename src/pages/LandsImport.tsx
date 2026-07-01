@@ -561,7 +561,7 @@ export default function LandsImport() {
           const ltKey = ltRaw.toLowerCase();
           const landTypeId = ltKey ? landTypeMap.get(ltKey) ?? null : null;
           // Derive the field_type enum from the single land_type value (উচু/নিচু/মাঝারি → high/low/medium).
-          const fieldType = FIELD_TYPE_MAP[ltKey] ?? FIELD_TYPE_MAP[ltRaw] ?? "medium_land";
+          const fieldType = deriveFieldType(ltRaw);
           const borga = isBorgaType(r.raw.owner_type);
 
           const landPayload: any = {
