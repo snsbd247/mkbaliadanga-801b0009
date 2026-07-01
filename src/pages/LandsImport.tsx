@@ -616,33 +616,45 @@ export default function LandsImport() {
         if (!landId) {
           const dagRaw = String(r.raw.dag_no ?? "").trim();
           const dagNumbers: string[] = parseDagNumbers(dagRaw);
+          const dagJoined = dagNumbers.length ? dagNumbers.join(", ") : (dagRaw || null);
           const mouzaName = String(r.raw.mouza ?? "").trim();
           const mouzaId = mouzaName ? mouzaMap.get(mouzaName.toLowerCase()) ?? null : null;
           const ltRaw = String(r.raw.land_type ?? "").trim();
-          const ltKey = ltRaw.toLowerCase();
-          const landTypeId = ltKey ? landTypeMap.get(ltKey) ?? null : null;
+          const landTypeId = resolveLandTypeId(ltRaw);
           // Derive the field_type enum from the single land_type value (উচু/নিচু/মাঝারি → high/low/medium).
           const fieldType = deriveFieldType(ltRaw);
           const borga = isBorgaType(r.raw.owner_type);
 
-          const landPayload: any = {
-            farmer_id: ownerId,
-            owner_farmer_id: ownerId,
-            office_id: officeId ?? null,
-            mouza: mouzaName || null,
-            mouza_id: mouzaId,
-            dag_no: dagNumbers[0] ?? (dagRaw || null),
-            dag_numbers: dagNumbers,
-            land_size: round4(num(r.raw.land_size)),
-            owner_type: borga ? "borgadar" : "owner",
-            field_type: fieldType,
-            land_type_id: landTypeId,
-            notes: r.raw.note ? String(r.raw.note) : null,
-          };
-          const { data: ins, error } = await db.from("lands").insert(landPayload).select("id").single();
-          if (error) throw new Error(error.message);
-          landId = (ins as any)?.id;
-          if (!landId) throw new Error("জমি তৈরি হয়নি");
+          // Skip if this exact land already exists for this farmer (prevents
+          // duplicates when the import is re-run after a partial failure).
+          const { data: existing } = await db.from("lands")
+            .select("id")
+            .eq("farmer_id", ownerId)
+            .eq("dag_no", dagJoined ?? "")
+            .is("deleted_at", null)
+            .limit(1);
+          if (existing && existing.length && !borga) {
+            landId = (existing[0] as any).id;
+          } else {
+            const landPayload: any = {
+              farmer_id: ownerId,
+              owner_farmer_id: ownerId,
+              office_id: officeId ?? null,
+              mouza: mouzaName || null,
+              mouza_id: mouzaId,
+              dag_no: dagJoined,
+              dag_numbers: dagNumbers,
+              land_size: round4(num(r.raw.land_size)),
+              owner_type: borga ? "borgadar" : "owner",
+              field_type: fieldType,
+              land_type_id: landTypeId,
+              notes: r.raw.note ? String(r.raw.note) : null,
+            };
+            const { data: ins, error } = await db.from("lands").insert(landPayload).select("id").single();
+            if (error) throw new Error(error.message);
+            landId = (ins as any)?.id;
+            if (!landId) throw new Error("জমি তৈরি হয়নি");
+          }
           if (ref) landIdByRef.set(ref, landId);
         }
 
