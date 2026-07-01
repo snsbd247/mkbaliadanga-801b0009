@@ -209,7 +209,7 @@ class DeveloperToolsController extends Controller
             ? $this->git(['remote', 'set-url', 'origin', $url])
             : $this->git(['remote', 'add', 'origin', $url]);
 
-        $this->logDev($request, 'git.set_remote', $url);
+        $this->logDev($request, 'git.set_remote', $url, $res['ok'] ? 'ok' : 'failed', $res['output']);
 
         // Always return 200 so the client can render the real git output.
         // A non-zero git exit is reported via `ok:false`, not an HTTP error,
@@ -232,7 +232,7 @@ class DeveloperToolsController extends Controller
             : ($current['ok'] ? trim($current['output']) : 'main');
         $pull = $this->git(['pull', 'origin', $br], 240);
 
-        $this->logDev($request, 'git.pull', $br);
+        $this->logDev($request, 'git.pull', $br, $pull['ok'] ? 'ok' : 'failed', trim($fetch['output']."\n\n".$pull['output']));
 
         // Always return 200 so the client can render the real git output.
         // A non-zero git exit is reported via `ok:false`, not an HTTP error,
@@ -263,7 +263,7 @@ class DeveloperToolsController extends Controller
             ? count(array_filter(explode("\n", trim($incoming['output']))))
             : 0;
 
-        $this->logDev($request, 'git.dry_run', $br);
+        $this->logDev($request, 'git.dry_run', $br, $fetch['ok'] ? 'ok' : 'failed', "incoming={$count}");
 
         return response()->json([
             'ok' => $fetch['ok'],
@@ -291,7 +291,7 @@ class DeveloperToolsController extends Controller
         $reset = $this->git(['reset', '--hard', 'HEAD@{1}']);
         $commit = $this->git(['log', '-1', '--pretty=%h %s (%cr)']);
 
-        $this->logDev($request, 'git.rollback', $before['ok'] ? trim($before['output']) : 'unknown');
+        $this->logDev($request, 'git.rollback', $before['ok'] ? trim($before['output']) : 'unknown', $reset['ok'] ? 'ok' : 'failed', trim($reset['output']));
 
         return response()->json([
             'ok' => $reset['ok'],
@@ -300,7 +300,80 @@ class DeveloperToolsController extends Controller
         ]);
     }
 
-    private function logDev(Request $request, string $action, string $detail): void
+    /**
+     * Pre-check a remote URL before setting it: validate the format, confirm the
+     * repo is reachable with the current credentials (git ls-remote), and report
+     * whether an origin already exists. Always returns 200 with a structured body.
+     */
+    public function checkRemote(Request $request): JsonResponse
+    {
+        $request->validate(['url' => 'required|string|max:500']);
+        $url = trim($request->input('url'));
+
+        $checks = [];
+
+        // 1) Format
+        $formatOk = (bool) preg_match('#^https://[\w.-]+/[\w.\-/]+?(\.git)?$#', $url);
+        $checks[] = [
+            'label' => 'URL ফরম্যাট',
+            'ok' => $formatOk,
+            'detail' => $formatOk ? $url : 'শুধুমাত্র সর্বজনীন https গিট URL গ্রহণযোগ্য।',
+        ];
+
+        // 2) Existing origin
+        $existing = $this->git(['remote', 'get-url', 'origin']);
+        $existingUrl = $existing['ok'] ? trim($existing['output']) : null;
+        $checks[] = [
+            'label' => 'বর্তমান origin',
+            'ok' => true,
+            'detail' => $existingUrl ? "আগের origin: {$existingUrl} (আপডেট হবে)" : 'কোনো origin সেট নেই (নতুন যোগ হবে)।',
+        ];
+
+        // 3) Reachability / permission (only if format is valid)
+        $reachOk = false;
+        $reachDetail = 'ফরম্যাট ঠিক না থাকায় সংযোগ যাচাই করা হয়নি।';
+        if ($formatOk) {
+            $ls = $this->git(['ls-remote', '--heads', $url], 60);
+            $reachOk = $ls['ok'];
+            $reachDetail = $ls['ok']
+                ? 'রিপো পাওয়া গেছে এবং অ্যাক্সেসযোগ্য।'
+                : ('সংযোগ/অনুমতি ব্যর্থ: '.Str::limit($ls['output'], 400));
+        }
+        $checks[] = ['label' => 'সংযোগ ও অনুমতি', 'ok' => $reachOk, 'detail' => $reachDetail];
+
+        $allOk = $formatOk && $reachOk;
+        $output = implode("\n", array_map(
+            fn ($c) => ($c['ok'] ? '✓' : '✗').' '.$c['label'].' — '.$c['detail'],
+            $checks
+        ));
+
+        $this->logDev($request, 'git.check_remote', $url, $allOk ? 'ok' : 'failed', $output);
+
+        return response()->json(['ok' => $allOk, 'checks' => $checks, 'output' => $output]);
+    }
+
+    /**
+     * Recent developer-tool audit log entries (pull / deploy / remote changes).
+     */
+    public function auditLogs(Request $request): JsonResponse
+    {
+        $logs = [];
+        try {
+            if (\Illuminate\Support\Facades\Schema::hasTable('developer_update_logs')) {
+                $logs = DB::table('developer_update_logs')
+                    ->orderByDesc('created_at')
+                    ->limit(50)
+                    ->get(['id', 'action', 'repo_url', 'status', 'note', 'created_at'])
+                    ->toArray();
+            }
+        } catch (\Throwable $e) {
+            // best-effort
+        }
+
+        return response()->json(['logs' => $logs]);
+    }
+
+    private function logDev(Request $request, string $action, string $detail, ?string $status = null, ?string $note = null): void
     {
         try {
             if (\Illuminate\Support\Facades\Schema::hasTable('developer_update_logs')) {
@@ -309,8 +382,9 @@ class DeveloperToolsController extends Controller
                     'user_id' => $request->user()?->id,
                     'action' => $action,
                     'repo_url' => Str::limit($detail, 480, ''),
+                    'status' => $status,
+                    'note' => $note !== null ? Str::limit($note, 4000, '') : null,
                     'created_at' => now(),
-                    'updated_at' => now(),
                 ]);
             }
         } catch (\Throwable $e) {

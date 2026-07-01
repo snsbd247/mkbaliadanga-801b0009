@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
-import { DevToolsApi, type GitStatus } from "@/lib/api/devTools";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { DevToolsApi, type GitStatus, type RemoteCheck, type DevAuditLog } from "@/lib/api/devTools";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,7 +16,11 @@ import { toast } from "sonner";
 import {
   RefreshCw, Github, CheckCircle2, Rocket, Play, RotateCcw, ExternalLink,
   Terminal, Settings, ShieldCheck, Home, ChevronRight,
+  Copy, Ban, ListChecks, ClipboardList, XCircle, RefreshCcw,
 } from "lucide-react";
+
+/** How long a Pull/Deploy/Dry-Run request may run before it is aborted (ms). */
+const GIT_OP_TIMEOUT_MS = 240_000;
 
 const REPO_RE = /^(https:\/\/[\w.-]+\/[\w.\-/]+?(\.git)?|[\w.-]+\/[\w.-]+)$/;
 const DEPLOY_REPO_URL_KEY = "deploy_repo_url";
@@ -75,8 +79,15 @@ export default function SystemUpdate() {
   const [busy, setBusy] = useState<"pull" | "dry" | "rollback" | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [output, setOutput] = useState("");
+  const [lastFailed, setLastFailed] = useState<null | "pull" | "dry" | "rollback">(null);
   const [showProtected, setShowProtected] = useState(false);
   const [updatedAt, setUpdatedAt] = useState<number | null>(null);
+  const [checks, setChecks] = useState<RemoteCheck[]>([]);
+  const [checking, setChecking] = useState(false);
+  const [logs, setLogs] = useState<DevAuditLog[]>([]);
+  const [logsOpen, setLogsOpen] = useState(false);
+  const [logsLoading, setLogsLoading] = useState(false);
+  const abortRef = useRef<AbortController | null>(null);
 
   const effectiveRemote = status?.remote_url || repoUrl.trim() || readDeploySetting(DEPLOY_REPO_URL_KEY);
   const effectiveBranch = branch.trim() || status?.branch || readDeploySetting(DEPLOY_BRANCH_KEY) || "main";
@@ -115,6 +126,32 @@ export default function SystemUpdate() {
     return `Updated ${mins} minute${mins > 1 ? "s" : ""} ago`;
   }, [updatedAt, loading]);
 
+  const runPreCheck = async (): Promise<boolean> => {
+    if (!urlValid) {
+      toast.error("সঠিক পাবলিক গিট URL অথবা owner/repo দিন");
+      return false;
+    }
+    setChecking(true);
+    setChecks([]);
+    try {
+      const url = repoUrl.trim();
+      const full = url.startsWith("http") ? url : `https://github.com/${url}`;
+      const r = await DevToolsApi.checkRemote(full);
+      setChecks(r.checks || []);
+      setOutput(r.output || "");
+      r.ok
+        ? toast.success("প্রি-চেক সফল — রিমোট সেট করা নিরাপদ")
+        : toast.error("প্রি-চেক ব্যর্থ — নিচের ফলাফল দেখুন");
+      return r.ok;
+    } catch (e: any) {
+      setOutput(e?.data?.output ?? e.message ?? "");
+      toast.error(e.message ?? "প্রি-চেক ব্যর্থ");
+      return false;
+    } finally {
+      setChecking(false);
+    }
+  };
+
   const saveRemote = async () => {
     if (!urlValid) {
       toast.error("সঠিক পাবলিক গিট URL অথবা owner/repo দিন");
@@ -126,6 +163,16 @@ export default function SystemUpdate() {
       const full = url.startsWith("http") ? url : `https://github.com/${url}`;
       const savedBranch = branch.trim();
       const savedBasePath = basePath.trim() || "deploy";
+
+      // Pre-check the remote before committing it.
+      const pre = await DevToolsApi.checkRemote(full);
+      setChecks(pre.checks || []);
+      if (!pre.ok) {
+        setOutput(pre.output || "");
+        toast.error("প্রি-চেক ব্যর্থ — রিমোট সেট করা হয়নি");
+        return;
+      }
+
       const r = await DevToolsApi.setRemote(full);
       if (r.ok === false) {
         setOutput(r.output || "");
@@ -154,18 +201,44 @@ export default function SystemUpdate() {
     }
   };
 
+  const cancelOp = () => {
+    abortRef.current?.abort();
+    toast.message("অপারেশন বাতিল করার অনুরোধ পাঠানো হয়েছে…");
+  };
+
+  const isAbort = (e: any) =>
+    e?.code === "ERR_CANCELED" || e?.name === "CanceledError" || e?.message === "canceled";
+
   const runPull = async () => {
     setBusy("pull");
     setOutput("");
+    setLastFailed(null);
+    const controller = new AbortController();
+    abortRef.current = controller;
     try {
-      const r = await DevToolsApi.pull(branch.trim() || undefined);
+      const r = await DevToolsApi.pull(branch.trim() || undefined, {
+        signal: controller.signal,
+        timeout: GIT_OP_TIMEOUT_MS,
+      });
       setOutput(r.output);
-      r.ok ? toast.success("Pull & Deploy সম্পন্ন হয়েছে") : toast.error("Pull & Deploy ব্যর্থ হয়েছে");
+      if (r.ok) {
+        toast.success("Pull & Deploy সম্পন্ন হয়েছে");
+      } else {
+        setLastFailed("pull");
+        toast.error("Pull & Deploy ব্যর্থ হয়েছে");
+      }
       load();
     } catch (e: any) {
-      setOutput(e?.data?.output ?? e.message ?? "");
-      toast.error(e.message ?? "Pull ব্যর্থ");
+      if (isAbort(e)) {
+        setOutput("অপারেশন বাতিল করা হয়েছে।");
+        toast.message("Pull & Deploy বাতিল করা হয়েছে");
+      } else {
+        setOutput(e?.data?.output ?? e.message ?? "");
+        setLastFailed("pull");
+        toast.error(e.message ?? "Pull ব্যর্থ");
+      }
     } finally {
+      abortRef.current = null;
       setBusy(null);
     }
   };
@@ -173,14 +246,27 @@ export default function SystemUpdate() {
   const runDry = async () => {
     setBusy("dry");
     setOutput("");
+    setLastFailed(null);
+    const controller = new AbortController();
+    abortRef.current = controller;
     try {
-      const r = await DevToolsApi.dryRun(branch.trim() || undefined);
+      const r = await DevToolsApi.dryRun(branch.trim() || undefined, {
+        signal: controller.signal,
+        timeout: GIT_OP_TIMEOUT_MS,
+      });
       setOutput(r.output);
       toast.success(r.incoming_count > 0 ? `${r.incoming_count} টি নতুন কমিট পাওয়া গেছে` : "সবকিছু হালনাগাদ");
     } catch (e: any) {
-      setOutput(e?.data?.output ?? e.message ?? "");
-      toast.error(e.message ?? "Dry-Run ব্যর্থ");
+      if (isAbort(e)) {
+        setOutput("অপারেশন বাতিল করা হয়েছে।");
+        toast.message("Dry-Run বাতিল করা হয়েছে");
+      } else {
+        setOutput(e?.data?.output ?? e.message ?? "");
+        setLastFailed("dry");
+        toast.error(e.message ?? "Dry-Run ব্যর্থ");
+      }
     } finally {
+      abortRef.current = null;
       setBusy(null);
     }
   };
@@ -188,18 +274,59 @@ export default function SystemUpdate() {
   const runRollback = async () => {
     setBusy("rollback");
     setOutput("");
+    setLastFailed(null);
     try {
       const r = await DevToolsApi.rollback();
       setOutput(r.output);
-      r.ok ? toast.success("রোলব্যাক সম্পন্ন হয়েছে") : toast.error("রোলব্যাক ব্যর্থ হয়েছে");
+      if (r.ok) {
+        toast.success("রোলব্যাক সম্পন্ন হয়েছে");
+      } else {
+        setLastFailed("rollback");
+        toast.error("রোলব্যাক ব্যর্থ হয়েছে");
+      }
       load();
     } catch (e: any) {
       setOutput(e?.data?.output ?? e.message ?? "");
+      setLastFailed("rollback");
       toast.error(e.message ?? "রোলব্যাক ব্যর্থ");
     } finally {
       setBusy(null);
     }
   };
+
+  const retryLast = () => {
+    if (lastFailed === "pull") runPull();
+    else if (lastFailed === "dry") runDry();
+    else if (lastFailed === "rollback") runRollback();
+  };
+
+  const copyOutput = async () => {
+    if (!output) return;
+    try {
+      await navigator.clipboard.writeText(output);
+      toast.success("আউটপুট কপি হয়েছে");
+    } catch {
+      toast.error("কপি করা যায়নি");
+    }
+  };
+
+  const loadLogs = async () => {
+    setLogsLoading(true);
+    try {
+      const r = await DevToolsApi.auditLogs();
+      setLogs(r.logs || []);
+    } catch (e: any) {
+      toast.error(e.message ?? "অডিট লগ লোড করা যায়নি");
+    } finally {
+      setLogsLoading(false);
+    }
+  };
+
+  const openLogs = () => {
+    setLogsOpen(true);
+    loadLogs();
+  };
+
 
   return (
     <div className="container mx-auto max-w-6xl space-y-6 p-4 md:p-6">
@@ -262,6 +389,19 @@ export default function SystemUpdate() {
                 <Play className="mr-1.5 h-4 w-4" /> {busy === "dry" ? "চলছে…" : "Dry-Run"}
               </Button>
 
+              {(busy === "pull" || busy === "dry") && (
+                <Button variant="outline" size="sm" onClick={cancelOp}
+                  className="border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive">
+                  <Ban className="mr-1.5 h-4 w-4" /> বাতিল করুন
+                </Button>
+              )}
+
+              {lastFailed && busy === null && (
+                <Button variant="outline" size="sm" onClick={retryLast}>
+                  <RefreshCcw className="mr-1.5 h-4 w-4" /> পুনরায় চেষ্টা
+                </Button>
+              )}
+
               <AlertDialog>
                 <AlertDialogTrigger asChild>
                   <Button variant="outline" size="sm" disabled={busy !== null}
@@ -299,6 +439,9 @@ export default function SystemUpdate() {
                 onClick={() => document.getElementById("deploy-output")?.scrollIntoView({ behavior: "smooth" })}>
                 <Terminal className="h-4 w-4" />
               </Button>
+              <Button variant="ghost" size="icon" title="Audit log" onClick={openLogs}>
+                <ClipboardList className="h-4 w-4" />
+              </Button>
 
               <Dialog open={settingsOpen} onOpenChange={setSettingsOpen}>
                 <DialogTrigger asChild>
@@ -332,9 +475,34 @@ export default function SystemUpdate() {
                       </div>
                     </div>
                   </div>
-                  <DialogFooter>
-                    <Button variant="outline" onClick={() => setSettingsOpen(false)}>বাতিল</Button>
-                    <Button onClick={saveRemote} disabled={savingRemote || !urlValid}>সেভ</Button>
+
+                  {checks.length > 0 && (
+                    <div className="mt-3 space-y-1.5 rounded-md border p-3">
+                      <div className="flex items-center gap-1.5 text-sm font-medium">
+                        <ListChecks className="h-4 w-4" /> প্রি-চেক ফলাফল
+                      </div>
+                      {checks.map((c, i) => (
+                        <div key={i} className="flex items-start gap-2 text-xs">
+                          {c.ok ? (
+                            <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-600" />
+                          ) : (
+                            <XCircle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-destructive" />
+                          )}
+                          <span>
+                            <span className="font-medium">{c.label}:</span> {c.detail}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  <DialogFooter className="gap-2 sm:justify-between">
+                    <Button variant="secondary" onClick={runPreCheck} disabled={checking || !urlValid}>
+                      <ListChecks className="mr-1.5 h-4 w-4" /> {checking ? "চেক হচ্ছে…" : "প্রি-চেক"}
+                    </Button>
+                    <div className="flex gap-2">
+                      <Button variant="outline" onClick={() => setSettingsOpen(false)}>বাতিল</Button>
+                      <Button onClick={saveRemote} disabled={savingRemote || !urlValid}>সেভ</Button>
+                    </div>
                   </DialogFooter>
                 </DialogContent>
               </Dialog>
@@ -400,11 +568,79 @@ export default function SystemUpdate() {
           </div>
 
           {output && (
-            <pre id="deploy-output"
-              className="max-h-80 overflow-auto rounded-md border bg-muted p-3 text-xs whitespace-pre-wrap">
-              {output}
-            </pre>
+            <div id="deploy-output" className="space-y-2 rounded-md border bg-muted/50 p-3">
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-1.5 text-sm font-medium">
+                  <Terminal className="h-4 w-4" /> বিস্তারিত আউটপুট
+                  {lastFailed && (
+                    <Badge variant="destructive" className="ml-1">ব্যর্থ</Badge>
+                  )}
+                </div>
+                <div className="flex gap-2">
+                  {lastFailed && busy === null && (
+                    <Button variant="outline" size="sm" onClick={retryLast}>
+                      <RefreshCcw className="mr-1.5 h-4 w-4" /> পুনরায়
+                    </Button>
+                  )}
+                  <Button variant="outline" size="sm" onClick={copyOutput}>
+                    <Copy className="mr-1.5 h-4 w-4" /> কপি
+                  </Button>
+                </div>
+              </div>
+              <pre className="max-h-80 overflow-auto rounded bg-background p-3 text-xs whitespace-pre-wrap">
+                {output}
+              </pre>
+            </div>
           )}
+
+          {/* Audit log dialog */}
+          <Dialog open={logsOpen} onOpenChange={setLogsOpen}>
+            <DialogContent className="max-w-2xl">
+              <DialogHeader>
+                <DialogTitle>অডিট লগ</DialogTitle>
+                <DialogDescription>Pull / Deploy / রিমোট পরিবর্তনের সাম্প্রতিক রেকর্ড।</DialogDescription>
+              </DialogHeader>
+              <div className="max-h-[60vh] space-y-2 overflow-auto">
+                {logsLoading ? (
+                  <p className="py-6 text-center text-sm text-muted-foreground">লোড হচ্ছে…</p>
+                ) : logs.length === 0 ? (
+                  <p className="py-6 text-center text-sm text-muted-foreground">কোনো লগ নেই।</p>
+                ) : (
+                  logs.map((l) => (
+                    <div key={l.id} className="rounded-md border p-3 text-sm">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="font-mono font-medium">{l.action}</span>
+                        <div className="flex items-center gap-2">
+                          {l.status && (
+                            <Badge variant={l.status === "ok" ? "secondary" : "destructive"}>
+                              {l.status}
+                            </Badge>
+                          )}
+                          <span className="text-xs text-muted-foreground">
+                            {new Date(l.created_at).toLocaleString()}
+                          </span>
+                        </div>
+                      </div>
+                      {l.repo_url && (
+                        <div className="mt-1 truncate font-mono text-xs text-muted-foreground">{l.repo_url}</div>
+                      )}
+                      {l.note && (
+                        <pre className="mt-1 max-h-32 overflow-auto whitespace-pre-wrap text-[11px] text-muted-foreground">
+                          {l.note}
+                        </pre>
+                      )}
+                    </div>
+                  ))
+                )}
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={loadLogs} disabled={logsLoading}>
+                  <RefreshCw className={`mr-1.5 h-4 w-4 ${logsLoading ? "animate-spin" : ""}`} /> রিফ্রেশ
+                </Button>
+                <Button onClick={() => setLogsOpen(false)}>বন্ধ</Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </CardContent>
       </Card>
     </div>
