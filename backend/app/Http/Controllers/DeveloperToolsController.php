@@ -255,12 +255,23 @@ class DeveloperToolsController extends Controller
     {
         $request->validate(['branch' => 'nullable|string|max:120|regex:/^[\w.\-\/]+$/']);
 
+        if (! $this->canDeploy($request->user())) {
+            return new StreamedResponse(function () {
+                echo "✗ শুধুমাত্র সুপার অ্যাডমিন Pull & Deploy চালাতে পারবেন।\n";
+                @flush();
+            }, 403, ['Content-Type' => 'text/plain; charset=utf-8']);
+        }
+
         $root = $this->root();
         $script = $root.'/scripts/update.sh';
         $current = $this->git(['rev-parse', '--abbrev-ref', 'HEAD']);
         $branch = $request->filled('branch')
             ? trim($request->input('branch'))
             : ($current['ok'] ? trim($current['output']) : 'main');
+
+        // Capture the current release commit so a failed deploy can auto-rollback.
+        $beforeRes = $this->git(['rev-parse', 'HEAD']);
+        $beforeHead = $beforeRes['ok'] ? trim($beforeRes['output']) : null;
 
         $userId = $request->user()?->id;
 
