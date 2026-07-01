@@ -262,13 +262,11 @@ export default function PaymentsImport() {
           if (aErr) throw new Error(aErr.message);
 
           // update invoice paid/due/status
-          const newPaid = round2(a.dueBefore * 0 + 0); // placeholder, computed below
           const { data: cur } = await db.from("irrigation_invoices")
             .select("payable_amount,paid_amount").eq("id", a.invoiceId).single();
           const payable = num(cur?.payable_amount);
           const paidAmt = round2(num(cur?.paid_amount) + a.take);
           const dueAmt = Math.max(0, round2(payable - paidAmt));
-          void newPaid;
           const { error: uErr } = await db.from("irrigation_invoices").update({
             paid_amount: paidAmt,
             due_amount: dueAmt,
