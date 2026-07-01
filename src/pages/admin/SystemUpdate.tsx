@@ -326,8 +326,7 @@ export default function SystemUpdate() {
     setLogsOpen(true);
     loadLogs();
   };
-    }
-  };
+
 
   return (
     <div className="container mx-auto max-w-6xl space-y-6 p-4 md:p-6">
