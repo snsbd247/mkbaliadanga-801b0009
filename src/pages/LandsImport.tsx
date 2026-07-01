@@ -161,6 +161,20 @@ export default function LandsImport() {
     document.title = "জমি ইমপোর্ট — Lands Import";
   }, []);
 
+  /** Record a download event in the import audit log (best-effort). */
+  async function logDownload(kind: string, format: "xlsx" | "csv") {
+    try {
+      await db.from("import_audit_logs").insert({
+        office_id: officeId ?? null,
+        module: "lands",
+        mode: "download",
+        summary: { kind, format, at: new Date().toISOString() },
+      });
+    } catch {
+      /* non-blocking */
+    }
+  }
+
   function downloadTemplate(format: "xlsx" | "csv") {
     const cols = [...COLUMNS];
     const sample = [
@@ -177,6 +191,8 @@ export default function LandsImport() {
       const a = document.createElement("a");
       a.href = url; a.download = "lands-import-template.csv"; a.click();
       URL.revokeObjectURL(url);
+      toast.success("টেমপ্লেট ডাউনলোড হয়েছে: lands-import-template.csv");
+      logDownload("template", "csv");
       return;
     }
     const ws = XLSX.utils.aoa_to_sheet([cols, ...sample]);
@@ -199,6 +215,8 @@ export default function LandsImport() {
     XLSX.utils.book_append_sheet(wb, ws, "Lands");
     XLSX.utils.book_append_sheet(wb, notes, "Instructions");
     XLSX.writeFile(wb, "lands-import-template.xlsx");
+    toast.success("টেমপ্লেট ডাউনলোড হয়েছে: lands-import-template.xlsx");
+    logDownload("template", "xlsx");
   }
 
   /** Ready-to-fill sample with dummy farmer+land data covering every season field. */
@@ -222,12 +240,16 @@ export default function LandsImport() {
       const a = document.createElement("a");
       a.href = url; a.download = `${filename}.csv`; a.click();
       URL.revokeObjectURL(url);
+      toast.success("স্যাম্পল ডাউনলোড হয়েছে: lands-import-sample.csv");
+      logDownload("sample", "csv");
       return;
     }
     const ws = XLSX.utils.aoa_to_sheet([cols, ...rows]);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Lands");
     XLSX.writeFile(wb, `${filename}.xlsx`);
+    toast.success("স্যাম্পল ডাউনলোড হয়েছে: lands-import-sample.xlsx");
+    logDownload("sample", "xlsx");
   }
 
   async function handleFile(f: File | null) {
@@ -239,10 +261,19 @@ export default function LandsImport() {
       setFileName(f.name);
       setHeaders(hdrs);
       setRecords(recs);
-      setMapping(autoMap(hdrs));
+      const guessed = autoMap(hdrs);
+      setMapping(guessed);
       setRows([]);
       setSummary(null);
       setSavedCount(0);
+      toast.success(`ফাইল নির্বাচিত: ${f.name} (${recs.length} সারি)`);
+      const missingReq = REQUIRED_COLS.filter((c) => !guessed[c]);
+      if (missingReq.length) {
+        toast.warning(
+          "আবশ্যক কলাম মিলছে না — ম্যাপিং ঠিক করুন: " +
+            missingReq.map((c) => COL_LABELS[c]).join(", "),
+        );
+      }
     } catch (e: any) {
       toast.error(e?.message ?? "ফাইল পড়া যায়নি");
     }
