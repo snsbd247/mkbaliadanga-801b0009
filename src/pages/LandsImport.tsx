@@ -578,9 +578,11 @@ export default function LandsImport() {
             sharecropper_farmer_id: scId,
             area_decimal: ba > 0 ? round4(ba) : null,
             share_percentage: ba > 0 ? 0 : (pct || 50),
+            valid_from: new Date().toISOString().slice(0, 10),
             office_id: officeId ?? null,
             note: r.raw.note ? String(r.raw.note) : null,
           };
+
           const { error: relErr } = await db.from("land_relations").insert(relPayload);
           if (relErr) throw new Error(relErr.message);
         }
