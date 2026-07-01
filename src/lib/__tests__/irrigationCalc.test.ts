@@ -97,16 +97,16 @@ describe("Bigha ↔ Shatak conversion", () => {
 
 describe("formatLandSize", () => {
   it("default long variant shows both units in Bangla", () => {
-    expect(formatLandSize(49.5)).toBe("১.৫০ বিঘা (৪৯.৫০ শতক)".replace(/[০-৯]/g, (d) => "০১২৩৪৫৬৭৮৯".indexOf(d).toString()));
+    expect(formatLandSize(49.5)).toBe("১.৫০ বিঘা (৪৯.৫০০০ শতক)".replace(/[০-৯]/g, (d) => "০১২৩৪৫৬৭৮৯".indexOf(d).toString()));
     // Plain ASCII assertion (string already in latin digits)
-    expect(formatLandSize(49.5)).toBe("1.50 বিঘা (49.50 শতক)");
+    expect(formatLandSize(49.5)).toBe("1.50 বিঘা (49.5000 শতক)");
   });
   it("short variant uses slash separator", () => {
-    expect(formatLandSize(33, "short")).toBe("1.00 বিঘা / 33.00 শতক");
+    expect(formatLandSize(33, "short")).toBe("1.00 বিঘা / 33.0000 শতক");
   });
   it("ascii variant for PDF/Excel without Bangla fonts", () => {
-    expect(formatLandSize(33, "ascii")).toBe("1.00 bigha · 20.00 katha (33.00 shatak)");
-    expect(formatLandSize(66, "ascii")).toBe("2.00 bigha · 40.00 katha (66.00 shatak)");
+    expect(formatLandSize(33, "ascii")).toBe("1.00 bigha · 20.00 katha (33.0000 shatak)");
+    expect(formatLandSize(66, "ascii")).toBe("2.00 bigha · 40.00 katha (66.0000 shatak)");
   });
   it("falls back when value is missing", () => {
     expect(formatLandSize(null)).toBe("—");
