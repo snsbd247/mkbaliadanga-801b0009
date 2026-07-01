@@ -411,6 +411,10 @@ class DeveloperToolsController extends Controller
      */
     public function rollback(Request $request): JsonResponse
     {
+        if (! $this->canDeploy($request->user())) {
+            return response()->json(['ok' => false, 'output' => 'শুধুমাত্র সুপার অ্যাডমিন রোলব্যাক চালাতে পারবেন।'], 403);
+        }
+
         $before = $this->git(['rev-parse', 'HEAD']);
         if ($before['ok']) {
             $tag = 'pre-rollback-'.now()->format('Ymd-His');
