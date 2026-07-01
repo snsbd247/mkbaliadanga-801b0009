@@ -231,10 +231,13 @@ class DeveloperToolsController extends Controller
 
         $this->logDev($request, 'git.pull', $br);
 
+        // Always return 200 so the client can render the real git output.
+        // A non-zero git exit is reported via `ok:false`, not an HTTP error,
+        // otherwise the axios wrapper masks the reason as a generic 500.
         return response()->json([
             'ok' => $pull['ok'],
             'output' => trim($fetch['output']."\n\n".$pull['output']),
-        ], $pull['ok'] ? 200 : 500);
+        ]);
     }
 
     /**
