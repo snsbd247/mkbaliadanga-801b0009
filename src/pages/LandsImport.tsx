@@ -122,15 +122,49 @@ function parseSheet(wb: XLSX.WorkBook): { headers: string[]; records: Record<str
   return { headers, records };
 }
 
-/** Auto-guess mapping from file headers to expected columns. */
+/** Accepted header aliases (BN + EN) per canonical column, normalized. */
+const COL_ALIASES: Record<ColKey, string[]> = {
+  owner_farmer_id: ["owner_farmer_id", "মালিকের_farmer_id", "মালিক_id", "owner_id", "মালিক"],
+  land_ref: ["land_ref", "জমির_রেফ", "রেফ", "ref"],
+  mouza: ["mouza", "মৌজা"],
+  dag_no: ["dag_no", "দাগ_নং", "দাগ", "dag"],
+  land_type: ["land_type", "জমির_ধরন", "ধরন"],
+  field_type: ["field_type", "উচু/নিচু/মাঝারি", "উচু_নিচু_মাঝারি", "field"],
+  land_size: ["land_size", "জমির_পরিমাণ", "পরিমাণ", "শতক", "size"],
+  owner_type: ["owner_type", "own_borga", "own/borga", "মালিকানা"],
+  sharecropper_id: ["sharecropper_id", "বর্গাদার_farmer_id", "বর্গাদার_id", "borgadar_id", "বর্গাদার"],
+  borga_area: ["borga_area", "বর্গা_area", "বর্গা_শতক", "borga_shotok"],
+  share_percentage: ["share_percentage", "share_%", "share_percent", "শতাংশ", "share"],
+  note: ["note", "মন্তব্য", "নোট", "comment"],
+};
+
+/** Resolve one uploaded header to a canonical column, or null if unknown. */
+function resolveHeader(header: string): ColKey | null {
+  const norm = normalizeKey(header);
+  for (const col of COLUMNS) {
+    if (col === norm) return col;
+    if (COL_ALIASES[col].some((a) => normalizeKey(a) === norm)) return col;
+  }
+  return null;
+}
+
+/** Auto-guess mapping from file headers to expected columns (BN+EN aware). */
 function autoMap(headers: string[]): Record<ColKey, string> {
   const map = {} as Record<ColKey, string>;
-  const normHeaders = headers.map((h) => ({ raw: h, norm: normalizeKey(h) }));
-  for (const col of COLUMNS) {
-    const hit = normHeaders.find((h) => h.norm === col);
-    map[col] = hit ? hit.raw : "";
+  for (const col of COLUMNS) map[col] = "";
+  for (const h of headers) {
+    const col = resolveHeader(h);
+    if (col && !map[col]) map[col] = h;
   }
   return map;
+}
+
+/** Strict schema check: unknown headers + missing required columns. */
+function checkSchema(headers: string[]): { unknown: string[]; missingRequired: ColKey[] } {
+  const unknown = headers.filter((h) => resolveHeader(h) === null);
+  const present = new Set(headers.map(resolveHeader).filter(Boolean) as ColKey[]);
+  const missingRequired = REQUIRED_COLS.filter((c) => !present.has(c));
+  return { unknown, missingRequired };
 }
 
 const num = (v: unknown): number => {
