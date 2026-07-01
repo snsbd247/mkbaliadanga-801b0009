@@ -240,12 +240,16 @@ export default function LandsImport() {
       const a = document.createElement("a");
       a.href = url; a.download = `${filename}.csv`; a.click();
       URL.revokeObjectURL(url);
+      toast.success("স্যাম্পল ডাউনলোড হয়েছে: lands-import-sample.csv");
+      logDownload("sample", "csv");
       return;
     }
     const ws = XLSX.utils.aoa_to_sheet([cols, ...rows]);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Lands");
     XLSX.writeFile(wb, `${filename}.xlsx`);
+    toast.success("স্যাম্পল ডাউনলোড হয়েছে: lands-import-sample.xlsx");
+    logDownload("sample", "xlsx");
   }
 
   async function handleFile(f: File | null) {
