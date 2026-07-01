@@ -42,6 +42,29 @@ describe("generateInvoices", () => {
     expect(rows.find((r) => r.billed_farmer_id === "owner")!.billed_area).toBe(40);
   });
 
+  it("does NOT bill the owner when the parcel is 100% given out to sharecroppers", () => {
+    const rows = generateInvoices({
+      ...base,
+      relations: [{ sharecropper_farmer_id: "sc-1", area_decimal: 100 }],
+    });
+    // Only the cultivating sharecropper is invoiced — never the owner.
+    expect(rows).toHaveLength(1);
+    expect(rows[0].billed_farmer_id).toBe("sc-1");
+    expect(rows[0].is_borga).toBe(true);
+    expect(rows[0].billed_area).toBe(100);
+    expect(rows.find((r) => r.billed_farmer_id === "owner")).toBeUndefined();
+  });
+
+  it("bills owner only the remaining area on a partially shared parcel", () => {
+    const rows = generateInvoices({
+      ...base,
+      relations: [{ sharecropper_farmer_id: "sc-1", area_decimal: 70 }],
+    });
+    expect(rows).toHaveLength(2);
+    expect(rows.find((r) => r.billed_farmer_id === "owner")!.billed_area).toBe(30);
+    expect(rows.find((r) => r.billed_farmer_id === "sc-1")!.billed_area).toBe(70);
+  });
+
   it("allocates paid proportionally so applied + due reconciles to payable", () => {
     const rows = generateInvoices({
       ...base,
