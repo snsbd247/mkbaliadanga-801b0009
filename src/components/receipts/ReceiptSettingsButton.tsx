@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Settings2, RotateCcw } from "lucide-react";
 import { setReceiptOptions, useReceiptOptions, resetReceiptOptionsToDemo } from "@/lib/receiptOptions";
-import { getReceiptLayoutSettings, setReceiptLayoutSettings, resetReceiptLayoutSettings, applyReceiptPreset, detectActiveReceiptPreset, RECEIPT_PAPER_PRESETS, DEFAULT_RECEIPT_LAYOUT, type PaperSize, type PaperOrientation } from "@/lib/receiptLayoutSettings";
+import { getReceiptLayoutSettings, setReceiptLayoutSettings, resetReceiptLayoutSettings, applyReceiptPreset, detectActiveReceiptPreset, RECEIPT_PAPER_PRESETS, type PaperSize, type PaperOrientation } from "@/lib/receiptLayoutSettings";
 import { scheduleReceiptLayoutPersist } from "@/lib/receiptLayoutSync";
 import { useLang } from "@/i18n/LanguageProvider";
 
