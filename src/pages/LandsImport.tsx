@@ -37,7 +37,7 @@ type RowState = {
 };
 
 const COLUMNS = [
-  "owner_farmer_id", "land_ref", "mouza", "dag_no", "land_type", "field_type",
+  "owner_farmer_id", "land_ref", "mouza", "dag_no", "land_type",
   "land_size", "owner_type", "sharecropper_id", "borga_area", "share_percentage", "note",
 ] as const;
 type ColKey = (typeof COLUMNS)[number];
@@ -49,8 +49,7 @@ const COL_LABELS: Record<ColKey, string> = {
   land_ref: "land_ref (একই জমির রেফ)",
   mouza: "মৌজা",
   dag_no: "দাগ নং",
-  land_type: "জমির ধরন (land_type)",
-  field_type: "উচু/নিচু/মাঝারি",
+  land_type: "জমির ধরন (উচু/নিচু/মাঝারি/পুকুর ইত্যাদি)",
   land_size: "জমির পরিমাণ (শতক) *",
   owner_type: "own / borga",
   sharecropper_id: "বর্গাদার Farmer ID",
@@ -65,8 +64,7 @@ const COL_HELP: Record<ColKey, { required: boolean; bn: string; en: string; samp
   land_ref: { required: false, bn: "একই জমিতে একাধিক বর্গাদার দিতে একই ref দিন", en: "Same ref groups multiple sharecroppers on one plot", sample: "L2" },
   mouza: { required: false, bn: "মৌজার নাম", en: "Mouza name", sample: "Mouza A" },
   dag_no: { required: false, bn: "দাগ নং — একাধিক হলে কমা দিয়ে", en: "Dag no — comma-separate multiple", sample: "12,15" },
-  land_type: { required: false, bn: "জমির ধরন — land_types এর code বা নাম (পুকুর/সবজি/বাগান ইত্যাদি)", en: "Land type — land_types code or name (pond/vegetable/garden etc.)", sample: "পুকুর" },
-  field_type: { required: false, bn: "উচু / নিচু / মাঝারি / অন্যান্য", en: "high / low / medium / other", sample: "উচু" },
+  land_type: { required: false, bn: "জমির ধরন — উচু/নিচু/মাঝারি বা পুকুর/সবজি/বাগান (land_types এর code বা নাম)", en: "Land type — high/low/medium or pond/vegetable/garden (land_types code or name)", sample: "উচু" },
   land_size: { required: true, bn: "জমির পরিমাণ (শতক), . এর পর ৪ ডিজিট", en: "Land size (shotok), 4 decimals", sample: "33.0000" },
   owner_type: { required: false, bn: "own / borga (ডিফল্ট own)", en: "own / borga (default own)", sample: "own" },
   sharecropper_id: { required: false, bn: "borga হলে বর্গাদারের Farmer ID", en: "Sharecropper's Farmer ID if borga", sample: "00003" },
@@ -129,8 +127,7 @@ const COL_ALIASES: Record<ColKey, string[]> = {
   land_ref: ["land_ref", "জমির_রেফ", "রেফ", "ref"],
   mouza: ["mouza", "মৌজা"],
   dag_no: ["dag_no", "দাগ_নং", "দাগ", "dag"],
-  land_type: ["land_type", "জমির_ধরন", "ধরন"],
-  field_type: ["field_type", "উচু/নিচু/মাঝারি", "উচু_নিচু_মাঝারি", "field"],
+  land_type: ["land_type", "জমির_ধরন", "ধরন", "field_type", "উচু/নিচু/মাঝারি", "উচু_নিচু_মাঝারি", "field"],
   land_size: ["land_size", "জমির_পরিমাণ", "পরিমাণ", "শতক", "size"],
   owner_type: ["owner_type", "own_borga", "own/borga", "মালিকানা"],
   sharecropper_id: ["sharecropper_id", "বর্গাদার_farmer_id", "বর্গাদার_id", "borgadar_id", "বর্গাদার"],
@@ -229,9 +226,9 @@ export default function LandsImport() {
   function downloadTemplate(format: "xlsx" | "csv") {
     const cols = [...COLUMNS];
     const sample = [
-      ["00001", "L1", "Mouza A", "12,15", "পুকুর", "উচু", "33.0000", "own", "", "", "", "মালিক নিজে চাষ"],
-      ["00002", "L2", "Mouza A", "30", "সবজি", "নিচু", "50.0000", "borga", "00003", "20.0000", "", "বর্গাদার ২০ শতক"],
-      ["00002", "L2", "Mouza A", "30", "বাগান", "নিচু", "50.0000", "borga", "00004", "", "30", "একই জমিতে ২য় বর্গাদার (একই land_ref)"],
+      ["00001", "L1", "Mouza A", "12,15", "উচু", "33.0000", "own", "", "", "", "মালিক নিজে চাষ"],
+      ["00002", "L2", "Mouza A", "30", "নিচু", "50.0000", "borga", "00003", "20.0000", "", "বর্গাদার ২০ শতক"],
+      ["00002", "L2", "Mouza A", "30", "পুকুর", "50.0000", "borga", "00004", "", "30", "একই জমিতে ২য় বর্গাদার (একই land_ref)"],
 
     ];
     if (format === "csv") {
@@ -254,8 +251,7 @@ export default function LandsImport() {
       ["land_ref", "No", "একই জমিতে একাধিক বর্গাদার দিতে একই ref ব্যবহার করুন (যেমন L2)। খালি হলে প্রতি সারি আলাদা জমি।"],
       ["mouza", "No", "মৌজার নাম — থাকলে mouza_id রিসলভ হবে"],
       ["dag_no", "No", "দাগ নং — একাধিক হলে কমা দিয়ে: 12,15,30"],
-      ["land_type", "No", "জমির ধরন — land_types এর code বা নাম (যেমন পুকুর/সবজি/বাগান)। সিজন নয় — সিজন আসবে ইনভয়েস ইমপোর্টে।"],
-      ["field_type", "No", "উচু / নিচু / মাঝারি / অন্যান্য (ধান হলে)"],
+      ["land_type", "No", "জমির ধরন — উচু/নিচু/মাঝারি বা পুকুর/সবজি/বাগান (land_types এর code বা নাম)। সিজন নয় — সিজন আসবে ইনভয়েস ইমপোর্টে।"],
       ["land_size", "Yes", "জমির পরিমাণ (শতক) — . এর পর ৪ ডিজিট পর্যন্ত"],
       ["owner_type", "No", "own / borga (ডিফল্ট own)"],
       ["sharecropper_id", "borga হলে Yes", "বর্গাদারের Farmer ID"],
@@ -275,12 +271,12 @@ export default function LandsImport() {
   function downloadSample(format: "xlsx" | "csv") {
     const cols = [...COLUMNS];
     const rows = [
-      ["00001", "L1", "Boaliadanga", "12,15", "", "উচু", "33.0000", "own", "", "", "", "মালিক নিজে চাষ"],
-      ["00002", "L2", "Boaliadanga", "18", "", "নিচু", "50.0000", "borga", "00003", "20.0000", "", "বর্গাদার ২০ শতক"],
-      ["00002", "L2", "Boaliadanga", "18", "", "নিচু", "50.0000", "borga", "00004", "", "30", "একই জমিতে ২য় বর্গাদার (share %)"],
-      ["00005", "L3", "Baliadanga", "22,23", "", "মাঝারি", "66.5000", "own", "", "", "", "মালিক নিজে চাষ"],
-      ["00006", "L4", "Baliadanga", "40", "", "উচু", "45.0000", "borga", "00007", "45.0000", "", "সম্পূর্ণ জমি বর্গা"],
-      ["00008", "L5", "Baliadanga", "51", "সবজি", "অন্যান্য", "12.7500", "own", "", "", "", "সবজি জমি"],
+      ["00001", "L1", "Boaliadanga", "12,15", "উচু", "33.0000", "own", "", "", "", "মালিক নিজে চাষ"],
+      ["00002", "L2", "Boaliadanga", "18", "নিচু", "50.0000", "borga", "00003", "20.0000", "", "বর্গাদার ২০ শতক"],
+      ["00002", "L2", "Boaliadanga", "18", "নিচু", "50.0000", "borga", "00004", "", "30", "একই জমিতে ২য় বর্গাদার (share %)"],
+      ["00005", "L3", "Baliadanga", "22,23", "মাঝারি", "66.5000", "own", "", "", "", "মালিক নিজে চাষ"],
+      ["00006", "L4", "Baliadanga", "40", "উচু", "45.0000", "borga", "00007", "45.0000", "", "সম্পূর্ণ জমি বর্গা"],
+      ["00008", "L5", "Baliadanga", "51", "সবজি", "12.7500", "own", "", "", "", "সবজি জমি"],
     ];
     const filename = "lands-import-sample";
     if (format === "csv") {
@@ -441,8 +437,7 @@ export default function LandsImport() {
         if (ref && (borgaAreaByRef[ref] ?? 0) > (sizeByRef[ref] ?? 0) + 0.0001) {
           errors.push(`land_ref ${ref}: বর্গা area জমির পরিমাণ অতিক্রম করেছে`);
         }
-        if (raw.field_type && !FIELD_TYPE_MAP[String(raw.field_type).trim().toLowerCase()] && !FIELD_TYPE_MAP[String(raw.field_type).trim()])
-          warns.push(`field_type চেনা যায়নি (উচু/নিচু/মাঝারি): ${raw.field_type}`);
+        // land_type is optional and free-form (resolved to land_types); no warning needed.
 
         // land_type must be a real land classification (পুকুর/সবজি/বাগান) — never a season.
         if (looksLikeSeason(raw.land_type))
@@ -555,10 +550,11 @@ export default function LandsImport() {
           }
           const mouzaName = String(r.raw.mouza ?? "").trim();
           const mouzaId = mouzaName ? mouzaMap.get(mouzaName.toLowerCase()) ?? null : null;
-          const ltKey = String(r.raw.land_type ?? "").trim().toLowerCase();
+          const ltRaw = String(r.raw.land_type ?? "").trim();
+          const ltKey = ltRaw.toLowerCase();
           const landTypeId = ltKey ? landTypeMap.get(ltKey) ?? null : null;
-          const ftRaw = String(r.raw.field_type ?? "").trim();
-          const fieldType = FIELD_TYPE_MAP[ftRaw.toLowerCase()] ?? FIELD_TYPE_MAP[ftRaw] ?? "medium_land";
+          // Derive the field_type enum from the single land_type value (উচু/নিচু/মাঝারি → high/low/medium).
+          const fieldType = FIELD_TYPE_MAP[ltKey] ?? FIELD_TYPE_MAP[ltRaw] ?? "medium_land";
           const borga = isBorgaType(r.raw.owner_type);
 
           const landPayload: any = {
@@ -694,7 +690,7 @@ export default function LandsImport() {
           </div>
           <div className="text-sm">
             <b>{tx("owner_type supported values:", "owner_type সমর্থিত মান:")}</b> own / owner / {tx("নিজে (owner)", "নিজে (মালিক)")}, borga / borgadar / {tx("বর্গা (sharecropper)", "বর্গা (বর্গাদার)")}।<br />
-            <b>{tx("field_type supported values:", "field_type সমর্থিত মান:")}</b> {tx("উচু, নিচু, মাঝারি, others", "উচু, নিচু, মাঝারি, অন্যান্য")}।
+            <b>{tx("land_type supported values:", "land_type সমর্থিত মান:")}</b> {tx("উচু, নিচু, মাঝারি, পুকুর, সবজি, বাগান …", "উচু, নিচু, মাঝারি, পুকুর, সবজি, বাগান …")}।
           </div>
           <div>
             <h3 className="font-semibold mb-2">{tx("Template preview", "টেমপ্লেট প্রিভিউ")}</h3>
