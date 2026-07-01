@@ -226,9 +226,18 @@ class GenericTableController extends Controller
 
 
 
+        // land_relations.valid_from is NOT NULL with no default on older
+        // schemas. Backfill it so barga imports never fail on this column.
+        if ($table === 'land_relations') {
+            if (! array_key_exists('valid_from', $row) || $row['valid_from'] === null || $row['valid_from'] === '') {
+                $row['valid_from'] = now()->format('Y-m-d');
+            }
+        }
+
         if ($table !== 'farmers') {
             return $row;
         }
+
 
 
         $copy = function (array &$row, string $from, string $to): void {
