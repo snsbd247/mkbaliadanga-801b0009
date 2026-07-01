@@ -932,7 +932,25 @@ export default function LandsImport() {
                     <TableCell className="font-mono text-xs">{String(r.raw.owner_farmer_id ?? "")}</TableCell>
                     <TableCell className="font-mono text-xs">{String(r.raw.land_ref ?? "")}</TableCell>
                     <TableCell>{String(r.raw.mouza ?? "")}</TableCell>
-                    <TableCell className="font-mono text-xs">{String(r.raw.dag_no ?? "")}</TableCell>
+                    <TableCell className="font-mono text-xs">
+                      {String(r.raw.dag_no ?? "")}
+                      {(() => {
+                        const a = analyzeDagNo(r.raw.dag_no);
+                        if (!a.raw) return null;
+                        const sepLabel: Record<string, string> = {
+                          none: tx("single dag", "একক দাগ"),
+                          comma: tx("comma-split", "কমা-বিভক্ত"),
+                          semicolon: tx("semicolon-split", "সেমিকোলন-বিভক্ত"),
+                          json: tx("JSON list", "JSON তালিকা"),
+                          pipe: tx("pipe (warn)", "পাইপ (সতর্ক)"),
+                        };
+                        return (
+                          <span className={`block ${a.warned ? "text-amber-600" : "text-muted-foreground"}`}>
+                            {sepLabel[a.separator]} · {a.numbers.length}× · {a.blocked ? tx("blocked", "ব্লকড") : tx("allowed", "অনুমোদিত")}
+                          </span>
+                        );
+                      })()}
+                    </TableCell>
                     <TableCell>{String(r.raw.land_type ?? "")}</TableCell>
                     <TableCell className="text-right">{String(r.raw.land_size ?? "")}</TableCell>
                     <TableCell>{isBorgaType(r.raw.owner_type) ? "borga" : "own"}</TableCell>
