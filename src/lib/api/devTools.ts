@@ -31,4 +31,15 @@ export const DevToolsApi = {
     api.post<{ ok: boolean; remote_url: string }>("/dev/git/remote", { url }).then((r) => r.data),
   pull: (branch?: string) =>
     api.post<{ ok: boolean; output: string }>("/dev/git/pull", branch ? { branch } : {}).then((r) => r.data),
+  dryRun: (branch?: string) =>
+    api
+      .post<{ ok: boolean; branch: string; incoming_count: number; output: string }>(
+        "/dev/git/dry-run",
+        branch ? { branch } : {},
+      )
+      .then((r) => r.data),
+  rollback: () =>
+    api
+      .post<{ ok: boolean; last_commit: string | null; output: string }>("/dev/git/rollback", {})
+      .then((r) => r.data),
 };
