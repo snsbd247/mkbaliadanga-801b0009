@@ -484,9 +484,15 @@ export default function SystemUpdate() {
                 </AlertDialogContent>
               </AlertDialog>
 
+              <Button variant="outline" size="sm" onClick={runDeployPreCheck}
+                disabled={busy !== null || precheckBusy}>
+                <ListChecks className="mr-1.5 h-4 w-4" /> {precheckBusy ? "চেক হচ্ছে…" : "প্রি-চেক"}
+              </Button>
+
               <Button variant="outline" size="sm" onClick={runDry} disabled={busy !== null || !effectiveRemote}>
                 <Play className="mr-1.5 h-4 w-4" /> {busy === "dry" ? "চলছে…" : "Dry-Run"}
               </Button>
+
 
               {(busy === "pull" || busy === "dry") && (
                 <Button variant="outline" size="sm" onClick={cancelOp}
