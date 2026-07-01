@@ -433,6 +433,17 @@ export default function LandsImport() {
         if (raw.field_type && !FIELD_TYPE_MAP[String(raw.field_type).trim().toLowerCase()] && !FIELD_TYPE_MAP[String(raw.field_type).trim()])
           warns.push(`field_type চেনা যায়নি (উচু/নিচু/মাঝারি): ${raw.field_type}`);
 
+        // dag_no may hold multiple dag numbers. Only comma/semicolon separated
+        // values (or a JSON array) are supported — anything else (e.g. pipe or
+        // space separated) would import as a single malformed dag.
+        const dagStr = raw.dag_no == null ? "" : String(raw.dag_no).trim();
+        if (dagStr) {
+          const isJsonArray = /^\s*\[.*\]\s*$/.test(dagStr);
+          if (!isJsonArray && /[|/]/.test(dagStr)) {
+            warns.push(`dag_no: একাধিক দাগ কমা (,) বা সেমিকোলন (;) দিয়ে দিন — পাওয়া গেছে "${dagStr}"`);
+          }
+        }
+
         return {
           idx,
           raw,
