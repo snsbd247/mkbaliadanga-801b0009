@@ -79,8 +79,15 @@ export default function SystemUpdate() {
   const [busy, setBusy] = useState<"pull" | "dry" | "rollback" | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [output, setOutput] = useState("");
+  const [lastFailed, setLastFailed] = useState<null | "pull" | "dry" | "rollback">(null);
   const [showProtected, setShowProtected] = useState(false);
   const [updatedAt, setUpdatedAt] = useState<number | null>(null);
+  const [checks, setChecks] = useState<RemoteCheck[]>([]);
+  const [checking, setChecking] = useState(false);
+  const [logs, setLogs] = useState<DevAuditLog[]>([]);
+  const [logsOpen, setLogsOpen] = useState(false);
+  const [logsLoading, setLogsLoading] = useState(false);
+  const abortRef = useRef<AbortController | null>(null);
 
   const effectiveRemote = status?.remote_url || repoUrl.trim() || readDeploySetting(DEPLOY_REPO_URL_KEY);
   const effectiveBranch = branch.trim() || status?.branch || readDeploySetting(DEPLOY_BRANCH_KEY) || "main";
