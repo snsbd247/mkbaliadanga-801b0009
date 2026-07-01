@@ -21,6 +21,8 @@ import { downloadBulkCardsPdf } from "@/components/card/cardPdf";
 import { useCardSettings } from "@/lib/cardSettings";
 import { MembershipCard, type CardData } from "@/components/card/MembershipCard";
 
+import { isLaravelBackend } from "@/lib/backend";
+
 const FN = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1`;
 
 interface FarmerRow {
@@ -86,16 +88,33 @@ export default function BulkCards() {
     if (selectedIds.length > 100) { toast.error(t("pgBulkMaxLimit" as any)); return; }
     setBusy(true);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) { toast.error(t("pgBulkSignInRequired" as any)); return; }
-      const res = await fetch(`${FN}/farmer-cards-bulk`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
-        body: JSON.stringify({ farmer_ids: selectedIds }),
-      });
-      const j = await res.json();
-      if (!res.ok) { toast.error(j?.error || t("pgBulkFetchFailed" as any)); return; }
-      const items: any[] = j.items ?? [];
+      let items: any[] = [];
+      if (isLaravelBackend) {
+        // Laravel/VPS backend has no Supabase edge function — build card items
+        // directly from farmer data. QR uses the stable account_number.
+        const { data: farmers, error } = await db
+          .from("farmers")
+          .select("id,name_en,name_bn,farmer_code,member_no,account_number,voter_number,mobile,village,address,photo_url")
+          .in("id", selectedIds);
+        if (error) { toast.error(error.message || t("pgBulkFetchFailed" as any)); return; }
+        items = (farmers ?? []).map((f: any) => ({
+          farmer_id: f.id,
+          farmer: f,
+          token: f.account_number || f.farmer_code,
+          issued_at: new Date().toISOString(),
+        }));
+      } else {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) { toast.error(t("pgBulkSignInRequired" as any)); return; }
+        const res = await fetch(`${FN}/farmer-cards-bulk`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
+          body: JSON.stringify({ farmer_ids: selectedIds }),
+        });
+        const j = await res.json();
+        if (!res.ok) { toast.error(j?.error || t("pgBulkFetchFailed" as any)); return; }
+        items = j.items ?? [];
+      }
       const ok = items.filter((i) => !i.error);
 
       const cardData = ok.map((it) => {
