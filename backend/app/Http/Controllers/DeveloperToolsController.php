@@ -209,13 +209,16 @@ class DeveloperToolsController extends Controller
             ? $this->git(['remote', 'set-url', 'origin', $url])
             : $this->git(['remote', 'add', 'origin', $url]);
 
-        if (! $res['ok']) {
-            return response()->json(['message' => 'রিমোট সেট করা যায়নি।', 'output' => $res['output']], 500);
-        }
-
         $this->logDev($request, 'git.set_remote', $url);
 
-        return response()->json(['ok' => true, 'remote_url' => $url]);
+        // Always return 200 so the client can render the real git output.
+        // A non-zero git exit is reported via `ok:false`, not an HTTP error,
+        // otherwise the axios wrapper masks the reason as a generic 500.
+        return response()->json([
+            'ok' => $res['ok'],
+            'remote_url' => $url,
+            'output' => $res['output'],
+        ]);
     }
 
     public function pull(Request $request): JsonResponse
