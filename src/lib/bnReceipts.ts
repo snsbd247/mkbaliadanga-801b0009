@@ -4,7 +4,7 @@ import QRCode from "qrcode";
 import { toBnDigits, bnAmountInWords } from "@/lib/bnNumber";
 import { parseDagNumbers } from "@/lib/dagNumbers";
 
-import { getReceiptLayoutSettings, getIrrigationLabels, getRowSpacingForKind, getSavingsLabels, getLoanLabels, getDefaultPaperSize, getDefaultOrientation } from "@/lib/receiptLayoutSettings";
+import { getReceiptLayoutSettings, getIrrigationLabels, getRowSpacingForKind, getSavingsLabels, getLoanLabels, getDefaultPaperSize, getDefaultOrientation, getIrrigationReceiptPadding } from "@/lib/receiptLayoutSettings";
 import { DEFAULT_TEMPLATE, type ReceiptTemplate } from "@/lib/paymentReceiptPdf";
 import { loadReceiptTemplate } from "@/lib/receiptTemplate";
 
@@ -378,7 +378,7 @@ function orgBlock(
   if (layout === "one-line") {
     const parts = [name, org.address, org.mobile, org.email, org.registration_no && `${STR[lang].regNo} ${digits(org.registration_no, lang)}`]
       .filter(Boolean).join(" • ");
-    return `<div style="text-align:center;font-size:${fontPx}px;color:#333;margin-top:2px;"><span style="font-weight:600;">${name}</span>${parts.replace(name, "") ? ` • ${parts.replace(name + " • ", "")}` : ""}</div>`;
+    return `<div style="text-align:center;font-size:${fontPx}px;color:#111;margin-top:2px;"><span style="font-weight:600;">${name}</span>${parts.replace(name, "") ? ` • ${parts.replace(name + " • ", "")}` : ""}</div>`;
   }
   const lines = [
     name && `<div style="font-weight:600;font-size:${namePx}px;">${name}</div>`,
@@ -386,7 +386,7 @@ function orgBlock(
     (org.mobile || org.email) && `<div>${[org.mobile, org.email].filter(Boolean).join(" • ")}</div>`,
     org.registration_no && `<div>${STR[lang].regNo} ${digits(org.registration_no, lang)}</div>`,
   ].filter(Boolean).join("");
-  return `<div style="text-align:center;font-size:${fontPx}px;color:#333;margin-top:2px;">${lines}</div>`;
+  return `<div style="text-align:center;font-size:${fontPx}px;color:#111;margin-top:2px;">${lines}</div>`;
 }
 
 function copyHtml(d: BnReceiptData, copyLabel: string, signatureUrl: string | null | undefined, lang: ReceiptLang, orgLayout: "one-line" | "two-line", orgSize: "sm" | "md" | "lg", qrDataUrl?: string | null, showVerifyUrl?: boolean, tpl: ReceiptTemplate = DEFAULT_TEMPLATE): string {
@@ -394,7 +394,7 @@ function copyHtml(d: BnReceiptData, copyLabel: string, signatureUrl: string | nu
   const officialIrrigationReceipt = d.kind === "irrigation" && !d.office_income;
   const logo = d.logo_url
     ? `<img src="${d.logo_url}" crossorigin="anonymous" style="${officialIrrigationReceipt ? "max-width:215px;height:64px;object-fit:contain;object-position:left center;" : "height:60px;display:block;margin:0 auto 4px;"}" />`
-    : `<div style="height:60px;display:flex;align-items:center;${officialIrrigationReceipt ? "justify-content:flex-start;text-align:left;" : "justify-content:center;"}font-size:18px;font-weight:700;color:#b91c1c;">${(lang === "bn" ? d.company_name_bn ?? d.company_name : d.company_name ?? d.company_name_bn) ?? ""}</div>`;
+    : `<div style="height:60px;display:flex;align-items:center;${officialIrrigationReceipt ? "justify-content:flex-start;text-align:left;" : "justify-content:center;"}font-size:18px;font-weight:700;color:#111;">${(lang === "bn" ? d.company_name_bn ?? d.company_name : d.company_name ?? d.company_name_bn) ?? ""}</div>`;
 
   const rows: Array<[string, string]> = [];
   const isMisc = d.kind === "irrigation" && !!d.misc_collection && !d.office_income;
@@ -560,11 +560,13 @@ function copyHtml(d: BnReceiptData, copyLabel: string, signatureUrl: string | nu
   if (officialIrrigationReceipt) {
     const red = "#111";
     const blue = "#111";
+    const padCfg = getIrrigationReceiptPadding();
+    const hb = padCfg.holdingBottom;
     const officialRows = rows.map(([k, v], idx) => {
       const isLast = idx === rows.length - 1;
-      const rowPadY = isLast ? "1px 0 12px 12px" : "1px 0 1px 12px";
-      const rowPadColon = isLast ? "1px 8px 12px 4px" : "1px 8px 1px 4px";
-      const rowPadVal = isLast ? "1px 12px 12px 0" : "1px 12px 1px 0";
+      const rowPadY = isLast ? `1px 0 ${hb}px 12px` : "1px 0 1px 12px";
+      const rowPadColon = isLast ? `1px 8px ${hb}px 4px` : "1px 8px 1px 4px";
+      const rowPadVal = isLast ? `1px 12px ${hb}px 0` : "1px 12px 1px 0";
       const label = k === t.farmerLine
         ? `<span style="color:${red};">কৃষকের নাম ও আইডি</span><span style="color:${blue};">/মালিকের নাম ও আইডি</span>`
         : k === t.landKind
@@ -594,7 +596,7 @@ function copyHtml(d: BnReceiptData, copyLabel: string, signatureUrl: string | nu
     }).join("");
 
     return `
-    <div style="position:relative;font-family:${fontFamily};color:#111;padding:48px 48px 42px;min-height:650px;box-sizing:border-box;" data-receipt-copy="${copyLabel}">
+    <div style="position:relative;font-family:${fontFamily};color:#111;padding:${padCfg.page}px ${padCfg.page}px ${padCfg.bottom}px;min-height:650px;box-sizing:border-box;" data-receipt-copy="${copyLabel}">
       ${watermark}
       <div style="position:relative;z-index:1;display:grid;grid-template-columns:240px 1fr 128px;align-items:start;min-height:92px;">
         <div style="padding-top:16px;">${logo}</div>
@@ -602,7 +604,7 @@ function copyHtml(d: BnReceiptData, copyLabel: string, signatureUrl: string | nu
           <div style="display:inline-block;font-size:25px;font-weight:800;line-height:1.1;text-decoration:underline;text-underline-offset:4px;text-decoration-thickness:2px;">${titleFor(d.kind, lang)}</div>
         </div>
         <div style="text-align:right;padding-top:14px;">
-          ${qrDataUrl && tpl.qr_placement !== "none" ? `<img src="${qrDataUrl}" style="width:78px;height:78px;display:block;margin-left:auto;" /><div style="font-size:11px;color:#444;margin-top:2px;">${lang === "bn" ? "যাচাই করুন" : "Scan to verify"}</div>` : ""}
+          ${qrDataUrl && tpl.qr_placement !== "none" ? `<img src="${qrDataUrl}" style="width:78px;height:78px;display:block;margin-left:auto;" /><div style="font-size:11px;color:#111;margin-top:2px;">${lang === "bn" ? "যাচাই করুন" : "Scan to verify"}</div>` : ""}
         </div>
       </div>
 
@@ -663,8 +665,8 @@ function copyHtml(d: BnReceiptData, copyLabel: string, signatureUrl: string | nu
       ${qrDataUrl && tpl.qr_placement !== "none" ? `
       <div style="text-align:center;">
         <img src="${qrDataUrl}" style="width:78px;height:78px;display:block;margin:0 auto;" />
-        <div style="font-size:9px;color:#444;margin-top:2px;">${lang === "bn" ? "যাচাই করুন" : "Scan to verify"}</div>
-        ${showVerifyUrl && d.verify_url ? `<div style="font-size:8px;color:#444;margin-top:1px;word-break:break-all;max-width:160px;font-family:monospace;">${d.verify_url}</div>` : ""}
+        <div style="font-size:9px;color:#111;margin-top:2px;">${lang === "bn" ? "যাচাই করুন" : "Scan to verify"}</div>
+        ${showVerifyUrl && d.verify_url ? `<div style="font-size:8px;color:#111;margin-top:1px;word-break:break-all;max-width:160px;font-family:monospace;">${d.verify_url}</div>` : ""}
       </div>` : ""}
       <div style="text-align:right;">
         <div>${t.collectorSig}</div>

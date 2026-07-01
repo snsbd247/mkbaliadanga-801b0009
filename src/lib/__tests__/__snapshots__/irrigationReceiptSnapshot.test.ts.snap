@@ -5,9 +5,9 @@ exports[`irrigation receipt layout snapshots > matches layout with a very long d
     <div style="position:relative;font-family:'Noto Sans Bengali','Hind Siliguri','SolaimanLipi',sans-serif;color:#111;padding:48px 48px 42px;min-height:650px;box-sizing:border-box;" data-receipt-copy="কৃষকের কপি">
       
       <div style="position:relative;z-index:1;display:grid;grid-template-columns:240px 1fr 128px;align-items:start;min-height:92px;">
-        <div style="padding-top:16px;"><div style="height:60px;display:flex;align-items:center;justify-content:flex-start;text-align:left;font-size:18px;font-weight:700;color:#b91c1c;"></div></div>
+        <div style="padding-top:16px;"><div style="height:60px;display:flex;align-items:center;justify-content:flex-start;text-align:left;font-size:18px;font-weight:700;color:#111;"></div></div>
         <div style="text-align:center;padding-top:24px;">
-          <div style="display:inline-block;font-size:25px;font-weight:800;line-height:1.1;border-bottom:2px solid #111;padding-bottom:1px;">সেচ চার্জ ও বিবিধ আদায় রশিদ</div>
+          <div style="display:inline-block;font-size:25px;font-weight:800;line-height:1.1;text-decoration:underline;text-underline-offset:4px;text-decoration-thickness:2px;">সেচ চার্জ ও বিবিধ আদায় রশিদ</div>
         </div>
         <div style="text-align:right;padding-top:14px;">
           
@@ -16,7 +16,7 @@ exports[`irrigation receipt layout snapshots > matches layout with a very long d
 
       <div style="position:relative;z-index:1;display:grid;grid-template-columns:1fr auto;column-gap:24px;margin-top:4px;font-size:21px;line-height:1.35;">
         <div>
-          <div>রসিদ নং: R-SNAP</div>
+          <div>রশিদ নং: R-SNAP</div>
           
         </div>
         <div style="white-space:nowrap;padding-top:30px;">সংগৃহীত তারিখ: ২০/০৬/২০২৬ ইং</div>
@@ -25,59 +25,69 @@ exports[`irrigation receipt layout snapshots > matches layout with a very long d
       <table style="position:relative;z-index:1;width:100%;border:2px solid #111;border-collapse:collapse;margin-top:14px;table-layout:fixed;">
         <tbody>
         <tr>
-          <td style="padding:1px 0 1px 12px;vertical-align:top;width:41%;font-size:21px;line-height:1.28;word-break:break-word;overflow-wrap:anywhere;white-space:pre-line;line-height:1.35;"><span style="color:#ff0000;">কৃষকের নাম ও আইডি</span><span style="color:#4a90e2;">/মালিকের নাম ও আইডি</span></td>
-          <td style="padding:1px 8px 1px 4px;vertical-align:top;width:14px;font-size:21px;line-height:1.28;font-weight:700;">:</td>
-          <td style="padding:1px 12px 1px 0;vertical-align:top;font-size:21px;line-height:1.28;font-weight:600;word-break:break-word;overflow-wrap:anywhere;white-space:pre-line;line-height:1.35;"><span style="color:#ff0000;">মোঃ মাসুদ রানা-১৯২০</span><span style="color:#4a90e2;">/মোঃ মাসুদ রানা-১৯২০</span></td>
+          <td style="padding:1px 0 1px 12px;vertical-align:top;width:46%;font-size:18px;line-height:1.2;white-space:normal;overflow:visible;text-overflow:clip;font-weight:600;"><span style="color:#111;">কৃষকের নাম ও আইডি</span><span style="color:#111;">/মালিকের নাম ও আইডি</span></td>
+          <td style="padding:1px 8px 1px 4px;vertical-align:top;width:14px;font-size:18px;line-height:1.2;font-weight:700;">:</td>
+          <td style="padding:1px 12px 1px 0;vertical-align:top;font-size:18px;line-height:1.2;font-weight:600;word-break:break-word;overflow-wrap:anywhere;white-space:pre-line;line-height:1.35;"><span style="color:#111;">মোঃ মাসুদ রানা-১৯২০</span><span style="color:#111;">/মোঃ মাসুদ রানা-১৯২০</span></td>
         </tr>
         <tr>
-          <td style="padding:1px 0 1px 12px;vertical-align:top;width:41%;font-size:21px;line-height:1.28;word-break:break-word;overflow-wrap:anywhere;white-space:pre-line;line-height:1.35;">পিতার/স্বামীর নাম:</td>
-          <td style="padding:1px 8px 1px 4px;vertical-align:top;width:14px;font-size:21px;line-height:1.28;font-weight:700;">:</td>
-          <td style="padding:1px 12px 1px 0;vertical-align:top;font-size:21px;line-height:1.28;font-weight:600;word-break:break-word;overflow-wrap:anywhere;white-space:pre-line;line-height:1.35;">মোঃ তোহিদুল ইসলাম</td>
+          <td style="padding:1px 0 1px 12px;vertical-align:top;width:46%;font-size:18px;line-height:1.2;white-space:normal;overflow:visible;text-overflow:clip;font-weight:600;">পিতার/স্বামীর নাম:</td>
+          <td style="padding:1px 8px 1px 4px;vertical-align:top;width:14px;font-size:18px;line-height:1.2;font-weight:700;">:</td>
+          <td style="padding:1px 12px 1px 0;vertical-align:top;font-size:18px;line-height:1.2;font-weight:600;word-break:break-word;overflow-wrap:anywhere;white-space:pre-line;line-height:1.35;">মোঃ তোহিদুল ইসলাম</td>
         </tr>
         <tr>
-          <td style="padding:1px 0 1px 12px;vertical-align:top;width:41%;font-size:21px;line-height:1.28;word-break:break-word;overflow-wrap:anywhere;white-space:pre-line;line-height:1.35;">গ্রাম/মহল্লা/মোবাইল নং:</td>
-          <td style="padding:1px 8px 1px 4px;vertical-align:top;width:14px;font-size:21px;line-height:1.28;font-weight:700;">:</td>
-          <td style="padding:1px 12px 1px 0;vertical-align:top;font-size:21px;line-height:1.28;font-weight:600;word-break:break-word;overflow-wrap:anywhere;white-space:pre-line;line-height:1.35;">ঘোনটোলা,বালিয়াডাঙ্গা/০১৭১৫৬৯৯৭৬৭</td>
+          <td style="padding:1px 0 1px 12px;vertical-align:top;width:46%;font-size:18px;line-height:1.2;white-space:normal;overflow:visible;text-overflow:clip;font-weight:600;">গ্রাম/মহল্লা/মোবাইল নং:</td>
+          <td style="padding:1px 8px 1px 4px;vertical-align:top;width:14px;font-size:18px;line-height:1.2;font-weight:700;">:</td>
+          <td style="padding:1px 12px 1px 0;vertical-align:top;font-size:18px;line-height:1.2;font-weight:600;word-break:break-word;overflow-wrap:anywhere;white-space:pre-line;line-height:1.35;">ঘোনটোলা,বালিয়াডাঙ্গা/০১৭১৫৬৯৯৭৬৭</td>
         </tr>
         <tr>
-          <td style="padding:1px 0 1px 12px;vertical-align:top;width:41%;font-size:21px;line-height:1.28;word-break:break-word;overflow-wrap:anywhere;white-space:pre-line;line-height:1.35;">মৌজা:</td>
-          <td style="padding:1px 8px 1px 4px;vertical-align:top;width:14px;font-size:21px;line-height:1.28;font-weight:700;">:</td>
-          <td style="padding:1px 12px 1px 0;vertical-align:top;font-size:21px;line-height:1.28;font-weight:600;word-break:break-word;overflow-wrap:anywhere;white-space:pre-line;line-height:1.35;">রন্দ</td>
+          <td style="padding:1px 0 1px 12px;vertical-align:top;width:46%;font-size:18px;line-height:1.2;white-space:normal;overflow:visible;text-overflow:clip;font-weight:600;">কৃষক এবং মালিক সভ্য সদস্য:</td>
+          <td style="padding:1px 8px 1px 4px;vertical-align:top;width:14px;font-size:18px;line-height:1.2;font-weight:700;">:</td>
+          <td style="padding:1px 12px 1px 0;vertical-align:top;font-size:18px;line-height:1.2;font-weight:600;word-break:break-word;overflow-wrap:anywhere;white-space:pre-line;line-height:1.35;">—</td>
         </tr>
         <tr>
-          <td style="padding:1px 0 1px 12px;vertical-align:top;width:41%;font-size:21px;line-height:1.28;word-break:break-word;overflow-wrap:anywhere;white-space:pre-line;line-height:1.35;"><span style="color:#ff0000;">জমির ধরন</span><span style="color:#4a90e2;">/ চার্জ রেট (একর/বিঘা)</span></td>
-          <td style="padding:1px 8px 1px 4px;vertical-align:top;width:14px;font-size:21px;line-height:1.28;font-weight:700;">:</td>
-          <td style="padding:1px 12px 1px 0;vertical-align:top;font-size:21px;line-height:1.28;font-weight:600;word-break:break-word;overflow-wrap:anywhere;white-space:pre-line;line-height:1.35;"><span style="color:#ff0000;">উচু জমি</span><span style="color:#4a90e2;">/৩৯৩৯.৩৯টাকা/১১৯.৩৮টাকা</span></td>
+          <td style="padding:1px 0 1px 12px;vertical-align:top;width:46%;font-size:18px;line-height:1.2;white-space:normal;overflow:visible;text-overflow:clip;font-weight:600;">মৌজা:</td>
+          <td style="padding:1px 8px 1px 4px;vertical-align:top;width:14px;font-size:18px;line-height:1.2;font-weight:700;">:</td>
+          <td style="padding:1px 12px 1px 0;vertical-align:top;font-size:18px;line-height:1.2;font-weight:600;word-break:break-word;overflow-wrap:anywhere;white-space:pre-line;line-height:1.35;">রন্দ</td>
         </tr>
         <tr>
-          <td style="padding:1px 0 1px 12px;vertical-align:top;width:41%;font-size:21px;line-height:1.28;word-break:break-word;overflow-wrap:anywhere;white-space:pre-line;line-height:1.35;">দাগ নং:</td>
-          <td style="padding:1px 8px 1px 4px;vertical-align:top;width:14px;font-size:21px;line-height:1.28;font-weight:700;">:</td>
-          <td style="padding:1px 12px 1px 0;vertical-align:top;font-size:21px;line-height:1.28;font-weight:600;word-break:break-word;overflow-wrap:anywhere;white-space:pre-line;line-height:1.35;"><span data-receipt-row="dag">১০০.১০১.১০২.১০৩.১০৪.১০৫.১০৬.১০৭.১০৮.১০৯.১১০.১১১.১১২.১১৩.১১৪.১১৫.১১৬.১১৭.১১৮.১১৯.১২০.১২১.১২২.১২৩.১২৪.১২৫.১২৬.১২৭.১২৮.১২৯.১৩০.১৩১.১৩২.১৩৩.১৩৪.১৩৫.১৩৬.১৩৭.১৩৮.১৩৯</span></td>
+          <td style="padding:1px 0 1px 12px;vertical-align:top;width:46%;font-size:18px;line-height:1.2;white-space:normal;overflow:visible;text-overflow:clip;font-weight:600;"><span style="color:#111;">জমির ধরন</span><span style="color:#111;">/ চার্জ রেট (একর/বিঘা)</span></td>
+          <td style="padding:1px 8px 1px 4px;vertical-align:top;width:14px;font-size:18px;line-height:1.2;font-weight:700;">:</td>
+          <td style="padding:1px 12px 1px 0;vertical-align:top;font-size:18px;line-height:1.2;font-weight:600;word-break:break-word;overflow-wrap:anywhere;white-space:pre-line;line-height:1.35;"><span style="color:#111;">উচু জমি</span><span style="color:#111;">/৩৯৩৯টাকা/১৩০০টাকা</span></td>
         </tr>
         <tr>
-          <td style="padding:1px 0 1px 12px;vertical-align:top;width:41%;font-size:21px;line-height:1.28;word-break:break-word;overflow-wrap:anywhere;white-space:pre-line;line-height:1.35;">জমির পরিমাণ:</td>
-          <td style="padding:1px 8px 1px 4px;vertical-align:top;width:14px;font-size:21px;line-height:1.28;font-weight:700;">:</td>
-          <td style="padding:1px 12px 1px 0;vertical-align:top;font-size:21px;line-height:1.28;font-weight:600;word-break:break-word;overflow-wrap:anywhere;white-space:pre-line;line-height:1.35;">০.৩৩০০ একর</td>
+          <td style="padding:1px 0 1px 12px;vertical-align:top;width:46%;font-size:18px;line-height:1.2;white-space:normal;overflow:visible;text-overflow:clip;font-weight:600;">দাগ নং:</td>
+          <td style="padding:1px 8px 1px 4px;vertical-align:top;width:14px;font-size:18px;line-height:1.2;font-weight:700;">:</td>
+          <td style="padding:1px 12px 1px 0;vertical-align:top;font-size:18px;line-height:1.2;font-weight:600;word-break:break-word;overflow-wrap:anywhere;white-space:pre-line;line-height:1.35;"><span data-receipt-row="dag">১০০.১০১.১০২.১০৩.১০৪.১০৫.১০৬.১০৭.১০৮.১০৯.১১০.১১১.১১২.১১৩.১১৪.১১৫.১১৬.১১৭.১১৮.১১৯.১২০.১২১.১২২.১২৩.১২৪.১২৫.১২৬.১২৭.১২৮.১২৯.১৩০.১৩১.১৩২.১৩৩.১৩৪.১৩৫.১৩৬.১৩৭.১৩৮.১৩৯</span></td>
         </tr>
         <tr>
-          <td style="padding:1px 0 1px 12px;vertical-align:top;width:41%;font-size:21px;line-height:1.28;word-break:break-word;overflow-wrap:anywhere;white-space:pre-line;line-height:1.35;">চার্জের পরিমাণ (হাল)/জরিমানা:</td>
-          <td style="padding:1px 8px 1px 4px;vertical-align:top;width:14px;font-size:21px;line-height:1.28;font-weight:700;">:</td>
-          <td style="padding:1px 12px 1px 0;vertical-align:top;font-size:21px;line-height:1.28;font-weight:600;word-break:break-word;overflow-wrap:anywhere;white-space:pre-line;line-height:1.35;">১৩০০৳/১৩০৳</td>
+          <td style="padding:1px 0 1px 12px;vertical-align:top;width:46%;font-size:18px;line-height:1.2;white-space:normal;overflow:visible;text-overflow:clip;font-weight:600;">জমির পরিমাণ:</td>
+          <td style="padding:1px 8px 1px 4px;vertical-align:top;width:14px;font-size:18px;line-height:1.2;font-weight:700;">:</td>
+          <td style="padding:1px 12px 1px 0;vertical-align:top;font-size:18px;line-height:1.2;font-weight:600;word-break:break-word;overflow-wrap:anywhere;white-space:pre-line;line-height:1.35;">০.৩৩০০ একর</td>
         </tr>
         <tr>
-          <td style="padding:1px 0 1px 12px;vertical-align:top;width:41%;font-size:21px;line-height:1.28;word-break:break-word;overflow-wrap:anywhere;white-space:pre-line;line-height:1.35;">চার্জের পরিমাণ (বকেয়া)/জরিমানা:</td>
-          <td style="padding:1px 8px 1px 4px;vertical-align:top;width:14px;font-size:21px;line-height:1.28;font-weight:700;">:</td>
-          <td style="padding:1px 12px 1px 0;vertical-align:top;font-size:21px;line-height:1.28;font-weight:600;word-break:break-word;overflow-wrap:anywhere;white-space:pre-line;line-height:1.35;">১৩০০৳/১৩০৳</td>
+          <td style="padding:1px 0 1px 12px;vertical-align:top;width:46%;font-size:18px;line-height:1.2;white-space:normal;overflow:visible;text-overflow:clip;font-weight:600;">চার্জের পরিমাণ (হাল)/জরিমানা:</td>
+          <td style="padding:1px 8px 1px 4px;vertical-align:top;width:14px;font-size:18px;line-height:1.2;font-weight:700;">:</td>
+          <td style="padding:1px 12px 1px 0;vertical-align:top;font-size:18px;line-height:1.2;font-weight:600;word-break:break-word;overflow-wrap:anywhere;white-space:pre-line;line-height:1.35;">১৩০০৳/১৩০৳</td>
         </tr>
         <tr>
-          <td style="padding:1px 0 1px 12px;vertical-align:top;width:41%;font-size:21px;line-height:1.28;word-break:break-word;overflow-wrap:anywhere;white-space:pre-line;line-height:1.35;">মোট আদায়ের পরিমাণ:</td>
-          <td style="padding:1px 8px 1px 4px;vertical-align:top;width:14px;font-size:21px;line-height:1.28;font-weight:700;">:</td>
-          <td style="padding:1px 12px 1px 0;vertical-align:top;font-size:21px;line-height:1.28;font-weight:600;word-break:break-word;overflow-wrap:anywhere;white-space:pre-line;line-height:1.35;">২৮৬০৳</td>
+          <td style="padding:1px 0 1px 12px;vertical-align:top;width:46%;font-size:18px;line-height:1.2;white-space:normal;overflow:visible;text-overflow:clip;font-weight:600;">চার্জের পরিমাণ (বকেয়া)/জরিমানা:</td>
+          <td style="padding:1px 8px 1px 4px;vertical-align:top;width:14px;font-size:18px;line-height:1.2;font-weight:700;">:</td>
+          <td style="padding:1px 12px 1px 0;vertical-align:top;font-size:18px;line-height:1.2;font-weight:600;word-break:break-word;overflow-wrap:anywhere;white-space:pre-line;line-height:1.35;">১৩০০৳/১৩০৳</td>
         </tr>
         <tr>
-          <td style="padding:1px 0 1px 12px;vertical-align:top;width:41%;font-size:21px;line-height:1.28;word-break:break-word;overflow-wrap:anywhere;white-space:pre-line;line-height:1.35;">কথায়:</td>
-          <td style="padding:1px 8px 1px 4px;vertical-align:top;width:14px;font-size:21px;line-height:1.28;font-weight:700;">:</td>
-          <td style="padding:1px 12px 1px 0;vertical-align:top;font-size:21px;line-height:1.28;font-weight:600;word-break:break-word;overflow-wrap:anywhere;white-space:pre-line;line-height:1.35;">দুই হাজার আট শত ষাট টাকা মাত্র।</td>
+          <td style="padding:1px 0 1px 12px;vertical-align:top;width:46%;font-size:18px;line-height:1.2;white-space:normal;overflow:visible;text-overflow:clip;font-weight:600;">মোট আদায়ের পরিমাণ:</td>
+          <td style="padding:1px 8px 1px 4px;vertical-align:top;width:14px;font-size:18px;line-height:1.2;font-weight:700;">:</td>
+          <td style="padding:1px 12px 1px 0;vertical-align:top;font-size:18px;line-height:1.2;font-weight:600;word-break:break-word;overflow-wrap:anywhere;white-space:pre-line;line-height:1.35;">২৮৬০৳</td>
+        </tr>
+        <tr>
+          <td style="padding:1px 0 1px 12px;vertical-align:top;width:46%;font-size:18px;line-height:1.2;white-space:normal;overflow:visible;text-overflow:clip;font-weight:600;">কথায়:</td>
+          <td style="padding:1px 8px 1px 4px;vertical-align:top;width:14px;font-size:18px;line-height:1.2;font-weight:700;">:</td>
+          <td style="padding:1px 12px 1px 0;vertical-align:top;font-size:18px;line-height:1.2;font-weight:600;word-break:break-word;overflow-wrap:anywhere;white-space:pre-line;line-height:1.35;">দুই হাজার আট শত ষাট টাকা মাত্র।</td>
+        </tr>
+        <tr>
+          <td style="padding:1px 0 12px 12px;vertical-align:top;width:46%;font-size:18px;line-height:1.2;white-space:normal;overflow:visible;text-overflow:clip;font-weight:600;">হোল্ডিং এর বিবরন/পাটুয়ারীর নাম ও মোবা নং:</td>
+          <td style="padding:1px 8px 12px 4px;vertical-align:top;width:14px;font-size:18px;line-height:1.2;font-weight:700;">:</td>
+          <td style="padding:1px 12px 12px 0;vertical-align:top;font-size:18px;line-height:1.2;font-weight:600;word-break:break-word;overflow-wrap:anywhere;white-space:pre-line;line-height:1.35;">—</td>
         </tr></tbody>
       </table>
 
@@ -96,9 +106,9 @@ exports[`irrigation receipt layout snapshots > matches layout with very long rem
     <div style="position:relative;font-family:'Noto Sans Bengali','Hind Siliguri','SolaimanLipi',sans-serif;color:#111;padding:48px 48px 42px;min-height:650px;box-sizing:border-box;" data-receipt-copy="কৃষকের কপি">
       
       <div style="position:relative;z-index:1;display:grid;grid-template-columns:240px 1fr 128px;align-items:start;min-height:92px;">
-        <div style="padding-top:16px;"><div style="height:60px;display:flex;align-items:center;justify-content:flex-start;text-align:left;font-size:18px;font-weight:700;color:#b91c1c;"></div></div>
+        <div style="padding-top:16px;"><div style="height:60px;display:flex;align-items:center;justify-content:flex-start;text-align:left;font-size:18px;font-weight:700;color:#111;"></div></div>
         <div style="text-align:center;padding-top:24px;">
-          <div style="display:inline-block;font-size:25px;font-weight:800;line-height:1.1;border-bottom:2px solid #111;padding-bottom:1px;">সেচ চার্জ ও বিবিধ আদায় রশিদ</div>
+          <div style="display:inline-block;font-size:25px;font-weight:800;line-height:1.1;text-decoration:underline;text-underline-offset:4px;text-decoration-thickness:2px;">সেচ চার্জ ও বিবিধ আদায় রশিদ</div>
         </div>
         <div style="text-align:right;padding-top:14px;">
           
@@ -107,7 +117,7 @@ exports[`irrigation receipt layout snapshots > matches layout with very long rem
 
       <div style="position:relative;z-index:1;display:grid;grid-template-columns:1fr auto;column-gap:24px;margin-top:4px;font-size:21px;line-height:1.35;">
         <div>
-          <div>রসিদ নং: R-SNAP</div>
+          <div>রশিদ নং: R-SNAP</div>
           
         </div>
         <div style="white-space:nowrap;padding-top:30px;">সংগৃহীত তারিখ: ২০/০৬/২০২৬ ইং</div>
@@ -116,64 +126,69 @@ exports[`irrigation receipt layout snapshots > matches layout with very long rem
       <table style="position:relative;z-index:1;width:100%;border:2px solid #111;border-collapse:collapse;margin-top:14px;table-layout:fixed;">
         <tbody>
         <tr>
-          <td style="padding:1px 0 1px 12px;vertical-align:top;width:41%;font-size:21px;line-height:1.28;word-break:break-word;overflow-wrap:anywhere;white-space:pre-line;line-height:1.35;"><span style="color:#ff0000;">কৃষকের নাম ও আইডি</span><span style="color:#4a90e2;">/মালিকের নাম ও আইডি</span></td>
-          <td style="padding:1px 8px 1px 4px;vertical-align:top;width:14px;font-size:21px;line-height:1.28;font-weight:700;">:</td>
-          <td style="padding:1px 12px 1px 0;vertical-align:top;font-size:21px;line-height:1.28;font-weight:600;word-break:break-word;overflow-wrap:anywhere;white-space:pre-line;line-height:1.35;"><span style="color:#ff0000;">মোঃ মাসুদ রানা-১৯২০</span><span style="color:#4a90e2;">/মোঃ মাসুদ রানা-১৯২০</span></td>
+          <td style="padding:1px 0 1px 12px;vertical-align:top;width:46%;font-size:18px;line-height:1.2;white-space:normal;overflow:visible;text-overflow:clip;font-weight:600;"><span style="color:#111;">কৃষকের নাম ও আইডি</span><span style="color:#111;">/মালিকের নাম ও আইডি</span></td>
+          <td style="padding:1px 8px 1px 4px;vertical-align:top;width:14px;font-size:18px;line-height:1.2;font-weight:700;">:</td>
+          <td style="padding:1px 12px 1px 0;vertical-align:top;font-size:18px;line-height:1.2;font-weight:600;word-break:break-word;overflow-wrap:anywhere;white-space:pre-line;line-height:1.35;"><span style="color:#111;">মোঃ মাসুদ রানা-১৯২০</span><span style="color:#111;">/মোঃ মাসুদ রানা-১৯২০</span></td>
         </tr>
         <tr>
-          <td style="padding:1px 0 1px 12px;vertical-align:top;width:41%;font-size:21px;line-height:1.28;word-break:break-word;overflow-wrap:anywhere;white-space:pre-line;line-height:1.35;">পিতার/স্বামীর নাম:</td>
-          <td style="padding:1px 8px 1px 4px;vertical-align:top;width:14px;font-size:21px;line-height:1.28;font-weight:700;">:</td>
-          <td style="padding:1px 12px 1px 0;vertical-align:top;font-size:21px;line-height:1.28;font-weight:600;word-break:break-word;overflow-wrap:anywhere;white-space:pre-line;line-height:1.35;">মোঃ তোহিদুল ইসলাম</td>
+          <td style="padding:1px 0 1px 12px;vertical-align:top;width:46%;font-size:18px;line-height:1.2;white-space:normal;overflow:visible;text-overflow:clip;font-weight:600;">পিতার/স্বামীর নাম:</td>
+          <td style="padding:1px 8px 1px 4px;vertical-align:top;width:14px;font-size:18px;line-height:1.2;font-weight:700;">:</td>
+          <td style="padding:1px 12px 1px 0;vertical-align:top;font-size:18px;line-height:1.2;font-weight:600;word-break:break-word;overflow-wrap:anywhere;white-space:pre-line;line-height:1.35;">মোঃ তোহিদুল ইসলাম</td>
         </tr>
         <tr>
-          <td style="padding:1px 0 1px 12px;vertical-align:top;width:41%;font-size:21px;line-height:1.28;word-break:break-word;overflow-wrap:anywhere;white-space:pre-line;line-height:1.35;">গ্রাম/মহল্লা/মোবাইল নং:</td>
-          <td style="padding:1px 8px 1px 4px;vertical-align:top;width:14px;font-size:21px;line-height:1.28;font-weight:700;">:</td>
-          <td style="padding:1px 12px 1px 0;vertical-align:top;font-size:21px;line-height:1.28;font-weight:600;word-break:break-word;overflow-wrap:anywhere;white-space:pre-line;line-height:1.35;">ঘোনটোলা,বালিয়াডাঙ্গা/০১৭১৫৬৯৯৭৬৭</td>
+          <td style="padding:1px 0 1px 12px;vertical-align:top;width:46%;font-size:18px;line-height:1.2;white-space:normal;overflow:visible;text-overflow:clip;font-weight:600;">গ্রাম/মহল্লা/মোবাইল নং:</td>
+          <td style="padding:1px 8px 1px 4px;vertical-align:top;width:14px;font-size:18px;line-height:1.2;font-weight:700;">:</td>
+          <td style="padding:1px 12px 1px 0;vertical-align:top;font-size:18px;line-height:1.2;font-weight:600;word-break:break-word;overflow-wrap:anywhere;white-space:pre-line;line-height:1.35;">ঘোনটোলা,বালিয়াডাঙ্গা/০১৭১৫৬৯৯৭৬৭</td>
         </tr>
         <tr>
-          <td style="padding:1px 0 1px 12px;vertical-align:top;width:41%;font-size:21px;line-height:1.28;word-break:break-word;overflow-wrap:anywhere;white-space:pre-line;line-height:1.35;">মৌজা:</td>
-          <td style="padding:1px 8px 1px 4px;vertical-align:top;width:14px;font-size:21px;line-height:1.28;font-weight:700;">:</td>
-          <td style="padding:1px 12px 1px 0;vertical-align:top;font-size:21px;line-height:1.28;font-weight:600;word-break:break-word;overflow-wrap:anywhere;white-space:pre-line;line-height:1.35;">রন্দ</td>
+          <td style="padding:1px 0 1px 12px;vertical-align:top;width:46%;font-size:18px;line-height:1.2;white-space:normal;overflow:visible;text-overflow:clip;font-weight:600;">কৃষক এবং মালিক সভ্য সদস্য:</td>
+          <td style="padding:1px 8px 1px 4px;vertical-align:top;width:14px;font-size:18px;line-height:1.2;font-weight:700;">:</td>
+          <td style="padding:1px 12px 1px 0;vertical-align:top;font-size:18px;line-height:1.2;font-weight:600;word-break:break-word;overflow-wrap:anywhere;white-space:pre-line;line-height:1.35;">—</td>
         </tr>
         <tr>
-          <td style="padding:1px 0 1px 12px;vertical-align:top;width:41%;font-size:21px;line-height:1.28;word-break:break-word;overflow-wrap:anywhere;white-space:pre-line;line-height:1.35;"><span style="color:#ff0000;">জমির ধরন</span><span style="color:#4a90e2;">/ চার্জ রেট (একর/বিঘা)</span></td>
-          <td style="padding:1px 8px 1px 4px;vertical-align:top;width:14px;font-size:21px;line-height:1.28;font-weight:700;">:</td>
-          <td style="padding:1px 12px 1px 0;vertical-align:top;font-size:21px;line-height:1.28;font-weight:600;word-break:break-word;overflow-wrap:anywhere;white-space:pre-line;line-height:1.35;"><span style="color:#ff0000;">উচু জমি</span><span style="color:#4a90e2;">/৩৯৩৯.৩৯টাকা/১১৯.৩৮টাকা</span></td>
+          <td style="padding:1px 0 1px 12px;vertical-align:top;width:46%;font-size:18px;line-height:1.2;white-space:normal;overflow:visible;text-overflow:clip;font-weight:600;">মৌজা:</td>
+          <td style="padding:1px 8px 1px 4px;vertical-align:top;width:14px;font-size:18px;line-height:1.2;font-weight:700;">:</td>
+          <td style="padding:1px 12px 1px 0;vertical-align:top;font-size:18px;line-height:1.2;font-weight:600;word-break:break-word;overflow-wrap:anywhere;white-space:pre-line;line-height:1.35;">রন্দ</td>
         </tr>
         <tr>
-          <td style="padding:1px 0 1px 12px;vertical-align:top;width:41%;font-size:21px;line-height:1.28;word-break:break-word;overflow-wrap:anywhere;white-space:pre-line;line-height:1.35;">দাগ নং:</td>
-          <td style="padding:1px 8px 1px 4px;vertical-align:top;width:14px;font-size:21px;line-height:1.28;font-weight:700;">:</td>
-          <td style="padding:1px 12px 1px 0;vertical-align:top;font-size:21px;line-height:1.28;font-weight:600;word-break:break-word;overflow-wrap:anywhere;white-space:pre-line;line-height:1.35;"><span data-receipt-row="dag">১.২৫.২৬.২৪.২৮</span></td>
+          <td style="padding:1px 0 1px 12px;vertical-align:top;width:46%;font-size:18px;line-height:1.2;white-space:normal;overflow:visible;text-overflow:clip;font-weight:600;"><span style="color:#111;">জমির ধরন</span><span style="color:#111;">/ চার্জ রেট (একর/বিঘা)</span></td>
+          <td style="padding:1px 8px 1px 4px;vertical-align:top;width:14px;font-size:18px;line-height:1.2;font-weight:700;">:</td>
+          <td style="padding:1px 12px 1px 0;vertical-align:top;font-size:18px;line-height:1.2;font-weight:600;word-break:break-word;overflow-wrap:anywhere;white-space:pre-line;line-height:1.35;"><span style="color:#111;">উচু জমি</span><span style="color:#111;">/৩৯৩৯টাকা/১৩০০টাকা</span></td>
         </tr>
         <tr>
-          <td style="padding:1px 0 1px 12px;vertical-align:top;width:41%;font-size:21px;line-height:1.28;word-break:break-word;overflow-wrap:anywhere;white-space:pre-line;line-height:1.35;">জমির পরিমাণ:</td>
-          <td style="padding:1px 8px 1px 4px;vertical-align:top;width:14px;font-size:21px;line-height:1.28;font-weight:700;">:</td>
-          <td style="padding:1px 12px 1px 0;vertical-align:top;font-size:21px;line-height:1.28;font-weight:600;word-break:break-word;overflow-wrap:anywhere;white-space:pre-line;line-height:1.35;">০.৩৩০০ একর</td>
+          <td style="padding:1px 0 1px 12px;vertical-align:top;width:46%;font-size:18px;line-height:1.2;white-space:normal;overflow:visible;text-overflow:clip;font-weight:600;">দাগ নং:</td>
+          <td style="padding:1px 8px 1px 4px;vertical-align:top;width:14px;font-size:18px;line-height:1.2;font-weight:700;">:</td>
+          <td style="padding:1px 12px 1px 0;vertical-align:top;font-size:18px;line-height:1.2;font-weight:600;word-break:break-word;overflow-wrap:anywhere;white-space:pre-line;line-height:1.35;"><span data-receipt-row="dag">১.২৫.২৬.২৪.২৮</span></td>
         </tr>
         <tr>
-          <td style="padding:1px 0 1px 12px;vertical-align:top;width:41%;font-size:21px;line-height:1.28;word-break:break-word;overflow-wrap:anywhere;white-space:pre-line;line-height:1.35;">চার্জের পরিমাণ (হাল)/জরিমানা:</td>
-          <td style="padding:1px 8px 1px 4px;vertical-align:top;width:14px;font-size:21px;line-height:1.28;font-weight:700;">:</td>
-          <td style="padding:1px 12px 1px 0;vertical-align:top;font-size:21px;line-height:1.28;font-weight:600;word-break:break-word;overflow-wrap:anywhere;white-space:pre-line;line-height:1.35;">১৩০০৳/১৩০৳</td>
+          <td style="padding:1px 0 1px 12px;vertical-align:top;width:46%;font-size:18px;line-height:1.2;white-space:normal;overflow:visible;text-overflow:clip;font-weight:600;">জমির পরিমাণ:</td>
+          <td style="padding:1px 8px 1px 4px;vertical-align:top;width:14px;font-size:18px;line-height:1.2;font-weight:700;">:</td>
+          <td style="padding:1px 12px 1px 0;vertical-align:top;font-size:18px;line-height:1.2;font-weight:600;word-break:break-word;overflow-wrap:anywhere;white-space:pre-line;line-height:1.35;">০.৩৩০০ একর</td>
         </tr>
         <tr>
-          <td style="padding:1px 0 1px 12px;vertical-align:top;width:41%;font-size:21px;line-height:1.28;word-break:break-word;overflow-wrap:anywhere;white-space:pre-line;line-height:1.35;">চার্জের পরিমাণ (বকেয়া)/জরিমানা:</td>
-          <td style="padding:1px 8px 1px 4px;vertical-align:top;width:14px;font-size:21px;line-height:1.28;font-weight:700;">:</td>
-          <td style="padding:1px 12px 1px 0;vertical-align:top;font-size:21px;line-height:1.28;font-weight:600;word-break:break-word;overflow-wrap:anywhere;white-space:pre-line;line-height:1.35;">১৩০০৳/১৩০৳</td>
+          <td style="padding:1px 0 1px 12px;vertical-align:top;width:46%;font-size:18px;line-height:1.2;white-space:normal;overflow:visible;text-overflow:clip;font-weight:600;">চার্জের পরিমাণ (হাল)/জরিমানা:</td>
+          <td style="padding:1px 8px 1px 4px;vertical-align:top;width:14px;font-size:18px;line-height:1.2;font-weight:700;">:</td>
+          <td style="padding:1px 12px 1px 0;vertical-align:top;font-size:18px;line-height:1.2;font-weight:600;word-break:break-word;overflow-wrap:anywhere;white-space:pre-line;line-height:1.35;">১৩০০৳/১৩০৳</td>
         </tr>
         <tr>
-          <td style="padding:1px 0 1px 12px;vertical-align:top;width:41%;font-size:21px;line-height:1.28;word-break:break-word;overflow-wrap:anywhere;white-space:pre-line;line-height:1.35;">মোট আদায়ের পরিমাণ:</td>
-          <td style="padding:1px 8px 1px 4px;vertical-align:top;width:14px;font-size:21px;line-height:1.28;font-weight:700;">:</td>
-          <td style="padding:1px 12px 1px 0;vertical-align:top;font-size:21px;line-height:1.28;font-weight:600;word-break:break-word;overflow-wrap:anywhere;white-space:pre-line;line-height:1.35;">২৮৬০৳</td>
+          <td style="padding:1px 0 1px 12px;vertical-align:top;width:46%;font-size:18px;line-height:1.2;white-space:normal;overflow:visible;text-overflow:clip;font-weight:600;">চার্জের পরিমাণ (বকেয়া)/জরিমানা:</td>
+          <td style="padding:1px 8px 1px 4px;vertical-align:top;width:14px;font-size:18px;line-height:1.2;font-weight:700;">:</td>
+          <td style="padding:1px 12px 1px 0;vertical-align:top;font-size:18px;line-height:1.2;font-weight:600;word-break:break-word;overflow-wrap:anywhere;white-space:pre-line;line-height:1.35;">১৩০০৳/১৩০৳</td>
         </tr>
         <tr>
-          <td style="padding:1px 0 1px 12px;vertical-align:top;width:41%;font-size:21px;line-height:1.28;word-break:break-word;overflow-wrap:anywhere;white-space:pre-line;line-height:1.35;">কথায়:</td>
-          <td style="padding:1px 8px 1px 4px;vertical-align:top;width:14px;font-size:21px;line-height:1.28;font-weight:700;">:</td>
-          <td style="padding:1px 12px 1px 0;vertical-align:top;font-size:21px;line-height:1.28;font-weight:600;word-break:break-word;overflow-wrap:anywhere;white-space:pre-line;line-height:1.35;">দুই হাজার আট শত ষাট টাকা মাত্র।</td>
+          <td style="padding:1px 0 1px 12px;vertical-align:top;width:46%;font-size:18px;line-height:1.2;white-space:normal;overflow:visible;text-overflow:clip;font-weight:600;">মোট আদায়ের পরিমাণ:</td>
+          <td style="padding:1px 8px 1px 4px;vertical-align:top;width:14px;font-size:18px;line-height:1.2;font-weight:700;">:</td>
+          <td style="padding:1px 12px 1px 0;vertical-align:top;font-size:18px;line-height:1.2;font-weight:600;word-break:break-word;overflow-wrap:anywhere;white-space:pre-line;line-height:1.35;">২৮৬০৳</td>
         </tr>
         <tr>
-          <td style="padding:1px 0 1px 12px;vertical-align:top;width:41%;font-size:21px;line-height:1.28;word-break:break-word;overflow-wrap:anywhere;white-space:pre-line;line-height:1.35;">হোল্ডিং এর বিবরন/পাটুয়ারীর নাম ও মোবা নং:</td>
-          <td style="padding:1px 8px 1px 4px;vertical-align:top;width:14px;font-size:21px;line-height:1.28;font-weight:700;">:</td>
-          <td style="padding:1px 12px 1px 0;vertical-align:top;font-size:21px;line-height:1.28;font-weight:600;word-break:break-word;overflow-wrap:anywhere;white-space:pre-line;line-height:1.35;">অতিরিক্ত মন্তব্য অতিরিক্ত মন্তব্য অতিরিক্ত মন্তব্য অতিরিক্ত মন্তব্য অতিরিক্ত মন্তব্য অতিরিক্ত মন্তব্য অতিরিক্ত মন্তব্য অতিরিক্ত মন্তব্য অতিরিক্ত মন্তব্য অতিরিক্ত মন্তব্য অতিরিক্ত মন্তব্য অতিরিক্ত মন্তব্য অতিরিক্ত মন্তব্য অতিরিক্ত মন্তব্য অতিরিক্ত মন্তব্য অতিরিক্ত মন্তব্য অতিরিক্ত মন্তব্য অতিরিক্ত মন্তব্য অতিরিক্ত মন্তব্য অতিরিক্ত মন্তব্য অতিরিক্ত মন্তব্য অতিরিক্ত মন্তব্য অতিরিক্ত মন্তব্য অতিরিক্ত মন্তব্য অতিরিক্ত মন্তব্য অতিরিক্ত মন্তব্য অতিরিক্ত মন্তব্য অতিরিক্ত মন্তব্য অতিরিক্ত মন্তব্য অতিরিক্ত মন্তব্য অতিরিক্ত মন্তব্য অতিরিক্ত মন্তব্য অতিরিক্ত মন্তব্য অতিরিক্ত মন্তব্য অতিরিক্ত মন্তব্য অতিরিক্ত মন্তব্য অতিরিক্ত মন্তব্য অতিরিক্ত মন্তব্য অতিরিক্ত মন্তব্য অতিরিক্ত মন্তব্য অতিরিক্ত মন্তব্য অতিরিক্ত মন্তব্য অতিরিক্ত মন্তব্য অতিরিক্ত মন্তব্য অতিরিক্ত মন্তব্য অতিরিক্ত মন্তব্য অতিরিক্ত মন্তব্য অতিরিক্ত মন্তব্য অতিরিক্ত মন্তব্য অতিরিক্ত মন্তব্য অতিরিক্ত মন্তব্য অতিরিক্ত মন্তব্য অতিরিক্ত মন্তব্য অতিরিক্ত মন্তব্য অতিরিক্ত মন্তব্য অতিরিক্ত মন্তব্য অতিরিক্ত মন্তব্য অতিরিক্ত মন্তব্য অতিরিক্ত মন্তব্য অতিরিক্ত মন্তব্য</td>
+          <td style="padding:1px 0 1px 12px;vertical-align:top;width:46%;font-size:18px;line-height:1.2;white-space:normal;overflow:visible;text-overflow:clip;font-weight:600;">কথায়:</td>
+          <td style="padding:1px 8px 1px 4px;vertical-align:top;width:14px;font-size:18px;line-height:1.2;font-weight:700;">:</td>
+          <td style="padding:1px 12px 1px 0;vertical-align:top;font-size:18px;line-height:1.2;font-weight:600;word-break:break-word;overflow-wrap:anywhere;white-space:pre-line;line-height:1.35;">দুই হাজার আট শত ষাট টাকা মাত্র।</td>
+        </tr>
+        <tr>
+          <td style="padding:1px 0 12px 12px;vertical-align:top;width:46%;font-size:18px;line-height:1.2;white-space:normal;overflow:visible;text-overflow:clip;font-weight:600;">হোল্ডিং এর বিবরন/পাটুয়ারীর নাম ও মোবা নং:</td>
+          <td style="padding:1px 8px 12px 4px;vertical-align:top;width:14px;font-size:18px;line-height:1.2;font-weight:700;">:</td>
+          <td style="padding:1px 12px 12px 0;vertical-align:top;font-size:18px;line-height:1.2;font-weight:600;word-break:break-word;overflow-wrap:anywhere;white-space:pre-line;line-height:1.35;">অতিরিক্ত মন্তব্য অতিরিক্ত মন্তব্য অতিরিক্ত মন্তব্য অতিরিক্ত মন্তব্য অতিরিক্ত মন্তব্য অতিরিক্ত মন্তব্য অতিরিক্ত মন্তব্য অতিরিক্ত মন্তব্য অতিরিক্ত মন্তব্য অতিরিক্ত মন্তব্য অতিরিক্ত মন্তব্য অতিরিক্ত মন্তব্য অতিরিক্ত মন্তব্য অতিরিক্ত মন্তব্য অতিরিক্ত মন্তব্য অতিরিক্ত মন্তব্য অতিরিক্ত মন্তব্য অতিরিক্ত মন্তব্য অতিরিক্ত মন্তব্য অতিরিক্ত মন্তব্য অতিরিক্ত মন্তব্য অতিরিক্ত মন্তব্য অতিরিক্ত মন্তব্য অতিরিক্ত মন্তব্য অতিরিক্ত মন্তব্য অতিরিক্ত মন্তব্য অতিরিক্ত মন্তব্য অতিরিক্ত মন্তব্য অতিরিক্ত মন্তব্য অতিরিক্ত মন্তব্য অতিরিক্ত মন্তব্য অতিরিক্ত মন্তব্য অতিরিক্ত মন্তব্য অতিরিক্ত মন্তব্য অতিরিক্ত মন্তব্য অতিরিক্ত মন্তব্য অতিরিক্ত মন্তব্য অতিরিক্ত মন্তব্য অতিরিক্ত মন্তব্য অতিরিক্ত মন্তব্য অতিরিক্ত মন্তব্য অতিরিক্ত মন্তব্য অতিরিক্ত মন্তব্য অতিরিক্ত মন্তব্য অতিরিক্ত মন্তব্য অতিরিক্ত মন্তব্য অতিরিক্ত মন্তব্য অতিরিক্ত মন্তব্য অতিরিক্ত মন্তব্য অতিরিক্ত মন্তব্য অতিরিক্ত মন্তব্য অতিরিক্ত মন্তব্য অতিরিক্ত মন্তব্য অতিরিক্ত মন্তব্য অতিরিক্ত মন্তব্য অতিরিক্ত মন্তব্য অতিরিক্ত মন্তব্য অতিরিক্ত মন্তব্য অতিরিক্ত মন্তব্য অতিরিক্ত মন্তব্য</td>
         </tr></tbody>
       </table>
 
@@ -192,9 +207,9 @@ exports[`irrigation receipt layout snapshots > matches the office copy layout 1`
     <div style="position:relative;font-family:'Noto Sans Bengali','Hind Siliguri','SolaimanLipi',sans-serif;color:#111;padding:48px 48px 42px;min-height:650px;box-sizing:border-box;" data-receipt-copy="অফিস কপি">
       
       <div style="position:relative;z-index:1;display:grid;grid-template-columns:240px 1fr 128px;align-items:start;min-height:92px;">
-        <div style="padding-top:16px;"><div style="height:60px;display:flex;align-items:center;justify-content:flex-start;text-align:left;font-size:18px;font-weight:700;color:#b91c1c;"></div></div>
+        <div style="padding-top:16px;"><div style="height:60px;display:flex;align-items:center;justify-content:flex-start;text-align:left;font-size:18px;font-weight:700;color:#111;"></div></div>
         <div style="text-align:center;padding-top:24px;">
-          <div style="display:inline-block;font-size:25px;font-weight:800;line-height:1.1;border-bottom:2px solid #111;padding-bottom:1px;">সেচ চার্জ ও বিবিধ আদায় রশিদ</div>
+          <div style="display:inline-block;font-size:25px;font-weight:800;line-height:1.1;text-decoration:underline;text-underline-offset:4px;text-decoration-thickness:2px;">সেচ চার্জ ও বিবিধ আদায় রশিদ</div>
         </div>
         <div style="text-align:right;padding-top:14px;">
           
@@ -203,7 +218,7 @@ exports[`irrigation receipt layout snapshots > matches the office copy layout 1`
 
       <div style="position:relative;z-index:1;display:grid;grid-template-columns:1fr auto;column-gap:24px;margin-top:4px;font-size:21px;line-height:1.35;">
         <div>
-          <div>রসিদ নং: R-SNAP</div>
+          <div>রশিদ নং: R-SNAP</div>
           
         </div>
         <div style="white-space:nowrap;padding-top:30px;">সংগৃহীত তারিখ: ২০/০৬/২০২৬ ইং</div>
@@ -212,59 +227,69 @@ exports[`irrigation receipt layout snapshots > matches the office copy layout 1`
       <table style="position:relative;z-index:1;width:100%;border:2px solid #111;border-collapse:collapse;margin-top:14px;table-layout:fixed;">
         <tbody>
         <tr>
-          <td style="padding:1px 0 1px 12px;vertical-align:top;width:41%;font-size:21px;line-height:1.28;word-break:break-word;overflow-wrap:anywhere;white-space:pre-line;line-height:1.35;"><span style="color:#ff0000;">কৃষকের নাম ও আইডি</span><span style="color:#4a90e2;">/মালিকের নাম ও আইডি</span></td>
-          <td style="padding:1px 8px 1px 4px;vertical-align:top;width:14px;font-size:21px;line-height:1.28;font-weight:700;">:</td>
-          <td style="padding:1px 12px 1px 0;vertical-align:top;font-size:21px;line-height:1.28;font-weight:600;word-break:break-word;overflow-wrap:anywhere;white-space:pre-line;line-height:1.35;"><span style="color:#ff0000;">মোঃ মাসুদ রানা-১৯২০</span><span style="color:#4a90e2;">/মোঃ মাসুদ রানা-১৯২০</span></td>
+          <td style="padding:1px 0 1px 12px;vertical-align:top;width:46%;font-size:18px;line-height:1.2;white-space:normal;overflow:visible;text-overflow:clip;font-weight:600;"><span style="color:#111;">কৃষকের নাম ও আইডি</span><span style="color:#111;">/মালিকের নাম ও আইডি</span></td>
+          <td style="padding:1px 8px 1px 4px;vertical-align:top;width:14px;font-size:18px;line-height:1.2;font-weight:700;">:</td>
+          <td style="padding:1px 12px 1px 0;vertical-align:top;font-size:18px;line-height:1.2;font-weight:600;word-break:break-word;overflow-wrap:anywhere;white-space:pre-line;line-height:1.35;"><span style="color:#111;">মোঃ মাসুদ রানা-১৯২০</span><span style="color:#111;">/মোঃ মাসুদ রানা-১৯২০</span></td>
         </tr>
         <tr>
-          <td style="padding:1px 0 1px 12px;vertical-align:top;width:41%;font-size:21px;line-height:1.28;word-break:break-word;overflow-wrap:anywhere;white-space:pre-line;line-height:1.35;">পিতার/স্বামীর নাম:</td>
-          <td style="padding:1px 8px 1px 4px;vertical-align:top;width:14px;font-size:21px;line-height:1.28;font-weight:700;">:</td>
-          <td style="padding:1px 12px 1px 0;vertical-align:top;font-size:21px;line-height:1.28;font-weight:600;word-break:break-word;overflow-wrap:anywhere;white-space:pre-line;line-height:1.35;">মোঃ তোহিদুল ইসলাম</td>
+          <td style="padding:1px 0 1px 12px;vertical-align:top;width:46%;font-size:18px;line-height:1.2;white-space:normal;overflow:visible;text-overflow:clip;font-weight:600;">পিতার/স্বামীর নাম:</td>
+          <td style="padding:1px 8px 1px 4px;vertical-align:top;width:14px;font-size:18px;line-height:1.2;font-weight:700;">:</td>
+          <td style="padding:1px 12px 1px 0;vertical-align:top;font-size:18px;line-height:1.2;font-weight:600;word-break:break-word;overflow-wrap:anywhere;white-space:pre-line;line-height:1.35;">মোঃ তোহিদুল ইসলাম</td>
         </tr>
         <tr>
-          <td style="padding:1px 0 1px 12px;vertical-align:top;width:41%;font-size:21px;line-height:1.28;word-break:break-word;overflow-wrap:anywhere;white-space:pre-line;line-height:1.35;">গ্রাম/মহল্লা/মোবাইল নং:</td>
-          <td style="padding:1px 8px 1px 4px;vertical-align:top;width:14px;font-size:21px;line-height:1.28;font-weight:700;">:</td>
-          <td style="padding:1px 12px 1px 0;vertical-align:top;font-size:21px;line-height:1.28;font-weight:600;word-break:break-word;overflow-wrap:anywhere;white-space:pre-line;line-height:1.35;">ঘোনটোলা,বালিয়াডাঙ্গা/০১৭১৫৬৯৯৭৬৭</td>
+          <td style="padding:1px 0 1px 12px;vertical-align:top;width:46%;font-size:18px;line-height:1.2;white-space:normal;overflow:visible;text-overflow:clip;font-weight:600;">গ্রাম/মহল্লা/মোবাইল নং:</td>
+          <td style="padding:1px 8px 1px 4px;vertical-align:top;width:14px;font-size:18px;line-height:1.2;font-weight:700;">:</td>
+          <td style="padding:1px 12px 1px 0;vertical-align:top;font-size:18px;line-height:1.2;font-weight:600;word-break:break-word;overflow-wrap:anywhere;white-space:pre-line;line-height:1.35;">ঘোনটোলা,বালিয়াডাঙ্গা/০১৭১৫৬৯৯৭৬৭</td>
         </tr>
         <tr>
-          <td style="padding:1px 0 1px 12px;vertical-align:top;width:41%;font-size:21px;line-height:1.28;word-break:break-word;overflow-wrap:anywhere;white-space:pre-line;line-height:1.35;">মৌজা:</td>
-          <td style="padding:1px 8px 1px 4px;vertical-align:top;width:14px;font-size:21px;line-height:1.28;font-weight:700;">:</td>
-          <td style="padding:1px 12px 1px 0;vertical-align:top;font-size:21px;line-height:1.28;font-weight:600;word-break:break-word;overflow-wrap:anywhere;white-space:pre-line;line-height:1.35;">রন্দ</td>
+          <td style="padding:1px 0 1px 12px;vertical-align:top;width:46%;font-size:18px;line-height:1.2;white-space:normal;overflow:visible;text-overflow:clip;font-weight:600;">কৃষক এবং মালিক সভ্য সদস্য:</td>
+          <td style="padding:1px 8px 1px 4px;vertical-align:top;width:14px;font-size:18px;line-height:1.2;font-weight:700;">:</td>
+          <td style="padding:1px 12px 1px 0;vertical-align:top;font-size:18px;line-height:1.2;font-weight:600;word-break:break-word;overflow-wrap:anywhere;white-space:pre-line;line-height:1.35;">—</td>
         </tr>
         <tr>
-          <td style="padding:1px 0 1px 12px;vertical-align:top;width:41%;font-size:21px;line-height:1.28;word-break:break-word;overflow-wrap:anywhere;white-space:pre-line;line-height:1.35;"><span style="color:#ff0000;">জমির ধরন</span><span style="color:#4a90e2;">/ চার্জ রেট (একর/বিঘা)</span></td>
-          <td style="padding:1px 8px 1px 4px;vertical-align:top;width:14px;font-size:21px;line-height:1.28;font-weight:700;">:</td>
-          <td style="padding:1px 12px 1px 0;vertical-align:top;font-size:21px;line-height:1.28;font-weight:600;word-break:break-word;overflow-wrap:anywhere;white-space:pre-line;line-height:1.35;"><span style="color:#ff0000;">উচু জমি</span><span style="color:#4a90e2;">/৩৯৩৯.৩৯টাকা/১১৯.৩৮টাকা</span></td>
+          <td style="padding:1px 0 1px 12px;vertical-align:top;width:46%;font-size:18px;line-height:1.2;white-space:normal;overflow:visible;text-overflow:clip;font-weight:600;">মৌজা:</td>
+          <td style="padding:1px 8px 1px 4px;vertical-align:top;width:14px;font-size:18px;line-height:1.2;font-weight:700;">:</td>
+          <td style="padding:1px 12px 1px 0;vertical-align:top;font-size:18px;line-height:1.2;font-weight:600;word-break:break-word;overflow-wrap:anywhere;white-space:pre-line;line-height:1.35;">রন্দ</td>
         </tr>
         <tr>
-          <td style="padding:1px 0 1px 12px;vertical-align:top;width:41%;font-size:21px;line-height:1.28;word-break:break-word;overflow-wrap:anywhere;white-space:pre-line;line-height:1.35;">দাগ নং:</td>
-          <td style="padding:1px 8px 1px 4px;vertical-align:top;width:14px;font-size:21px;line-height:1.28;font-weight:700;">:</td>
-          <td style="padding:1px 12px 1px 0;vertical-align:top;font-size:21px;line-height:1.28;font-weight:600;word-break:break-word;overflow-wrap:anywhere;white-space:pre-line;line-height:1.35;"><span data-receipt-row="dag">১.২৫.২৬.২৪.২৮</span></td>
+          <td style="padding:1px 0 1px 12px;vertical-align:top;width:46%;font-size:18px;line-height:1.2;white-space:normal;overflow:visible;text-overflow:clip;font-weight:600;"><span style="color:#111;">জমির ধরন</span><span style="color:#111;">/ চার্জ রেট (একর/বিঘা)</span></td>
+          <td style="padding:1px 8px 1px 4px;vertical-align:top;width:14px;font-size:18px;line-height:1.2;font-weight:700;">:</td>
+          <td style="padding:1px 12px 1px 0;vertical-align:top;font-size:18px;line-height:1.2;font-weight:600;word-break:break-word;overflow-wrap:anywhere;white-space:pre-line;line-height:1.35;"><span style="color:#111;">উচু জমি</span><span style="color:#111;">/৩৯৩৯টাকা/১৩০০টাকা</span></td>
         </tr>
         <tr>
-          <td style="padding:1px 0 1px 12px;vertical-align:top;width:41%;font-size:21px;line-height:1.28;word-break:break-word;overflow-wrap:anywhere;white-space:pre-line;line-height:1.35;">জমির পরিমাণ:</td>
-          <td style="padding:1px 8px 1px 4px;vertical-align:top;width:14px;font-size:21px;line-height:1.28;font-weight:700;">:</td>
-          <td style="padding:1px 12px 1px 0;vertical-align:top;font-size:21px;line-height:1.28;font-weight:600;word-break:break-word;overflow-wrap:anywhere;white-space:pre-line;line-height:1.35;">০.৩৩০০ একর</td>
+          <td style="padding:1px 0 1px 12px;vertical-align:top;width:46%;font-size:18px;line-height:1.2;white-space:normal;overflow:visible;text-overflow:clip;font-weight:600;">দাগ নং:</td>
+          <td style="padding:1px 8px 1px 4px;vertical-align:top;width:14px;font-size:18px;line-height:1.2;font-weight:700;">:</td>
+          <td style="padding:1px 12px 1px 0;vertical-align:top;font-size:18px;line-height:1.2;font-weight:600;word-break:break-word;overflow-wrap:anywhere;white-space:pre-line;line-height:1.35;"><span data-receipt-row="dag">১.২৫.২৬.২৪.২৮</span></td>
         </tr>
         <tr>
-          <td style="padding:1px 0 1px 12px;vertical-align:top;width:41%;font-size:21px;line-height:1.28;word-break:break-word;overflow-wrap:anywhere;white-space:pre-line;line-height:1.35;">চার্জের পরিমাণ (হাল)/জরিমানা:</td>
-          <td style="padding:1px 8px 1px 4px;vertical-align:top;width:14px;font-size:21px;line-height:1.28;font-weight:700;">:</td>
-          <td style="padding:1px 12px 1px 0;vertical-align:top;font-size:21px;line-height:1.28;font-weight:600;word-break:break-word;overflow-wrap:anywhere;white-space:pre-line;line-height:1.35;">১৩০০৳/১৩০৳</td>
+          <td style="padding:1px 0 1px 12px;vertical-align:top;width:46%;font-size:18px;line-height:1.2;white-space:normal;overflow:visible;text-overflow:clip;font-weight:600;">জমির পরিমাণ:</td>
+          <td style="padding:1px 8px 1px 4px;vertical-align:top;width:14px;font-size:18px;line-height:1.2;font-weight:700;">:</td>
+          <td style="padding:1px 12px 1px 0;vertical-align:top;font-size:18px;line-height:1.2;font-weight:600;word-break:break-word;overflow-wrap:anywhere;white-space:pre-line;line-height:1.35;">০.৩৩০০ একর</td>
         </tr>
         <tr>
-          <td style="padding:1px 0 1px 12px;vertical-align:top;width:41%;font-size:21px;line-height:1.28;word-break:break-word;overflow-wrap:anywhere;white-space:pre-line;line-height:1.35;">চার্জের পরিমাণ (বকেয়া)/জরিমানা:</td>
-          <td style="padding:1px 8px 1px 4px;vertical-align:top;width:14px;font-size:21px;line-height:1.28;font-weight:700;">:</td>
-          <td style="padding:1px 12px 1px 0;vertical-align:top;font-size:21px;line-height:1.28;font-weight:600;word-break:break-word;overflow-wrap:anywhere;white-space:pre-line;line-height:1.35;">১৩০০৳/১৩০৳</td>
+          <td style="padding:1px 0 1px 12px;vertical-align:top;width:46%;font-size:18px;line-height:1.2;white-space:normal;overflow:visible;text-overflow:clip;font-weight:600;">চার্জের পরিমাণ (হাল)/জরিমানা:</td>
+          <td style="padding:1px 8px 1px 4px;vertical-align:top;width:14px;font-size:18px;line-height:1.2;font-weight:700;">:</td>
+          <td style="padding:1px 12px 1px 0;vertical-align:top;font-size:18px;line-height:1.2;font-weight:600;word-break:break-word;overflow-wrap:anywhere;white-space:pre-line;line-height:1.35;">১৩০০৳/১৩০৳</td>
         </tr>
         <tr>
-          <td style="padding:1px 0 1px 12px;vertical-align:top;width:41%;font-size:21px;line-height:1.28;word-break:break-word;overflow-wrap:anywhere;white-space:pre-line;line-height:1.35;">মোট আদায়ের পরিমাণ:</td>
-          <td style="padding:1px 8px 1px 4px;vertical-align:top;width:14px;font-size:21px;line-height:1.28;font-weight:700;">:</td>
-          <td style="padding:1px 12px 1px 0;vertical-align:top;font-size:21px;line-height:1.28;font-weight:600;word-break:break-word;overflow-wrap:anywhere;white-space:pre-line;line-height:1.35;">২৮৬০৳</td>
+          <td style="padding:1px 0 1px 12px;vertical-align:top;width:46%;font-size:18px;line-height:1.2;white-space:normal;overflow:visible;text-overflow:clip;font-weight:600;">চার্জের পরিমাণ (বকেয়া)/জরিমানা:</td>
+          <td style="padding:1px 8px 1px 4px;vertical-align:top;width:14px;font-size:18px;line-height:1.2;font-weight:700;">:</td>
+          <td style="padding:1px 12px 1px 0;vertical-align:top;font-size:18px;line-height:1.2;font-weight:600;word-break:break-word;overflow-wrap:anywhere;white-space:pre-line;line-height:1.35;">১৩০০৳/১৩০৳</td>
         </tr>
         <tr>
-          <td style="padding:1px 0 1px 12px;vertical-align:top;width:41%;font-size:21px;line-height:1.28;word-break:break-word;overflow-wrap:anywhere;white-space:pre-line;line-height:1.35;">কথায়:</td>
-          <td style="padding:1px 8px 1px 4px;vertical-align:top;width:14px;font-size:21px;line-height:1.28;font-weight:700;">:</td>
-          <td style="padding:1px 12px 1px 0;vertical-align:top;font-size:21px;line-height:1.28;font-weight:600;word-break:break-word;overflow-wrap:anywhere;white-space:pre-line;line-height:1.35;">দুই হাজার আট শত ষাট টাকা মাত্র।</td>
+          <td style="padding:1px 0 1px 12px;vertical-align:top;width:46%;font-size:18px;line-height:1.2;white-space:normal;overflow:visible;text-overflow:clip;font-weight:600;">মোট আদায়ের পরিমাণ:</td>
+          <td style="padding:1px 8px 1px 4px;vertical-align:top;width:14px;font-size:18px;line-height:1.2;font-weight:700;">:</td>
+          <td style="padding:1px 12px 1px 0;vertical-align:top;font-size:18px;line-height:1.2;font-weight:600;word-break:break-word;overflow-wrap:anywhere;white-space:pre-line;line-height:1.35;">২৮৬০৳</td>
+        </tr>
+        <tr>
+          <td style="padding:1px 0 1px 12px;vertical-align:top;width:46%;font-size:18px;line-height:1.2;white-space:normal;overflow:visible;text-overflow:clip;font-weight:600;">কথায়:</td>
+          <td style="padding:1px 8px 1px 4px;vertical-align:top;width:14px;font-size:18px;line-height:1.2;font-weight:700;">:</td>
+          <td style="padding:1px 12px 1px 0;vertical-align:top;font-size:18px;line-height:1.2;font-weight:600;word-break:break-word;overflow-wrap:anywhere;white-space:pre-line;line-height:1.35;">দুই হাজার আট শত ষাট টাকা মাত্র।</td>
+        </tr>
+        <tr>
+          <td style="padding:1px 0 12px 12px;vertical-align:top;width:46%;font-size:18px;line-height:1.2;white-space:normal;overflow:visible;text-overflow:clip;font-weight:600;">হোল্ডিং এর বিবরন/পাটুয়ারীর নাম ও মোবা নং:</td>
+          <td style="padding:1px 8px 12px 4px;vertical-align:top;width:14px;font-size:18px;line-height:1.2;font-weight:700;">:</td>
+          <td style="padding:1px 12px 12px 0;vertical-align:top;font-size:18px;line-height:1.2;font-weight:600;word-break:break-word;overflow-wrap:anywhere;white-space:pre-line;line-height:1.35;">—</td>
         </tr></tbody>
       </table>
 
@@ -283,9 +308,9 @@ exports[`irrigation receipt layout snapshots > matches the standard farmer copy 
     <div style="position:relative;font-family:'Noto Sans Bengali','Hind Siliguri','SolaimanLipi',sans-serif;color:#111;padding:48px 48px 42px;min-height:650px;box-sizing:border-box;" data-receipt-copy="কৃষকের কপি">
       
       <div style="position:relative;z-index:1;display:grid;grid-template-columns:240px 1fr 128px;align-items:start;min-height:92px;">
-        <div style="padding-top:16px;"><div style="height:60px;display:flex;align-items:center;justify-content:flex-start;text-align:left;font-size:18px;font-weight:700;color:#b91c1c;"></div></div>
+        <div style="padding-top:16px;"><div style="height:60px;display:flex;align-items:center;justify-content:flex-start;text-align:left;font-size:18px;font-weight:700;color:#111;"></div></div>
         <div style="text-align:center;padding-top:24px;">
-          <div style="display:inline-block;font-size:25px;font-weight:800;line-height:1.1;border-bottom:2px solid #111;padding-bottom:1px;">সেচ চার্জ ও বিবিধ আদায় রশিদ</div>
+          <div style="display:inline-block;font-size:25px;font-weight:800;line-height:1.1;text-decoration:underline;text-underline-offset:4px;text-decoration-thickness:2px;">সেচ চার্জ ও বিবিধ আদায় রশিদ</div>
         </div>
         <div style="text-align:right;padding-top:14px;">
           
@@ -294,7 +319,7 @@ exports[`irrigation receipt layout snapshots > matches the standard farmer copy 
 
       <div style="position:relative;z-index:1;display:grid;grid-template-columns:1fr auto;column-gap:24px;margin-top:4px;font-size:21px;line-height:1.35;">
         <div>
-          <div>রসিদ নং: R-SNAP</div>
+          <div>রশিদ নং: R-SNAP</div>
           
         </div>
         <div style="white-space:nowrap;padding-top:30px;">সংগৃহীত তারিখ: ২০/০৬/২০২৬ ইং</div>
@@ -303,59 +328,69 @@ exports[`irrigation receipt layout snapshots > matches the standard farmer copy 
       <table style="position:relative;z-index:1;width:100%;border:2px solid #111;border-collapse:collapse;margin-top:14px;table-layout:fixed;">
         <tbody>
         <tr>
-          <td style="padding:1px 0 1px 12px;vertical-align:top;width:41%;font-size:21px;line-height:1.28;word-break:break-word;overflow-wrap:anywhere;white-space:pre-line;line-height:1.35;"><span style="color:#ff0000;">কৃষকের নাম ও আইডি</span><span style="color:#4a90e2;">/মালিকের নাম ও আইডি</span></td>
-          <td style="padding:1px 8px 1px 4px;vertical-align:top;width:14px;font-size:21px;line-height:1.28;font-weight:700;">:</td>
-          <td style="padding:1px 12px 1px 0;vertical-align:top;font-size:21px;line-height:1.28;font-weight:600;word-break:break-word;overflow-wrap:anywhere;white-space:pre-line;line-height:1.35;"><span style="color:#ff0000;">মোঃ মাসুদ রানা-১৯২০</span><span style="color:#4a90e2;">/মোঃ মাসুদ রানা-১৯২০</span></td>
+          <td style="padding:1px 0 1px 12px;vertical-align:top;width:46%;font-size:18px;line-height:1.2;white-space:normal;overflow:visible;text-overflow:clip;font-weight:600;"><span style="color:#111;">কৃষকের নাম ও আইডি</span><span style="color:#111;">/মালিকের নাম ও আইডি</span></td>
+          <td style="padding:1px 8px 1px 4px;vertical-align:top;width:14px;font-size:18px;line-height:1.2;font-weight:700;">:</td>
+          <td style="padding:1px 12px 1px 0;vertical-align:top;font-size:18px;line-height:1.2;font-weight:600;word-break:break-word;overflow-wrap:anywhere;white-space:pre-line;line-height:1.35;"><span style="color:#111;">মোঃ মাসুদ রানা-১৯২০</span><span style="color:#111;">/মোঃ মাসুদ রানা-১৯২০</span></td>
         </tr>
         <tr>
-          <td style="padding:1px 0 1px 12px;vertical-align:top;width:41%;font-size:21px;line-height:1.28;word-break:break-word;overflow-wrap:anywhere;white-space:pre-line;line-height:1.35;">পিতার/স্বামীর নাম:</td>
-          <td style="padding:1px 8px 1px 4px;vertical-align:top;width:14px;font-size:21px;line-height:1.28;font-weight:700;">:</td>
-          <td style="padding:1px 12px 1px 0;vertical-align:top;font-size:21px;line-height:1.28;font-weight:600;word-break:break-word;overflow-wrap:anywhere;white-space:pre-line;line-height:1.35;">মোঃ তোহিদুল ইসলাম</td>
+          <td style="padding:1px 0 1px 12px;vertical-align:top;width:46%;font-size:18px;line-height:1.2;white-space:normal;overflow:visible;text-overflow:clip;font-weight:600;">পিতার/স্বামীর নাম:</td>
+          <td style="padding:1px 8px 1px 4px;vertical-align:top;width:14px;font-size:18px;line-height:1.2;font-weight:700;">:</td>
+          <td style="padding:1px 12px 1px 0;vertical-align:top;font-size:18px;line-height:1.2;font-weight:600;word-break:break-word;overflow-wrap:anywhere;white-space:pre-line;line-height:1.35;">মোঃ তোহিদুল ইসলাম</td>
         </tr>
         <tr>
-          <td style="padding:1px 0 1px 12px;vertical-align:top;width:41%;font-size:21px;line-height:1.28;word-break:break-word;overflow-wrap:anywhere;white-space:pre-line;line-height:1.35;">গ্রাম/মহল্লা/মোবাইল নং:</td>
-          <td style="padding:1px 8px 1px 4px;vertical-align:top;width:14px;font-size:21px;line-height:1.28;font-weight:700;">:</td>
-          <td style="padding:1px 12px 1px 0;vertical-align:top;font-size:21px;line-height:1.28;font-weight:600;word-break:break-word;overflow-wrap:anywhere;white-space:pre-line;line-height:1.35;">ঘোনটোলা,বালিয়াডাঙ্গা/০১৭১৫৬৯৯৭৬৭</td>
+          <td style="padding:1px 0 1px 12px;vertical-align:top;width:46%;font-size:18px;line-height:1.2;white-space:normal;overflow:visible;text-overflow:clip;font-weight:600;">গ্রাম/মহল্লা/মোবাইল নং:</td>
+          <td style="padding:1px 8px 1px 4px;vertical-align:top;width:14px;font-size:18px;line-height:1.2;font-weight:700;">:</td>
+          <td style="padding:1px 12px 1px 0;vertical-align:top;font-size:18px;line-height:1.2;font-weight:600;word-break:break-word;overflow-wrap:anywhere;white-space:pre-line;line-height:1.35;">ঘোনটোলা,বালিয়াডাঙ্গা/০১৭১৫৬৯৯৭৬৭</td>
         </tr>
         <tr>
-          <td style="padding:1px 0 1px 12px;vertical-align:top;width:41%;font-size:21px;line-height:1.28;word-break:break-word;overflow-wrap:anywhere;white-space:pre-line;line-height:1.35;">মৌজা:</td>
-          <td style="padding:1px 8px 1px 4px;vertical-align:top;width:14px;font-size:21px;line-height:1.28;font-weight:700;">:</td>
-          <td style="padding:1px 12px 1px 0;vertical-align:top;font-size:21px;line-height:1.28;font-weight:600;word-break:break-word;overflow-wrap:anywhere;white-space:pre-line;line-height:1.35;">রন্দ</td>
+          <td style="padding:1px 0 1px 12px;vertical-align:top;width:46%;font-size:18px;line-height:1.2;white-space:normal;overflow:visible;text-overflow:clip;font-weight:600;">কৃষক এবং মালিক সভ্য সদস্য:</td>
+          <td style="padding:1px 8px 1px 4px;vertical-align:top;width:14px;font-size:18px;line-height:1.2;font-weight:700;">:</td>
+          <td style="padding:1px 12px 1px 0;vertical-align:top;font-size:18px;line-height:1.2;font-weight:600;word-break:break-word;overflow-wrap:anywhere;white-space:pre-line;line-height:1.35;">—</td>
         </tr>
         <tr>
-          <td style="padding:1px 0 1px 12px;vertical-align:top;width:41%;font-size:21px;line-height:1.28;word-break:break-word;overflow-wrap:anywhere;white-space:pre-line;line-height:1.35;"><span style="color:#ff0000;">জমির ধরন</span><span style="color:#4a90e2;">/ চার্জ রেট (একর/বিঘা)</span></td>
-          <td style="padding:1px 8px 1px 4px;vertical-align:top;width:14px;font-size:21px;line-height:1.28;font-weight:700;">:</td>
-          <td style="padding:1px 12px 1px 0;vertical-align:top;font-size:21px;line-height:1.28;font-weight:600;word-break:break-word;overflow-wrap:anywhere;white-space:pre-line;line-height:1.35;"><span style="color:#ff0000;">উচু জমি</span><span style="color:#4a90e2;">/৩৯৩৯.৩৯টাকা/১১৯.৩৮টাকা</span></td>
+          <td style="padding:1px 0 1px 12px;vertical-align:top;width:46%;font-size:18px;line-height:1.2;white-space:normal;overflow:visible;text-overflow:clip;font-weight:600;">মৌজা:</td>
+          <td style="padding:1px 8px 1px 4px;vertical-align:top;width:14px;font-size:18px;line-height:1.2;font-weight:700;">:</td>
+          <td style="padding:1px 12px 1px 0;vertical-align:top;font-size:18px;line-height:1.2;font-weight:600;word-break:break-word;overflow-wrap:anywhere;white-space:pre-line;line-height:1.35;">রন্দ</td>
         </tr>
         <tr>
-          <td style="padding:1px 0 1px 12px;vertical-align:top;width:41%;font-size:21px;line-height:1.28;word-break:break-word;overflow-wrap:anywhere;white-space:pre-line;line-height:1.35;">দাগ নং:</td>
-          <td style="padding:1px 8px 1px 4px;vertical-align:top;width:14px;font-size:21px;line-height:1.28;font-weight:700;">:</td>
-          <td style="padding:1px 12px 1px 0;vertical-align:top;font-size:21px;line-height:1.28;font-weight:600;word-break:break-word;overflow-wrap:anywhere;white-space:pre-line;line-height:1.35;"><span data-receipt-row="dag">১.২৫.২৬.২৪.২৮</span></td>
+          <td style="padding:1px 0 1px 12px;vertical-align:top;width:46%;font-size:18px;line-height:1.2;white-space:normal;overflow:visible;text-overflow:clip;font-weight:600;"><span style="color:#111;">জমির ধরন</span><span style="color:#111;">/ চার্জ রেট (একর/বিঘা)</span></td>
+          <td style="padding:1px 8px 1px 4px;vertical-align:top;width:14px;font-size:18px;line-height:1.2;font-weight:700;">:</td>
+          <td style="padding:1px 12px 1px 0;vertical-align:top;font-size:18px;line-height:1.2;font-weight:600;word-break:break-word;overflow-wrap:anywhere;white-space:pre-line;line-height:1.35;"><span style="color:#111;">উচু জমি</span><span style="color:#111;">/৩৯৩৯টাকা/১৩০০টাকা</span></td>
         </tr>
         <tr>
-          <td style="padding:1px 0 1px 12px;vertical-align:top;width:41%;font-size:21px;line-height:1.28;word-break:break-word;overflow-wrap:anywhere;white-space:pre-line;line-height:1.35;">জমির পরিমাণ:</td>
-          <td style="padding:1px 8px 1px 4px;vertical-align:top;width:14px;font-size:21px;line-height:1.28;font-weight:700;">:</td>
-          <td style="padding:1px 12px 1px 0;vertical-align:top;font-size:21px;line-height:1.28;font-weight:600;word-break:break-word;overflow-wrap:anywhere;white-space:pre-line;line-height:1.35;">০.৩৩০০ একর</td>
+          <td style="padding:1px 0 1px 12px;vertical-align:top;width:46%;font-size:18px;line-height:1.2;white-space:normal;overflow:visible;text-overflow:clip;font-weight:600;">দাগ নং:</td>
+          <td style="padding:1px 8px 1px 4px;vertical-align:top;width:14px;font-size:18px;line-height:1.2;font-weight:700;">:</td>
+          <td style="padding:1px 12px 1px 0;vertical-align:top;font-size:18px;line-height:1.2;font-weight:600;word-break:break-word;overflow-wrap:anywhere;white-space:pre-line;line-height:1.35;"><span data-receipt-row="dag">১.২৫.২৬.২৪.২৮</span></td>
         </tr>
         <tr>
-          <td style="padding:1px 0 1px 12px;vertical-align:top;width:41%;font-size:21px;line-height:1.28;word-break:break-word;overflow-wrap:anywhere;white-space:pre-line;line-height:1.35;">চার্জের পরিমাণ (হাল)/জরিমানা:</td>
-          <td style="padding:1px 8px 1px 4px;vertical-align:top;width:14px;font-size:21px;line-height:1.28;font-weight:700;">:</td>
-          <td style="padding:1px 12px 1px 0;vertical-align:top;font-size:21px;line-height:1.28;font-weight:600;word-break:break-word;overflow-wrap:anywhere;white-space:pre-line;line-height:1.35;">১৩০০৳/১৩০৳</td>
+          <td style="padding:1px 0 1px 12px;vertical-align:top;width:46%;font-size:18px;line-height:1.2;white-space:normal;overflow:visible;text-overflow:clip;font-weight:600;">জমির পরিমাণ:</td>
+          <td style="padding:1px 8px 1px 4px;vertical-align:top;width:14px;font-size:18px;line-height:1.2;font-weight:700;">:</td>
+          <td style="padding:1px 12px 1px 0;vertical-align:top;font-size:18px;line-height:1.2;font-weight:600;word-break:break-word;overflow-wrap:anywhere;white-space:pre-line;line-height:1.35;">০.৩৩০০ একর</td>
         </tr>
         <tr>
-          <td style="padding:1px 0 1px 12px;vertical-align:top;width:41%;font-size:21px;line-height:1.28;word-break:break-word;overflow-wrap:anywhere;white-space:pre-line;line-height:1.35;">চার্জের পরিমাণ (বকেয়া)/জরিমানা:</td>
-          <td style="padding:1px 8px 1px 4px;vertical-align:top;width:14px;font-size:21px;line-height:1.28;font-weight:700;">:</td>
-          <td style="padding:1px 12px 1px 0;vertical-align:top;font-size:21px;line-height:1.28;font-weight:600;word-break:break-word;overflow-wrap:anywhere;white-space:pre-line;line-height:1.35;">১৩০০৳/১৩০৳</td>
+          <td style="padding:1px 0 1px 12px;vertical-align:top;width:46%;font-size:18px;line-height:1.2;white-space:normal;overflow:visible;text-overflow:clip;font-weight:600;">চার্জের পরিমাণ (হাল)/জরিমানা:</td>
+          <td style="padding:1px 8px 1px 4px;vertical-align:top;width:14px;font-size:18px;line-height:1.2;font-weight:700;">:</td>
+          <td style="padding:1px 12px 1px 0;vertical-align:top;font-size:18px;line-height:1.2;font-weight:600;word-break:break-word;overflow-wrap:anywhere;white-space:pre-line;line-height:1.35;">১৩০০৳/১৩০৳</td>
         </tr>
         <tr>
-          <td style="padding:1px 0 1px 12px;vertical-align:top;width:41%;font-size:21px;line-height:1.28;word-break:break-word;overflow-wrap:anywhere;white-space:pre-line;line-height:1.35;">মোট আদায়ের পরিমাণ:</td>
-          <td style="padding:1px 8px 1px 4px;vertical-align:top;width:14px;font-size:21px;line-height:1.28;font-weight:700;">:</td>
-          <td style="padding:1px 12px 1px 0;vertical-align:top;font-size:21px;line-height:1.28;font-weight:600;word-break:break-word;overflow-wrap:anywhere;white-space:pre-line;line-height:1.35;">২৮৬০৳</td>
+          <td style="padding:1px 0 1px 12px;vertical-align:top;width:46%;font-size:18px;line-height:1.2;white-space:normal;overflow:visible;text-overflow:clip;font-weight:600;">চার্জের পরিমাণ (বকেয়া)/জরিমানা:</td>
+          <td style="padding:1px 8px 1px 4px;vertical-align:top;width:14px;font-size:18px;line-height:1.2;font-weight:700;">:</td>
+          <td style="padding:1px 12px 1px 0;vertical-align:top;font-size:18px;line-height:1.2;font-weight:600;word-break:break-word;overflow-wrap:anywhere;white-space:pre-line;line-height:1.35;">১৩০০৳/১৩০৳</td>
         </tr>
         <tr>
-          <td style="padding:1px 0 1px 12px;vertical-align:top;width:41%;font-size:21px;line-height:1.28;word-break:break-word;overflow-wrap:anywhere;white-space:pre-line;line-height:1.35;">কথায়:</td>
-          <td style="padding:1px 8px 1px 4px;vertical-align:top;width:14px;font-size:21px;line-height:1.28;font-weight:700;">:</td>
-          <td style="padding:1px 12px 1px 0;vertical-align:top;font-size:21px;line-height:1.28;font-weight:600;word-break:break-word;overflow-wrap:anywhere;white-space:pre-line;line-height:1.35;">দুই হাজার আট শত ষাট টাকা মাত্র।</td>
+          <td style="padding:1px 0 1px 12px;vertical-align:top;width:46%;font-size:18px;line-height:1.2;white-space:normal;overflow:visible;text-overflow:clip;font-weight:600;">মোট আদায়ের পরিমাণ:</td>
+          <td style="padding:1px 8px 1px 4px;vertical-align:top;width:14px;font-size:18px;line-height:1.2;font-weight:700;">:</td>
+          <td style="padding:1px 12px 1px 0;vertical-align:top;font-size:18px;line-height:1.2;font-weight:600;word-break:break-word;overflow-wrap:anywhere;white-space:pre-line;line-height:1.35;">২৮৬০৳</td>
+        </tr>
+        <tr>
+          <td style="padding:1px 0 1px 12px;vertical-align:top;width:46%;font-size:18px;line-height:1.2;white-space:normal;overflow:visible;text-overflow:clip;font-weight:600;">কথায়:</td>
+          <td style="padding:1px 8px 1px 4px;vertical-align:top;width:14px;font-size:18px;line-height:1.2;font-weight:700;">:</td>
+          <td style="padding:1px 12px 1px 0;vertical-align:top;font-size:18px;line-height:1.2;font-weight:600;word-break:break-word;overflow-wrap:anywhere;white-space:pre-line;line-height:1.35;">দুই হাজার আট শত ষাট টাকা মাত্র।</td>
+        </tr>
+        <tr>
+          <td style="padding:1px 0 12px 12px;vertical-align:top;width:46%;font-size:18px;line-height:1.2;white-space:normal;overflow:visible;text-overflow:clip;font-weight:600;">হোল্ডিং এর বিবরন/পাটুয়ারীর নাম ও মোবা নং:</td>
+          <td style="padding:1px 8px 12px 4px;vertical-align:top;width:14px;font-size:18px;line-height:1.2;font-weight:700;">:</td>
+          <td style="padding:1px 12px 12px 0;vertical-align:top;font-size:18px;line-height:1.2;font-weight:600;word-break:break-word;overflow-wrap:anywhere;white-space:pre-line;line-height:1.35;">—</td>
         </tr></tbody>
       </table>
 

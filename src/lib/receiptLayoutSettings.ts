@@ -37,6 +37,12 @@ export interface ReceiptLayoutSettings {
   watermarkText: string;
   /** Master on/off — overrides watermarkText. */
   watermarkEnabled: boolean;
+  /** Irrigation receipt page padding (mm-ish px) — left/right/top. 24-72. */
+  irrigationPagePaddingPx: number;
+  /** Irrigation receipt page BOTTOM padding (px). Adjust per printer. 12-96. */
+  irrigationBottomPaddingPx: number;
+  /** Extra bottom padding (px) applied to the holding/patwari last row. 0-48. */
+  holdingBottomPaddingPx: number;
 }
 
 export const DEFAULT_RECEIPT_LAYOUT: ReceiptLayoutSettings = {
@@ -60,6 +66,9 @@ export const DEFAULT_RECEIPT_LAYOUT: ReceiptLayoutSettings = {
   defaultOrientation: "p",
   watermarkText: "",
   watermarkEnabled: false,
+  irrigationPagePaddingPx: 48,
+  irrigationBottomPaddingPx: 42,
+  holdingBottomPaddingPx: 12,
 };
 
 /** Default labels — single source of truth shared by HTML/PDF/Excel. */
@@ -83,6 +92,11 @@ function clampSpacing(v: any, fallback = 4): number {
   return Number.isFinite(n) ? Math.max(2, Math.min(12, Math.round(n))) : fallback;
 }
 
+function clampRange(v: any, min: number, max: number, fallback: number): number {
+  const n = Number(v);
+  return Number.isFinite(n) ? Math.max(min, Math.min(max, Math.round(n))) : fallback;
+}
+
 export function getReceiptLayoutSettings(): ReceiptLayoutSettings {
   if (typeof localStorage === "undefined") return { ...DEFAULT_RECEIPT_LAYOUT };
   try {
@@ -102,6 +116,9 @@ export function getReceiptLayoutSettings(): ReceiptLayoutSettings {
     );
     merged.defaultPaperSize = (parsed?.defaultPaperSize === "a4" ? "a4" : "a5");
     merged.defaultOrientation = (parsed?.defaultOrientation === "l" ? "l" : "p");
+    merged.irrigationPagePaddingPx = clampRange(merged.irrigationPagePaddingPx, 24, 72, 48);
+    merged.irrigationBottomPaddingPx = clampRange(merged.irrigationBottomPaddingPx, 12, 96, 42);
+    merged.holdingBottomPaddingPx = clampRange(merged.holdingBottomPaddingPx, 0, 48, 12);
     return merged;
   } catch {
     return { ...DEFAULT_RECEIPT_LAYOUT };
@@ -201,4 +218,18 @@ export function getDefaultPaperSize(): PaperSize {
 /** Global default page orientation for receipt PDFs (portrait or landscape). */
 export function getDefaultOrientation(): PaperOrientation {
   return getReceiptLayoutSettings().defaultOrientation;
+}
+
+/** Configurable irrigation receipt paddings (px) for printer alignment. */
+export function getIrrigationReceiptPadding(): {
+  page: number;
+  bottom: number;
+  holdingBottom: number;
+} {
+  const s = getReceiptLayoutSettings();
+  return {
+    page: s.irrigationPagePaddingPx,
+    bottom: s.irrigationBottomPaddingPx,
+    holdingBottom: s.holdingBottomPaddingPx,
+  };
 }
