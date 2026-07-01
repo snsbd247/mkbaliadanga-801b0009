@@ -261,10 +261,19 @@ export default function LandsImport() {
       setFileName(f.name);
       setHeaders(hdrs);
       setRecords(recs);
-      setMapping(autoMap(hdrs));
+      const guessed = autoMap(hdrs);
+      setMapping(guessed);
       setRows([]);
       setSummary(null);
       setSavedCount(0);
+      toast.success(`ফাইল নির্বাচিত: ${f.name} (${recs.length} সারি)`);
+      const missingReq = REQUIRED_COLS.filter((c) => !guessed[c]);
+      if (missingReq.length) {
+        toast.warning(
+          "আবশ্যক কলাম মিলছে না — ম্যাপিং ঠিক করুন: " +
+            missingReq.map((c) => COL_LABELS[c]).join(", "),
+        );
+      }
     } catch (e: any) {
       toast.error(e?.message ?? "ফাইল পড়া যায়নি");
     }
