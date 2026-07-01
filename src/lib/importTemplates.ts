@@ -5,24 +5,24 @@ type Tpl = { columns: string[]; sample: Record<string, any>; instructions?: stri
 
 const TEMPLATES: Record<string, Tpl> = {
   lands: {
-    columns: ["account_number", "dag_no", "land_size", "land_size_unit", "owner_type", "field_type", "mouza"],
-    sample: { account_number: "10001", dag_no: "123, 124/A, 125-B", land_size: 33, land_size_unit: "shotok", owner_type: "owner", field_type: "medium_land", mouza: "Mouza A" },
-    instructions: "জমির তথ্য (Lands)। account_number = কৃষকের সদস্য নম্বর। land_size শতক (shotok) হিসেবে সংরক্ষিত হয়। land_size_unit = shotok|katha|bigha|acre (ডিফল্ট shotok); katha/bigha/acre স্বয়ংক্রিয় রূপান্তর হয় (১ বিঘা=৩৩ শতক=২০ কাঠা, ১ একর≈১০০ শতক)। dag_no একাধিক দাগ কমা দিয়ে — canonical ফরম্যাট যেমন \"123, 124/A, 125-B\" (শুধু সংখ্যা/অক্ষর/'/'/'-' গ্রহণযোগ্য)। owner_type = owner|borgadar। field_type = high_land|medium_land|low_land।",
+    columns: ["account_number", "dag_no", "land_size", "land_size_unit", "owner_type", "field_type", "mouza", "note"],
+    sample: { account_number: "10001", dag_no: "123, 124/A, 125-B", land_size: 100, land_size_unit: "shotok", owner_type: "owner", field_type: "medium_land", mouza: "Mouza A", note: "পুকুর পাড়ের জমি" },
+    instructions: "ধাপ ১ — জমির তথ্য (Lands)। account_number = জমির মালিকের সদস্য নম্বর। land_size = পুরো জমির মোট পরিমাপ (একবার মালিকের নামে; বর্গা ভাগ ধাপ ২-এ দিন)। land_size শতক (shotok) হিসেবে সংরক্ষিত হয়। land_size_unit = shotok|katha|bigha|acre (ডিফল্ট shotok); katha/bigha/acre স্বয়ংক্রিয় রূপান্তর (১ বিঘা=৩৩ শতক=২০ কাঠা, ১ একর≈১০০ শতক)। dag_no একাধিক দাগ কমা দিয়ে — canonical ফরম্যাট যেমন \"123, 124/A, 125-B\"। owner_type = owner|borgadar। field_type = high_land|medium_land|low_land। note = জমির নোট (ইনভয়েস/রশিদে দেখাবে)।",
   },
   land_relations: {
-    columns: ["owner_account_number", "tenant_account_number", "dag_no", "share_percentage", "valid_from", "valid_to", "note"],
-    sample: { owner_account_number: "10001", tenant_account_number: "10002", dag_no: "123, 124/A", share_percentage: 50, valid_from: "2026-01-01", valid_to: "", note: "" },
-    instructions: "বর্গা সম্পর্ক (Borga relations)। dag_no মালিকের জমির রেকর্ডের সাথে হুবহু মিলতে হবে (canonical কমা-সেপারেটেড, যেমন \"123, 124/A\")। share_percentage ০-১০০। valid_to ঐচ্ছিক।",
+    columns: ["owner_account_number", "tenant_account_number", "dag_no", "borga_area", "share_percentage", "valid_from", "valid_to", "note"],
+    sample: { owner_account_number: "10001", tenant_account_number: "10002", dag_no: "123, 124/A", borga_area: 55, share_percentage: "", valid_from: "2026-01-01", valid_to: "", note: "" },
+    instructions: "ধাপ ২ — বর্গা সম্পর্ক (Borga relations)। প্রতি বর্গাদারের জন্য একটি সারি। dag_no মালিকের জমির রেকর্ডের সাথে হুবহু মিলতে হবে (canonical কমা-সেপারেটেড)। borga_area = ঐ বর্গাদারকে দেয়া শতক (অগ্রাধিকার); খালি রাখলে share_percentage (০-১০০) ব্যবহার হবে। উদাহরণ: ১০০ শতকের জমিতে বর্গাদার ১ = 55, বর্গাদার ২ = 20 দিলে বাকি 25 শতক স্বয়ংক্রিয়ভাবে মালিকের অংশ। valid_to ঐচ্ছিক।",
   },
   payments: {
-    columns: ["account_number", "kind", "amount", "method", "note"],
-    sample: { account_number: "10001", kind: "savings", amount: 500, method: "cash", note: "Monthly" },
-    instructions: "পেমেন্ট (Payments)। kind = savings | loan | irrigation। method = cash | bkash | bank। amount টাকায়।",
+    columns: ["account_number", "dag_no", "season_year", "season_type", "amount", "method", "paid_on", "note"],
+    sample: { account_number: "10002", dag_no: "123, 124/A", season_year: 2026, season_type: "boro", amount: 500, method: "cash", paid_on: "2026-03-01", note: "১ম কিস্তি" },
+    instructions: "ধাপ ৪ — পেমেন্ট কালেকশন (ইনভয়েস-ভিত্তিক)। account_number = যিনি পরিশোধ করেছেন (মালিক বা বর্গাদার) তার সদস্য নম্বর। dag_no + season_year + season_type দিয়ে ঐ ব্যক্তির নির্দিষ্ট ইনভয়েস ম্যাচ করে amount allocate হয়। method = cash | bkash | bank। paid_on = YYYY-MM-DD।",
   },
   irrigation: {
-    columns: ["account_number","dag_no","season_year","season_type","quantity","base_charge","canal_charge","maintenance_charge","other_charge","previous_due_brought","penalty_amount","entry_date","note"],
-    sample: { account_number: "10001", dag_no: "123, 124/A", season_year: 2026, season_type: "boro", quantity: 0.33, base_charge: 200, canal_charge: 50, maintenance_charge: 20, other_charge: 0, previous_due_brought: 0, penalty_amount: 0, entry_date: "2026-02-01", note: "" },
-    instructions: "সেচ ইনভয়েস (Irrigation)। season_type = boro | aman | aus। dag_no অবশ্যই ঐ কৃষকের জন্য আগে থেকে থাকতে হবে (canonical কমা-সেপারেটেড, যেমন \"123, 124/A\")। সব চার্জ টাকায়। entry_date = YYYY-MM-DD।",
+    columns: ["account_number","dag_no","season_year","season_type","base_charge","canal_charge","maintenance_charge","other_charge","previous_due_brought","penalty_amount","entry_date","note"],
+    sample: { account_number: "10001", dag_no: "123, 124/A", season_year: 2026, season_type: "boro", base_charge: 2000, canal_charge: 500, maintenance_charge: 200, other_charge: 0, previous_due_brought: 0, penalty_amount: 0, entry_date: "2026-02-01", note: "" },
+    instructions: "ধাপ ৩ — সেচ ইনভয়েস (Irrigation)। account_number = জমির মালিকের সদস্য নম্বর, dag_no = ঐ জমি। প্রতি সারি = ঐ জমির ঐ সিজনের এক সেট চার্জ (পুরো জমির জন্য)। সিস্টেম বর্গা সম্পর্ক (ধাপ ২) দেখে স্বয়ংক্রিয়ভাবে মালিক ও প্রতি বর্গাদারের নামে জমির পরিমাপ অনুপাতে আলাদা ইনভয়েস তৈরি করবে। season_type = boro | aman | aus। সব চার্জ টাকায়। canal ও maintenance চার্জ payable-এ যোগ হয় না। entry_date = YYYY-MM-DD।",
   },
   cashbook_receipts: {
     columns: ["receipt_date", "kind", "account_number", "amount", "method", "note"],

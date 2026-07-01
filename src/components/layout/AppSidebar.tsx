@@ -247,6 +247,8 @@ export function AppSidebar() {
       children: [
         { url: "/farmers/import", icon: Upload, label: t("bulkFarmerImport"), permKey: "farmers" },
         { url: "/lands/import", icon: Upload, label: lang === "bn" ? "জমি ইমপোর্ট" : "Land Import", permKey: "lands" },
+        { url: "/irrigation/invoices/import", icon: Upload, label: lang === "bn" ? "সেচ ইনভয়েস ইমপোর্ট" : "Irrigation Invoice Import", permKey: "irrigation" },
+        { url: "/irrigation/opening-due/import", icon: Upload, label: lang === "bn" ? "ওপেনিং বকেয়া ইমপোর্ট" : "Opening Due Import", permKey: "irrigation" },
         { url: "/admin/import-audit", icon: ScrollText, label: lang === "bn" ? "ইমপোর্ট অডিট লগ" : "Import Audit Logs", adminOnly: true },
 
         

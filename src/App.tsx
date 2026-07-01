@@ -105,6 +105,7 @@ import ImportAuditLogs from "./pages/admin/ImportAuditLogs";
 import FarmersImport from "./pages/FarmersImport";
 import LandsImport from "./pages/LandsImport";
 import OpeningDueImport from "./pages/OpeningDueImport";
+import IrrigationInvoiceImport from "./pages/IrrigationInvoiceImport";
 import FarmerMerge from "./pages/admin/FarmerMerge";
 
 import VoterList from "./pages/VoterList";
@@ -267,6 +268,7 @@ const App = () => (
                 <Route path="/irrigation/collect" element={<Navigate to="/payments" replace />} />
                 <Route path="/irrigation/invoices" element={<RequirePerm module="irrigation"><IrrigationInvoices /></RequirePerm>} />
                 <Route path="/irrigation/opening-due/import" element={<RequirePerm module="irrigation" action="can_add"><OpeningDueImport /></RequirePerm>} />
+                <Route path="/irrigation/invoices/import" element={<RequirePerm module="irrigation" action="can_add"><IrrigationInvoiceImport /></RequirePerm>} />
                 <Route path="/irrigation/rates" element={<RequirePerm module="irrigation"><IrrigationRates /></RequirePerm>} />
                 <Route path="/irrigation/historical-entry" element={<RequirePerm module="irrigation"><HistoricalReceiptEntry /></RequirePerm>} />
                 <Route path="/payments" element={<RequirePerm module="payments"><Payments /></RequirePerm>} />
