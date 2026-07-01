@@ -263,7 +263,7 @@ class DeveloperToolsController extends Controller
             ? count(array_filter(explode("\n", trim($incoming['output']))))
             : 0;
 
-        $this->logDev($request, 'git.dry_run', $br);
+        $this->logDev($request, 'git.dry_run', $br, $fetch['ok'] ? 'ok' : 'failed', "incoming={$count}");
 
         return response()->json([
             'ok' => $fetch['ok'],
