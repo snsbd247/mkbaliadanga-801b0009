@@ -54,7 +54,7 @@ export function AppSidebar() {
       key: "members", icon: Users, label: t("members"),
       children: [
         { url: "/farmers", icon: Users, label: t("farmers"), permKey: "farmers" },
-        { url: "/farmers/import", icon: Upload, label: t("bulkFarmerImport"), permKey: "farmers" },
+        
         { url: "/admin/bulk-cards", icon: IdCard, label: t("bulkCards"), permKey: "farmers" },
         { url: "/admin/id-review", icon: IdCard, label: t("idReview"), permKey: "farmers" },
         { url: "/admin/farmer-merge", icon: Users, label: t("farmerMerge" as any) || "Farmer Merge", adminOnly: true },
