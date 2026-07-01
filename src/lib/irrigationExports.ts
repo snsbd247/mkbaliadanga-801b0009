@@ -43,6 +43,7 @@ export const IRR_BN = {
   appliedRate: "প্রযোজ্য রেট",
   standardRate: "মানক রেট",
   overrideReason: "ওভাররাইড কারণ",
+  note: "নোট",
 };
 
 export const IRR_EN: typeof IRR_BN = {
