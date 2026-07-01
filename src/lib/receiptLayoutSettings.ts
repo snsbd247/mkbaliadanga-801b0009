@@ -111,6 +111,9 @@ export function getReceiptLayoutSettings(): ReceiptLayoutSettings {
     );
     merged.defaultPaperSize = (parsed?.defaultPaperSize === "a4" ? "a4" : "a5");
     merged.defaultOrientation = (parsed?.defaultOrientation === "l" ? "l" : "p");
+    merged.irrigationPagePaddingPx = clampRange(merged.irrigationPagePaddingPx, 24, 72, 48);
+    merged.irrigationBottomPaddingPx = clampRange(merged.irrigationBottomPaddingPx, 12, 96, 42);
+    merged.holdingBottomPaddingPx = clampRange(merged.holdingBottomPaddingPx, 0, 48, 12);
     return merged;
   } catch {
     return { ...DEFAULT_RECEIPT_LAYOUT };
