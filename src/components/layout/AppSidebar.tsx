@@ -47,7 +47,7 @@ export function AppSidebar() {
 
   const menu: ParentItem[] = [
     { key: "dashboard", icon: LayoutDashboard, label: t("dashboard"), url: "/admin", permKey: "dashboard" },
-    { key: "help", icon: HelpCircle, label: lang === "bn" ? "সাহায্য / ম্যানুয়াল" : "Help / Manual", url: "/help" },
+    
 
     // ── Members & Voters ──
     {
