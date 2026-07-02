@@ -202,17 +202,6 @@ export default function FarmerPortalLogin() {
               </Button>
             </form>
           </Card>
-
-          <div className="text-center pt-1">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => nav("/auth")}
-              aria-label={t("adminLoginArrow")}
-            >
-              {t("adminLoginArrow")}
-            </Button>
-          </div>
         </div>
       </main>
 
