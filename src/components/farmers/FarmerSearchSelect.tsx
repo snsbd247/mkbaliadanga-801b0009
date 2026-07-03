@@ -21,6 +21,8 @@ export type FarmerLite = {
   is_voter?: boolean | null;
   father_name?: string | null;
   status?: string | null;
+  office_id?: string | null;
+  merged_into?: string | null;
 };
 
 interface Props {
@@ -36,7 +38,7 @@ interface Props {
   blockInactive?: boolean;
 }
 
-const SELECT_COLS = "id,name_en,name_bn,farmer_code,member_no,account_number,mobile,voter_number,is_voter,father_name,status";
+const SELECT_COLS = "id,name_en,name_bn,farmer_code,member_no,account_number,mobile,voter_number,is_voter,father_name,status,office_id,merged_into";
 const MIN_SEARCH = 2;
 
 function highlight(text: string | null | undefined, q: string): React.ReactNode {

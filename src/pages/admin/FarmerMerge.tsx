@@ -22,10 +22,23 @@ export default function FarmerMerge() {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [busy, setBusy] = useState(false);
 
-  const canMerge = !!source && !!target && source.id !== target.id;
+  const validationError = (() => {
+    if (!source || !target) return null;
+    if (source.id === target.id)
+      return tx("Source and target must be different farmers.", "সোর্স ও টার্গেট ভিন্ন কৃষক হতে হবে।");
+    if (source.merged_into || source.status === "merged")
+      return tx("The source farmer is already merged.", "সোর্স কৃষক ইতিমধ্যে merged হয়েছে।");
+    if (target.merged_into || target.status === "merged")
+      return tx("The target farmer is already merged.", "টার্গেট কৃষক ইতিমধ্যে merged হয়েছে।");
+    if (source.office_id && target.office_id && source.office_id !== target.office_id)
+      return tx("Both farmers must belong to the same office.", "উভয় কৃষক একই অফিসের হতে হবে।");
+    return null;
+  })();
+
+  const canMerge = !!source && !!target && !validationError;
 
   async function doMerge() {
-    if (!source || !target) return;
+    if (!source || !target || validationError) return;
     setBusy(true);
     const { error } = await db.rpc("merge_farmers" as any, {
       _source: source.id,
@@ -33,7 +46,10 @@ export default function FarmerMerge() {
     });
     setBusy(false);
     setConfirmOpen(false);
-    if (error) { toast.error(error.message); return; }
+    if (error) {
+      toast.error(error.message || tx("Farmer merge failed.", "কৃষক একত্রীকরণ ব্যর্থ হয়েছে।"));
+      return;
+    }
     toast.success(tx("Farmers merged successfully.", "কৃষক সফলভাবে একত্রিত হয়েছে।"));
     setSource(null);
     setTarget(null);
@@ -79,6 +95,10 @@ export default function FarmerMerge() {
         </div>
       </Card>
 
+      {validationError && (
+        <p className="text-sm text-destructive">{validationError}</p>
+      )}
+
       <Button disabled={!canMerge || busy} onClick={() => setConfirmOpen(true)}>
         <GitMerge className="h-4 w-4 mr-2" />
         {tx("Merge farmers", "একত্রিত করুন")}
@@ -88,11 +108,25 @@ export default function FarmerMerge() {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>{tx("Confirm merge", "একত্রীকরণ নিশ্চিত করুন")}</AlertDialogTitle>
-            <AlertDialogDescription>
-              {tx("Move all records from", "সমস্ত রেকর্ড সরানো হবে")}{" "}
-              <strong>{label(source)}</strong>{" "}
-              {tx("into", "→")}{" "}
-              <strong>{label(target)}</strong>?
+            <AlertDialogDescription asChild>
+              <div className="space-y-2">
+                <div>
+                  {tx("Move all records from", "সমস্ত রেকর্ড সরানো হবে")}{" "}
+                  <strong>{label(source)}</strong>{" "}
+                  {tx("into", "→")}{" "}
+                  <strong>{label(target)}</strong>
+                </div>
+                <div>
+                  {tx("The following data will be transferred:", "নিম্নলিখিত তথ্য স্থানান্তরিত হবে:")}
+                  <ul className="list-disc pl-5 mt-1">
+                    <li>{tx("Lands & land history", "জমি ও জমির ইতিহাস")}</li>
+                    <li>{tx("Irrigation invoices & dues", "সেচ ইনভয়েস ও বকেয়া")}</li>
+                    <li>{tx("Savings accounts & transactions", "সেভিং অ্যাকাউন্ট ও লেনদেন")}</li>
+                    <li>{tx("Loans", "লোন")}</li>
+                    <li>{tx("Payments & receipts", "পেমেন্ট ও রসিদ")}</li>
+                  </ul>
+                </div>
+              </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
