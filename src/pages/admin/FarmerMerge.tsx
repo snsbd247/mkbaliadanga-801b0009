@@ -40,7 +40,7 @@ export default function FarmerMerge() {
   async function doMerge() {
     if (!source || !target || validationError) return;
     setBusy(true);
-    const { error } = await db.rpc("merge_farmers" as any, {
+    const { data, error } = await db.rpc("merge_farmers" as any, {
       _source: source.id,
       _target: target.id,
     });
@@ -50,7 +50,14 @@ export default function FarmerMerge() {
       toast.error(error.message || tx("Farmer merge failed.", "কৃষক একত্রীকরণ ব্যর্থ হয়েছে।"));
       return;
     }
-    toast.success(tx("Farmers merged successfully.", "কৃষক সফলভাবে একত্রিত হয়েছে।"));
+    const c = (data as any)?.moved_counts;
+    const detail = c
+      ? tx(
+          `Moved — lands: ${c.lands}, irrigation: ${c.irrigation}, savings: ${c.savings}, loans: ${c.loans}, payments: ${c.payments}`,
+          `স্থানান্তরিত — জমি: ${c.lands}, সেচ: ${c.irrigation}, সেভিং: ${c.savings}, লোন: ${c.loans}, পেমেন্ট: ${c.payments}`
+        )
+      : undefined;
+    toast.success(tx("Farmers merged successfully.", "কৃষক সফলভাবে একত্রিত হয়েছে।"), { description: detail });
     setSource(null);
     setTarget(null);
   }
