@@ -105,20 +105,39 @@ export default function Users() {
     const requiresOffice = !(form.role === "developer" || form.role === "super_admin");
     const office_id = requiresOffice ? (form.office_id || null) : null;
     const parsed = createSchema.safeParse({ ...form, office_id });
+    const fieldErrors: Record<string, string> = {};
     if (!parsed.success) {
-      const first = Object.values(parsed.error.flatten().fieldErrors)[0]?.[0];
-      return toast.error(first ?? t("validationFailed"));
+      Object.entries(parsed.error.flatten().fieldErrors).forEach(([k, v]) => {
+        if (v?.[0]) fieldErrors[k] = v[0];
+      });
     }
-    if (requiresOffice && !office_id) return toast.error(t("office") + " required");
-    const policy = passwordPolicyIssues(parsed.data.password, parsed.data.role, t);
-    if (policy.length) return toast.error(`${t("pwPolicyPrefix")}: ${policy.join(", ")}`);
-    const ok = await callAdmin({ action: "create", ...parsed.data });
+    if (!form.role) fieldErrors.role = t("role") + " required";
+    if (requiresOffice && !office_id) fieldErrors.office_id = t("office") + " required";
+    if (parsed.success) {
+      const policy = passwordPolicyIssues(parsed.data.password, parsed.data.role, t);
+      if (policy.length) fieldErrors.password = policy.join(", ");
+    }
+    if (Object.keys(fieldErrors).length) {
+      setErrors(fieldErrors);
+      return toast.error(t("validationFailed"));
+    }
+    setErrors({});
+    const ok = await callAdmin({ action: "create", ...parsed.data! });
     if (!ok) return;
     toast.success(t("userCreated"));
     setCreateOpen(false);
     setForm({ username: "", email: "", full_name: "", password: "", role: "staff", office_id: "" });
     load();
   }
+
+  async function setActive(u: any, is_active: boolean) {
+    if (u.id === me?.id) return toast.error("You cannot change your own status");
+    const ok = await callAdmin({ action: "set_active", user_id: u.id, is_active });
+    if (!ok) return;
+    toast.success(t("saved"));
+    load();
+  }
+
 
   async function deleteUser(u: any) {
     if (u.id === me?.id) return toast.error(t("cannotDeleteSelf"));
