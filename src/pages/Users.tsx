@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Switch } from "@/components/ui/switch";
 import { useLang } from "@/i18n/LanguageProvider";
 import { fmtDate } from "@/lib/format";
 import { toast } from "sonner";
@@ -56,6 +57,7 @@ export default function Users() {
     username: "", email: "", full_name: "", password: "",
     role: "staff" as "developer" | "super_admin" | "admin" | "committee" | "staff", office_id: "",
   });
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   useEffect(() => { document.title = `${t("users")} — ${t("appName")}`; load(); }, [isDeveloper]);
 
@@ -104,20 +106,39 @@ export default function Users() {
     const requiresOffice = !(form.role === "developer" || form.role === "super_admin");
     const office_id = requiresOffice ? (form.office_id || null) : null;
     const parsed = createSchema.safeParse({ ...form, office_id });
+    const fieldErrors: Record<string, string> = {};
     if (!parsed.success) {
-      const first = Object.values(parsed.error.flatten().fieldErrors)[0]?.[0];
-      return toast.error(first ?? t("validationFailed"));
+      Object.entries(parsed.error.flatten().fieldErrors).forEach(([k, v]) => {
+        if (v?.[0]) fieldErrors[k] = v[0];
+      });
     }
-    if (requiresOffice && !office_id) return toast.error(t("office") + " required");
-    const policy = passwordPolicyIssues(parsed.data.password, parsed.data.role, t);
-    if (policy.length) return toast.error(`${t("pwPolicyPrefix")}: ${policy.join(", ")}`);
-    const ok = await callAdmin({ action: "create", ...parsed.data });
+    if (!form.role) fieldErrors.role = t("role") + " required";
+    if (requiresOffice && !office_id) fieldErrors.office_id = t("office") + " required";
+    if (parsed.success) {
+      const policy = passwordPolicyIssues(parsed.data.password, parsed.data.role, t);
+      if (policy.length) fieldErrors.password = policy.join(", ");
+    }
+    if (Object.keys(fieldErrors).length) {
+      setErrors(fieldErrors);
+      return toast.error(t("validationFailed"));
+    }
+    setErrors({});
+    const ok = await callAdmin({ action: "create", ...parsed.data! });
     if (!ok) return;
     toast.success(t("userCreated"));
     setCreateOpen(false);
     setForm({ username: "", email: "", full_name: "", password: "", role: "staff", office_id: "" });
     load();
   }
+
+  async function setActive(u: any, is_active: boolean) {
+    if (u.id === me?.id) return toast.error("You cannot change your own status");
+    const ok = await callAdmin({ action: "set_active", user_id: u.id, is_active });
+    if (!ok) return;
+    toast.success(t("saved"));
+    load();
+  }
+
 
   async function deleteUser(u: any) {
     if (u.id === me?.id) return toast.error(t("cannotDeleteSelf"));
@@ -197,17 +218,29 @@ export default function Users() {
           <DialogContent>
             <DialogHeader><DialogTitle>{t("createUser")}</DialogTitle></DialogHeader>
             <div className="space-y-3">
-              <div><Label>{t("fullName")}</Label><Input value={form.full_name} onChange={e => setForm({ ...form, full_name: e.target.value })} /></div>
+              <div>
+                <Label>{t("fullName")}</Label>
+                <Input value={form.full_name} onChange={e => setForm({ ...form, full_name: e.target.value })} />
+                {errors.full_name && <p className="text-[11px] text-destructive mt-1">{errors.full_name}</p>}
+              </div>
               <div className="grid grid-cols-2 gap-3">
-                <div><Label>{t("username")}</Label><Input value={form.username} onChange={e => setForm({ ...form, username: e.target.value })} placeholder={t("usernamePlaceholder")} /></div>
-                <div><Label>{t("email")}</Label><Input type="email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} /></div>
+                <div>
+                  <Label>{t("username")}</Label>
+                  <Input value={form.username} onChange={e => setForm({ ...form, username: e.target.value })} placeholder={t("usernamePlaceholder")} />
+                  {errors.username && <p className="text-[11px] text-destructive mt-1">{errors.username}</p>}
+                </div>
+                <div>
+                  <Label>{t("email")}</Label>
+                  <Input type="email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} />
+                  {errors.email && <p className="text-[11px] text-destructive mt-1">{errors.email}</p>}
+                </div>
               </div>
               <div>
                 <Label>{t("password")}</Label>
                 <Input type="password" value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} placeholder={form.role === "super_admin" ? t("pwPlaceholderSuper") : t("pwPlaceholderStaff")} />
-                <p className="text-[11px] text-muted-foreground mt-1">
-                  {form.role === "super_admin" ? t("pwSuperHint") : t("pwStaffHint")}
-                </p>
+                {errors.password
+                  ? <p className="text-[11px] text-destructive mt-1">{errors.password}</p>
+                  : <p className="text-[11px] text-muted-foreground mt-1">{form.role === "super_admin" ? t("pwSuperHint") : t("pwStaffHint")}</p>}
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div><Label>{t("role")}</Label>
@@ -221,6 +254,7 @@ export default function Users() {
                       <SelectItem value="staff">{t("staff")}</SelectItem>
                     </SelectContent>
                   </Select>
+                  {errors.role && <p className="text-[11px] text-destructive mt-1">{errors.role}</p>}
                 </div>
                 {!(form.role === "developer" || form.role === "super_admin") && (
                   <div><Label>{t("office")}</Label>
@@ -228,6 +262,7 @@ export default function Users() {
                       <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
                       <SelectContent>{offices.map(o => <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>)}</SelectContent>
                     </Select>
+                    {errors.office_id && <p className="text-[11px] text-destructive mt-1">{errors.office_id}</p>}
                   </div>
                 )}
               </div>
@@ -248,6 +283,7 @@ export default function Users() {
             <TableHead>{t("fullName")}</TableHead>
             <TableHead>{t("role")}</TableHead>
             <TableHead>{t("office")}</TableHead>
+            <TableHead>{t("status" as any) || "Status"}</TableHead>
             <TableHead>{t("date")}</TableHead>
             <TableHead className="text-right">{t("actions")}</TableHead>
           </TableRow></TableHeader>
@@ -289,6 +325,18 @@ export default function Users() {
                     </>
                   );
                 })()}
+                <TableCell>
+                  <div className="flex items-center gap-2">
+                    <Switch
+                      checked={u.is_active !== false}
+                      disabled={u.id === me?.id || (u.roles.includes("developer") && !isDeveloper)}
+                      onCheckedChange={(v) => setActive(u, v)}
+                    />
+                    <span className="text-xs text-muted-foreground">
+                      {u.is_active !== false ? (t("active" as any) || "Active") : (t("inactive" as any) || "Inactive")}
+                    </span>
+                  </div>
+                </TableCell>
                 <TableCell className="whitespace-nowrap text-xs">{fmtDate(u.created_at)}</TableCell>
                 <TableCell className="text-right space-x-1">
                   <Button size="sm" variant="outline" onClick={() => openPerms(u)} title={t("permissions")}>
@@ -301,7 +349,7 @@ export default function Users() {
                 </TableCell>
               </TableRow>
             ))}
-            {list.length === 0 && <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-6">{t("noData")}</TableCell></TableRow>}
+            {list.length === 0 && <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-6">{t("noData")}</TableCell></TableRow>}
           </TableBody>
         </Table>
       </Card>

@@ -17,8 +17,9 @@ interface CreateBody {
 }
 interface DeleteBody { action: "delete"; user_id: string; }
 interface ResetBody  { action: "reset_password"; user_id: string; password: string; }
+interface SetActiveBody { action: "set_active"; user_id: string; is_active: boolean; }
 
-type Body = CreateBody | DeleteBody | ResetBody;
+type Body = CreateBody | DeleteBody | ResetBody | SetActiveBody;
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -93,6 +94,25 @@ Deno.serve(async (req) => {
       if (!body.password || body.password.length < 8) return json({ error: "Password must be at least 8 characters" }, 400);
       const { error } = await admin.auth.admin.updateUserById(body.user_id, { password: body.password });
       if (error) return json({ error: error.message }, 400);
+      return json({ ok: true });
+    }
+
+    if (body.action === "set_active") {
+      if (body.user_id === who.user.id) return json({ error: "You cannot change your own status" }, 400);
+      if (!isDeveloper) {
+        const { data: targetRoles } = await admin.from("user_roles").select("role").eq("user_id", body.user_id);
+        if ((targetRoles ?? []).some((r: any) => r.role === "developer")) {
+          return json({ error: "Only developers can change developer accounts" }, 403);
+        }
+      }
+      const active = !!body.is_active;
+      const { error: pErr } = await admin.from("profiles").update({ is_active: active }).eq("id", body.user_id);
+      if (pErr) return json({ error: pErr.message }, 400);
+      // Ban/unban the auth account so a disabled user cannot sign in.
+      const { error: bErr } = await admin.auth.admin.updateUserById(body.user_id, {
+        ban_duration: active ? "none" : "876000h",
+      });
+      if (bErr) return json({ error: bErr.message }, 400);
       return json({ ok: true });
     }
 
