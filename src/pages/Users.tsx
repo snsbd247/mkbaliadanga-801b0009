@@ -325,6 +325,18 @@ export default function Users() {
                     </>
                   );
                 })()}
+                <TableCell>
+                  <div className="flex items-center gap-2">
+                    <Switch
+                      checked={u.is_active !== false}
+                      disabled={u.id === me?.id || (u.roles.includes("developer") && !isDeveloper)}
+                      onCheckedChange={(v) => setActive(u, v)}
+                    />
+                    <span className="text-xs text-muted-foreground">
+                      {u.is_active !== false ? (t("active" as any) || "Active") : (t("inactive" as any) || "Inactive")}
+                    </span>
+                  </div>
+                </TableCell>
                 <TableCell className="whitespace-nowrap text-xs">{fmtDate(u.created_at)}</TableCell>
                 <TableCell className="text-right space-x-1">
                   <Button size="sm" variant="outline" onClick={() => openPerms(u)} title={t("permissions")}>
