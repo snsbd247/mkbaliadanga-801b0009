@@ -56,6 +56,7 @@ export default function Users() {
     username: "", email: "", full_name: "", password: "",
     role: "staff" as "developer" | "super_admin" | "admin" | "committee" | "staff", office_id: "",
   });
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   useEffect(() => { document.title = `${t("users")} — ${t("appName")}`; load(); }, [isDeveloper]);
 
