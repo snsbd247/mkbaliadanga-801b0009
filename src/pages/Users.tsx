@@ -217,17 +217,29 @@ export default function Users() {
           <DialogContent>
             <DialogHeader><DialogTitle>{t("createUser")}</DialogTitle></DialogHeader>
             <div className="space-y-3">
-              <div><Label>{t("fullName")}</Label><Input value={form.full_name} onChange={e => setForm({ ...form, full_name: e.target.value })} /></div>
+              <div>
+                <Label>{t("fullName")}</Label>
+                <Input value={form.full_name} onChange={e => setForm({ ...form, full_name: e.target.value })} />
+                {errors.full_name && <p className="text-[11px] text-destructive mt-1">{errors.full_name}</p>}
+              </div>
               <div className="grid grid-cols-2 gap-3">
-                <div><Label>{t("username")}</Label><Input value={form.username} onChange={e => setForm({ ...form, username: e.target.value })} placeholder={t("usernamePlaceholder")} /></div>
-                <div><Label>{t("email")}</Label><Input type="email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} /></div>
+                <div>
+                  <Label>{t("username")}</Label>
+                  <Input value={form.username} onChange={e => setForm({ ...form, username: e.target.value })} placeholder={t("usernamePlaceholder")} />
+                  {errors.username && <p className="text-[11px] text-destructive mt-1">{errors.username}</p>}
+                </div>
+                <div>
+                  <Label>{t("email")}</Label>
+                  <Input type="email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} />
+                  {errors.email && <p className="text-[11px] text-destructive mt-1">{errors.email}</p>}
+                </div>
               </div>
               <div>
                 <Label>{t("password")}</Label>
                 <Input type="password" value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} placeholder={form.role === "super_admin" ? t("pwPlaceholderSuper") : t("pwPlaceholderStaff")} />
-                <p className="text-[11px] text-muted-foreground mt-1">
-                  {form.role === "super_admin" ? t("pwSuperHint") : t("pwStaffHint")}
-                </p>
+                {errors.password
+                  ? <p className="text-[11px] text-destructive mt-1">{errors.password}</p>
+                  : <p className="text-[11px] text-muted-foreground mt-1">{form.role === "super_admin" ? t("pwSuperHint") : t("pwStaffHint")}</p>}
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div><Label>{t("role")}</Label>
@@ -241,6 +253,7 @@ export default function Users() {
                       <SelectItem value="staff">{t("staff")}</SelectItem>
                     </SelectContent>
                   </Select>
+                  {errors.role && <p className="text-[11px] text-destructive mt-1">{errors.role}</p>}
                 </div>
                 {!(form.role === "developer" || form.role === "super_admin") && (
                   <div><Label>{t("office")}</Label>
@@ -248,6 +261,7 @@ export default function Users() {
                       <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
                       <SelectContent>{offices.map(o => <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>)}</SelectContent>
                     </Select>
+                    {errors.office_id && <p className="text-[11px] text-destructive mt-1">{errors.office_id}</p>}
                   </div>
                 )}
               </div>
