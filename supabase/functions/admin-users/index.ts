@@ -97,6 +97,25 @@ Deno.serve(async (req) => {
       return json({ ok: true });
     }
 
+    if (body.action === "set_active") {
+      if (body.user_id === who.user.id) return json({ error: "You cannot change your own status" }, 400);
+      if (!isDeveloper) {
+        const { data: targetRoles } = await admin.from("user_roles").select("role").eq("user_id", body.user_id);
+        if ((targetRoles ?? []).some((r: any) => r.role === "developer")) {
+          return json({ error: "Only developers can change developer accounts" }, 403);
+        }
+      }
+      const active = !!body.is_active;
+      const { error: pErr } = await admin.from("profiles").update({ is_active: active }).eq("id", body.user_id);
+      if (pErr) return json({ error: pErr.message }, 400);
+      // Ban/unban the auth account so a disabled user cannot sign in.
+      const { error: bErr } = await admin.auth.admin.updateUserById(body.user_id, {
+        ban_duration: active ? "none" : "876000h",
+      });
+      if (bErr) return json({ error: bErr.message }, 400);
+      return json({ ok: true });
+    }
+
     return json({ error: "Unknown action" }, 400);
   } catch (e) {
     return json({ error: (e as Error).message }, 500);
