@@ -21,6 +21,8 @@ export type FarmerLite = {
   is_voter?: boolean | null;
   father_name?: string | null;
   status?: string | null;
+  office_id?: string | null;
+  merged_into?: string | null;
 };
 
 interface Props {
