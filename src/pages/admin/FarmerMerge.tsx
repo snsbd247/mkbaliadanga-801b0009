@@ -22,10 +22,23 @@ export default function FarmerMerge() {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [busy, setBusy] = useState(false);
 
-  const canMerge = !!source && !!target && source.id !== target.id;
+  const validationError = (() => {
+    if (!source || !target) return null;
+    if (source.id === target.id)
+      return tx("Source and target must be different farmers.", "সোর্স ও টার্গেট ভিন্ন কৃষক হতে হবে।");
+    if (source.merged_into || source.status === "merged")
+      return tx("The source farmer is already merged.", "সোর্স কৃষক ইতিমধ্যে merged হয়েছে।");
+    if (target.merged_into || target.status === "merged")
+      return tx("The target farmer is already merged.", "টার্গেট কৃষক ইতিমধ্যে merged হয়েছে।");
+    if (source.office_id && target.office_id && source.office_id !== target.office_id)
+      return tx("Both farmers must belong to the same office.", "উভয় কৃষক একই অফিসের হতে হবে।");
+    return null;
+  })();
+
+  const canMerge = !!source && !!target && !validationError;
 
   async function doMerge() {
-    if (!source || !target) return;
+    if (!source || !target || validationError) return;
     setBusy(true);
     const { error } = await db.rpc("merge_farmers" as any, {
       _source: source.id,
@@ -33,7 +46,10 @@ export default function FarmerMerge() {
     });
     setBusy(false);
     setConfirmOpen(false);
-    if (error) { toast.error(error.message); return; }
+    if (error) {
+      toast.error(error.message || tx("Farmer merge failed.", "কৃষক একত্রীকরণ ব্যর্থ হয়েছে।"));
+      return;
+    }
     toast.success(tx("Farmers merged successfully.", "কৃষক সফলভাবে একত্রিত হয়েছে।"));
     setSource(null);
     setTarget(null);
