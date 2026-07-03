@@ -283,6 +283,7 @@ export default function Users() {
             <TableHead>{t("fullName")}</TableHead>
             <TableHead>{t("role")}</TableHead>
             <TableHead>{t("office")}</TableHead>
+            <TableHead>{t("status" as any) || "Status"}</TableHead>
             <TableHead>{t("date")}</TableHead>
             <TableHead className="text-right">{t("actions")}</TableHead>
           </TableRow></TableHeader>
