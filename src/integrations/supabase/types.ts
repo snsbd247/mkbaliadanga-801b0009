@@ -6639,7 +6639,7 @@ export type Database = {
       }
       merge_farmers: {
         Args: { _source: string; _target: string }
-        Returns: undefined
+        Returns: Json
       }
       next_cashbook_voucher_no: {
         Args: { _office: string; _stream: string }
