@@ -95,6 +95,10 @@ export default function FarmerMerge() {
         </div>
       </Card>
 
+      {validationError && (
+        <p className="text-sm text-destructive">{validationError}</p>
+      )}
+
       <Button disabled={!canMerge || busy} onClick={() => setConfirmOpen(true)}>
         <GitMerge className="h-4 w-4 mr-2" />
         {tx("Merge farmers", "একত্রিত করুন")}
@@ -104,11 +108,25 @@ export default function FarmerMerge() {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>{tx("Confirm merge", "একত্রীকরণ নিশ্চিত করুন")}</AlertDialogTitle>
-            <AlertDialogDescription>
-              {tx("Move all records from", "সমস্ত রেকর্ড সরানো হবে")}{" "}
-              <strong>{label(source)}</strong>{" "}
-              {tx("into", "→")}{" "}
-              <strong>{label(target)}</strong>?
+            <AlertDialogDescription asChild>
+              <div className="space-y-2">
+                <div>
+                  {tx("Move all records from", "সমস্ত রেকর্ড সরানো হবে")}{" "}
+                  <strong>{label(source)}</strong>{" "}
+                  {tx("into", "→")}{" "}
+                  <strong>{label(target)}</strong>
+                </div>
+                <div>
+                  {tx("The following data will be transferred:", "নিম্নলিখিত তথ্য স্থানান্তরিত হবে:")}
+                  <ul className="list-disc pl-5 mt-1">
+                    <li>{tx("Lands & land history", "জমি ও জমির ইতিহাস")}</li>
+                    <li>{tx("Irrigation invoices & dues", "সেচ ইনভয়েস ও বকেয়া")}</li>
+                    <li>{tx("Savings accounts & transactions", "সেভিং অ্যাকাউন্ট ও লেনদেন")}</li>
+                    <li>{tx("Loans", "লোন")}</li>
+                    <li>{tx("Payments & receipts", "পেমেন্ট ও রসিদ")}</li>
+                  </ul>
+                </div>
+              </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
