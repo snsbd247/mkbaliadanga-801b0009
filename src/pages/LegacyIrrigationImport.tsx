@@ -185,7 +185,7 @@ export default function LegacyIrrigationImport() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="পুরনো সেচ ডাটা ইমপোর্ট" subtitle="আগের সফটওয়্যারের সেচ কালেকশন হিস্ট্রি (আলাদা টেবিল)" />
+      <PageHeader title="পুরনো সেচ ডাটা ইমপোর্ট" description="আগের সফটওয়্যারের সেচ কালেকশন হিস্ট্রি (আলাদা টেবিল)" />
 
       <Tabs defaultValue="import" onValueChange={(v) => v === "batches" && loadBatches()}>
         <TabsList>
