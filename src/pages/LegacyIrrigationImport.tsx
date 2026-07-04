@@ -216,6 +216,7 @@ export default function LegacyIrrigationImport() {
 
   async function onFile(file: File) {
     setHeaderError(null);
+    setHeaderWarnings([]);
     setParsed([]);
     setReport(null);
     setSeasonMap({});
@@ -242,14 +243,39 @@ export default function LegacyIrrigationImport() {
         const sheet = wb.Sheets[wb.SheetNames[0]];
         const json = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, { defval: "" });
         if (!json.length) { setHeaderError("ফাইলে কোনো সারি নেই।"); return; }
-        const headers = Object.keys(json[0]).map((h) => h.trim().toUpperCase());
-        const missing = REQUIRED_HEADERS.filter((h) => !headers.includes(h));
-        if (missing.length) { setHeaderError(`প্রয়োজনীয় কলাম নেই: ${missing.join(", ")}`); return; }
+
+        // ── Auto header mapping ──
+        const rawHeaders = Object.keys(json[0]);
+        const headerMap = new Map<string, string>(); // raw → canonical
+        const warnings: string[] = [];
+        const mappedCanonicals = new Set<string>();
+        for (const h of rawHeaders) {
+          const canonical = resolveHeader(h);
+          if (canonical) {
+            headerMap.set(h, canonical);
+            mappedCanonicals.add(canonical);
+            if (normHeader(h) !== normHeader(canonical)) {
+              warnings.push(`"${h}" কলামটি "${canonical}" হিসেবে ধরা হয়েছে`);
+            }
+          } else {
+            warnings.push(`"${h}" কলামটি চেনা যায়নি — উপেক্ষা করা হবে`);
+          }
+        }
+        const missing = REQUIRED_HEADERS.filter((h) => !mappedCanonicals.has(h));
+        if (missing.length) {
+          setHeaderError(`প্রয়োজনীয় কলাম নেই বা চেনা যায়নি: ${missing.join(", ")}`);
+          setHeaderWarnings(warnings);
+          return;
+        }
+        setHeaderWarnings(warnings);
 
         const seen = new Map<string, number>();
         const rows: ParsedRow[] = json.map((r, i) => {
           const up: Record<string, unknown> = {};
-          for (const k of Object.keys(r)) up[k.trim().toUpperCase()] = r[k];
+          for (const k of Object.keys(r)) {
+            const canonical = headerMap.get(k);
+            if (canonical) up[canonical] = r[k];
+          }
           const { row, errors } = mapRow(up);
           return { idx: i + 2, row, errors, dupInFile: false };
         });
