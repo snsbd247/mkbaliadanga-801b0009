@@ -161,6 +161,9 @@ export default function LegacyIrrigationImport() {
   const [progress, setProgress] = useState(0);
   const [dupMode, setDupMode] = useState<"skip" | "block">("skip");
   const [skipDbDup, setSkipDbDup] = useState(true);
+  const [fileName, setFileName] = useState("");
+  const [resumeId, setResumeId] = useState("");
+  const [resumeInfo, setResumeInfo] = useState<string | null>(null);
   const [report, setReport] = useState<{ inserted: number; skippedFile: number; skippedDb: string[]; batchId: string } | null>(null);
 
   // season mapping
@@ -220,6 +223,7 @@ export default function LegacyIrrigationImport() {
     setParsed([]);
     setReport(null);
     setSeasonMap({});
+    setFileName(file.name);
     // load seasons for matching (best-effort)
     try {
       const seasons = await SeasonsApi.list();
@@ -335,12 +339,33 @@ export default function LegacyIrrigationImport() {
     XLSX.writeFile(wb, `legacy-irrigation-invalid-${new Date().toISOString().slice(0, 10)}.xlsx`);
   }
 
+  async function checkResume() {
+    const id = resumeId.trim();
+    setResumeInfo(null);
+    if (!id) return;
+    try {
+      const s = await LegacyIrrigationApi.batchStatus(id);
+      if (!s.exists) { setResumeInfo("এই ব্যাচ আইডি পাওয়া যায়নি — নতুন ব্যাচ হিসেবে চলবে।"); return; }
+      const a = s.audit;
+      setResumeInfo(
+        `স্টেটাস: ${a?.status ?? "—"} • এখন পর্যন্ত ইমপোর্ট: ${s.record_count}` +
+        (a?.total_rows ? ` / ${a.total_rows}` : "") +
+        `${a?.file_name ? ` • ফাইল: ${a.file_name}` : ""}`,
+      );
+      setSkipDbDup(true); // resume: skip already-inserted receipts
+      toast.info("রিজিউম মোড: আগে থেকে থাকা রশিদ স্কিপ করা হবে");
+    } catch (e) {
+      setResumeInfo(e instanceof ApiError ? e.message : "স্টেটাস আনা যায়নি");
+    }
+  }
+
   async function save() {
     if (!canImport) return;
     setSaving(true);
     setProgress(0);
     setReport(null);
-    const batchId = crypto.randomUUID();
+    // Resume an interrupted batch with the same id, else start a new one.
+    const batchId = resumeId.trim() || crypto.randomUUID();
     const payload = importableRows.map((p) => {
       const sy = p.row.season_year;
       const mapped = sy && seasonMap[sy] ? seasonMap[sy] : sy;
@@ -351,9 +376,13 @@ export default function LegacyIrrigationImport() {
     try {
       for (let i = 0; i < payload.length; i += CHUNK) {
         const chunk = payload.slice(i, i + CHUNK);
+        const isLast = i + CHUNK >= payload.length;
         const res = await LegacyIrrigationApi.import(chunk, {
           batch_id: batchId,
           skip_duplicate_receipts: skipDbDup,
+          file_name: fileName || undefined,
+          total_rows: payload.length,
+          final: isLast,
         });
         inserted += res.inserted;
         skippedDb.push(...res.skipped);
@@ -367,9 +396,15 @@ export default function LegacyIrrigationImport() {
       });
       toast.success(`${inserted} সারি ইমপোর্ট হয়েছে`);
       setParsed([]);
+      setResumeId("");
+      setResumeInfo(null);
       if (fileRef.current) fileRef.current.value = "";
     } catch (e) {
-      toast.error(e instanceof ApiError ? e.message : "ইমপোর্ট ব্যর্থ হয়েছে");
+      toast.error(
+        e instanceof ApiError
+          ? `${e.message} — একই ব্যাচ আইডি (${batchId}) দিয়ে রিজিউম করতে পারেন।`
+          : "ইমপোর্ট ব্যর্থ হয়েছে",
+      );
     } finally {
       setSaving(false);
     }
@@ -488,6 +523,23 @@ export default function LegacyIrrigationImport() {
                 <div className="flex items-center gap-2">
                   <Checkbox id="dbdup" checked={skipDbDup} onCheckedChange={(v) => setSkipDbDup(!!v)} />
                   <Label htmlFor="dbdup" className="font-normal">ডাটাবেজে আগে থেকে থাকা রশিদ নম্বর স্কিপ করুন</Label>
+                </div>
+
+                <div className="space-y-2 border-t pt-3">
+                  <Label htmlFor="resume">থেমে যাওয়া ব্যাচ রিজিউম (ঐচ্ছিক — ব্যাচ আইডি দিন)</Label>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Input
+                      id="resume"
+                      value={resumeId}
+                      onChange={(e) => setResumeId(e.target.value)}
+                      placeholder="ব্যাচ আইডি (UUID)"
+                      className="max-w-xs font-mono text-xs"
+                    />
+                    <Button variant="outline" size="sm" onClick={checkResume} disabled={!resumeId.trim()}>
+                      স্টেটাস দেখুন
+                    </Button>
+                  </div>
+                  {resumeInfo && <p className="text-xs text-muted-foreground">{resumeInfo}</p>}
                 </div>
               </>
             )}
@@ -649,7 +701,11 @@ export default function LegacyIrrigationImport() {
               <TableHeader>
                 <TableRow>
                   <TableHead>ব্যাচ আইডি</TableHead>
-                  <TableHead>সারি সংখ্যা</TableHead>
+                  <TableHead>ফাইল</TableHead>
+                  <TableHead>ইমপোর্ট করেছেন</TableHead>
+                  <TableHead>সারি</TableHead>
+                  <TableHead>স্কিপ</TableHead>
+                  <TableHead>স্টেটাস</TableHead>
                   <TableHead>তারিখ</TableHead>
                   <TableHead className="text-right">অ্যাকশন</TableHead>
                 </TableRow>
@@ -658,7 +714,17 @@ export default function LegacyIrrigationImport() {
                 {batches.map((b) => (
                   <TableRow key={b.import_batch_id}>
                     <TableCell className="font-mono text-xs">{b.import_batch_id.slice(0, 8)}…</TableCell>
-                    <TableCell>{b.count}</TableCell>
+                    <TableCell className="max-w-40 truncate">{b.file_name ?? "—"}</TableCell>
+                    <TableCell>{b.user_name ?? "—"}</TableCell>
+                    <TableCell>{b.count}{b.total_rows ? ` / ${b.total_rows}` : ""}</TableCell>
+                    <TableCell>{b.skipped ?? "—"}</TableCell>
+                    <TableCell>
+                      {b.status === "completed"
+                        ? <Badge variant="default">সম্পন্ন</Badge>
+                        : b.status
+                          ? <Badge variant="outline">চলমান</Badge>
+                          : "—"}
+                    </TableCell>
                     <TableCell>{b.created_at?.slice(0, 19).replace("T", " ")}</TableCell>
                     <TableCell className="text-right">
                       <Button variant="ghost" size="sm" onClick={() => removeBatch(b.import_batch_id)}>
@@ -668,7 +734,7 @@ export default function LegacyIrrigationImport() {
                   </TableRow>
                 ))}
                 {batches.length === 0 && (
-                  <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground py-6">কোনো ব্যাচ নেই</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-6">কোনো ব্যাচ নেই</TableCell></TableRow>
                 )}
               </TableBody>
             </Table>
