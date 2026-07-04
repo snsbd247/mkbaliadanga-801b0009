@@ -339,12 +339,33 @@ export default function LegacyIrrigationImport() {
     XLSX.writeFile(wb, `legacy-irrigation-invalid-${new Date().toISOString().slice(0, 10)}.xlsx`);
   }
 
+  async function checkResume() {
+    const id = resumeId.trim();
+    setResumeInfo(null);
+    if (!id) return;
+    try {
+      const s = await LegacyIrrigationApi.batchStatus(id);
+      if (!s.exists) { setResumeInfo("এই ব্যাচ আইডি পাওয়া যায়নি — নতুন ব্যাচ হিসেবে চলবে।"); return; }
+      const a = s.audit;
+      setResumeInfo(
+        `স্টেটাস: ${a?.status ?? "—"} • এখন পর্যন্ত ইমপোর্ট: ${s.record_count}` +
+        (a?.total_rows ? ` / ${a.total_rows}` : "") +
+        `${a?.file_name ? ` • ফাইল: ${a.file_name}` : ""}`,
+      );
+      setSkipDbDup(true); // resume: skip already-inserted receipts
+      toast.info("রিজিউম মোড: আগে থেকে থাকা রশিদ স্কিপ করা হবে");
+    } catch (e) {
+      setResumeInfo(e instanceof ApiError ? e.message : "স্টেটাস আনা যায়নি");
+    }
+  }
+
   async function save() {
     if (!canImport) return;
     setSaving(true);
     setProgress(0);
     setReport(null);
-    const batchId = crypto.randomUUID();
+    // Resume an interrupted batch with the same id, else start a new one.
+    const batchId = resumeId.trim() || crypto.randomUUID();
     const payload = importableRows.map((p) => {
       const sy = p.row.season_year;
       const mapped = sy && seasonMap[sy] ? seasonMap[sy] : sy;
@@ -355,9 +376,13 @@ export default function LegacyIrrigationImport() {
     try {
       for (let i = 0; i < payload.length; i += CHUNK) {
         const chunk = payload.slice(i, i + CHUNK);
+        const isLast = i + CHUNK >= payload.length;
         const res = await LegacyIrrigationApi.import(chunk, {
           batch_id: batchId,
           skip_duplicate_receipts: skipDbDup,
+          file_name: fileName || undefined,
+          total_rows: payload.length,
+          final: isLast,
         });
         inserted += res.inserted;
         skippedDb.push(...res.skipped);
@@ -371,9 +396,15 @@ export default function LegacyIrrigationImport() {
       });
       toast.success(`${inserted} সারি ইমপোর্ট হয়েছে`);
       setParsed([]);
+      setResumeId("");
+      setResumeInfo(null);
       if (fileRef.current) fileRef.current.value = "";
     } catch (e) {
-      toast.error(e instanceof ApiError ? e.message : "ইমপোর্ট ব্যর্থ হয়েছে");
+      toast.error(
+        e instanceof ApiError
+          ? `${e.message} — একই ব্যাচ আইডি (${batchId}) দিয়ে রিজিউম করতে পারেন।`
+          : "ইমপোর্ট ব্যর্থ হয়েছে",
+      );
     } finally {
       setSaving(false);
     }
