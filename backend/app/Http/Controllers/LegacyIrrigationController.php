@@ -237,6 +237,11 @@ class LegacyIrrigationController extends Controller
             ->where('import_batch_id', $batchId)
             ->delete();
 
+        DB::table('legacy_import_audit')
+            ->when($scopeOffice, fn ($qq) => $qq->where('office_id', $scopeOffice))
+            ->where('import_batch_id', $batchId)
+            ->delete();
+
         return response()->json(['deleted' => $deleted]);
     }
 }
