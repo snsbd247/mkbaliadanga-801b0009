@@ -40,6 +40,40 @@ const COLUMNS = [
 const REQUIRED_HEADERS = ["FARMER_NAME", "SESSON_YEAR", "RECEIPT_NO", "PAID_AMOUNT"];
 const CHUNK = 300;
 
+/** Alias → canonical column. Keys normalized (uppercase, no spaces/underscores). */
+const HEADER_ALIASES: Record<string, string> = {
+  FARMERNAME: "FARMER_NAME", NAME: "FARMER_NAME", KRISHOKNAME: "FARMER_NAME",
+  FATHERNAME: "FATHER_NM", FATHERNM: "FATHER_NM", FATHER: "FATHER_NM",
+  VILLAGE: "VILLAGE", GRAM: "VILLAGE",
+  MOBILE: "MOBILE_NO", MOBILENO: "MOBILE_NO", PHONE: "MOBILE_NO", MOBILENUMBER: "MOBILE_NO",
+  MOUZA: "MOUZA_NAME", MOUZANAME: "MOUZA_NAME",
+  SEASON: "SESSON_YEAR", SEASONYEAR: "SESSON_YEAR", SESSONYEAR: "SESSON_YEAR", SESSION: "SESSON_YEAR", SESSIONYEAR: "SESSON_YEAR",
+  LAND: "LAND", LANDSHATAK: "LAND", SHATAK: "LAND", JOMI: "LAND",
+  DAG: "DAG_NO", DAGNO: "DAG_NO",
+  RATE: "RATE",
+  OWNERIDNM: "OWNER_ID_NM", OWNERIDNAME: "OWNER_ID_NM", OWNERNAME: "OWNER_ID_NM",
+  DUE: "DUE_AMOUNT", DUEAMOUNT: "DUE_AMOUNT", BAKEYA: "DUE_AMOUNT",
+  PAID: "PAID_AMOUNT", PAIDAMOUNT: "PAID_AMOUNT", AMOUNT: "PAID_AMOUNT",
+  OWNERTPNAME: "OWNER_TP_NAME", OWNERTYPE: "OWNER_TP_NAME", OWNERTYPENAME: "OWNER_TP_NAME",
+  OWNERFATHERNM: "OWNER_FATHER_NM", OWNERFATHERNAME: "OWNER_FATHER_NM",
+  OWNERVILLAGE: "OWNER_VILLAGE",
+  OWNERMOBILE: "OWNER_MOBILE_NO", OWNERMOBILENO: "OWNER_MOBILE_NO",
+  OWNERFID: "OWNER_FID",
+  RECEIPT: "RECEIPT_NO", RECEIPTNO: "RECEIPT_NO", RECEIPTNUMBER: "RECEIPT_NO", RASHID: "RECEIPT_NO",
+  COLLECTIONDATE: "COLLECTION_DATE", DATE: "COLLECTION_DATE", COLLECTDATE: "COLLECTION_DATE",
+};
+const normHeader = (h: string) => h.trim().toUpperCase().replace(/[\s_\-.]/g, "");
+/** Resolve an incoming header to a canonical column name (exact or alias). */
+function resolveHeader(h: string): string | null {
+  const canonicalSet = new Set(COLUMNS);
+  const up = h.trim().toUpperCase().replace(/[\s\-.]/g, "_").replace(/_+/g, "_");
+  if (canonicalSet.has(up)) return up;
+  const n = normHeader(h);
+  const byNorm = COLUMNS.find((c) => normHeader(c) === n);
+  if (byNorm) return byNorm;
+  return HEADER_ALIASES[n] ?? null;
+}
+
 /** "03-JUL-2025" | Date | Excel serial → "YYYY-MM-DD" | null */
 function parseDate(v: unknown): string | null {
   if (v == null || v === "") return null;
