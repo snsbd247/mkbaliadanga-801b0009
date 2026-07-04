@@ -40,6 +40,40 @@ const COLUMNS = [
 const REQUIRED_HEADERS = ["FARMER_NAME", "SESSON_YEAR", "RECEIPT_NO", "PAID_AMOUNT"];
 const CHUNK = 300;
 
+/** Alias → canonical column. Keys normalized (uppercase, no spaces/underscores). */
+const HEADER_ALIASES: Record<string, string> = {
+  FARMERNAME: "FARMER_NAME", NAME: "FARMER_NAME", KRISHOKNAME: "FARMER_NAME",
+  FATHERNAME: "FATHER_NM", FATHERNM: "FATHER_NM", FATHER: "FATHER_NM",
+  VILLAGE: "VILLAGE", GRAM: "VILLAGE",
+  MOBILE: "MOBILE_NO", MOBILENO: "MOBILE_NO", PHONE: "MOBILE_NO", MOBILENUMBER: "MOBILE_NO",
+  MOUZA: "MOUZA_NAME", MOUZANAME: "MOUZA_NAME",
+  SEASON: "SESSON_YEAR", SEASONYEAR: "SESSON_YEAR", SESSONYEAR: "SESSON_YEAR", SESSION: "SESSON_YEAR", SESSIONYEAR: "SESSON_YEAR",
+  LAND: "LAND", LANDSHATAK: "LAND", SHATAK: "LAND", JOMI: "LAND",
+  DAG: "DAG_NO", DAGNO: "DAG_NO",
+  RATE: "RATE",
+  OWNERIDNM: "OWNER_ID_NM", OWNERIDNAME: "OWNER_ID_NM", OWNERNAME: "OWNER_ID_NM",
+  DUE: "DUE_AMOUNT", DUEAMOUNT: "DUE_AMOUNT", BAKEYA: "DUE_AMOUNT",
+  PAID: "PAID_AMOUNT", PAIDAMOUNT: "PAID_AMOUNT", AMOUNT: "PAID_AMOUNT",
+  OWNERTPNAME: "OWNER_TP_NAME", OWNERTYPE: "OWNER_TP_NAME", OWNERTYPENAME: "OWNER_TP_NAME",
+  OWNERFATHERNM: "OWNER_FATHER_NM", OWNERFATHERNAME: "OWNER_FATHER_NM",
+  OWNERVILLAGE: "OWNER_VILLAGE",
+  OWNERMOBILE: "OWNER_MOBILE_NO", OWNERMOBILENO: "OWNER_MOBILE_NO",
+  OWNERFID: "OWNER_FID",
+  RECEIPT: "RECEIPT_NO", RECEIPTNO: "RECEIPT_NO", RECEIPTNUMBER: "RECEIPT_NO", RASHID: "RECEIPT_NO",
+  COLLECTIONDATE: "COLLECTION_DATE", DATE: "COLLECTION_DATE", COLLECTDATE: "COLLECTION_DATE",
+};
+const normHeader = (h: string) => h.trim().toUpperCase().replace(/[\s_\-.]/g, "");
+/** Resolve an incoming header to a canonical column name (exact or alias). */
+function resolveHeader(h: string): string | null {
+  const canonicalSet = new Set(COLUMNS);
+  const up = h.trim().toUpperCase().replace(/[\s\-.]/g, "_").replace(/_+/g, "_");
+  if (canonicalSet.has(up)) return up;
+  const n = normHeader(h);
+  const byNorm = COLUMNS.find((c) => normHeader(c) === n);
+  if (byNorm) return byNorm;
+  return HEADER_ALIASES[n] ?? null;
+}
+
 /** "03-JUL-2025" | Date | Excel serial → "YYYY-MM-DD" | null */
 function parseDate(v: unknown): string | null {
   if (v == null || v === "") return null;
@@ -122,6 +156,7 @@ export default function LegacyIrrigationImport() {
   const fileRef = useRef<HTMLInputElement>(null);
   const [parsed, setParsed] = useState<ParsedRow[]>([]);
   const [headerError, setHeaderError] = useState<string | null>(null);
+  const [headerWarnings, setHeaderWarnings] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
   const [progress, setProgress] = useState(0);
   const [dupMode, setDupMode] = useState<"skip" | "block">("skip");
@@ -181,6 +216,7 @@ export default function LegacyIrrigationImport() {
 
   async function onFile(file: File) {
     setHeaderError(null);
+    setHeaderWarnings([]);
     setParsed([]);
     setReport(null);
     setSeasonMap({});
@@ -207,14 +243,39 @@ export default function LegacyIrrigationImport() {
         const sheet = wb.Sheets[wb.SheetNames[0]];
         const json = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, { defval: "" });
         if (!json.length) { setHeaderError("ফাইলে কোনো সারি নেই।"); return; }
-        const headers = Object.keys(json[0]).map((h) => h.trim().toUpperCase());
-        const missing = REQUIRED_HEADERS.filter((h) => !headers.includes(h));
-        if (missing.length) { setHeaderError(`প্রয়োজনীয় কলাম নেই: ${missing.join(", ")}`); return; }
+
+        // ── Auto header mapping ──
+        const rawHeaders = Object.keys(json[0]);
+        const headerMap = new Map<string, string>(); // raw → canonical
+        const warnings: string[] = [];
+        const mappedCanonicals = new Set<string>();
+        for (const h of rawHeaders) {
+          const canonical = resolveHeader(h);
+          if (canonical) {
+            headerMap.set(h, canonical);
+            mappedCanonicals.add(canonical);
+            if (normHeader(h) !== normHeader(canonical)) {
+              warnings.push(`"${h}" কলামটি "${canonical}" হিসেবে ধরা হয়েছে`);
+            }
+          } else {
+            warnings.push(`"${h}" কলামটি চেনা যায়নি — উপেক্ষা করা হবে`);
+          }
+        }
+        const missing = REQUIRED_HEADERS.filter((h) => !mappedCanonicals.has(h));
+        if (missing.length) {
+          setHeaderError(`প্রয়োজনীয় কলাম নেই বা চেনা যায়নি: ${missing.join(", ")}`);
+          setHeaderWarnings(warnings);
+          return;
+        }
+        setHeaderWarnings(warnings);
 
         const seen = new Map<string, number>();
         const rows: ParsedRow[] = json.map((r, i) => {
           const up: Record<string, unknown> = {};
-          for (const k of Object.keys(r)) up[k.trim().toUpperCase()] = r[k];
+          for (const k of Object.keys(r)) {
+            const canonical = headerMap.get(k);
+            if (canonical) up[canonical] = r[k];
+          }
           const { row, errors } = mapRow(up);
           return { idx: i + 2, row, errors, dupInFile: false };
         });
@@ -243,6 +304,36 @@ export default function LegacyIrrigationImport() {
     : cleanRows;
   const blockedByDup = dupMode === "block" && dupRows.length > 0;
   const canImport = parsed.length > 0 && importableRows.length > 0 && unmatchedSeasons.length === 0 && !blockedByDup;
+
+  function downloadInvalid() {
+    const rows = parsed.filter((p) => p.errors.length > 0 || p.dupInFile);
+    if (!rows.length) return;
+    const data = rows.map((p) => {
+      const issues = [...p.errors];
+      if (p.dupInFile) issues.push("ফাইলের মধ্যে ডুপ্লিকেট রশিদ");
+      return {
+        সারি: p.idx,
+        সমস্যা: issues.join("; "),
+        FARMER_NAME: p.row.farmer_name ?? "",
+        FATHER_NM: p.row.father_name ?? "",
+        VILLAGE: p.row.village ?? "",
+        MOBILE_NO: p.row.mobile_no ?? "",
+        MOUZA_NAME: p.row.mouza_name ?? "",
+        SESSON_YEAR: p.row.season_year ?? "",
+        LAND: p.row.land_shatak ?? "",
+        DAG_NO: p.row.dag_no ?? "",
+        RATE: p.row.rate ?? "",
+        DUE_AMOUNT: p.row.due_amount ?? "",
+        PAID_AMOUNT: p.row.paid_amount ?? "",
+        RECEIPT_NO: p.row.receipt_no ?? "",
+        COLLECTION_DATE: p.row.collection_date ?? "",
+      };
+    });
+    const ws = XLSX.utils.json_to_sheet(data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Invalid");
+    XLSX.writeFile(wb, `legacy-irrigation-invalid-${new Date().toISOString().slice(0, 10)}.xlsx`);
+  }
 
   async function save() {
     if (!canImport) return;
@@ -352,13 +443,32 @@ export default function LegacyIrrigationImport() {
               </Alert>
             )}
 
+            {headerWarnings.length > 0 && (
+              <Alert>
+                <AlertTriangle className="h-4 w-4" />
+                <AlertTitle>কলাম ম্যাপিং সতর্কতা</AlertTitle>
+                <AlertDescription>
+                  <ul className="list-disc pl-4 space-y-0.5 text-xs">
+                    {headerWarnings.map((w, i) => <li key={i}>{w}</li>)}
+                  </ul>
+                </AlertDescription>
+              </Alert>
+            )}
+
             {parsed.length > 0 && (
               <>
-                <div className="flex flex-wrap items-center gap-2">
-                  <Badge variant="secondary">মোট: {parsed.length}</Badge>
-                  <Badge variant="default">সঠিক: {cleanRows.length}</Badge>
-                  {invalidRows.length > 0 && <Badge variant="destructive">সমস্যাযুক্ত: {invalidRows.length}</Badge>}
-                  {dupRows.length > 0 && <Badge variant="outline">ডুপ্লিকেট রশিদ: {dupRows.length}</Badge>}
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Badge variant="secondary">মোট: {parsed.length}</Badge>
+                    <Badge variant="default">সঠিক: {cleanRows.length}</Badge>
+                    {invalidRows.length > 0 && <Badge variant="destructive">সমস্যাযুক্ত: {invalidRows.length}</Badge>}
+                    {dupRows.length > 0 && <Badge variant="outline">ডুপ্লিকেট রশিদ: {dupRows.length}</Badge>}
+                  </div>
+                  {(invalidRows.length > 0 || dupRows.length > 0) && (
+                    <Button variant="outline" size="sm" onClick={downloadInvalid}>
+                      <Download className="h-4 w-4 mr-2" /> সমস্যাযুক্ত রো রিপোর্ট
+                    </Button>
+                  )}
                 </div>
 
                 <div className="space-y-2">
