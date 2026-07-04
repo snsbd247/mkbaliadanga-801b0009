@@ -161,6 +161,9 @@ export default function LegacyIrrigationImport() {
   const [progress, setProgress] = useState(0);
   const [dupMode, setDupMode] = useState<"skip" | "block">("skip");
   const [skipDbDup, setSkipDbDup] = useState(true);
+  const [fileName, setFileName] = useState("");
+  const [resumeId, setResumeId] = useState("");
+  const [resumeInfo, setResumeInfo] = useState<string | null>(null);
   const [report, setReport] = useState<{ inserted: number; skippedFile: number; skippedDb: string[]; batchId: string } | null>(null);
 
   // season mapping
