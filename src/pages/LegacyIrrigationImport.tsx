@@ -443,7 +443,17 @@ export default function LegacyIrrigationImport() {
               </Alert>
             )}
 
-            {parsed.length > 0 && (
+            {headerWarnings.length > 0 && (
+              <Alert>
+                <AlertTriangle className="h-4 w-4" />
+                <AlertTitle>কলাম ম্যাপিং সতর্কতা</AlertTitle>
+                <AlertDescription>
+                  <ul className="list-disc pl-4 space-y-0.5 text-xs">
+                    {headerWarnings.map((w, i) => <li key={i}>{w}</li>)}
+                  </ul>
+                </AlertDescription>
+              </Alert>
+            )}
               <>
                 <div className="flex flex-wrap items-center gap-2">
                   <Badge variant="secondary">মোট: {parsed.length}</Badge>
