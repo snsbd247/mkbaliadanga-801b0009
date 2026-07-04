@@ -33,6 +33,28 @@ export type LegacyBatch = {
   import_batch_id: string;
   count: number;
   created_at: string;
+  file_name?: string | null;
+  user_name?: string | null;
+  total_rows?: number | null;
+  skipped?: number | null;
+  blocked?: number | null;
+  status?: string | null;
+};
+
+export type LegacyBatchStatus = {
+  exists: boolean;
+  record_count: number;
+  audit: {
+    import_batch_id: string;
+    file_name: string | null;
+    user_name: string | null;
+    total_rows: number;
+    inserted: number;
+    skipped: number;
+    status: string;
+    created_at: string;
+    updated_at: string;
+  } | null;
 };
 
 export type ImportResult = {
@@ -46,9 +68,17 @@ export const LegacyIrrigationApi = {
   list: (params: { farmer_code?: string; season?: string; batch?: string }) =>
     api.get<LegacyIrrigationRecord[]>("/legacy-irrigation", { params }).then((r) => r.data),
   batches: () => api.get<LegacyBatch[]>("/legacy-irrigation/batches").then((r) => r.data),
+  batchStatus: (batchId: string) =>
+    api.get<LegacyBatchStatus>(`/legacy-irrigation/batch/${batchId}/status`).then((r) => r.data),
   import: (
     rows: LegacyIrrigationRow[],
-    opts?: { batch_id?: string; skip_duplicate_receipts?: boolean },
+    opts?: {
+      batch_id?: string;
+      skip_duplicate_receipts?: boolean;
+      file_name?: string;
+      total_rows?: number;
+      final?: boolean;
+    },
   ) =>
     api
       .post<ImportResult>("/legacy-irrigation/import", { rows, ...opts })
