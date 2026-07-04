@@ -9,6 +9,7 @@ use App\Http\Controllers\FarmerAuthController;
 use App\Http\Controllers\FarmerController;
 use App\Http\Controllers\GeoController;
 use App\Http\Controllers\IrrigationInvoiceController;
+use App\Http\Controllers\LegacyIrrigationController;
 use App\Http\Controllers\IrrigationRateController;
 use App\Http\Controllers\JournalController;
 use App\Http\Controllers\LandController;
@@ -113,6 +114,12 @@ Route::middleware(['auth:sanctum', 'branch.scope'])->group(function () {
     Route::post('/seasons', [SeasonController::class, 'store'])->middleware('permission:irrigation.manage');
     Route::put('/seasons/{season}', [SeasonController::class, 'update'])->middleware('permission:irrigation.manage');
     Route::post('/seasons/{season}/activate', [SeasonController::class, 'activate'])->middleware('permission:irrigation.manage');
+
+    // Legacy irrigation history (isolated import + lookup)
+    Route::get('/legacy-irrigation', [LegacyIrrigationController::class, 'index'])->middleware('permission:irrigation.view');
+    Route::get('/legacy-irrigation/batches', [LegacyIrrigationController::class, 'batches'])->middleware('permission:irrigation.view');
+    Route::post('/legacy-irrigation/import', [LegacyIrrigationController::class, 'import'])->middleware('permission:irrigation.manage');
+    Route::delete('/legacy-irrigation/batch/{batchId}', [LegacyIrrigationController::class, 'destroyBatch'])->middleware('permission:irrigation.manage');
 
     // Irrigation rates
     Route::get('/irrigation-rates', [IrrigationRateController::class, 'index'])->middleware('permission:irrigation.view');
