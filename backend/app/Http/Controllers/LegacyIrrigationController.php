@@ -36,6 +36,8 @@ class LegacyIrrigationController extends Controller
     public function import(Request $request): JsonResponse
     {
         $data = $request->validate([
+            'batch_id' => ['nullable', 'uuid'],
+            'skip_duplicate_receipts' => ['sometimes', 'boolean'],
             'rows' => ['required', 'array', 'min:1'],
             'rows.*.legacy_farmer_code' => ['nullable', 'string', 'max:64'],
             'rows.*.farmer_name' => ['nullable', 'string', 'max:255'],
@@ -60,8 +62,35 @@ class LegacyIrrigationController extends Controller
         ]);
 
         $officeId = $request->attributes->get('scope_office_id') ?? $request->user()->office_id;
-        $batchId = (string) Str::uuid();
+        // Reuse a supplied batch id so chunked uploads land in one batch.
+        $batchId = $data['batch_id'] ?? (string) Str::uuid();
+        $skipDup = (bool) ($data['skip_duplicate_receipts'] ?? false);
         $now = now();
+
+        $inputRows = $data['rows'];
+        $skipped = [];
+
+        if ($skipDup) {
+            $receiptNos = array_values(array_filter(array_map(fn ($r) => $r['receipt_no'] ?? null, $inputRows)));
+            $existing = [];
+            if ($receiptNos) {
+                $existing = LegacyIrrigationRecord::query()
+                    ->when($officeId, fn ($qq) => $qq->where('office_id', $officeId))
+                    ->whereIn('receipt_no', $receiptNos)
+                    ->pluck('receipt_no')
+                    ->all();
+            }
+            $existingSet = array_flip($existing);
+            $inputRows = array_values(array_filter($inputRows, function ($r) use ($existingSet, &$skipped) {
+                $rn = $r['receipt_no'] ?? null;
+                if ($rn !== null && isset($existingSet[$rn])) {
+                    $skipped[] = $rn;
+                    return false;
+                }
+                return true;
+            }));
+        }
+
 
         $records = array_map(function (array $r) use ($officeId, $batchId, $now) {
             return [
