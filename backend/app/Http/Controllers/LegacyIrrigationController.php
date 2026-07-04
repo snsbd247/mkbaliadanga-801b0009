@@ -120,19 +120,24 @@ class LegacyIrrigationController extends Controller
                 'created_at' => $now,
                 'updated_at' => $now,
             ];
-        }, $data['rows']);
+        }, $inputRows);
 
-        DB::transaction(function () use ($records) {
-            foreach (array_chunk($records, 500) as $chunk) {
-                DB::table('legacy_irrigation_records')->insert($chunk);
-            }
-        });
+        if ($records) {
+            DB::transaction(function () use ($records) {
+                foreach (array_chunk($records, 500) as $chunk) {
+                    DB::table('legacy_irrigation_records')->insert($chunk);
+                }
+            });
+        }
 
         return response()->json([
             'batch_id' => $batchId,
             'inserted' => count($records),
+            'skipped' => $skipped,
+            'skipped_count' => count($skipped),
         ], 201);
     }
+
 
     /** List import batches with counts (for review / rollback). */
     public function batches(Request $request): JsonResponse
