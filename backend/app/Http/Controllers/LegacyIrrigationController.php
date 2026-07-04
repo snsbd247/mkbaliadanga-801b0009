@@ -38,6 +38,9 @@ class LegacyIrrigationController extends Controller
         $data = $request->validate([
             'batch_id' => ['nullable', 'uuid'],
             'skip_duplicate_receipts' => ['sometimes', 'boolean'],
+            'file_name' => ['nullable', 'string', 'max:255'],
+            'total_rows' => ['nullable', 'integer', 'min:0'],
+            'final' => ['sometimes', 'boolean'],
             'rows' => ['required', 'array', 'min:1'],
             'rows.*.legacy_farmer_code' => ['nullable', 'string', 'max:64'],
             'rows.*.farmer_name' => ['nullable', 'string', 'max:255'],
