@@ -35,12 +35,25 @@ export type LegacyBatch = {
   created_at: string;
 };
 
+export type ImportResult = {
+  batch_id: string;
+  inserted: number;
+  skipped: string[];
+  skipped_count: number;
+};
+
 export const LegacyIrrigationApi = {
   list: (params: { farmer_code?: string; season?: string; batch?: string }) =>
     api.get<LegacyIrrigationRecord[]>("/legacy-irrigation", { params }).then((r) => r.data),
   batches: () => api.get<LegacyBatch[]>("/legacy-irrigation/batches").then((r) => r.data),
-  import: (rows: LegacyIrrigationRow[]) =>
-    api.post<{ batch_id: string; inserted: number }>("/legacy-irrigation/import", { rows }).then((r) => r.data),
+  import: (
+    rows: LegacyIrrigationRow[],
+    opts?: { batch_id?: string; skip_duplicate_receipts?: boolean },
+  ) =>
+    api
+      .post<ImportResult>("/legacy-irrigation/import", { rows, ...opts })
+      .then((r) => r.data),
   deleteBatch: (batchId: string) =>
     api.delete<{ deleted: number }>(`/legacy-irrigation/batch/${batchId}`).then((r) => r.data),
 };
+
