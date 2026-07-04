@@ -1,0 +1,137 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\LegacyIrrigationRecord;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
+
+/**
+ * Legacy irrigation collection history import & lookup.
+ *
+ * Completely isolated from the live modules — writes only to the
+ * `legacy_irrigation_records` table. Rows are searched by farmer code.
+ */
+class LegacyIrrigationController extends Controller
+{
+    /** List / search records. Filter by ?farmer_code=, ?season=, ?batch=. */
+    public function index(Request $request): JsonResponse
+    {
+        $scopeOffice = $request->attributes->get('scope_office_id');
+
+        $q = LegacyIrrigationRecord::query()
+            ->when($scopeOffice, fn ($qq) => $qq->where('office_id', $scopeOffice))
+            ->when($request->query('farmer_code'), fn ($qq, $c) => $qq->where('legacy_farmer_code', trim((string) $c)))
+            ->when($request->query('season'), fn ($qq, $s) => $qq->where('season_year', $s))
+            ->when($request->query('batch'), fn ($qq, $b) => $qq->where('import_batch_id', $b))
+            ->orderByDesc('collection_date')
+            ->orderBy('receipt_no');
+
+        return response()->json($q->limit(2000)->get());
+    }
+
+    /** Bulk import rows for one uploaded file (one batch). */
+    public function import(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'rows' => ['required', 'array', 'min:1'],
+            'rows.*.legacy_farmer_code' => ['nullable', 'string', 'max:64'],
+            'rows.*.farmer_name' => ['nullable', 'string', 'max:255'],
+            'rows.*.father_name' => ['nullable', 'string', 'max:255'],
+            'rows.*.village' => ['nullable', 'string', 'max:255'],
+            'rows.*.mobile_no' => ['nullable', 'string', 'max:64'],
+            'rows.*.mouza_name' => ['nullable', 'string', 'max:255'],
+            'rows.*.season_year' => ['nullable', 'string', 'max:64'],
+            'rows.*.land_shatak' => ['nullable', 'numeric'],
+            'rows.*.dag_no' => ['nullable', 'string', 'max:255'],
+            'rows.*.rate' => ['nullable', 'numeric'],
+            'rows.*.owner_id_name' => ['nullable', 'string', 'max:255'],
+            'rows.*.due_amount' => ['nullable', 'numeric'],
+            'rows.*.paid_amount' => ['nullable', 'numeric'],
+            'rows.*.owner_type_name' => ['nullable', 'string', 'max:255'],
+            'rows.*.owner_father_name' => ['nullable', 'string', 'max:255'],
+            'rows.*.owner_village' => ['nullable', 'string', 'max:255'],
+            'rows.*.owner_mobile_no' => ['nullable', 'string', 'max:64'],
+            'rows.*.owner_fid' => ['nullable', 'string', 'max:64'],
+            'rows.*.receipt_no' => ['nullable', 'string', 'max:64'],
+            'rows.*.collection_date' => ['nullable', 'date'],
+        ]);
+
+        $officeId = $request->attributes->get('scope_office_id') ?? $request->user()->office_id;
+        $batchId = (string) Str::uuid();
+        $now = now();
+
+        $records = array_map(function (array $r) use ($officeId, $batchId, $now) {
+            return [
+                'id' => (string) Str::uuid(),
+                'office_id' => $officeId,
+                'import_batch_id' => $batchId,
+                'legacy_farmer_code' => $r['legacy_farmer_code'] ?? null,
+                'farmer_name' => $r['farmer_name'] ?? null,
+                'father_name' => $r['father_name'] ?? null,
+                'village' => $r['village'] ?? null,
+                'mobile_no' => $r['mobile_no'] ?? null,
+                'mouza_name' => $r['mouza_name'] ?? null,
+                'season_year' => $r['season_year'] ?? null,
+                'land_shatak' => $r['land_shatak'] ?? null,
+                'dag_no' => $r['dag_no'] ?? null,
+                'rate' => $r['rate'] ?? null,
+                'owner_id_name' => $r['owner_id_name'] ?? null,
+                'due_amount' => $r['due_amount'] ?? null,
+                'paid_amount' => $r['paid_amount'] ?? null,
+                'owner_type_name' => $r['owner_type_name'] ?? null,
+                'owner_father_name' => $r['owner_father_name'] ?? null,
+                'owner_village' => $r['owner_village'] ?? null,
+                'owner_mobile_no' => $r['owner_mobile_no'] ?? null,
+                'owner_fid' => $r['owner_fid'] ?? null,
+                'receipt_no' => $r['receipt_no'] ?? null,
+                'collection_date' => $r['collection_date'] ?? null,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ];
+        }, $data['rows']);
+
+        DB::transaction(function () use ($records) {
+            foreach (array_chunk($records, 500) as $chunk) {
+                DB::table('legacy_irrigation_records')->insert($chunk);
+            }
+        });
+
+        return response()->json([
+            'batch_id' => $batchId,
+            'inserted' => count($records),
+        ], 201);
+    }
+
+    /** List import batches with counts (for review / rollback). */
+    public function batches(Request $request): JsonResponse
+    {
+        $scopeOffice = $request->attributes->get('scope_office_id');
+
+        $rows = LegacyIrrigationRecord::query()
+            ->when($scopeOffice, fn ($qq) => $qq->where('office_id', $scopeOffice))
+            ->select('import_batch_id')
+            ->selectRaw('COUNT(*) as count')
+            ->selectRaw('MIN(created_at) as created_at')
+            ->groupBy('import_batch_id')
+            ->orderByDesc('created_at')
+            ->get();
+
+        return response()->json($rows);
+    }
+
+    /** Delete a whole import batch (rollback a bad import). */
+    public function destroyBatch(Request $request, string $batchId): JsonResponse
+    {
+        $scopeOffice = $request->attributes->get('scope_office_id');
+
+        $deleted = LegacyIrrigationRecord::query()
+            ->when($scopeOffice, fn ($qq) => $qq->where('office_id', $scopeOffice))
+            ->where('import_batch_id', $batchId)
+            ->delete();
+
+        return response()->json(['deleted' => $deleted]);
+    }
+}
