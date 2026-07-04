@@ -9,6 +9,7 @@ use App\Http\Controllers\FarmerAuthController;
 use App\Http\Controllers\FarmerController;
 use App\Http\Controllers\GeoController;
 use App\Http\Controllers\IrrigationInvoiceController;
+use App\Http\Controllers\LegacyIrrigationController;
 use App\Http\Controllers\IrrigationRateController;
 use App\Http\Controllers\JournalController;
 use App\Http\Controllers\LandController;
