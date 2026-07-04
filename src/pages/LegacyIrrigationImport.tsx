@@ -454,12 +454,21 @@ export default function LegacyIrrigationImport() {
                 </AlertDescription>
               </Alert>
             )}
+
+            {parsed.length > 0 && (
               <>
-                <div className="flex flex-wrap items-center gap-2">
-                  <Badge variant="secondary">মোট: {parsed.length}</Badge>
-                  <Badge variant="default">সঠিক: {cleanRows.length}</Badge>
-                  {invalidRows.length > 0 && <Badge variant="destructive">সমস্যাযুক্ত: {invalidRows.length}</Badge>}
-                  {dupRows.length > 0 && <Badge variant="outline">ডুপ্লিকেট রশিদ: {dupRows.length}</Badge>}
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Badge variant="secondary">মোট: {parsed.length}</Badge>
+                    <Badge variant="default">সঠিক: {cleanRows.length}</Badge>
+                    {invalidRows.length > 0 && <Badge variant="destructive">সমস্যাযুক্ত: {invalidRows.length}</Badge>}
+                    {dupRows.length > 0 && <Badge variant="outline">ডুপ্লিকেট রশিদ: {dupRows.length}</Badge>}
+                  </div>
+                  {(invalidRows.length > 0 || dupRows.length > 0) && (
+                    <Button variant="outline" size="sm" onClick={downloadInvalid}>
+                      <Download className="h-4 w-4 mr-2" /> সমস্যাযুক্ত রো রিপোর্ট
+                    </Button>
+                  )}
                 </div>
 
                 <div className="space-y-2">
