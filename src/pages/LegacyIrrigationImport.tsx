@@ -156,6 +156,7 @@ export default function LegacyIrrigationImport() {
   const fileRef = useRef<HTMLInputElement>(null);
   const [parsed, setParsed] = useState<ParsedRow[]>([]);
   const [headerError, setHeaderError] = useState<string | null>(null);
+  const [headerWarnings, setHeaderWarnings] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
   const [progress, setProgress] = useState(0);
   const [dupMode, setDupMode] = useState<"skip" | "block">("skip");
