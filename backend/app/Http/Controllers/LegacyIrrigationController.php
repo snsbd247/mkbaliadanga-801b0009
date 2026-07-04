@@ -133,12 +133,64 @@ class LegacyIrrigationController extends Controller
             });
         }
 
+        // ── Audit log: one row per batch, counts accumulate across chunks ──
+        $user = $request->user();
+        $isFinal = (bool) ($data['final'] ?? false);
+        $existingAudit = DB::table('legacy_import_audit')->where('import_batch_id', $batchId)->first();
+        if ($existingAudit) {
+            DB::table('legacy_import_audit')->where('import_batch_id', $batchId)->update([
+                'total_rows' => max((int) $existingAudit->total_rows, (int) ($data['total_rows'] ?? 0)),
+                'inserted' => (int) $existingAudit->inserted + count($records),
+                'skipped' => (int) $existingAudit->skipped + count($skipped),
+                'status' => $isFinal ? 'completed' : 'in_progress',
+                'updated_at' => $now,
+            ]);
+        } else {
+            DB::table('legacy_import_audit')->insert([
+                'id' => (string) Str::uuid(),
+                'import_batch_id' => $batchId,
+                'office_id' => $officeId,
+                'user_id' => $user?->id,
+                'user_name' => $user?->name,
+                'file_name' => $data['file_name'] ?? null,
+                'total_rows' => (int) ($data['total_rows'] ?? count($records)),
+                'inserted' => count($records),
+                'skipped' => count($skipped),
+                'blocked' => 0,
+                'status' => $isFinal ? 'completed' : 'in_progress',
+                'created_at' => $now,
+                'updated_at' => $now,
+            ]);
+        }
+
         return response()->json([
             'batch_id' => $batchId,
             'inserted' => count($records),
             'skipped' => $skipped,
             'skipped_count' => count($skipped),
         ], 201);
+    }
+
+    /** Current status of a batch (for resume + progress display). */
+    public function batchStatus(Request $request, string $batchId): JsonResponse
+    {
+        $scopeOffice = $request->attributes->get('scope_office_id');
+
+        $audit = DB::table('legacy_import_audit')
+            ->when($scopeOffice, fn ($qq) => $qq->where('office_id', $scopeOffice))
+            ->where('import_batch_id', $batchId)
+            ->first();
+
+        $recordCount = LegacyIrrigationRecord::query()
+            ->when($scopeOffice, fn ($qq) => $qq->where('office_id', $scopeOffice))
+            ->where('import_batch_id', $batchId)
+            ->count();
+
+        return response()->json([
+            'exists' => $audit !== null || $recordCount > 0,
+            'audit' => $audit,
+            'record_count' => $recordCount,
+        ]);
     }
 
 
