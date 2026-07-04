@@ -223,6 +223,7 @@ export default function LegacyIrrigationImport() {
     setParsed([]);
     setReport(null);
     setSeasonMap({});
+    setFileName(file.name);
     // load seasons for matching (best-effort)
     try {
       const seasons = await SeasonsApi.list();
