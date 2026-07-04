@@ -250,6 +250,7 @@ export function AppSidebar() {
         { url: "/irrigation/invoices/import", icon: Upload, label: lang === "bn" ? "সেচ ইনভয়েস ইমপোর্ট" : "Irrigation Invoice Import", permKey: "irrigation" },
         { url: "/payments/import", icon: Upload, label: lang === "bn" ? "পেমেন্ট ইমপোর্ট" : "Payment Import", permKey: "payments" },
         { url: "/irrigation/opening-due/import", icon: Upload, label: lang === "bn" ? "ওপেনিং বকেয়া ইমপোর্ট" : "Opening Due Import", permKey: "irrigation" },
+        { url: "/irrigation/legacy-import", icon: Upload, label: lang === "bn" ? "পুরনো সেচ ডাটা ইমপোর্ট" : "Legacy Irrigation Import", permKey: "irrigation" },
         { url: "/admin/import-audit", icon: ScrollText, label: lang === "bn" ? "ইমপোর্ট অডিট লগ" : "Import Audit Logs", adminOnly: true },
 
         
