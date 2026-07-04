@@ -701,7 +701,11 @@ export default function LegacyIrrigationImport() {
               <TableHeader>
                 <TableRow>
                   <TableHead>ব্যাচ আইডি</TableHead>
-                  <TableHead>সারি সংখ্যা</TableHead>
+                  <TableHead>ফাইল</TableHead>
+                  <TableHead>ইমপোর্ট করেছেন</TableHead>
+                  <TableHead>সারি</TableHead>
+                  <TableHead>স্কিপ</TableHead>
+                  <TableHead>স্টেটাস</TableHead>
                   <TableHead>তারিখ</TableHead>
                   <TableHead className="text-right">অ্যাকশন</TableHead>
                 </TableRow>
@@ -710,7 +714,17 @@ export default function LegacyIrrigationImport() {
                 {batches.map((b) => (
                   <TableRow key={b.import_batch_id}>
                     <TableCell className="font-mono text-xs">{b.import_batch_id.slice(0, 8)}…</TableCell>
-                    <TableCell>{b.count}</TableCell>
+                    <TableCell className="max-w-40 truncate">{b.file_name ?? "—"}</TableCell>
+                    <TableCell>{b.user_name ?? "—"}</TableCell>
+                    <TableCell>{b.count}{b.total_rows ? ` / ${b.total_rows}` : ""}</TableCell>
+                    <TableCell>{b.skipped ?? "—"}</TableCell>
+                    <TableCell>
+                      {b.status === "completed"
+                        ? <Badge variant="default">সম্পন্ন</Badge>
+                        : b.status
+                          ? <Badge variant="outline">চলমান</Badge>
+                          : "—"}
+                    </TableCell>
                     <TableCell>{b.created_at?.slice(0, 19).replace("T", " ")}</TableCell>
                     <TableCell className="text-right">
                       <Button variant="ghost" size="sm" onClick={() => removeBatch(b.import_batch_id)}>
@@ -720,7 +734,7 @@ export default function LegacyIrrigationImport() {
                   </TableRow>
                 ))}
                 {batches.length === 0 && (
-                  <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground py-6">কোনো ব্যাচ নেই</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-6">কোনো ব্যাচ নেই</TableCell></TableRow>
                 )}
               </TableBody>
             </Table>
