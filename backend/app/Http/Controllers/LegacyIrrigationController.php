@@ -208,6 +208,22 @@ class LegacyIrrigationController extends Controller
             ->orderByDesc('created_at')
             ->get();
 
+        $audits = DB::table('legacy_import_audit')
+            ->when($scopeOffice, fn ($qq) => $qq->where('office_id', $scopeOffice))
+            ->get()
+            ->keyBy('import_batch_id');
+
+        $rows = $rows->map(function ($r) use ($audits) {
+            $a = $audits->get($r->import_batch_id);
+            $r->file_name = $a->file_name ?? null;
+            $r->user_name = $a->user_name ?? null;
+            $r->total_rows = $a->total_rows ?? null;
+            $r->skipped = $a->skipped ?? null;
+            $r->blocked = $a->blocked ?? null;
+            $r->status = $a->status ?? null;
+            return $r;
+        });
+
         return response()->json($rows);
     }
 
