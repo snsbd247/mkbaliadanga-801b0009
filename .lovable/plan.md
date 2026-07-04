@@ -1,47 +1,75 @@
-# প্ল্যান: বর্গা জমির ট্যাব ও ইনভয়েস সঠিকভাবে ঠিক করা
+## লক্ষ্য
 
-## দুইটি সমস্যা
+আগের সফটওয়্যারের সেচ কালেকশন হিস্ট্রি (`irrigation_summary_report_excel`) একদম **আলাদা, স্বয়ংসম্পূর্ণ (self-contained) টেবিলে** ইমপোর্ট করা হবে। এটি বর্তমান কোনো মডিউল (farmers, lands, irrigation_invoices ইত্যাদি) এর সাথে যুক্ত হবে না — কোনো foreign key নেই, কোনো লজিক শেয়ার নেই। শুধু **ফার্মার কোড** (নামের ভেতরের `(2473)`) দিয়ে সেই কৃষকের পুরনো রেকর্ড খুঁজে দেখা যাবে।
 
-### সমস্যা ১ — ট্যাব ডিসপ্লে
-"জমি" (Lands) ট্যাবে মালিকের সব জমি পুরো সাইজে দেখায় — এমনকি পুরোপুরি বর্গা দেওয়া জমিও। ফলে একই জমি "নিজের জমি" আর "জমি" দুই ট্যাবেই আসে।
+এভাবে কোনো বিদ্যমান মডিউলে সমস্যা হওয়ার ঝুঁকি একদম শূন্য।
 
-**যা হওয়া উচিত:**
-- **নিজের জমি (Own Lands) ট্যাব:** মালিকের সব জমি (বর্গা দেওয়া সহ) — অপরিবর্তিত।
-- **জমি (Lands) ট্যাব:** শুধু কৃষক যা নিজে চাষ করে — নিজের জমির অবশিষ্ট (বর্গা না দেওয়া) অংশ + যে জমি সে বর্গা নিয়েছে। পুরোপুরি বর্গা দেওয়া জমি এখানে আসবে না।
+## নতুন যা যা তৈরি হবে
 
-### সমস্যা ২ (মূল বাগ) — বর্গা জমির ইনভয়েস মালিকের আইডিতে চলে যায়
-ইনভয়েস স্প্লিট (`get_land_billing_split`) `land_relations` টেবিলকে সত্যের উৎস ধরে — বর্গা রিলেশন থাকলে মালিকের বিল কমে/বাদ যায়। কিন্তু **Add Land ডায়ালগে "বর্গাদার" জমি যোগ করলে শুধু একটা আলাদা `lands` সারি তৈরি হয়, মালিকের জমিতে কোনো `land_relations` রেকর্ড তৈরি হয় না।**
-
-ফলে মালিকের মূল জমিতে কোনো বর্গা রিলেশন নেই → স্প্লিট মালিককে **পুরো** জমির জন্য বিল করে, আবার বর্গাদারের আলাদা সারিও বিল হয় → double billing + মালিক (যে চাষই করছে না) ইনভয়েস পায়।
+### ১. নতুন MySQL টেবিল (একটাই, আলাদা)
+`legacy_irrigation_records` — Excel এর প্রতিটি সারি ঠিক যেমন আছে তেমন করে রাখা হবে:
 
 ```text
-এখন:  মালিকের জমি (relation নেই) → মালিক পুরো বিল  ✗
-      বর্গাদারের আলাদা সারি      → বর্গাদার বিল
-ঠিক হলে: মালিকের জমি + land_relations(বর্গাদার, area)
-      → স্প্লিট: বর্গাদার = বর্গা area, মালিক = অবশিষ্ট (০ হলে বাদ) ✓
+id (uuid)              legacy_farmer_code   farmer_name
+father_name            village              mobile_no
+mouza_name             season_year          land_shatak
+dag_no                 rate                 owner_id_name
+due_amount             paid_amount          owner_type_name
+owner_father_name      owner_village        owner_mobile_no
+owner_fid              receipt_no           collection_date
+import_batch_id        created_at / updated_at
+```
+- `legacy_farmer_code` কলামে ইনডেক্স — দ্রুত সার্চের জন্য।
+- `import_batch_id` — কোন ফাইল থেকে এসেছে বোঝার জন্য (ভুল হলে পুরো ব্যাচ মুছে ফেলা যাবে)।
+- কোনো FK নেই → বিদ্যমান টেবিলে কোনো প্রভাব নেই।
+
+### ২. Laravel ব্যাকএন্ড
+- **Migration:** উপরের টেবিল তৈরি।
+- **Model:** `LegacyIrrigationRecord`।
+- **Controller + Routes:**
+  - `POST /legacy-irrigation/import` — সারিগুলো bulk insert (batch সহ)।
+  - `GET /legacy-irrigation?farmer_code=2473` — কোড দিয়ে রেকর্ড দেখা।
+  - `DELETE /legacy-irrigation/batch/{id}` — ভুল ইমপোর্ট রোলব্যাক।
+- অন্য কোনো Laravel ফাইল/মডেল ছোঁয়া হবে না।
+
+### ৩. নতুন ফ্রন্টএন্ড পেজ
+- নতুন রুট: `/legacy-import` (নতুন `LegacyIrrigationImport.tsx`)।
+- ফাইল আপলোড → নামের ভেতর থেকে কোড অটো-বের করা → **প্রিভিউ টেবিল + ভ্যালিডেশন** (কত সারি, কোন সারিতে সমস্যা) → নিশ্চিত করলে সেভ।
+- নতুন ভিউ পেজ: ফার্মার কোড লিখে সেই কৃষকের পুরনো সেচ রেকর্ড দেখা।
+- বিদ্যমান ইমপোর্ট পেজগুলো (FarmersImport, IrrigationInvoiceImport ইত্যাদি) অপরিবর্তিত থাকবে।
+
+## কলাম ম্যাপিং
+
+```text
+Excel কলাম        →  টেবিল কলাম
+FARMER_NAME       →  farmer_name (+ কোড আলাদা করে legacy_farmer_code)
+FATHER_NM         →  father_name
+VILLAGE           →  village
+MOBILE_NO         →  mobile_no
+MOUZA_NAME        →  mouza_name
+SESSON_YEAR       →  season_year        (যেমন "আমন-2025")
+LAND              →  land_shatak
+DAG_NO            →  dag_no
+RATE              →  rate
+OWNER_ID_NM       →  owner_id_name
+DUE_AMOUNT        →  due_amount
+PAID_AMOUNT       →  paid_amount
+OWNER_TP_NAME     →  owner_type_name    (মালিক / বর্গাদার - নাম)
+OWNER_FATHER_NM   →  owner_father_name
+OWNER_VILLAGE     →  owner_village
+OWNER_MOBILE_NO   →  owner_mobile_no
+OWNER_FID         →  owner_fid
+RECEIPT_NO        →  receipt_no
+COLLECTION_DATE   →  collection_date    (03-JUL-2025 → date)
 ```
 
-## পরিবর্তন
+১,৯৫২ সারি এভাবেই বসে যাবে, কোনো তথ্য হারাবে না।
 
-### ১. বর্গাদার জমি যোগ/সম্পাদনা — single source of truth: `land_relations`
-`src/pages/FarmerDetail.tsx` এর `saveLand` (ও edit) এ, `owner_type === "borgadar"` হলে:
-- আলাদা owner-billed `lands` সারি না বানিয়ে (বা বানালেও), মালিকের নির্বাচিত জমির `land_id` এর বিপরীতে একটি `land_relations` রেকর্ড তৈরি হবে: `sharecropper_farmer_id = এই কৃষক`, `area_decimal = বর্গা পরিমাণ`, `valid_from = আজ`, `valid_to = null`।
-- ডায়ালগে বর্গাদার ইতিমধ্যে মালিকের দাগ থেকে জমি select করে (`ownerLands`), তাই `land_id` জানা আছে।
-- এতে মালিকের billable area স্বয়ংক্রিয়ভাবে কমবে; পুরো বর্গা দিলে মালিক আর ইনভয়েস পাবে না।
+## গুরুত্বপূর্ণ নিশ্চয়তা
+- বিদ্যমান কোনো টেবিল/মডিউল পরিবর্তন হবে না — সব একদম আলাদা।
+- ভুল হলে পুরো ব্যাচ এক ক্লিকে মুছে আবার করা যাবে।
+- অফিস অনুযায়ী স্কোপ রাখা হবে (আপনার লগইন অফিসেই সীমাবদ্ধ)।
 
-### ২. "জমি" (Lands) ট্যাব রেন্ডার (শুধু ডিসপ্লে)
-`src/pages/FarmerDetail.tsx`:
-- মালিকানার সারির জন্য `borgaGivenMap` দিয়ে `selfArea = land_size − বর্গা দেওয়া` হিসাব।
-- `selfArea ≈ 0` হলে সারি বাদ; আংশিক হলে অবশিষ্ট পরিমাণ/রেট/মোট দেখাবে।
-- বর্গা-ইন সারি অপরিবর্তিত।
-
-### ৩. ডেটা সংগতি (migration, নিরাপদ)
-আগে যেসব বর্গাদার জমি আলাদা `lands` সারি হিসেবে ইমপোর্ট/যোগ হয়েছে কিন্তু `land_relations` নেই — সেগুলোর জন্য একটি ব্যাকফিল স্ক্রিপ্ট/মাইগ্রেশন: প্রতিটি `owner_type='borgadar'` জমির জন্য মালিকের মিলে যাওয়া দাগে `land_relations` তৈরি করা (আগে ড্রাই-রান রিপোর্ট দেখিয়ে, তারপর প্রয়োগ)।
-
-## নিরাপত্তা / অন্য মডিউল
-- ইনভয়েস, পেমেন্ট, রিপোর্ট, এক্সপোর্ট আগে থেকেই `land_relations`-নির্ভর `get_land_billing_split` ব্যবহার করে, তাই এই পথে আনলে সব মডিউল স্বয়ংক্রিয়ভাবে সঠিক হবে।
-- ব্যাকফিল ড্রাই-রান আগে দেখানো হবে; কোনো ডেটা হারাবে না।
-- রিগ্রেশন টেস্ট: পুরো বর্গা দেওয়া জমিতে মালিকের ইনভয়েস তৈরি হয় না, শুধু বর্গাদারের হয়; আংশিক বর্গায় দুইজনই সঠিক অংশে বিল পায়।
-
-## যা জানা দরকার
-আলাদা বর্গাদার `lands` সারি রাখার দরকার আছে, নাকি সম্পূর্ণভাবে `land_relations` ভিত্তিক করব — এটা অনুমোদনের সময় জানালে সে অনুযায়ী করব। অনুমোদন দিলে বাস্তবায়ন শুরু করব।
+## টেকনিক্যাল নোট
+- ব্যাকএন্ড: `backend/` (Laravel/MySQL)। নতুন migration `backend/database/migrations/`-এ, Model `backend/app/Models/`-এ, Controller `backend/app/Http/Controllers/`-এ, রুট `backend/routes/api.php`-এ।
+- ফ্রন্টএন্ড: `xlsx` লাইব্রেরি দিয়ে পার্স (বিদ্যমান import পেজের মতোই), `src/lib/api/` তে নতুন `legacyIrrigation.ts` API র‍্যাপার।
