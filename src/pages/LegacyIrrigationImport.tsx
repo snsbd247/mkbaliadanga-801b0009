@@ -305,6 +305,36 @@ export default function LegacyIrrigationImport() {
   const blockedByDup = dupMode === "block" && dupRows.length > 0;
   const canImport = parsed.length > 0 && importableRows.length > 0 && unmatchedSeasons.length === 0 && !blockedByDup;
 
+  function downloadInvalid() {
+    const rows = parsed.filter((p) => p.errors.length > 0 || p.dupInFile);
+    if (!rows.length) return;
+    const data = rows.map((p) => {
+      const issues = [...p.errors];
+      if (p.dupInFile) issues.push("ফাইলের মধ্যে ডুপ্লিকেট রশিদ");
+      return {
+        সারি: p.idx,
+        সমস্যা: issues.join("; "),
+        FARMER_NAME: p.row.farmer_name ?? "",
+        FATHER_NM: p.row.father_name ?? "",
+        VILLAGE: p.row.village ?? "",
+        MOBILE_NO: p.row.mobile_no ?? "",
+        MOUZA_NAME: p.row.mouza_name ?? "",
+        SESSON_YEAR: p.row.season_year ?? "",
+        LAND: p.row.land_shatak ?? "",
+        DAG_NO: p.row.dag_no ?? "",
+        RATE: p.row.rate ?? "",
+        DUE_AMOUNT: p.row.due_amount ?? "",
+        PAID_AMOUNT: p.row.paid_amount ?? "",
+        RECEIPT_NO: p.row.receipt_no ?? "",
+        COLLECTION_DATE: p.row.collection_date ?? "",
+      };
+    });
+    const ws = XLSX.utils.json_to_sheet(data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Invalid");
+    XLSX.writeFile(wb, `legacy-irrigation-invalid-${new Date().toISOString().slice(0, 10)}.xlsx`);
+  }
+
   async function save() {
     if (!canImport) return;
     setSaving(true);
