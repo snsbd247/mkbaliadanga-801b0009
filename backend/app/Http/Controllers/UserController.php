@@ -73,13 +73,24 @@ class UserController extends Controller
             'is_active' => ['sometimes', 'boolean'],
         ]);
 
+        $passwordChanged = false;
         if (! empty($data['password'])) {
             $data['password'] = Hash::make($data['password']);
+            $passwordChanged = true;
         } else {
             unset($data['password']);
         }
 
         $user->update($data);
+
+        if ($passwordChanged) {
+            \App\Support\CanonicalAdmins::auditPasswordChange(
+                $user,
+                'user.password.changed',
+                'Password changed by admin via user management.',
+                $request->user()->id,
+            );
+        }
 
         AuditLog::record([
             'user_id' => $request->user()->id,
