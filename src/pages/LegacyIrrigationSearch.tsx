@@ -228,3 +228,41 @@ export default function LegacyIrrigationSearch() {
     </div>
   );
 }
+
+/** Scales the fixed-width (720px) receipt HTML down to fit the dialog width so
+ *  the whole receipt is visible without horizontal scrolling. */
+function ScaledReceiptPreview({ html }: { html: string }) {
+  const outerRef = useRef<HTMLDivElement>(null);
+  const innerRef = useRef<HTMLDivElement>(null);
+  const [scale, setScale] = useState(1);
+  const [height, setHeight] = useState<number | undefined>(undefined);
+
+  useLayoutEffect(() => {
+    const outer = outerRef.current;
+    const inner = innerRef.current;
+    if (!outer || !inner) return;
+    const update = () => {
+      const avail = outer.clientWidth;
+      const s = Math.min(1, avail / 720);
+      setScale(s);
+      setHeight(inner.offsetHeight * s);
+    };
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(outer);
+    return () => ro.disconnect();
+  }, [html]);
+
+  return (
+    <div ref={outerRef} className="rounded-md bg-muted/30 p-3 overflow-hidden">
+      <div style={{ height }}>
+        <div
+          ref={innerRef}
+          style={{ width: 720, transform: `scale(${scale})`, transformOrigin: "top left" }}
+          dangerouslySetInnerHTML={{ __html: html }}
+        />
+      </div>
+    </div>
+  );
+}
+
