@@ -17,7 +17,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
-import { Upload, Loader2, AlertTriangle, Search, Trash2, Download } from "lucide-react";
+import { Upload, Loader2, AlertTriangle, Trash2, Download } from "lucide-react";
 import { toast } from "sonner";
 import { decodeSpreadsheetBuffer } from "@/lib/csvDecode";
 import {
