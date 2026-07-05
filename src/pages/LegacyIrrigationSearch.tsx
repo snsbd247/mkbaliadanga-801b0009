@@ -17,6 +17,10 @@ import {
 import { LegacyIrrigationApi, LegacyIrrigationRecord } from "@/lib/api/legacyIrrigation";
 import { ApiError } from "@/lib/api/client";
 import { downloadLegacyReceipts, buildLegacyReceiptPreview } from "@/lib/legacyReceiptPdf";
+import {
+  PAPER_PRESETS, DEFAULT_PAPER_ID, PAGE_MARGIN_MM,
+  getPaperPreset, computeReceiptFit,
+} from "@/lib/legacyReceiptLayout";
 import { useLang } from "@/i18n/LanguageProvider";
 
 const MONTH_NAMES = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
