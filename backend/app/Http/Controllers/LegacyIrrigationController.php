@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\LegacyIrrigationRecord;
+use App\Models\Office;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;

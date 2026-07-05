@@ -16,6 +16,7 @@ const STR = {
     verifying: "Verifying…",
     failed: "Verification failed",
     notFound: "Receipt not found",
+    missingLegacyRoute: "Legacy verification route is not available on this server yet",
     voided: "This receipt has been voided / cancelled",
     rateLimited: "Too many requests. Please wait and try again.",
     network: "Network error",
@@ -44,6 +45,7 @@ const STR = {
     verifying: "যাচাই করা হচ্ছে…",
     failed: "যাচাই ব্যর্থ",
     notFound: "রসিদ পাওয়া যায়নি",
+    missingLegacyRoute: "এই সার্ভারে পুরনো রসিদ যাচাই রুট এখনো চালু হয়নি",
     voided: "এই রসিদ বাতিল / void করা হয়েছে",
     rateLimited: "অনেক বেশি অনুরোধ। কিছুক্ষণ পর আবার চেষ্টা করুন।",
     network: "নেটওয়ার্ক ত্রুটি",
@@ -72,6 +74,11 @@ const STR = {
 const fmt = (n: number) =>
   new Intl.NumberFormat("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n || 0);
 
+const legacyVerifyEndpoint = (receiptNo: string) => {
+  const base = (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/$/, "") || "/api";
+  return `${base}/legacy-irrigation/verify/${encodeURIComponent(receiptNo)}`;
+};
+
 export default function VerifyReceipt() {
   const { token = "" } = useParams();
   const [lang, setLang] = useState<Lang>(() =>
@@ -88,15 +95,19 @@ export default function VerifyReceipt() {
   async function verifyLegacy(receiptNo: string) {
     setLoading(true); setError(null); setData(null); setVoided(null); setRateLimited(false);
     try {
-      const res = await fetch(`/api/legacy-irrigation/verify/${encodeURIComponent(receiptNo)}`, {
+      const res = await fetch(legacyVerifyEndpoint(receiptNo), {
         headers: { Accept: "application/json" },
       });
       const ct = res.headers.get("content-type") || "";
       const j = ct.includes("application/json") ? await res.json().catch(() => ({})) : {};
-      if (res.status === 404 || (!res.ok && !j?.error)) {
+      const message = String(j?.error || j?.message || "");
+      const routeMissing = res.status === 404 && /route .*could not be found|not found/i.test(message) && message.includes("legacy-irrigation/verify");
+      if (routeMissing) {
+        setError(`${T.missingLegacyRoute} (${token})`);
+      } else if (res.status === 404 || (!res.ok && !j?.error)) {
         setError(`${T.notFound} (${token})`);
       } else if (!res.ok || !j?.ok) {
-        setError(`${j?.error || T.notFound} (${token})`);
+        setError(`${message || T.notFound} (${token})`);
       } else {
         setData(j);
       }
