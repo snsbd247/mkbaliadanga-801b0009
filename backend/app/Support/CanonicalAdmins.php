@@ -138,15 +138,17 @@ class CanonicalAdmins
 
             $user = User::query()->where('username', $a['username'])->first();
             if (! $user) {
+                $defaultPassword = (string) config('admin.default_password', 'Admin@123');
                 $user = User::query()->create([
                     'name' => $a['name'],
                     'username' => $a['username'],
                     'email' => $a['username'].'@mohammadkhani.com',
-                    'password' => Hash::make('Admin@123'),
+                    'password' => Hash::make($defaultPassword),
                     'office_id' => $office->id,
                     'is_active' => true,
                 ]);
                 $actions[] = "Created missing user '{$a['username']}'.";
+                self::auditPasswordChange($user, 'admin.password.initialized', 'Canonical admin account created with default password.');
             } else {
                 // Repair profile + office/active state ONLY. Never reset the
                 // password of an existing account — an admin may have changed it,
