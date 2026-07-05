@@ -561,7 +561,7 @@ export default function Users() {
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setResetFor(null)}>{t("cancel")}</Button>
-            <Button onClick={resetPassword} disabled={busy}>{busy ? "…" : t("update")}</Button>
+            <Button onClick={resetPassword} disabled={busy || !resetPwd || resetPwd !== resetPwd2}>{busy ? "…" : t("update")}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
