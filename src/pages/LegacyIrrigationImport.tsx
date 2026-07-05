@@ -25,6 +25,7 @@ import {
 } from "@/lib/api/legacyIrrigation";
 import { SeasonsApi } from "@/lib/api/catalog";
 import { ApiError } from "@/lib/api/client";
+import { useLang } from "@/i18n/LanguageProvider";
 
 const MONTHS: Record<string, string> = {
   JAN: "01", FEB: "02", MAR: "03", APR: "04", MAY: "05", JUN: "06",
@@ -153,6 +154,7 @@ function mapRow(r: Record<string, unknown>): { row: LegacyIrrigationRow; errors:
 }
 
 export default function LegacyIrrigationImport() {
+  const { tx } = useLang();
   const fileRef = useRef<HTMLInputElement>(null);
   const [parsed, setParsed] = useState<ParsedRow[]>([]);
   const [headerError, setHeaderError] = useState<string | null>(null);
