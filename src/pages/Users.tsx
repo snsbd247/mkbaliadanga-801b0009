@@ -52,8 +52,14 @@ export default function Users() {
   const [resetFor, setResetFor] = useState<any | null>(null);
   const [resetPwd, setResetPwd] = useState("");
   const [editFor, setEditFor] = useState<any | null>(null);
-  const [editForm, setEditForm] = useState({ username: "", email: "", full_name: "" });
+  const [editForm, setEditForm] = useState({ username: "", email: "", full_name: "", office_id: "" });
+  const [resetPwd2, setResetPwd2] = useState("");
   const [busy, setBusy] = useState(false);
+
+  // Filters
+  const [search, setSearch] = useState("");
+  const [roleFilter, setRoleFilter] = useState("all");
+  const [officeFilter, setOfficeFilter] = useState("all");
 
   const [form, setForm] = useState({
     username: "", email: "", full_name: "", password: "",
@@ -150,29 +156,46 @@ export default function Users() {
     load();
   }
 
+  async function logAudit(action: string, target: string, meta: Record<string, unknown>) {
+    try {
+      await db.rpc("log_developer_access", {
+        _action: action,
+        _blocked: false,
+        _meta: { target_user: target, ...meta } as any,
+      });
+    } catch { /* audit failure must not break UI */ }
+  }
+
   async function resetPassword() {
     if (!resetFor) return;
     const role = (resetFor.roles?.[0] as string) ?? "staff";
     const policy = passwordPolicyIssues(resetPwd, role, t);
     if (policy.length) return toast.error(`${t("pwPolicyPrefix")}: ${policy.join(", ")}`);
+    if (resetPwd !== resetPwd2) return toast.error(t("passwordsDoNotMatch" as any) || "Passwords do not match");
     const ok = await callAdmin({ action: "reset_password", user_id: resetFor.id, password: resetPwd });
     if (!ok) return;
+    await logAudit("reset_password", resetFor.id, {});
     toast.success(t("passwordUpdated"));
-    setResetFor(null); setResetPwd("");
+    setResetFor(null); setResetPwd(""); setResetPwd2("");
   }
 
   async function saveEdit() {
     if (!editFor) return;
     if (!/^[a-zA-Z0-9_.-]{3,30}$/.test(editForm.username)) return toast.error(t("validationFailed"));
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(editForm.email)) return toast.error(t("validationFailed"));
+    const role = (editFor.roles?.[0] as string) ?? "staff";
+    const isGlobal = role === "developer" || role === "super_admin";
+    const office_id = isGlobal ? null : (editForm.office_id || null);
     const ok = await callAdmin({
       action: "update_profile",
       user_id: editFor.id,
       username: editForm.username,
       email: editForm.email,
       full_name: editForm.full_name,
+      office_id,
     });
     if (!ok) return;
+    await logAudit("update_profile", editFor.id, { username: editForm.username, email: editForm.email });
     toast.success(t("saved"));
     setEditFor(null);
     load();
@@ -180,19 +203,28 @@ export default function Users() {
 
   async function setRole(uid: string, role: "developer" | "super_admin" | "admin" | "committee" | "staff") {
     if (uid === me?.id) return toast.error(t("cannotChangeOwnRole" as any) || "You cannot change your own role");
+    const target = list.find((u) => u.id === uid);
+    const currentRole = (target?.roles?.[0] as string) ?? "staff";
     if ((role === "developer" || role === "super_admin") && !isDeveloper) {
       return toast.error("Only developers can assign this role");
+    }
+    // Guard: changing a Super Admin away from super_admin is developer-only.
+    if (currentRole === "super_admin" && role !== "super_admin" && !isDeveloper) {
+      return toast.error("Only developers can change a Super Admin's role");
     }
     await db.from("user_roles").delete().eq("user_id", uid);
     const { error } = await db.from("user_roles").insert({ user_id: uid, role });
     if (error) return toast.error(error.message);
+    await logAudit("update_role", uid, { from: currentRole, to: role });
     toast.success(t("saved")); load();
   }
   async function setOffice(uid: string, office_id: string) {
     const { error } = await db.from("profiles").update({ office_id: office_id || null }).eq("id", uid);
     if (error) return toast.error(error.message);
+    await logAudit("update_office", uid, { office_id: office_id || null });
     load();
   }
+
 
   async function openPerms(u: any) {
     setPermFor(u);
@@ -220,12 +252,29 @@ export default function Users() {
     await db.from("user_permissions").delete().eq("user_id", permFor.id);
     const { error } = await db.from("user_permissions").insert(rows);
     if (error) return toast.error(error.message);
+    await logAudit("update_permissions", permFor.id, {});
     toast.success(t("saved"));
     setPermFor(null);
   }
   function togglePerm(m: ModuleKey, k: string) {
     setPerms((p) => ({ ...p, [m]: { ...p[m], [k]: !p[m]?.[k] } }));
   }
+
+  const officeName = (id: string | null) => offices.find((o) => o.id === id)?.name ?? "";
+  const filtered = list.filter((u) => {
+    const q = search.trim().toLowerCase();
+    if (q) {
+      const hay = `${u.username ?? ""} ${u.email ?? ""} ${u.full_name ?? ""}`.toLowerCase();
+      if (!hay.includes(q)) return false;
+    }
+    if (roleFilter !== "all" && !(u.roles ?? []).includes(roleFilter)) return false;
+    if (officeFilter !== "all") {
+      if (officeFilter === "none" && u.office_id) return false;
+      if (officeFilter !== "none" && u.office_id !== officeFilter) return false;
+    }
+    return true;
+  });
+
 
   return (
     <>
@@ -294,8 +343,43 @@ export default function Users() {
         </Dialog>
       } />
 
+      <Card className="p-3 mb-3">
+        <div className="flex flex-wrap gap-2 items-end">
+          <div className="flex-1 min-w-[200px]">
+            <Label className="text-xs">{t("search" as any) || "Search"}</Label>
+            <Input value={search} onChange={e => setSearch(e.target.value)} placeholder={`${t("username")} / ${t("email")} / ${t("fullName")}`} />
+          </div>
+          <div>
+            <Label className="text-xs">{t("role")}</Label>
+            <Select value={roleFilter} onValueChange={setRoleFilter}>
+              <SelectTrigger className="w-[160px]"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{t("all" as any) || "All"}</SelectItem>
+                {isDeveloper && <SelectItem value="developer">Developer</SelectItem>}
+                <SelectItem value="super_admin">{t("superAdmin")}</SelectItem>
+                <SelectItem value="admin">{t("admin")}</SelectItem>
+                <SelectItem value="committee">{t("committee")}</SelectItem>
+                <SelectItem value="staff">{t("staff")}</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label className="text-xs">{t("office")}</Label>
+            <Select value={officeFilter} onValueChange={setOfficeFilter}>
+              <SelectTrigger className="w-[180px]"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{t("all" as any) || "All"}</SelectItem>
+                <SelectItem value="none">—</SelectItem>
+                {offices.map(o => <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+      </Card>
+
       <Card>
         <Table>
+
           <TableHeader><TableRow>
             <TableHead>{t("username")}</TableHead>
             <TableHead>{t("email")}</TableHead>
@@ -307,7 +391,7 @@ export default function Users() {
             <TableHead className="text-right">{t("actions")}</TableHead>
           </TableRow></TableHeader>
           <TableBody>
-            {list.map(u => (
+            {filtered.map(u => (
               <TableRow key={u.id}>
                 <TableCell className="font-mono text-xs">{u.username ?? "—"}</TableCell>
                 <TableCell className="font-mono text-xs">{u.email}</TableCell>
@@ -361,17 +445,17 @@ export default function Users() {
                   <Button size="sm" variant="outline" onClick={() => openPerms(u)} title={t("permissions")}>
                     <ShieldCheck className="h-4 w-4" />
                   </Button>
-                  <Button size="sm" variant="outline" onClick={() => { setEditFor(u); setEditForm({ username: u.username ?? "", email: u.email ?? "", full_name: u.full_name ?? "" }); }} title={t("edit")}>
+                  <Button size="sm" variant="outline" onClick={() => { setEditFor(u); setEditForm({ username: u.username ?? "", email: u.email ?? "", full_name: u.full_name ?? "", office_id: u.office_id ?? "" }); }} title={t("edit")}>
                     <Pencil className="h-4 w-4" />
                   </Button>
-                  <Button size="sm" variant="outline" onClick={() => { setResetFor(u); setResetPwd(""); }} title={t("resetPasswordTitle")}>
+                  <Button size="sm" variant="outline" onClick={() => { setResetFor(u); setResetPwd(""); setResetPwd2(""); }} title={t("resetPasswordTitle")}>
                     <KeyRound className="h-4 w-4" />
                   </Button>
                   <DeleteButton onConfirm={() => deleteUser(u)} disabled={u.id === me?.id} title={t("deleteTitle")} />
                 </TableCell>
               </TableRow>
             ))}
-            {list.length === 0 && <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-6">{t("noData")}</TableCell></TableRow>}
+            {filtered.length === 0 && <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-6">{t("noData")}</TableCell></TableRow>}
           </TableBody>
         </Table>
       </Card>
@@ -387,7 +471,21 @@ export default function Users() {
               <Input value={editForm.username} onChange={e => setEditForm({ ...editForm, username: e.target.value })} /></div>
             <div><Label>{t("email")}</Label>
               <Input type="email" value={editForm.email} onChange={e => setEditForm({ ...editForm, email: e.target.value })} /></div>
+            {(() => {
+              const role = (editFor?.roles?.[0] as string) ?? "staff";
+              const isGlobal = role === "developer" || role === "super_admin";
+              if (isGlobal) return <p className="text-xs text-muted-foreground">All offices</p>;
+              return (
+                <div><Label>{t("office")}</Label>
+                  <Select value={editForm.office_id} onValueChange={v => setEditForm({ ...editForm, office_id: v })}>
+                    <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
+                    <SelectContent>{offices.map(o => <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>)}</SelectContent>
+                  </Select>
+                </div>
+              );
+            })()}
           </div>
+
           <DialogFooter>
             <Button variant="outline" onClick={() => setEditFor(null)}>{t("cancel")}</Button>
             <Button onClick={saveEdit} disabled={busy}>{busy ? "…" : t("save")}</Button>
@@ -448,12 +546,22 @@ export default function Users() {
         <DialogContent>
           <DialogHeader><DialogTitle>{t("resetPasswordTitle")} — {resetFor?.username || resetFor?.email}</DialogTitle></DialogHeader>
           <div className="space-y-3">
-            <Label>{t("newPassword")}</Label>
-            <Input type="password" value={resetPwd} onChange={e => setResetPwd(e.target.value)} placeholder={resetFor?.roles?.includes("super_admin") ? t("pwPlaceholderSuper") : t("pwPlaceholderStaff")} />
+            <div>
+              <Label>{t("newPassword")}</Label>
+              <Input type="password" value={resetPwd} onChange={e => setResetPwd(e.target.value)} placeholder={resetFor?.roles?.includes("super_admin") ? t("pwPlaceholderSuper") : t("pwPlaceholderStaff")} />
+            </div>
+            <div>
+              <Label>{t("confirmPassword" as any) || "Confirm password"}</Label>
+              <Input type="password" value={resetPwd2} onChange={e => setResetPwd2(e.target.value)} />
+              {resetPwd2 && resetPwd !== resetPwd2 && (
+                <p className="text-[11px] text-destructive mt-1">{t("passwordsDoNotMatch" as any) || "Passwords do not match"}</p>
+              )}
+            </div>
           </div>
+
           <DialogFooter>
             <Button variant="outline" onClick={() => setResetFor(null)}>{t("cancel")}</Button>
-            <Button onClick={resetPassword} disabled={busy}>{busy ? "…" : t("update")}</Button>
+            <Button onClick={resetPassword} disabled={busy || !resetPwd || resetPwd !== resetPwd2}>{busy ? "…" : t("update")}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

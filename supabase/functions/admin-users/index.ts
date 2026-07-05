@@ -18,7 +18,7 @@ interface CreateBody {
 interface DeleteBody { action: "delete"; user_id: string; }
 interface ResetBody  { action: "reset_password"; user_id: string; password: string; }
 interface SetActiveBody { action: "set_active"; user_id: string; is_active: boolean; }
-interface UpdateBody { action: "update_profile"; user_id: string; username?: string; email?: string; full_name?: string; }
+interface UpdateBody { action: "update_profile"; user_id: string; username?: string; email?: string; full_name?: string; office_id?: string | null; }
 
 type Body = CreateBody | DeleteBody | ResetBody | SetActiveBody | UpdateBody;
 
@@ -118,7 +118,7 @@ Deno.serve(async (req) => {
     }
 
     if (body.action === "update_profile") {
-      const { user_id, username, email, full_name } = body;
+      const { user_id, username, email, full_name, office_id } = body;
       if (!user_id) return json({ error: "Missing user_id" }, 400);
 
       // Guard: only developers may edit developer accounts.
@@ -147,6 +147,7 @@ Deno.serve(async (req) => {
       if (username !== undefined) profilePatch.username = username;
       if (email !== undefined) profilePatch.email = email;
       if (full_name !== undefined) profilePatch.full_name = full_name;
+      if (office_id !== undefined) profilePatch.office_id = office_id;
       if (Object.keys(profilePatch).length) {
         const { error: pErr } = await admin.from("profiles").update(profilePatch).eq("id", user_id);
         if (pErr) return json({ error: pErr.message }, 400);
