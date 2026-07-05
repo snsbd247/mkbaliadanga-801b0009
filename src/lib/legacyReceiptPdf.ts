@@ -142,6 +142,7 @@ export async function downloadLegacyReceipts(
   if (!records.length) return;
   const branding = await loadBranding().catch(() => null);
   const company = branding?.company_name_bn || branding?.company_name || "সেচ রশিদ";
+  const logoUrl = branding?.logo_url || null;
 
   const paper = getPaperPreset(paperId);
   const pdf = new jsPDF({ unit: "mm", format: paper.format, orientation: paper.orientation });
