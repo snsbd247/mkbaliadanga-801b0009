@@ -53,11 +53,11 @@ function numToWordsBn(n: number): string {
 const amountWords = (n?: number | null) =>
   n == null ? "—" : `${numToWordsBn(n)} টাকা মাত্র।`;
 
-async function receiptHtml(r: LegacyIrrigationRecord, company: string, qr: string, logoUrl?: string | null): Promise<string> {
+async function receiptHtml(r: LegacyIrrigationRecord, company: string, qr: string, logoUrl?: string | null, editorSigUrl?: string | null): Promise<string> {
   const cell = (k: string, v: string) =>
     `<tr>
-       <td style="padding:5px 8px;border:1px solid #333;font-weight:600;width:48%;vertical-align:top;">${k}</td>
-       <td style="padding:5px 8px;border:1px solid #333;font-weight:600;vertical-align:top;">: ${v}</td>
+       <td style="padding:10px 8px;border:1px solid #333;font-weight:600;width:48%;vertical-align:top;">${k}</td>
+       <td style="padding:10px 8px;border:1px solid #333;font-weight:600;vertical-align:top;">: ${v}</td>
      </tr>`;
   const brandBlock = logoUrl
     ? `<img src="${logoUrl}" crossorigin="anonymous" style="max-width:170px;max-height:70px;object-fit:contain;display:block;" />`
@@ -106,12 +106,13 @@ async function receiptHtml(r: LegacyIrrigationRecord, company: string, qr: strin
       <table style="${tableStyle}">${leftRows}</table>
       <table style="${tableStyle}">${rightRows}</table>
     </div>
-    <div style="display:flex;justify-content:space-between;margin-top:44px;font-size:12px;">
+    <div style="display:flex;justify-content:space-between;margin-top:64px;font-size:12px;">
       <div style="text-align:center;width:44%;">
         <div style="border-top:1px solid #111;padding-top:4px;">সদস্যের স্বাক্ষর / প্রদানকারীর স্বাক্ষর</div>
       </div>
       <div style="text-align:center;width:44%;">
-        <div style="border-top:1px solid #111;padding-top:4px;">আদায়কারীর স্বাক্ষর</div>
+        ${editorSigUrl ? `<img src="${editorSigUrl}" crossorigin="anonymous" style="max-width:150px;max-height:44px;object-fit:contain;display:block;margin:0 auto -2px;" />` : ""}
+        <div style="border-top:1px solid #111;padding-top:4px;">সম্পাদকের স্বাক্ষর</div>
       </div>
     </div>
   </div>`;
@@ -150,6 +151,7 @@ export async function downloadLegacyReceipts(
   const branding = await loadBranding().catch(() => null);
   const company = branding?.company_name_bn || branding?.company_name || "সেচ রশিদ";
   const logoUrl = branding?.logo_url || null;
+  const editorSigUrl = branding?.editor_signature_url || null;
 
   const paper = getPaperPreset(paperId);
   const pdf = new jsPDF({ unit: "mm", format: paper.format, orientation: paper.orientation });
@@ -160,7 +162,7 @@ export async function downloadLegacyReceipts(
     holder.style.position = "fixed";
     holder.style.left = "-10000px";
     holder.style.top = "0";
-    holder.innerHTML = await receiptHtml(records[i], company, qr, logoUrl);
+    holder.innerHTML = await receiptHtml(records[i], company, qr, logoUrl, editorSigUrl);
     document.body.appendChild(holder);
     try {
       const canvas = await html2canvas(holder.firstElementChild as HTMLElement, { scale: 2, backgroundColor: "#fff", useCORS: true });
@@ -190,8 +192,9 @@ export async function buildLegacyReceiptPreview(records: LegacyIrrigationRecord[
   const branding = await loadBranding().catch(() => null);
   const company = branding?.company_name_bn || branding?.company_name || "সেচ রশিদ";
   const logoUrl = branding?.logo_url || null;
+  const editorSigUrl = branding?.editor_signature_url || null;
   const parts = await Promise.all(
-    records.map(async (r) => receiptHtml(r, company, await makeQr(r), logoUrl)),
+    records.map(async (r) => receiptHtml(r, company, await makeQr(r), logoUrl, editorSigUrl)),
   );
   return parts.join('<div style="height:16px;"></div>');
 }
