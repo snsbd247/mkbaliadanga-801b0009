@@ -508,7 +508,7 @@ export default function LegacyIrrigationImport() {
             {headerError && (
               <Alert variant="destructive">
                 <AlertTriangle className="h-4 w-4" />
-                <AlertTitle>ফাইল সমস্যা</AlertTitle>
+                <AlertTitle>{tx("File Problem", "ফাইল সমস্যা")}</AlertTitle>
                 <AlertDescription>{headerError}</AlertDescription>
               </Alert>
             )}
@@ -516,7 +516,7 @@ export default function LegacyIrrigationImport() {
             {headerWarnings.length > 0 && (
               <Alert>
                 <AlertTriangle className="h-4 w-4" />
-                <AlertTitle>কলাম ম্যাপিং সতর্কতা</AlertTitle>
+                <AlertTitle>{tx("Column Mapping Warning", "কলাম ম্যাপিং সতর্কতা")}</AlertTitle>
                 <AlertDescription>
                   <ul className="list-disc pl-4 space-y-0.5 text-xs">
                     {headerWarnings.map((w, i) => <li key={i}>{w}</li>)}
@@ -529,28 +529,28 @@ export default function LegacyIrrigationImport() {
               <>
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div className="flex flex-wrap items-center gap-2">
-                    <Badge variant="secondary">মোট: {parsed.length}</Badge>
-                    <Badge variant="default">সঠিক: {cleanRows.length}</Badge>
-                    {invalidRows.length > 0 && <Badge variant="destructive">সমস্যাযুক্ত: {invalidRows.length}</Badge>}
-                    {dupRows.length > 0 && <Badge variant="outline">ডুপ্লিকেট রশিদ: {dupRows.length}</Badge>}
+                    <Badge variant="secondary">{tx("Total", "মোট")}: {parsed.length}</Badge>
+                    <Badge variant="default">{tx("Valid", "সঠিক")}: {cleanRows.length}</Badge>
+                    {invalidRows.length > 0 && <Badge variant="destructive">{tx("With issues", "সমস্যাযুক্ত")}: {invalidRows.length}</Badge>}
+                    {dupRows.length > 0 && <Badge variant="outline">{tx("Duplicate receipts", "ডুপ্লিকেট রশিদ")}: {dupRows.length}</Badge>}
                   </div>
                   {(invalidRows.length > 0 || dupRows.length > 0) && (
                     <Button variant="outline" size="sm" onClick={downloadInvalid}>
-                      <Download className="h-4 w-4 mr-2" /> সমস্যাযুক্ত রো রিপোর্ট
+                      <Download className="h-4 w-4 mr-2" /> {tx("Problem Rows Report", "সমস্যাযুক্ত রো রিপোর্ট")}
                     </Button>
                   )}
                 </div>
 
                 <div className="space-y-2">
-                  <Label>ফাইলের মধ্যে ডুপ্লিকেট রশিদ হলে</Label>
+                  <Label>{tx("If duplicate receipts within the file", "ফাইলের মধ্যে ডুপ্লিকেট রশিদ হলে")}</Label>
                   <RadioGroup value={dupMode} onValueChange={(v) => setDupMode(v as "skip" | "block")} className="flex gap-6">
                     <div className="flex items-center gap-2">
                       <RadioGroupItem value="skip" id="dm-skip" />
-                      <Label htmlFor="dm-skip" className="font-normal">স্কিপ করুন (প্রথমটি রাখা হবে)</Label>
+                      <Label htmlFor="dm-skip" className="font-normal">{tx("Skip (keep the first)", "স্কিপ করুন (প্রথমটি রাখা হবে)")}</Label>
                     </div>
                     <div className="flex items-center gap-2">
                       <RadioGroupItem value="block" id="dm-block" />
-                      <Label htmlFor="dm-block" className="font-normal">ইমপোর্ট ব্লক করুন</Label>
+                      <Label htmlFor="dm-block" className="font-normal">{tx("Block import", "ইমপোর্ট ব্লক করুন")}</Label>
                     </div>
                   </RadioGroup>
                 </div>
