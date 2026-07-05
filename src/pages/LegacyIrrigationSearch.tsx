@@ -214,10 +214,8 @@ export default function LegacyIrrigationSearch() {
               {preview && preview.rows.length > 1 ? ` (${preview.rows.length})` : ""}
             </DialogTitle>
           </DialogHeader>
-          <div
-            className="rounded-md bg-muted/30 p-3"
-            dangerouslySetInnerHTML={{ __html: preview?.html ?? "" }}
-          />
+          <ScaledReceiptPreview html={preview?.html ?? ""} />
+
           <DialogFooter>
             <Button variant="outline" onClick={() => setPreview(null)}>{tx("Cancel", "বাতিল")}</Button>
             <Button onClick={confirmDownload} disabled={downloading}>
