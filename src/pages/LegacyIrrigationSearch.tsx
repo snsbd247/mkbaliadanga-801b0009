@@ -32,10 +32,13 @@ export default function LegacyIrrigationSearch() {
   const [code, setCode] = useState("");
   const [records, setRecords] = useState<LegacyIrrigationRecord[]>([]);
   const [searching, setSearching] = useState(false);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [downloading, setDownloading] = useState(false);
 
   async function doSearch() {
     if (!code.trim()) return;
     setSearching(true);
+    setSelected(new Set());
     try {
       const rows = await LegacyIrrigationApi.list({ farmer_code: code.trim() });
       setRecords(rows);
@@ -44,6 +47,28 @@ export default function LegacyIrrigationSearch() {
       toast.error(e instanceof ApiError ? e.message : tx("Search failed", "সার্চ ব্যর্থ হয়েছে"));
     } finally {
       setSearching(false);
+    }
+  }
+
+  const toggle = (id: string) =>
+    setSelected((s) => {
+      const n = new Set(s);
+      n.has(id) ? n.delete(id) : n.add(id);
+      return n;
+    });
+  const allSelected = records.length > 0 && selected.size === records.length;
+  const toggleAll = () =>
+    setSelected(allSelected ? new Set() : new Set(records.map((r) => r.id)));
+
+  async function download(rows: LegacyIrrigationRecord[]) {
+    if (!rows.length) return;
+    setDownloading(true);
+    try {
+      await downloadLegacyReceipts(rows);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : tx("Download failed", "ডাউনলোড ব্যর্থ হয়েছে"));
+    } finally {
+      setDownloading(false);
     }
   }
 
