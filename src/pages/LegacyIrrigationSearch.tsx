@@ -131,20 +131,28 @@ export default function LegacyIrrigationSearch() {
 
       {records.length > 0 && (
         <Card className="p-0 overflow-x-auto">
-          <div className="flex items-center justify-between gap-2 p-3 border-b">
+          <div className="flex flex-wrap items-center justify-between gap-2 p-3 border-b">
             <span className="text-sm text-muted-foreground">
               {selected.size > 0
                 ? tx(`${selected.size} selected`, `${selected.size} টি নির্বাচিত`)
                 : tx("Select rows to download receipts", "রশিদ ডাউনলোড করতে সারি নির্বাচন করুন")}
             </span>
-            <Button
-              size="sm"
-              disabled={selected.size === 0 || downloading}
-              onClick={() => download(records.filter((r) => selected.has(r.id)))}
-            >
-              {downloading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Download className="h-4 w-4 mr-2" />}
-              {tx("Download Selected Receipts", "নির্বাচিত রশিদ ডাউনলোড")}
-            </Button>
+            <div className="flex items-center gap-3">
+              {downloading && progress.total > 0 && (
+                <div className="flex items-center gap-2 min-w-40">
+                  <Progress value={(progress.done / progress.total) * 100} className="w-28" />
+                  <span className="text-xs text-muted-foreground">{progress.done}/{progress.total}</span>
+                </div>
+              )}
+              <Button
+                size="sm"
+                disabled={selected.size === 0 || downloading || previewLoading}
+                onClick={() => openPreview(records.filter((r) => selected.has(r.id)))}
+              >
+                {previewLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Eye className="h-4 w-4 mr-2" />}
+                {tx("Preview & Download Selected", "নির্বাচিত রশিদ প্রিভিউ ও ডাউনলোড")}
+              </Button>
+            </div>
           </div>
           <Table>
             <TableHeader>
