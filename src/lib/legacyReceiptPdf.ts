@@ -53,7 +53,17 @@ function receiptHtml(r: LegacyIrrigationRecord, company: string): string {
   </div>`;
 }
 
-export async function downloadLegacyReceipts(records: LegacyIrrigationRecord[]) {
+const slug = (s: unknown) =>
+  String(s ?? "")
+    .trim()
+    .replace(/[\\/:*?"<>|]+/g, "")
+    .replace(/\s+/g, "-")
+    .slice(0, 40) || "farmer";
+
+export async function downloadLegacyReceipts(
+  records: LegacyIrrigationRecord[],
+  onProgress?: (done: number, total: number) => void,
+) {
   if (!records.length) return;
   const branding = await loadBranding().catch(() => null);
   const company = branding?.company_name_bn || branding?.company_name || "সেচ রশিদ";
@@ -78,10 +88,19 @@ export async function downloadLegacyReceipts(records: LegacyIrrigationRecord[]) 
     } finally {
       document.body.removeChild(holder);
     }
+    onProgress?.(i + 1, records.length);
   }
 
+  const first = records[0];
   const name = records.length === 1
-    ? `sech-receipt-${records[0].receipt_no ?? records[0].id}.pdf`
-    : `sech-receipts-${new Date().toISOString().slice(0, 10)}.pdf`;
+    ? `sech-receipt-${slug(first.farmer_name)}-${first.receipt_no ?? fmtDate(first.collection_date)}.pdf`
+    : `sech-receipts-${slug(first.farmer_name)}-${records.length}-${new Date().toISOString().slice(0, 10)}.pdf`;
   pdf.save(name);
+}
+
+/** Build preview HTML (for a verification modal) for the given records. */
+export async function buildLegacyReceiptPreview(records: LegacyIrrigationRecord[]): Promise<string> {
+  const branding = await loadBranding().catch(() => null);
+  const company = branding?.company_name_bn || branding?.company_name || "সেচ রশিদ";
+  return records.map((r) => receiptHtml(r, company)).join('<div style="height:16px;"></div>');
 }

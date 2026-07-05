@@ -121,6 +121,7 @@ Route::middleware(['auth:sanctum', 'branch.scope'])->group(function () {
     Route::get('/legacy-irrigation/batch/{batchId}/status', [LegacyIrrigationController::class, 'batchStatus'])->middleware('permission:irrigation.view');
     Route::post('/legacy-irrigation/import', [LegacyIrrigationController::class, 'import'])->middleware('permission:irrigation.manage');
     Route::delete('/legacy-irrigation/batch/{batchId}', [LegacyIrrigationController::class, 'destroyBatch'])->middleware('permission:irrigation.manage');
+    Route::post('/legacy-irrigation/receipt-download-log', [LegacyIrrigationController::class, 'logDownload'])->middleware('permission:irrigation.view');
 
     // Irrigation rates
     Route::get('/irrigation-rates', [IrrigationRateController::class, 'index'])->middleware('permission:irrigation.view');

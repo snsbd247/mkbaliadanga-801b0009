@@ -244,4 +244,31 @@ class LegacyIrrigationController extends Controller
 
         return response()->json(['deleted' => $deleted]);
     }
+
+    /** Record an audit entry whenever সেচ receipts are downloaded (single/bulk). */
+    public function logDownload(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'receipt_nos' => ['required', 'array', 'min:1'],
+            'receipt_nos.*' => ['nullable', 'string', 'max:100'],
+            'count' => ['required', 'integer', 'min:1'],
+            'mode' => ['required', 'in:single,bulk'],
+        ]);
+
+        $user = $request->user();
+        \App\Models\AuditLog::record([
+            'user_id' => $user?->id,
+            'action' => 'legacy_irrigation.receipt_download',
+            'entity_type' => 'legacy_irrigation_record',
+            'entity_id' => $data['receipt_nos'][0] ?? null,
+            'office_id' => $request->attributes->get('scope_office_id') ?? $user?->office_id,
+            'meta' => [
+                'mode' => $data['mode'],
+                'count' => $data['count'],
+                'receipt_nos' => array_values(array_filter($data['receipt_nos'])),
+            ],
+        ]);
+
+        return response()->json(['ok' => true]);
+    }
 }

@@ -5,14 +5,18 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Loader2, Search, Download } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
+import {
+  Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle,
+} from "@/components/ui/dialog";
+import { Loader2, Search, Download, Eye } from "lucide-react";
 import { toast } from "sonner";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import { LegacyIrrigationApi, LegacyIrrigationRecord } from "@/lib/api/legacyIrrigation";
 import { ApiError } from "@/lib/api/client";
-import { downloadLegacyReceipts } from "@/lib/legacyReceiptPdf";
+import { downloadLegacyReceipts, buildLegacyReceiptPreview } from "@/lib/legacyReceiptPdf";
 import { useLang } from "@/i18n/LanguageProvider";
 
 const MONTH_NAMES = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -34,6 +38,9 @@ export default function LegacyIrrigationSearch() {
   const [searching, setSearching] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [downloading, setDownloading] = useState(false);
+  const [progress, setProgress] = useState({ done: 0, total: 0 });
+  const [preview, setPreview] = useState<{ rows: LegacyIrrigationRecord[]; html: string } | null>(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
 
   async function doSearch() {
     if (!code.trim()) return;
@@ -60,11 +67,35 @@ export default function LegacyIrrigationSearch() {
   const toggleAll = () =>
     setSelected(allSelected ? new Set() : new Set(records.map((r) => r.id)));
 
-  async function download(rows: LegacyIrrigationRecord[]) {
+  async function openPreview(rows: LegacyIrrigationRecord[]) {
     if (!rows.length) return;
-    setDownloading(true);
+    setPreviewLoading(true);
     try {
-      await downloadLegacyReceipts(rows);
+      const html = await buildLegacyReceiptPreview(rows);
+      setPreview({ rows, html });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : tx("Preview failed", "প্রিভিউ ব্যর্থ হয়েছে"));
+    } finally {
+      setPreviewLoading(false);
+    }
+  }
+
+  async function confirmDownload() {
+    if (!preview) return;
+    const rows = preview.rows;
+    const mode = rows.length === 1 ? "single" : "bulk";
+    setPreview(null);
+    setDownloading(true);
+    setProgress({ done: 0, total: rows.length });
+    try {
+      await downloadLegacyReceipts(rows, (done, total) => setProgress({ done, total }));
+      toast.success(tx(`${rows.length} receipt(s) downloaded`, `${rows.length} টি রশিদ ডাউনলোড হয়েছে`));
+      // Best-effort audit log — non-fatal on failure.
+      LegacyIrrigationApi.logDownload({
+        receipt_nos: rows.map((r) => r.receipt_no ?? null),
+        count: rows.length,
+        mode,
+      }).catch(() => {/* ignore */});
     } catch (e) {
       toast.error(e instanceof Error ? e.message : tx("Download failed", "ডাউনলোড ব্যর্থ হয়েছে"));
     } finally {
@@ -100,20 +131,28 @@ export default function LegacyIrrigationSearch() {
 
       {records.length > 0 && (
         <Card className="p-0 overflow-x-auto">
-          <div className="flex items-center justify-between gap-2 p-3 border-b">
+          <div className="flex flex-wrap items-center justify-between gap-2 p-3 border-b">
             <span className="text-sm text-muted-foreground">
               {selected.size > 0
                 ? tx(`${selected.size} selected`, `${selected.size} টি নির্বাচিত`)
                 : tx("Select rows to download receipts", "রশিদ ডাউনলোড করতে সারি নির্বাচন করুন")}
             </span>
-            <Button
-              size="sm"
-              disabled={selected.size === 0 || downloading}
-              onClick={() => download(records.filter((r) => selected.has(r.id)))}
-            >
-              {downloading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Download className="h-4 w-4 mr-2" />}
-              {tx("Download Selected Receipts", "নির্বাচিত রশিদ ডাউনলোড")}
-            </Button>
+            <div className="flex items-center gap-3">
+              {downloading && progress.total > 0 && (
+                <div className="flex items-center gap-2 min-w-40">
+                  <Progress value={(progress.done / progress.total) * 100} className="w-28" />
+                  <span className="text-xs text-muted-foreground">{progress.done}/{progress.total}</span>
+                </div>
+              )}
+              <Button
+                size="sm"
+                disabled={selected.size === 0 || downloading || previewLoading}
+                onClick={() => openPreview(records.filter((r) => selected.has(r.id)))}
+              >
+                {previewLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Eye className="h-4 w-4 mr-2" />}
+                {tx("Preview & Download Selected", "নির্বাচিত রশিদ প্রিভিউ ও ডাউনলোড")}
+              </Button>
+            </div>
           </div>
           <Table>
             <TableHeader>
@@ -149,8 +188,8 @@ export default function LegacyIrrigationSearch() {
                   <TableCell>{r.paid_amount ?? "—"}</TableCell>
                   <TableCell>{fmtDisplayDate(r.collection_date)}</TableCell>
                   <TableCell className="text-right">
-                    <Button variant="ghost" size="sm" disabled={downloading} onClick={() => download([r])}>
-                      <Download className="h-4 w-4" />
+                    <Button variant="ghost" size="sm" disabled={downloading || previewLoading} onClick={() => openPreview([r])}>
+                      <Eye className="h-4 w-4" />
                     </Button>
                   </TableCell>
                 </TableRow>
@@ -166,6 +205,28 @@ export default function LegacyIrrigationSearch() {
           </Table>
         </Card>
       )}
+
+      <Dialog open={!!preview} onOpenChange={(o) => !o && setPreview(null)}>
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              {tx("Verify Receipt", "রশিদ যাচাই")}
+              {preview && preview.rows.length > 1 ? ` (${preview.rows.length})` : ""}
+            </DialogTitle>
+          </DialogHeader>
+          <div
+            className="rounded-md bg-muted/30 p-3"
+            dangerouslySetInnerHTML={{ __html: preview?.html ?? "" }}
+          />
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setPreview(null)}>{tx("Cancel", "বাতিল")}</Button>
+            <Button onClick={confirmDownload} disabled={downloading}>
+              {downloading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Download className="h-4 w-4 mr-2" />}
+              {tx("Download", "ডাউনলোড")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

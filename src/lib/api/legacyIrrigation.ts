@@ -85,5 +85,7 @@ export const LegacyIrrigationApi = {
       .then((r) => r.data),
   deleteBatch: (batchId: string) =>
     api.delete<{ deleted: number }>(`/legacy-irrigation/batch/${batchId}`).then((r) => r.data),
+  logDownload: (payload: { receipt_nos: (string | null)[]; count: number; mode: "single" | "bulk" }) =>
+    api.post<{ ok: boolean }>("/legacy-irrigation/receipt-download-log", payload).then((r) => r.data),
 };
 
