@@ -68,7 +68,7 @@ async function receiptHtml(r: LegacyIrrigationRecord, company: string, qr: strin
   return `
   <div style="width:720px;padding:22px 26px;font-family:'Noto Sans Bengali','Hind Siliguri',Arial,sans-serif;color:#111;background:#fff;border:2px solid #111;border-radius:6px;box-sizing:border-box;">
     <div style="display:flex;align-items:flex-start;justify-content:space-between;">
-      <div style="font-size:15px;font-weight:700;max-width:180px;">${company}</div>
+      <div style="max-width:180px;">${brandBlock}</div>
       <div style="text-align:center;flex:1;">
         <div style="font-size:20px;font-weight:700;text-decoration:underline;">সেচ চার্জ ও বিবিধ আদায় রশিদ</div>
       </div>
