@@ -90,6 +90,9 @@ class CanonicalAdmins
             $exists = (bool) $user;
             $active = $exists && (bool) $user->is_active;
             $hasRole = $exists && in_array($a['role'], $user->roleNames(), true);
+            // Informational only: whether the account still uses the default
+            // password. A changed password is expected and must NOT count as a
+            // failure, otherwise admin:verify would keep trying to "fix" it.
             $passwordOk = $exists && Hash::check('Admin@123', $user->password);
             $tokenProbe = self::probeTokenHealth($user);
             $payloadProbe = self::probePayloadHealth($user);
@@ -104,7 +107,7 @@ class CanonicalAdmins
                 'token_error' => $tokenProbe['error'],
                 'payload_ok' => $payloadProbe['ok'],
                 'payload_error' => $payloadProbe['error'],
-                'ok' => $exists && $active && $hasRole && $passwordOk && $tokenProbe['ok'] && $payloadProbe['ok'],
+                'ok' => $exists && $active && $hasRole && $tokenProbe['ok'] && $payloadProbe['ok'],
             ];
         }
 
@@ -145,16 +148,18 @@ class CanonicalAdmins
                 ]);
                 $actions[] = "Created missing user '{$a['username']}'.";
             } else {
+                // Repair profile + office/active state ONLY. Never reset the
+                // password of an existing account — an admin may have changed it,
+                // and update.sh must not revert it to the default.
                 $updates = [
                     'name' => $a['name'],
                     'email' => $a['username'].'@mohammadkhani.com',
-                    'password' => Hash::make('Admin@123'),
                     'office_id' => $user->office_id ?: $office->id,
                     'is_active' => true,
                 ];
 
                 $user->fill($updates)->save();
-                $actions[] = "Verified login credentials for '{$a['username']}'.";
+                $actions[] = "Verified account details for '{$a['username']}' (password preserved).";
             }
 
             if (! $user->is_active) {
