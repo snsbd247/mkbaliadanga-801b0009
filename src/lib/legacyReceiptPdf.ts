@@ -53,12 +53,15 @@ function numToWordsBn(n: number): string {
 const amountWords = (n?: number | null) =>
   n == null ? "—" : `${numToWordsBn(n)} টাকা মাত্র।`;
 
-async function receiptHtml(r: LegacyIrrigationRecord, company: string, qr: string): Promise<string> {
+async function receiptHtml(r: LegacyIrrigationRecord, company: string, qr: string, logoUrl?: string | null): Promise<string> {
   const row = (k: string, v: string) =>
     `<tr>
        <td style="padding:6px 10px;border:1px solid #333;font-weight:600;width:52%;vertical-align:top;">${k}</td>
        <td style="padding:6px 10px;border:1px solid #333;font-weight:600;vertical-align:top;">: ${v}</td>
      </tr>`;
+  const brandBlock = logoUrl
+    ? `<img src="${logoUrl}" crossorigin="anonymous" style="max-width:170px;max-height:70px;object-fit:contain;display:block;" />`
+    : `<div style="font-size:15px;font-weight:700;max-width:180px;">${company}</div>`;
   const farmerLine = `${val(r.farmer_name)}${r.legacy_farmer_code ? `-${toBn(r.legacy_farmer_code)}` : ""}` +
     `${r.owner_type_name ? `/${r.owner_type_name}` : ""}${r.owner_fid ? `-${toBn(r.owner_fid)}` : ""}`;
   const paid = r.paid_amount ?? 0;
