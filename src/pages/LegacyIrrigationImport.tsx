@@ -585,16 +585,16 @@ export default function LegacyIrrigationImport() {
             <Card className="p-4 space-y-3">
               <Alert>
                 <AlertTriangle className="h-4 w-4" />
-                <AlertTitle>সিজন ম্যাচ হয়নি</AlertTitle>
-                <AlertDescription>নিচের সিজনগুলো সিস্টেমে নেই। প্রতিটির জন্য সঠিক সিজন নির্বাচন করুন অথবা মূল লেখা রাখুন।</AlertDescription>
+                <AlertTitle>{tx("Season Not Matched", "সিজন ম্যাচ হয়নি")}</AlertTitle>
+                <AlertDescription>{tx("The seasons below are not in the system. Select the correct season for each, or keep the original text.", "নিচের সিজনগুলো সিস্টেমে নেই। প্রতিটির জন্য সঠিক সিজন নির্বাচন করুন অথবা মূল লেখা রাখুন।")}</AlertDescription>
               </Alert>
               {unmatchedSeasons.map((s) => (
                 <div key={s} className="flex items-center gap-3">
                   <span className="min-w-32 text-sm font-medium">{s}</span>
                   <Select value={seasonMap[s] ?? ""} onValueChange={(v) => setSeasonMap((m) => ({ ...m, [s]: v }))}>
-                    <SelectTrigger className="max-w-xs"><SelectValue placeholder="সিজন নির্বাচন করুন" /></SelectTrigger>
+                    <SelectTrigger className="max-w-xs"><SelectValue placeholder={tx("Select season", "সিজন নির্বাচন করুন")} /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value={s}>মূল লেখা রাখুন ({s})</SelectItem>
+                      <SelectItem value={s}>{tx("Keep original text", "মূল লেখা রাখুন")} ({s})</SelectItem>
                       {seasonOptions.map((o) => <SelectItem key={o} value={o}>{o}</SelectItem>)}
                     </SelectContent>
                   </Select>
