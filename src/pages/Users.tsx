@@ -161,6 +161,23 @@ export default function Users() {
     setResetFor(null); setResetPwd("");
   }
 
+  async function saveEdit() {
+    if (!editFor) return;
+    if (!/^[a-zA-Z0-9_.-]{3,30}$/.test(editForm.username)) return toast.error(t("validationFailed"));
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(editForm.email)) return toast.error(t("validationFailed"));
+    const ok = await callAdmin({
+      action: "update_profile",
+      user_id: editFor.id,
+      username: editForm.username,
+      email: editForm.email,
+      full_name: editForm.full_name,
+    });
+    if (!ok) return;
+    toast.success(t("saved"));
+    setEditFor(null);
+    load();
+  }
+
   async function setRole(uid: string, role: "developer" | "super_admin" | "admin" | "committee" | "staff") {
     if (uid === me?.id) return toast.error(t("cannotChangeOwnRole" as any) || "You cannot change your own role");
     if ((role === "developer" || role === "super_admin") && !isDeveloper) {
