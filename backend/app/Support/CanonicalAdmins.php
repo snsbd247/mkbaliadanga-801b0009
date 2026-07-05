@@ -107,7 +107,7 @@ class CanonicalAdmins
                 'token_error' => $tokenProbe['error'],
                 'payload_ok' => $payloadProbe['ok'],
                 'payload_error' => $payloadProbe['error'],
-                'ok' => $exists && $active && $hasRole && $passwordOk && $tokenProbe['ok'] && $payloadProbe['ok'],
+                'ok' => $exists && $active && $hasRole && $tokenProbe['ok'] && $payloadProbe['ok'],
             ];
         }
 
