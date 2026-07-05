@@ -168,11 +168,8 @@ export async function downloadLegacyReceipts(
 /** Build preview HTML (for a verification modal) for the given records. */
 export async function buildLegacyReceiptPreview(records: LegacyIrrigationRecord[]): Promise<string> {
   const branding = await loadBranding().catch(() => null);
-  const company = branding?.company_name_bn || branding?.company_name || "সেচ রশিদ";
-  const logoUrl = branding?.logo_url || null;
-  const editorSigUrl = branding?.editor_signature_url || null;
   const parts = await Promise.all(
-    records.map(async (r) => receiptHtml(r, company, await makeQr(r), logoUrl, editorSigUrl)),
+    records.map(async (r) => buildOfficialIrrigationReceiptHtml(mapLegacyToReceiptData(r, branding), await makeQr(r))),
   );
   return parts.join('<div style="height:16px;"></div>');
 }
