@@ -557,21 +557,21 @@ export default function LegacyIrrigationImport() {
 
                 <div className="flex items-center gap-2">
                   <Checkbox id="dbdup" checked={skipDbDup} onCheckedChange={(v) => setSkipDbDup(!!v)} />
-                  <Label htmlFor="dbdup" className="font-normal">ডাটাবেজে আগে থেকে থাকা রশিদ নম্বর স্কিপ করুন</Label>
+                  <Label htmlFor="dbdup" className="font-normal">{tx("Skip receipt numbers already in the database", "ডাটাবেজে আগে থেকে থাকা রশিদ নম্বর স্কিপ করুন")}</Label>
                 </div>
 
                 <div className="space-y-2 border-t pt-3">
-                  <Label htmlFor="resume">থেমে যাওয়া ব্যাচ রিজিউম (ঐচ্ছিক — ব্যাচ আইডি দিন)</Label>
+                  <Label htmlFor="resume">{tx("Resume a stopped batch (optional — enter batch ID)", "থেমে যাওয়া ব্যাচ রিজিউম (ঐচ্ছিক — ব্যাচ আইডি দিন)")}</Label>
                   <div className="flex flex-wrap items-center gap-2">
                     <Input
                       id="resume"
                       value={resumeId}
                       onChange={(e) => setResumeId(e.target.value)}
-                      placeholder="ব্যাচ আইডি (UUID)"
+                      placeholder={tx("Batch ID (UUID)", "ব্যাচ আইডি (UUID)")}
                       className="max-w-xs font-mono text-xs"
                     />
                     <Button variant="outline" size="sm" onClick={checkResume} disabled={!resumeId.trim()}>
-                      স্টেটাস দেখুন
+                      {tx("View Status", "স্টেটাস দেখুন")}
                     </Button>
                   </div>
                   {resumeInfo && <p className="text-xs text-muted-foreground">{resumeInfo}</p>}
