@@ -343,8 +343,43 @@ export default function Users() {
         </Dialog>
       } />
 
+      <Card className="p-3 mb-3">
+        <div className="flex flex-wrap gap-2 items-end">
+          <div className="flex-1 min-w-[200px]">
+            <Label className="text-xs">{t("search" as any) || "Search"}</Label>
+            <Input value={search} onChange={e => setSearch(e.target.value)} placeholder={`${t("username")} / ${t("email")} / ${t("fullName")}`} />
+          </div>
+          <div>
+            <Label className="text-xs">{t("role")}</Label>
+            <Select value={roleFilter} onValueChange={setRoleFilter}>
+              <SelectTrigger className="w-[160px]"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{t("all" as any) || "All"}</SelectItem>
+                {isDeveloper && <SelectItem value="developer">Developer</SelectItem>}
+                <SelectItem value="super_admin">{t("superAdmin")}</SelectItem>
+                <SelectItem value="admin">{t("admin")}</SelectItem>
+                <SelectItem value="committee">{t("committee")}</SelectItem>
+                <SelectItem value="staff">{t("staff")}</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label className="text-xs">{t("office")}</Label>
+            <Select value={officeFilter} onValueChange={setOfficeFilter}>
+              <SelectTrigger className="w-[180px]"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{t("all" as any) || "All"}</SelectItem>
+                <SelectItem value="none">—</SelectItem>
+                {offices.map(o => <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+      </Card>
+
       <Card>
         <Table>
+
           <TableHeader><TableRow>
             <TableHead>{t("username")}</TableHead>
             <TableHead>{t("email")}</TableHead>
