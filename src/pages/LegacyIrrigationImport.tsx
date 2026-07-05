@@ -339,6 +339,34 @@ export default function LegacyIrrigationImport() {
     XLSX.writeFile(wb, `legacy-irrigation-invalid-${new Date().toISOString().slice(0, 10)}.xlsx`);
   }
 
+  function downloadSkipped() {
+    if (!report) return;
+    const dbSet = new Set(report.skippedDb);
+    const data: Record<string, unknown>[] = [];
+    for (const p of parsed) {
+      const rn = p.row.receipt_no ?? "";
+      const isDb = rn !== "" && dbSet.has(rn);
+      const isFile = report.skippedFile > 0 && p.dupInFile;
+      if (!isDb && !isFile) continue;
+      data.push({
+        সারি: p.idx,
+        কারণ: isDb ? "ডাটাবেজে একই রশিদ আগে থেকেই আছে" : "ফাইলের মধ্যে ডুপ্লিকেট রশিদ",
+        FARMER_NAME: p.row.farmer_name ?? "",
+        VILLAGE: p.row.village ?? "",
+        MOBILE_NO: p.row.mobile_no ?? "",
+        SESSON_YEAR: p.row.season_year ?? "",
+        RECEIPT_NO: rn,
+        PAID_AMOUNT: p.row.paid_amount ?? "",
+        COLLECTION_DATE: p.row.collection_date ?? "",
+      });
+    }
+    if (!data.length) return;
+    const ws = XLSX.utils.json_to_sheet(data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Skipped");
+    XLSX.writeFile(wb, `legacy-irrigation-skipped-${new Date().toISOString().slice(0, 10)}.xlsx`);
+  }
+
   async function checkResume() {
     const id = resumeId.trim();
     setResumeInfo(null);
