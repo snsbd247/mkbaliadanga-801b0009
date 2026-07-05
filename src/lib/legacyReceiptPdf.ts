@@ -106,12 +106,13 @@ async function receiptHtml(r: LegacyIrrigationRecord, company: string, qr: strin
       <table style="${tableStyle}">${leftRows}</table>
       <table style="${tableStyle}">${rightRows}</table>
     </div>
-    <div style="display:flex;justify-content:space-between;margin-top:44px;font-size:12px;">
+    <div style="display:flex;justify-content:space-between;margin-top:64px;font-size:12px;">
       <div style="text-align:center;width:44%;">
         <div style="border-top:1px solid #111;padding-top:4px;">সদস্যের স্বাক্ষর / প্রদানকারীর স্বাক্ষর</div>
       </div>
       <div style="text-align:center;width:44%;">
-        <div style="border-top:1px solid #111;padding-top:4px;">আদায়কারীর স্বাক্ষর</div>
+        ${editorSigUrl ? `<img src="${editorSigUrl}" crossorigin="anonymous" style="max-width:150px;max-height:44px;object-fit:contain;display:block;margin:0 auto -2px;" />` : ""}
+        <div style="border-top:1px solid #111;padding-top:4px;">সম্পাদকের স্বাক্ষর</div>
       </div>
     </div>
   </div>`;
