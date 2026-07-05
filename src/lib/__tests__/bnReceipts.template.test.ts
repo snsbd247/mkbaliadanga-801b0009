@@ -84,8 +84,13 @@ describe("Bangla receipt template (visual regression)", () => {
       await downloadBnReceiptPdf(c.data, "both");
       expect(capturedHtml).toContain(c.expectTitle);
       expect(capturedHtml).toContain(c.expectRow);
-      expect(capturedHtml).toContain("কৃষকের কপি");
-      expect(capturedHtml).toContain("অফিস কপি");
+      if (c.data.kind === "irrigation") {
+        // Official irrigation receipt is always a single copy (no farmer/office split).
+        expect(capturedHtml).toContain("কৃষকের কপি");
+      } else {
+        expect(capturedHtml).toContain("কৃষকের কপি");
+        expect(capturedHtml).toContain("অফিস কপি");
+      }
       expect(capturedHtml).toContain(c.data.receipt_no.split("-")[0]);
     });
   }
