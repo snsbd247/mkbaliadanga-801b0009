@@ -710,7 +710,7 @@ export default function LegacyIrrigationImport() {
                     </TableCell>
                   </TableRow>
                 ))}
-                {batches.length === 0 && (
+                {(!Array.isArray(batches) || batches.length === 0) && (
                   <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-6">{tx("No batches", "কোনো ব্যাচ নেই")}</TableCell></TableRow>
                 )}
               </TableBody>
