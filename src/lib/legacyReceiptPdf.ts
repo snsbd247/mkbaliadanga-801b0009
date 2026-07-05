@@ -53,7 +53,17 @@ function receiptHtml(r: LegacyIrrigationRecord, company: string): string {
   </div>`;
 }
 
-export async function downloadLegacyReceipts(records: LegacyIrrigationRecord[]) {
+const slug = (s: unknown) =>
+  String(s ?? "")
+    .trim()
+    .replace(/[\\/:*?"<>|]+/g, "")
+    .replace(/\s+/g, "-")
+    .slice(0, 40) || "farmer";
+
+export async function downloadLegacyReceipts(
+  records: LegacyIrrigationRecord[],
+  onProgress?: (done: number, total: number) => void,
+) {
   if (!records.length) return;
   const branding = await loadBranding().catch(() => null);
   const company = branding?.company_name_bn || branding?.company_name || "সেচ রশিদ";
