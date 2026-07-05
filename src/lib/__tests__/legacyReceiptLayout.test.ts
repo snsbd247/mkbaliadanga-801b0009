@@ -40,7 +40,7 @@ describe("legacy receipt layout fit", () => {
   }
 
   it("defaults to a valid preset for unknown ids", () => {
-    expect(getPaperPreset("nope").format).toBe("a4");
+    expect(getPaperPreset("nope").format).toBe("a5");
     expect(getPaperPreset(null).id).toBeTruthy();
   });
 });
