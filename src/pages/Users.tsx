@@ -252,6 +252,7 @@ export default function Users() {
     await db.from("user_permissions").delete().eq("user_id", permFor.id);
     const { error } = await db.from("user_permissions").insert(rows);
     if (error) return toast.error(error.message);
+    await logAudit("update_permissions", permFor.id, {});
     toast.success(t("saved"));
     setPermFor(null);
   }
