@@ -358,6 +358,17 @@ server {
         fastcgi_param PATH_INFO \$fastcgi_path_info;
     }
 
+    # Uploaded files (logo/signature/farmer photos/etc.) live on Laravel's public disk.
+    # Keep this before the SPA fallback; otherwise /storage/... returns index.html and
+    # images look broken after reload.
+    location /storage/ {
+        root ${APP_DIR}/backend/public;
+        try_files \$uri =404;
+        access_log off;
+        expires 30d;
+        add_header Cache-Control "public, max-age=2592000" always;
+    }
+
     # SPA fallback
     location / {
         try_files \$uri /index.html;

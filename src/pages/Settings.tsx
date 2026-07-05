@@ -28,7 +28,7 @@ export default function Settings() {
   const [busy, setBusy] = useState(false);
 
   useEffect(() => { document.title = `${t("settings")} — ${t("appName")}`; }, [t]);
-  useEffect(() => { setForm(brand); }, [brand.company_name]);
+  useEffect(() => { setForm(brand); }, [brand]);
 
   if (!rolesLoaded) return <div className="p-6 text-muted-foreground">{t("loading")}</div>;
   if (!isSuper) return <Navigate to="/" replace />;
@@ -84,6 +84,7 @@ export default function Settings() {
     }
     setBusy(false);
     toast.success(t("saved"));
+    setForm((prev: any) => ({ ...prev, ...payload }));
     notifyBrandingChange();
     setLogo(null);
     setSignature(null);
