@@ -18,8 +18,9 @@ interface CreateBody {
 interface DeleteBody { action: "delete"; user_id: string; }
 interface ResetBody  { action: "reset_password"; user_id: string; password: string; }
 interface SetActiveBody { action: "set_active"; user_id: string; is_active: boolean; }
+interface UpdateBody { action: "update_profile"; user_id: string; username?: string; email?: string; full_name?: string; }
 
-type Body = CreateBody | DeleteBody | ResetBody | SetActiveBody;
+type Body = CreateBody | DeleteBody | ResetBody | SetActiveBody | UpdateBody;
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -113,6 +114,44 @@ Deno.serve(async (req) => {
         ban_duration: active ? "none" : "876000h",
       });
       if (bErr) return json({ error: bErr.message }, 400);
+      return json({ ok: true });
+    }
+
+    if (body.action === "update_profile") {
+      const { user_id, username, email, full_name } = body;
+      if (!user_id) return json({ error: "Missing user_id" }, 400);
+
+      // Guard: only developers may edit developer accounts.
+      if (!isDeveloper) {
+        const { data: targetRoles } = await admin.from("user_roles").select("role").eq("user_id", user_id);
+        if ((targetRoles ?? []).some((r: any) => r.role === "developer")) {
+          return json({ error: "Only developers can edit developer accounts" }, 403);
+        }
+      }
+
+      if (username !== undefined) {
+        if (!/^[a-zA-Z0-9_.-]{3,30}$/.test(username)) {
+          return json({ error: "Invalid username (3–30 chars, letters/digits/._-)" }, 400);
+        }
+        const { data: existing } = await admin.from("profiles")
+          .select("id").ilike("username", username).neq("id", user_id).maybeSingle();
+        if (existing) return json({ error: "Username already taken" }, 409);
+      }
+
+      if (email !== undefined) {
+        const { error: eErr } = await admin.auth.admin.updateUserById(user_id, { email, email_confirm: true });
+        if (eErr) return json({ error: eErr.message }, 400);
+      }
+
+      const profilePatch: Record<string, unknown> = {};
+      if (username !== undefined) profilePatch.username = username;
+      if (email !== undefined) profilePatch.email = email;
+      if (full_name !== undefined) profilePatch.full_name = full_name;
+      if (Object.keys(profilePatch).length) {
+        const { error: pErr } = await admin.from("profiles").update(profilePatch).eq("id", user_id);
+        if (pErr) return json({ error: pErr.message }, 400);
+      }
+
       return json({ ok: true });
     }
 

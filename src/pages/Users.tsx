@@ -15,7 +15,7 @@ import { useLang } from "@/i18n/LanguageProvider";
 import { fmtDate } from "@/lib/format";
 import { toast } from "sonner";
 import { ALL_MODULES, type ModuleKey } from "@/lib/permissions";
-import { ShieldCheck, Plus, Trash2, KeyRound } from "lucide-react";
+import { ShieldCheck, Plus, Trash2, KeyRound, Pencil } from "lucide-react";
 import { useAuth } from "@/auth/AuthProvider";
 import { DeleteButton } from "@/components/ui/action-icon-button";
 import { z } from "zod";
@@ -51,6 +51,8 @@ export default function Users() {
   const [createOpen, setCreateOpen] = useState(false);
   const [resetFor, setResetFor] = useState<any | null>(null);
   const [resetPwd, setResetPwd] = useState("");
+  const [editFor, setEditFor] = useState<any | null>(null);
+  const [editForm, setEditForm] = useState({ username: "", email: "", full_name: "" });
   const [busy, setBusy] = useState(false);
 
   const [form, setForm] = useState({
@@ -157,6 +159,23 @@ export default function Users() {
     if (!ok) return;
     toast.success(t("passwordUpdated"));
     setResetFor(null); setResetPwd("");
+  }
+
+  async function saveEdit() {
+    if (!editFor) return;
+    if (!/^[a-zA-Z0-9_.-]{3,30}$/.test(editForm.username)) return toast.error(t("validationFailed"));
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(editForm.email)) return toast.error(t("validationFailed"));
+    const ok = await callAdmin({
+      action: "update_profile",
+      user_id: editFor.id,
+      username: editForm.username,
+      email: editForm.email,
+      full_name: editForm.full_name,
+    });
+    if (!ok) return;
+    toast.success(t("saved"));
+    setEditFor(null);
+    load();
   }
 
   async function setRole(uid: string, role: "developer" | "super_admin" | "admin" | "committee" | "staff") {
@@ -342,6 +361,9 @@ export default function Users() {
                   <Button size="sm" variant="outline" onClick={() => openPerms(u)} title={t("permissions")}>
                     <ShieldCheck className="h-4 w-4" />
                   </Button>
+                  <Button size="sm" variant="outline" onClick={() => { setEditFor(u); setEditForm({ username: u.username ?? "", email: u.email ?? "", full_name: u.full_name ?? "" }); }} title={t("edit")}>
+                    <Pencil className="h-4 w-4" />
+                  </Button>
                   <Button size="sm" variant="outline" onClick={() => { setResetFor(u); setResetPwd(""); }} title={t("resetPasswordTitle")}>
                     <KeyRound className="h-4 w-4" />
                   </Button>
@@ -354,7 +376,27 @@ export default function Users() {
         </Table>
       </Card>
 
+      {/* Edit user dialog */}
+      <Dialog open={!!editFor} onOpenChange={(o) => !o && setEditFor(null)}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>{t("edit")} — {editFor?.full_name || editFor?.email}</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <div><Label>{t("fullName")}</Label>
+              <Input value={editForm.full_name} onChange={e => setEditForm({ ...editForm, full_name: e.target.value })} /></div>
+            <div><Label>{t("username")}</Label>
+              <Input value={editForm.username} onChange={e => setEditForm({ ...editForm, username: e.target.value })} /></div>
+            <div><Label>{t("email")}</Label>
+              <Input type="email" value={editForm.email} onChange={e => setEditForm({ ...editForm, email: e.target.value })} /></div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditFor(null)}>{t("cancel")}</Button>
+            <Button onClick={saveEdit} disabled={busy}>{busy ? "…" : t("save")}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Permissions dialog */}
+
       <Dialog open={!!permFor} onOpenChange={(o) => !o && setPermFor(null)}>
         <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
