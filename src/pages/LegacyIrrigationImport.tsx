@@ -90,18 +90,6 @@ function parseDate(v: unknown): string | null {
   if (iso) return `${iso[1]}-${iso[2].padStart(2, "0")}-${iso[3].padStart(2, "0")}`;
   return null;
 }
-const MONTH_NAMES = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-/** Display a stored date consistently as "DD-MMM-YYYY" (no timezone shift). */
-function fmtDisplayDate(v: unknown): string {
-  const s = str(v);
-  if (!s) return "—";
-  const iso = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
-  if (iso) {
-    const m = Number(iso[2]);
-    if (m >= 1 && m <= 12) return `${iso[3].padStart(2, "0")}-${MONTH_NAMES[m - 1]}-${iso[1]}`;
-  }
-  return s;
-}
 const num = (v: unknown): number | null => {
   if (v == null || v === "") return null;
   const x = typeof v === "number" ? v : parseFloat(String(v).replace(/,/g, ""));
