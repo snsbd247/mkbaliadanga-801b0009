@@ -182,8 +182,9 @@ export async function downloadLegacyReceipts(
 export async function buildLegacyReceiptPreview(records: LegacyIrrigationRecord[]): Promise<string> {
   const branding = await loadBranding().catch(() => null);
   const company = branding?.company_name_bn || branding?.company_name || "সেচ রশিদ";
+  const logoUrl = branding?.logo_url || null;
   const parts = await Promise.all(
-    records.map(async (r) => receiptHtml(r, company, await makeQr(r))),
+    records.map(async (r) => receiptHtml(r, company, await makeQr(r), logoUrl)),
   );
   return parts.join('<div style="height:16px;"></div>');
 }
