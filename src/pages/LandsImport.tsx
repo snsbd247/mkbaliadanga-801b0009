@@ -645,7 +645,10 @@ export default function LandsImport() {
               dag_no: dagJoined,
               dag_numbers: dagNumbers,
               land_size: round4(num(r.raw.land_size)),
-              owner_type: borga ? "borgadar" : "owner",
+              // The imported row's owner is always the land owner. Borga hand-off
+              // is recorded via land_relations, so this record stays owner_type=owner
+              // (otherwise it wrongly shows in the owner's "Land"/borga-in tab).
+              owner_type: "owner",
               field_type: fieldType,
               land_type_id: landTypeId,
               notes: r.raw.note ? String(r.raw.note) : null,
