@@ -91,18 +91,22 @@ export default function VerifyReceipt() {
       const res = await fetch(`/api/legacy-irrigation/verify/${encodeURIComponent(receiptNo)}`, {
         headers: { Accept: "application/json" },
       });
-      const j = await res.json().catch(() => ({}));
-      if (!res.ok || !j?.ok) {
-        setError(j?.error || T.notFound);
+      const ct = res.headers.get("content-type") || "";
+      const j = ct.includes("application/json") ? await res.json().catch(() => ({})) : {};
+      if (res.status === 404 || (!res.ok && !j?.error)) {
+        setError(`${T.notFound} (${token})`);
+      } else if (!res.ok || !j?.ok) {
+        setError(`${j?.error || T.notFound} (${token})`);
       } else {
         setData(j);
       }
     } catch {
-      setError(T.network);
+      setError(`${T.network} (${token})`);
     } finally {
       setLoading(false);
     }
   }
+
 
   async function verify() {
     // Legacy irrigation receipts are stored in the app's own API DB, not in Cloud.
