@@ -658,20 +658,20 @@ export default function LegacyIrrigationImport() {
           {/* Batch report */}
           {report && (
             <Card className="p-4 space-y-2">
-              <div className="font-medium">ইমপোর্ট রিপোর্ট</div>
+              <div className="font-medium">{tx("Import Report", "ইমপোর্ট রিপোর্ট")}</div>
               <div className="flex flex-wrap gap-2">
-                <Badge variant="default">ইমপোর্ট হয়েছে: {report.inserted}</Badge>
-                {report.skippedFile > 0 && <Badge variant="outline">ফাইল ডুপ্লিকেট স্কিপ: {report.skippedFile}</Badge>}
-                {report.skippedDb.length > 0 && <Badge variant="outline">ডাটাবেজ ডুপ্লিকেট স্কিপ: {report.skippedDb.length}</Badge>}
-                <Badge variant="secondary">ব্যাচ: {report.batchId.slice(0, 8)}…</Badge>
+                <Badge variant="default">{tx("Imported", "ইমপোর্ট হয়েছে")}: {report.inserted}</Badge>
+                {report.skippedFile > 0 && <Badge variant="outline">{tx("File duplicates skipped", "ফাইল ডুপ্লিকেট স্কিপ")}: {report.skippedFile}</Badge>}
+                {report.skippedDb.length > 0 && <Badge variant="outline">{tx("DB duplicates skipped", "ডাটাবেজ ডুপ্লিকেট স্কিপ")}: {report.skippedDb.length}</Badge>}
+                <Badge variant="secondary">{tx("Batch", "ব্যাচ")}: {report.batchId.slice(0, 8)}…</Badge>
               </div>
               {(report.skippedDb.length > 0 || report.skippedFile > 0) && (
                 <div className="space-y-2">
                   {report.skippedDb.length > 0 && (
-                    <p className="text-xs text-muted-foreground">স্কিপ হওয়া রশিদ: {report.skippedDb.slice(0, 30).join(", ")}{report.skippedDb.length > 30 ? " …" : ""}</p>
+                    <p className="text-xs text-muted-foreground">{tx("Skipped receipts", "স্কিপ হওয়া রশিদ")}: {report.skippedDb.slice(0, 30).join(", ")}{report.skippedDb.length > 30 ? " …" : ""}</p>
                   )}
                   <Button variant="outline" size="sm" onClick={downloadSkipped}>
-                    স্কিপ হওয়া রো রিপোর্ট (Excel)
+                    {tx("Skipped Rows Report (Excel)", "স্কিপ হওয়া রো রিপোর্ট (Excel)")}
                   </Button>
                 </div>
               )}
