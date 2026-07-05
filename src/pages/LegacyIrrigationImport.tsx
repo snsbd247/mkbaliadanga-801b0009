@@ -294,9 +294,9 @@ export default function LegacyIrrigationImport() {
           if (c > 1) p.dupInFile = true;
         }
         setParsed(rows);
-        toast.success(`${rows.length} সারি পড়া হয়েছে`);
+        toast.success(tx(`${rows.length} rows read`, `${rows.length} সারি পড়া হয়েছে`));
       } catch (e) {
-        setHeaderError(e instanceof Error ? e.message : "ফাইল পড়া যায়নি।");
+        setHeaderError(e instanceof Error ? e.message : tx("Could not read file.", "ফাইল পড়া যায়নি।"));
       }
     };
     reader.readAsArrayBuffer(file);
