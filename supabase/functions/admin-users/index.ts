@@ -18,7 +18,7 @@ interface CreateBody {
 interface DeleteBody { action: "delete"; user_id: string; }
 interface ResetBody  { action: "reset_password"; user_id: string; password: string; }
 interface SetActiveBody { action: "set_active"; user_id: string; is_active: boolean; }
-interface UpdateBody { action: "update_profile"; user_id: string; username?: string; email?: string; full_name?: string; }
+interface UpdateBody { action: "update_profile"; user_id: string; username?: string; email?: string; full_name?: string; office_id?: string | null; }
 
 type Body = CreateBody | DeleteBody | ResetBody | SetActiveBody | UpdateBody;
 
