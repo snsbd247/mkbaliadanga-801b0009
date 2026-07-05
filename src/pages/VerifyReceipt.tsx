@@ -85,7 +85,30 @@ export default function VerifyReceipt() {
   const [voided, setVoided] = useState<{ at: string | null } | null>(null);
   const [rateLimited, setRateLimited] = useState(false);
 
+  async function verifyLegacy(receiptNo: string) {
+    setLoading(true); setError(null); setData(null); setVoided(null); setRateLimited(false);
+    try {
+      const res = await fetch(`/api/legacy-irrigation/verify/${encodeURIComponent(receiptNo)}`, {
+        headers: { Accept: "application/json" },
+      });
+      const j = await res.json().catch(() => ({}));
+      if (!res.ok || !j?.ok) {
+        setError(j?.error || T.notFound);
+      } else {
+        setData(j);
+      }
+    } catch {
+      setError(T.network);
+    } finally {
+      setLoading(false);
+    }
+  }
+
   async function verify() {
+    // Legacy irrigation receipts are stored in the app's own API DB, not in Cloud.
+    if (token.startsWith("legacy-")) {
+      return verifyLegacy(token.slice("legacy-".length));
+    }
     setLoading(true); setError(null); setData(null); setVoided(null); setRateLimited(false);
     try {
       const res = await fetch(`${FN}/receipt-verify?token=${encodeURIComponent(token)}`, {
