@@ -128,9 +128,6 @@ export async function downloadLegacyReceipts(
 ) {
   if (!records.length) return;
   const branding = await loadBranding().catch(() => null);
-  const company = branding?.company_name_bn || branding?.company_name || "সেচ রশিদ";
-  const logoUrl = branding?.logo_url || null;
-  const editorSigUrl = branding?.editor_signature_url || null;
 
   const paper = getPaperPreset(paperId);
   const pdf = new jsPDF({ unit: "mm", format: paper.format, orientation: paper.orientation });
@@ -141,7 +138,9 @@ export async function downloadLegacyReceipts(
     holder.style.position = "fixed";
     holder.style.left = "-10000px";
     holder.style.top = "0";
-    holder.innerHTML = await receiptHtml(records[i], company, qr, logoUrl, editorSigUrl);
+    holder.style.width = "1040px";
+    holder.style.background = "#fff";
+    holder.innerHTML = buildOfficialIrrigationReceiptHtml(mapLegacyToReceiptData(records[i], branding), qr);
     document.body.appendChild(holder);
     try {
       const canvas = await html2canvas(holder.firstElementChild as HTMLElement, { scale: 2, backgroundColor: "#fff", useCORS: true });
