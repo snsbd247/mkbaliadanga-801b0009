@@ -57,4 +57,20 @@ test.describe("Legacy receipt QR verification", () => {
     await expect(page.getByText(/legacy-999999/)).toBeVisible({ timeout: 15_000 });
     await expect(page.getByRole("button", { name: /আবার চেষ্টা|Try again/ })).toBeVisible();
   });
+
+  test("shows a clear route-missing error when the public legacy API is not deployed", async ({ page }) => {
+    await page.route("**/api/legacy-irrigation/verify/**", (route) =>
+      route.fulfill({
+        status: 404,
+        contentType: "application/json",
+        body: JSON.stringify({ message: "The route api/legacy-irrigation/verify/1677 could not be found." }),
+      })
+    );
+
+    await page.goto("/verify/legacy-1677");
+
+    await expect(page.getByText(/legacy-1677/)).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByText(/পুরনো রসিদ যাচাই রুট|Legacy verification route/)).toBeVisible();
+    await expect(page.getByRole("button", { name: /আবার চেষ্টা|Try again/ })).toBeVisible();
+  });
 });
