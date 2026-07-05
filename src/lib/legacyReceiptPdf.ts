@@ -6,6 +6,7 @@ import QRCode from "qrcode";
 import { loadBranding } from "@/lib/branding";
 import { computeReceiptFit, getPaperPreset, PAGE_MARGIN_MM } from "@/lib/legacyReceiptLayout";
 import type { LegacyIrrigationRecord } from "@/lib/api/legacyIrrigation";
+import { buildOfficialIrrigationReceiptHtml, type BnReceiptData } from "@/lib/bnReceipts";
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 function fmtDate(v?: string | null): string {
