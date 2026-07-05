@@ -97,3 +97,10 @@ export async function downloadLegacyReceipts(
     : `sech-receipts-${slug(first.farmer_name)}-${records.length}-${new Date().toISOString().slice(0, 10)}.pdf`;
   pdf.save(name);
 }
+
+/** Build preview HTML (for a verification modal) for the given records. */
+export async function buildLegacyReceiptPreview(records: LegacyIrrigationRecord[]): Promise<string> {
+  const branding = await loadBranding().catch(() => null);
+  const company = branding?.company_name_bn || branding?.company_name || "সেচ রশিদ";
+  return records.map((r) => receiptHtml(r, company)).join('<div style="height:16px;"></div>');
+}
