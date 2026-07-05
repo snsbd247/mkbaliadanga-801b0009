@@ -688,7 +688,7 @@ export default function LegacyIrrigationImport() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {batches.map((b) => (
+                {(Array.isArray(batches) ? batches : []).map((b) => (
                   <TableRow key={b.import_batch_id}>
                     <TableCell className="font-mono text-xs">{b.import_batch_id.slice(0, 8)}…</TableCell>
                     <TableCell className="max-w-40 truncate">{b.file_name ?? "—"}</TableCell>
