@@ -474,13 +474,13 @@ export default function LegacyIrrigationImport() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="পুরনো সেচ ডাটা ইমপোর্ট" description="আগের সফটওয়্যারের সেচ কালেকশন হিস্ট্রি (আলাদা টেবিল)" />
+      <PageHeader title={tx("Import Legacy Irrigation Data", "পুরনো সেচ ডাটা ইমপোর্ট")} description={tx("Irrigation collection history from the old software (separate table)", "আগের সফটওয়্যারের সেচ কালেকশন হিস্ট্রি (আলাদা টেবিল)")} />
 
       <Tabs defaultValue="import" onValueChange={(v) => v === "batches" && loadBatches()}>
         <TabsList>
-          <TabsTrigger value="import">ইমপোর্ট</TabsTrigger>
-          <TabsTrigger value="search">কৃষক খুঁজুন</TabsTrigger>
-          <TabsTrigger value="batches">ব্যাচ ব্যবস্থাপনা</TabsTrigger>
+          <TabsTrigger value="import">{tx("Import", "ইমপোর্ট")}</TabsTrigger>
+          <TabsTrigger value="search">{tx("Find Farmer", "কৃষক খুঁজুন")}</TabsTrigger>
+          <TabsTrigger value="batches">{tx("Batch Management", "ব্যাচ ব্যবস্থাপনা")}</TabsTrigger>
         </TabsList>
 
         {/* ── Import tab ── */}
@@ -488,7 +488,7 @@ export default function LegacyIrrigationImport() {
           <Card className="p-4 space-y-4">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
-                <Label>Excel/CSV ফাইল নির্বাচন করুন</Label>
+                <Label>{tx("Select Excel/CSV file", "Excel/CSV ফাইল নির্বাচন করুন")}</Label>
                 <input
                   ref={fileRef}
                   type="file"
@@ -497,11 +497,11 @@ export default function LegacyIrrigationImport() {
                   onChange={(e) => e.target.files?.[0] && onFile(e.target.files[0])}
                 />
                 <p className="text-xs text-muted-foreground mt-1">
-                  প্রয়োজনীয় কলাম: FARMER_NAME, SESSON_YEAR, RECEIPT_NO, PAID_AMOUNT
+                  {tx("Required columns", "প্রয়োজনীয় কলাম")}: FARMER_NAME, SESSON_YEAR, RECEIPT_NO, PAID_AMOUNT
                 </p>
               </div>
               <Button variant="outline" onClick={downloadTemplate}>
-                <Download className="h-4 w-4 mr-2" /> টেমপ্লেট ডাউনলোড
+                <Download className="h-4 w-4 mr-2" /> {tx("Download Template", "টেমপ্লেট ডাউনলোড")}
               </Button>
             </div>
 
