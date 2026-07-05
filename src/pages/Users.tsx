@@ -445,7 +445,7 @@ export default function Users() {
                   <Button size="sm" variant="outline" onClick={() => openPerms(u)} title={t("permissions")}>
                     <ShieldCheck className="h-4 w-4" />
                   </Button>
-                  <Button size="sm" variant="outline" onClick={() => { setEditFor(u); setEditForm({ username: u.username ?? "", email: u.email ?? "", full_name: u.full_name ?? "" }); }} title={t("edit")}>
+                  <Button size="sm" variant="outline" onClick={() => { setEditFor(u); setEditForm({ username: u.username ?? "", email: u.email ?? "", full_name: u.full_name ?? "", office_id: u.office_id ?? "" }); }} title={t("edit")}>
                     <Pencil className="h-4 w-4" />
                   </Button>
                   <Button size="sm" variant="outline" onClick={() => { setResetFor(u); setResetPwd(""); }} title={t("resetPasswordTitle")}>
