@@ -113,10 +113,18 @@ const slug = (s: unknown) =>
     .replace(/\s+/g, "-")
     .slice(0, 40) || "farmer";
 
+/** Build the same-origin verification URL a QR code should resolve to. */
+export function legacyVerifyUrl(r: LegacyIrrigationRecord): string {
+  const origin = typeof window !== "undefined" ? window.location.origin : "";
+  const token = r.receipt_no
+    ? `legacy-${r.receipt_no}`
+    : `legacy-${r.legacy_farmer_code ?? ""}-${r.collection_date ?? ""}`;
+  return `${origin}/verify/${encodeURIComponent(token)}`;
+}
+
 async function makeQr(r: LegacyIrrigationRecord): Promise<string> {
-  const payload = r.receipt_no ? String(r.receipt_no) : `${r.legacy_farmer_code ?? ""}-${r.collection_date ?? ""}`;
   try {
-    return await QRCode.toDataURL(payload, { margin: 0, width: 128 });
+    return await QRCode.toDataURL(legacyVerifyUrl(r), { margin: 0, width: 128 });
   } catch {
     return "";
   }
