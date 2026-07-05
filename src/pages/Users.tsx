@@ -260,6 +260,22 @@ export default function Users() {
     setPerms((p) => ({ ...p, [m]: { ...p[m], [k]: !p[m]?.[k] } }));
   }
 
+  const officeName = (id: string | null) => offices.find((o) => o.id === id)?.name ?? "";
+  const filtered = list.filter((u) => {
+    const q = search.trim().toLowerCase();
+    if (q) {
+      const hay = `${u.username ?? ""} ${u.email ?? ""} ${u.full_name ?? ""}`.toLowerCase();
+      if (!hay.includes(q)) return false;
+    }
+    if (roleFilter !== "all" && !(u.roles ?? []).includes(roleFilter)) return false;
+    if (officeFilter !== "all") {
+      if (officeFilter === "none" && u.office_id) return false;
+      if (officeFilter !== "none" && u.office_id !== officeFilter) return false;
+    }
+    return true;
+  });
+
+
   return (
     <>
       <PageHeader title={t("users")} description={t("onlySuperAdminUsers")} actions={
