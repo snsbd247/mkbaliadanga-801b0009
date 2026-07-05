@@ -54,65 +54,81 @@ const amountWords = (n?: number | null) =>
   n == null ? "—" : `${numToWordsBn(n)} টাকা মাত্র।`;
 
 async function receiptHtml(r: LegacyIrrigationRecord, company: string, qr: string, logoUrl?: string | null, editorSigUrl?: string | null): Promise<string> {
-  const cell = (k: string, v: string) =>
-    `<tr>
-       <td style="padding:10px 8px;border:1px solid #333;font-weight:600;width:48%;vertical-align:top;">${k}</td>
-       <td style="padding:10px 8px;border:1px solid #333;font-weight:600;vertical-align:top;">: ${v}</td>
-     </tr>`;
-  const brandBlock = logoUrl
-    ? `<img src="${logoUrl}" crossorigin="anonymous" style="max-width:170px;max-height:70px;object-fit:contain;display:block;" />`
-    : `<div style="font-size:15px;font-weight:700;max-width:180px;">${company}</div>`;
-  const farmerLine = `${val(r.farmer_name)}${r.legacy_farmer_code ? `-${toBn(r.legacy_farmer_code)}` : ""}` +
-    `${r.owner_type_name ? `/${r.owner_type_name}` : ""}${r.owner_fid ? `-${toBn(r.owner_fid)}` : ""}`;
   const paid = r.paid_amount ?? 0;
-  const leftRows = [
-    cell("কৃষকের নাম ও আইডি/মালিকের নাম ও আইডি", farmerLine),
-    cell("পিতার/স্বামীর নাম:", val(r.father_name)),
-    cell("গ্রাম/মহল্লা/মোবাইল নং:", `${val(r.village)}/${val(r.mobile_no)}`),
-    cell("কৃষক এবং মালিক সভা সদস্য:", `${toBn(val(r.legacy_farmer_code))}/${toBn(val(r.owner_fid))}`),
-    cell("মৌজা:", val(r.mouza_name)),
-    cell("জমির ধরন/ চার্জ রেট (একর/বিঘা):", val(r.owner_type_name)),
-    cell("দাগ নং:", toBn(val(r.dag_no))),
-  ].join("");
-  const rightRows = [
-    cell("জমির পরিমাণ:", `${toBn(val(r.land_shatak))} শতক`),
-    cell("চার্জের পরিমাণ (হাল)/জরিমানা:", `${toBn(val(r.rate))}`),
-    cell("চার্জের পরিমাণ (বকেয়া)/জরিমানা:", `${toBn(val(r.due_amount))}`),
-    cell("মোট আদায়ের পরিমাণ:", `${toBn(String(paid))} টাকা`),
-    cell("কথায়:", amountWords(paid)),
-    cell("হোল্ডিং এর বিবরন/পাটুয়ারীর নাম ও মোবা নং:", val(r.receipt_no)),
-  ].join("");
-  const tableStyle = "width:50%;border-collapse:collapse;font-size:13px;border:1px solid #333;vertical-align:top;";
+  const farmerNamePart = `${val(r.farmer_name)}${r.legacy_farmer_code ? `-${toBn(r.legacy_farmer_code)}` : ""}`;
+  const ownerPart = `${val(r.owner_type_name)}${r.owner_fid ? `-${toBn(r.owner_fid)}` : ""}`;
+
+  // Single-column rows, identical order to the official "সেচ চার্জ ও বিবিধ আদায় রশিদ".
+  const rows: Array<[string, string]> = [
+    ["farmer", `${farmerNamePart}/${ownerPart}`],
+    ["পিতার/স্বামীর নাম", val(r.father_name)],
+    ["গ্রাম/মহল্লা/মোবাইল নং", `${val(r.village)}${r.mobile_no ? "/" + toBn(String(r.mobile_no)) : ""}`],
+    ["কৃষক এবং মালিক সভ্য সদস্য", `${toBn(val(r.legacy_farmer_code))}/${toBn(val(r.owner_fid))}`],
+    ["মৌজা", val(r.mouza_name)],
+    ["landKind", `${val(r.owner_type_name)}/ ${toBn(val(r.rate))}`],
+    ["দাগ নং", toBn(val(r.dag_no))],
+    ["জমির পরিমাণ", `${toBn(val(r.land_shatak))} শতক`],
+    ["চার্জের পরিমাণ (হাল)/জরিমানা", `${toBn(val(r.rate))}৳/০৳`],
+    ["চার্জের পরিমাণ (বকেয়া)/জরিমানা", `${toBn(val(r.due_amount))}৳/০৳`],
+    ["মোট আদায়ের পরিমাণ", `${toBn(String(paid))}৳`],
+    ["কথায়", amountWords(paid)],
+    ["হোল্ডিং এর বিবরন/পাটুয়ারীর নাম ও মোবা নং", toBn(val(r.receipt_no))],
+  ];
+
+  const cellWrap = "word-break:break-word;overflow-wrap:anywhere;white-space:pre-line;line-height:1.2;";
+  const officialRows = rows.map(([k, v], idx) => {
+    const isLast = idx === rows.length - 1;
+    const rowPadY = isLast ? "1px 0 6px 12px" : "1px 0 1px 12px";
+    const rowPadColon = isLast ? "1px 8px 6px 4px" : "1px 8px 1px 4px";
+    const rowPadVal = isLast ? "1px 12px 6px 0" : "1px 12px 1px 0";
+    const label = k === "farmer"
+      ? `কৃষকের নাম ও আইডি/মালিকের নাম ও আইডি`
+      : k === "landKind"
+        ? `জমির ধরন/ চার্জ রেট (একর/বিঘা)`
+        : k;
+    return `
+      <tr>
+        <td style="padding:${rowPadY};vertical-align:top;width:46%;font-size:18px;line-height:1.2;font-weight:600;">${label}</td>
+        <td style="padding:${rowPadColon};vertical-align:top;width:14px;font-size:18px;line-height:1.2;font-weight:700;">:</td>
+        <td style="padding:${rowPadVal};vertical-align:top;font-size:18px;line-height:1.2;font-weight:600;${cellWrap}">${v}</td>
+      </tr>`;
+  }).join("");
+
+  const logo = logoUrl
+    ? `<img src="${logoUrl}" crossorigin="anonymous" style="max-width:215px;height:64px;object-fit:contain;object-position:left center;" />`
+    : `<div style="height:64px;display:flex;align-items:center;justify-content:flex-start;text-align:left;font-size:18px;font-weight:700;color:#111;">${company}</div>`;
+
+  const fontFamily = `'Noto Sans Bengali','Hind Siliguri','SolaimanLipi',sans-serif`;
+
   return `
-  <div style="width:1040px;padding:22px 30px;font-family:'Noto Sans Bengali','Hind Siliguri',Arial,sans-serif;color:#111;background:#fff;border:2px solid #111;border-radius:6px;box-sizing:border-box;">
-    <div style="display:flex;align-items:flex-start;justify-content:space-between;">
-      <div style="max-width:200px;">${brandBlock}</div>
-      <div style="text-align:center;flex:1;">
-        <div style="font-size:22px;font-weight:700;text-decoration:underline;">সেচ চার্জ ও বিবিধ আদায় রশিদ</div>
+  <div style="position:relative;width:1040px;font-family:${fontFamily};color:#111;background:#fff;padding:20px 26px 24px;min-height:650px;box-sizing:border-box;">
+    <div style="display:grid;grid-template-columns:240px 1fr 128px;align-items:start;min-height:92px;">
+      <div style="padding-top:16px;">${logo}</div>
+      <div style="text-align:center;padding-top:24px;">
+        <div style="display:inline-block;font-size:25px;font-weight:800;line-height:1.1;text-decoration:underline;text-underline-offset:4px;text-decoration-thickness:2px;">সেচ চার্জ ও বিবিধ আদায় রশিদ</div>
       </div>
-      <div style="text-align:center;width:80px;">
-        <img src="${qr}" style="width:64px;height:64px;display:block;margin:0 auto;" />
-        <div style="font-size:10px;color:#333;margin-top:2px;">যাচাই করুন</div>
+      <div style="text-align:right;padding-top:14px;">
+        ${qr ? `<img src="${qr}" style="width:78px;height:78px;display:block;margin-left:auto;" /><div style="font-size:11px;color:#111;margin-top:2px;">যাচাই করুন</div>` : ""}
       </div>
     </div>
-    <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-top:16px;font-size:13px;">
+
+    <div style="display:grid;grid-template-columns:1fr auto;column-gap:24px;margin-top:4px;font-size:21px;line-height:1.35;">
       <div>
-        <div style="font-weight:600;">রশিদ নং: ${toBn(val(r.receipt_no))}</div>
-        <div style="font-weight:600;margin-top:4px;">আদায়ের তথ্য: ${val(r.season_year)}</div>
+        <div>রশিদ নং: ${toBn(val(r.receipt_no))}</div>
+        <div>আদায়ের তথ্য: ${val(r.season_year)}</div>
       </div>
-      <div style="font-weight:600;">সংগৃহীত তারিখ: ${toBn(fmtDate(r.collection_date))} ইং</div>
+      <div style="white-space:nowrap;padding-top:30px;">সংগৃহীত তারিখ: ${toBn(fmtDate(r.collection_date))} ইং</div>
     </div>
-    <div style="display:flex;gap:14px;margin-top:10px;align-items:flex-start;">
-      <table style="${tableStyle}">${leftRows}</table>
-      <table style="${tableStyle}">${rightRows}</table>
-    </div>
-    <div style="display:flex;justify-content:space-between;margin-top:64px;font-size:12px;">
-      <div style="text-align:center;width:44%;">
-        <div style="border-top:1px solid #111;padding-top:4px;">সদস্যের স্বাক্ষর / প্রদানকারীর স্বাক্ষর</div>
-      </div>
-      <div style="text-align:center;width:44%;">
-        ${editorSigUrl ? `<img src="${editorSigUrl}" crossorigin="anonymous" style="max-width:150px;max-height:44px;object-fit:contain;display:block;margin:0 auto -2px;" />` : ""}
-        <div style="border-top:1px solid #111;padding-top:4px;">সম্পাদকের স্বাক্ষর</div>
+
+    <table style="width:100%;border:2px solid #111;border-collapse:collapse;margin-top:14px;table-layout:fixed;">
+      <tbody>${officialRows}</tbody>
+    </table>
+
+    <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-top:54px;font-size:19px;line-height:1.2;">
+      <div style="border-top:1px solid #111;padding-top:2px;min-width:260px;">সদস্যের স্বাক্ষর/প্রদানকারীর স্বাক্ষর</div>
+      <div style="text-align:right;min-width:170px;">
+        ${editorSigUrl ? `<img src="${editorSigUrl}" crossorigin="anonymous" style="height:34px;margin:0 0 2px auto;display:block;" />` : ""}
+        <div style="border-top:1px solid #111;padding-top:2px;">সম্পাদকের স্বাক্ষর</div>
       </div>
     </div>
   </div>`;
