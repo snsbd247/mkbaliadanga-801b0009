@@ -282,8 +282,13 @@ npm run build
 # 5. Final verification (BEFORE reloading services)
 # ──────────────────────────────────────────────────────────────────────────
 cd "${APP_DIR}/backend"
-log "Final admin verification report (detected roles + active status)…"
-php artisan admin:verify --fix || warn "  ✗ final admin verification reported problems — check output above"
+if [ "${NO_SEED}" = "1" ]; then
+  log "Final report: --no-seed set — admin accounts left untouched (report only)."
+  php artisan admin:verify || true
+else
+  log "Final admin verification report (detected roles + active status)…"
+  php artisan admin:verify --fix || warn "  ✗ final admin verification reported problems — check output above"
+fi
 
 # ──────────────────────────────────────────────────────────────────────────
 # 6. Reload services — DETACHED
