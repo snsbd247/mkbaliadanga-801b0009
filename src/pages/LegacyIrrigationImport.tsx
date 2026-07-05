@@ -627,7 +627,7 @@ export default function LegacyIrrigationImport() {
                   ))}
                 </TableBody>
               </Table>
-              {invalidRows.length > 50 && <p className="text-xs text-muted-foreground p-3">প্রথম ৫০টি দেখানো হয়েছে।</p>}
+              {invalidRows.length > 50 && <p className="text-xs text-muted-foreground p-3">{tx("Showing first 50.", "প্রথম ৫০টি দেখানো হয়েছে।")}</p>}
             </Card>
           )}
 
@@ -637,13 +637,13 @@ export default function LegacyIrrigationImport() {
               {blockedByDup && (
                 <Alert variant="destructive">
                   <AlertTriangle className="h-4 w-4" />
-                  <AlertDescription>ডুপ্লিকেট রশিদ থাকায় ইমপোর্ট ব্লক করা হয়েছে। "স্কিপ" নির্বাচন করুন বা ফাইল ঠিক করুন।</AlertDescription>
+                  <AlertDescription>{tx('Import is blocked due to duplicate receipts. Choose "Skip" or fix the file.', 'ডুপ্লিকেট রশিদ থাকায় ইমপোর্ট ব্লক করা হয়েছে। "স্কিপ" নির্বাচন করুন বা ফাইল ঠিক করুন।')}</AlertDescription>
                 </Alert>
               )}
               <div className="flex items-center gap-3">
                 <Button onClick={save} disabled={!canImport || saving}>
                   {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Upload className="h-4 w-4 mr-2" />}
-                  {importableRows.length} সারি ইমপোর্ট করুন
+                  {tx(`Import ${importableRows.length} rows`, `${importableRows.length} সারি ইমপোর্ট করুন`)}
                 </Button>
               </div>
               {saving && (
