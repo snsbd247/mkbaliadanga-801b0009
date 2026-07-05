@@ -391,7 +391,7 @@ export default function Users() {
             <TableHead className="text-right">{t("actions")}</TableHead>
           </TableRow></TableHeader>
           <TableBody>
-            {list.map(u => (
+            {filtered.map(u => (
               <TableRow key={u.id}>
                 <TableCell className="font-mono text-xs">{u.username ?? "—"}</TableCell>
                 <TableCell className="font-mono text-xs">{u.email}</TableCell>
