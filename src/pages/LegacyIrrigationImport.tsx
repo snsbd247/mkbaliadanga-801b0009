@@ -739,9 +739,16 @@ export default function LegacyIrrigationImport() {
                       <TableCell>{r.owner_type_name ?? "—"}</TableCell>
                       <TableCell>{r.receipt_no ?? "—"}</TableCell>
                       <TableCell>{r.paid_amount ?? "—"}</TableCell>
-                      <TableCell>{r.collection_date ?? "—"}</TableCell>
+                      <TableCell>{fmtDisplayDate(r.collection_date)}</TableCell>
                     </TableRow>
                   ))}
+                  <TableRow className="font-semibold bg-muted/50">
+                    <TableCell colSpan={3} className="text-right">{tx("Total", "মোট")}</TableCell>
+                    <TableCell>{records.reduce((s, r) => s + (r.land_shatak ?? 0), 0)}</TableCell>
+                    <TableCell colSpan={3} className="text-right">{tx("Total Paid", "মোট পরিশোধ")}</TableCell>
+                    <TableCell>{records.reduce((s, r) => s + (r.paid_amount ?? 0), 0)}</TableCell>
+                    <TableCell />
+                  </TableRow>
                 </TableBody>
               </Table>
             </Card>
