@@ -44,7 +44,7 @@ const cases: Array<{ name: string; data: BnReceiptData; expectTitle: string; exp
       previous_due: 200,
       collected_amount: 2075,
     },
-    expectTitle: "সেচ চার্জ সংগ্রহের রশিদ",
+    expectTitle: "সেচ চার্জ ও বিবিধ আদায় রশিদ",
     expectRow: "চার্জের পরিমাণ",
   },
   {
@@ -93,7 +93,7 @@ describe("Bangla receipt template (visual regression)", () => {
   it("missing collector_signature_url renders fixed-size placeholder line", async () => {
     await downloadBnReceiptPdf(cases[0].data, "farmer");
     expect(capturedHtml).toContain("আদায়কারীর স্বাক্ষর");
-    expect(capturedHtml).toContain("width:140px");
+    expect(capturedHtml).toContain("border-top:1px solid #111");
     expect(capturedHtml).not.toContain("<img src=\"data:image");
   });
 
