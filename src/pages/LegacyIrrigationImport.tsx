@@ -444,7 +444,12 @@ export default function LegacyIrrigationImport() {
 
 
   async function loadBatches() {
-    try { setBatches(await LegacyIrrigationApi.batches()); } catch { /* ignore */ }
+    try {
+      const res = await LegacyIrrigationApi.batches();
+      // Backend may return a raw array or a wrapped/paginated payload; normalise to an array.
+      const list = Array.isArray(res) ? res : Array.isArray((res as any)?.data) ? (res as any).data : [];
+      setBatches(list);
+    } catch { setBatches([]); }
   }
   async function removeBatch(id: string) {
     if (!confirm(tx("Delete this entire batch?", "এই পুরো ব্যাচ মুছে ফেলবেন?"))) return;
@@ -683,7 +688,7 @@ export default function LegacyIrrigationImport() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {batches.map((b) => (
+                {(Array.isArray(batches) ? batches : []).map((b) => (
                   <TableRow key={b.import_batch_id}>
                     <TableCell className="font-mono text-xs">{b.import_batch_id.slice(0, 8)}…</TableCell>
                     <TableCell className="max-w-40 truncate">{b.file_name ?? "—"}</TableCell>
@@ -705,7 +710,7 @@ export default function LegacyIrrigationImport() {
                     </TableCell>
                   </TableRow>
                 ))}
-                {batches.length === 0 && (
+                {(!Array.isArray(batches) || batches.length === 0) && (
                   <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-6">{tx("No batches", "কোনো ব্যাচ নেই")}</TableCell></TableRow>
                 )}
               </TableBody>
