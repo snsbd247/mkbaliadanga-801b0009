@@ -54,10 +54,10 @@ const amountWords = (n?: number | null) =>
   n == null ? "—" : `${numToWordsBn(n)} টাকা মাত্র।`;
 
 async function receiptHtml(r: LegacyIrrigationRecord, company: string, qr: string, logoUrl?: string | null): Promise<string> {
-  const row = (k: string, v: string) =>
+  const cell = (k: string, v: string) =>
     `<tr>
-       <td style="padding:6px 10px;border:1px solid #333;font-weight:600;width:52%;vertical-align:top;">${k}</td>
-       <td style="padding:6px 10px;border:1px solid #333;font-weight:600;vertical-align:top;">: ${v}</td>
+       <td style="padding:5px 8px;border:1px solid #333;font-weight:600;width:48%;vertical-align:top;">${k}</td>
+       <td style="padding:5px 8px;border:1px solid #333;font-weight:600;vertical-align:top;">: ${v}</td>
      </tr>`;
   const brandBlock = logoUrl
     ? `<img src="${logoUrl}" crossorigin="anonymous" style="max-width:170px;max-height:70px;object-fit:contain;display:block;" />`
@@ -65,41 +65,48 @@ async function receiptHtml(r: LegacyIrrigationRecord, company: string, qr: strin
   const farmerLine = `${val(r.farmer_name)}${r.legacy_farmer_code ? `-${toBn(r.legacy_farmer_code)}` : ""}` +
     `${r.owner_type_name ? `/${r.owner_type_name}` : ""}${r.owner_fid ? `-${toBn(r.owner_fid)}` : ""}`;
   const paid = r.paid_amount ?? 0;
+  const leftRows = [
+    cell("কৃষকের নাম ও আইডি/মালিকের নাম ও আইডি", farmerLine),
+    cell("পিতার/স্বামীর নাম:", val(r.father_name)),
+    cell("গ্রাম/মহল্লা/মোবাইল নং:", `${val(r.village)}/${val(r.mobile_no)}`),
+    cell("কৃষক এবং মালিক সভা সদস্য:", `${toBn(val(r.legacy_farmer_code))}/${toBn(val(r.owner_fid))}`),
+    cell("মৌজা:", val(r.mouza_name)),
+    cell("জমির ধরন/ চার্জ রেট (একর/বিঘা):", val(r.owner_type_name)),
+    cell("দাগ নং:", toBn(val(r.dag_no))),
+  ].join("");
+  const rightRows = [
+    cell("জমির পরিমাণ:", `${toBn(val(r.land_shatak))} শতক`),
+    cell("চার্জের পরিমাণ (হাল)/জরিমানা:", `${toBn(val(r.rate))}`),
+    cell("চার্জের পরিমাণ (বকেয়া)/জরিমানা:", `${toBn(val(r.due_amount))}`),
+    cell("মোট আদায়ের পরিমাণ:", `${toBn(String(paid))} টাকা`),
+    cell("কথায়:", amountWords(paid)),
+    cell("হোল্ডিং এর বিবরন/পাটুয়ারীর নাম ও মোবা নং:", val(r.receipt_no)),
+  ].join("");
+  const tableStyle = "width:50%;border-collapse:collapse;font-size:13px;border:1px solid #333;vertical-align:top;";
   return `
-  <div style="width:720px;padding:22px 26px;font-family:'Noto Sans Bengali','Hind Siliguri',Arial,sans-serif;color:#111;background:#fff;border:2px solid #111;border-radius:6px;box-sizing:border-box;">
+  <div style="width:1040px;padding:22px 30px;font-family:'Noto Sans Bengali','Hind Siliguri',Arial,sans-serif;color:#111;background:#fff;border:2px solid #111;border-radius:6px;box-sizing:border-box;">
     <div style="display:flex;align-items:flex-start;justify-content:space-between;">
-      <div style="max-width:180px;">${brandBlock}</div>
+      <div style="max-width:200px;">${brandBlock}</div>
       <div style="text-align:center;flex:1;">
-        <div style="font-size:20px;font-weight:700;text-decoration:underline;">সেচ চার্জ ও বিবিধ আদায় রশিদ</div>
+        <div style="font-size:22px;font-weight:700;text-decoration:underline;">সেচ চার্জ ও বিবিধ আদায় রশিদ</div>
       </div>
       <div style="text-align:center;width:80px;">
         <img src="${qr}" style="width:64px;height:64px;display:block;margin:0 auto;" />
         <div style="font-size:10px;color:#333;margin-top:2px;">যাচাই করুন</div>
       </div>
     </div>
-    <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-top:18px;font-size:13px;">
+    <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-top:16px;font-size:13px;">
       <div>
         <div style="font-weight:600;">রশিদ নং: ${toBn(val(r.receipt_no))}</div>
         <div style="font-weight:600;margin-top:4px;">আদায়ের তথ্য: ${val(r.season_year)}</div>
       </div>
       <div style="font-weight:600;">সংগৃহীত তারিখ: ${toBn(fmtDate(r.collection_date))} ইং</div>
     </div>
-    <table style="width:100%;border-collapse:collapse;font-size:13px;margin-top:10px;border:1px solid #333;">
-      ${row("কৃষকের নাম ও আইডি/মালিকের নাম ও আইডি", farmerLine)}
-      ${row("পিতার/স্বামীর নাম:", val(r.father_name))}
-      ${row("গ্রাম/মহল্লা/মোবাইল নং:", `${val(r.village)}/${val(r.mobile_no)}`)}
-      ${row("কৃষক এবং মালিক সভা সদস্য:", `${toBn(val(r.legacy_farmer_code))}/${toBn(val(r.owner_fid))}`)}
-      ${row("মৌজা:", val(r.mouza_name))}
-      ${row("জমির ধরন/ চার্জ রেট (একর/বিঘা):", val(r.owner_type_name))}
-      ${row("দাগ নং:", toBn(val(r.dag_no)))}
-      ${row("জমির পরিমাণ:", `${toBn(val(r.land_shatak))} শতক`)}
-      ${row("চার্জের পরিমাণ (হাল)/জরিমানা:", `${toBn(val(r.rate))}`)}
-      ${row("চার্জের পরিমাণ (বকেয়া)/জরিমানা:", `${toBn(val(r.due_amount))}`)}
-      ${row("মোট আদায়ের পরিমাণ:", `${toBn(String(paid))} টাকা`)}
-      ${row("কথায়:", amountWords(paid))}
-      ${row("হোল্ডিং এর বিবরন/পাটুয়ারীর নাম ও মোবা নং:", val(r.receipt_no))}
-    </table>
-    <div style="display:flex;justify-content:space-between;margin-top:52px;font-size:12px;">
+    <div style="display:flex;gap:14px;margin-top:10px;align-items:flex-start;">
+      <table style="${tableStyle}">${leftRows}</table>
+      <table style="${tableStyle}">${rightRows}</table>
+    </div>
+    <div style="display:flex;justify-content:space-between;margin-top:44px;font-size:12px;">
       <div style="text-align:center;width:44%;">
         <div style="border-top:1px solid #111;padding-top:4px;">সদস্যের স্বাক্ষর / প্রদানকারীর স্বাক্ষর</div>
       </div>

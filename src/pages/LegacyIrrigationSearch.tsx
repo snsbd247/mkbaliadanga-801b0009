@@ -290,8 +290,8 @@ function ScaledReceiptPreview({
   const marginPx = PAGE_MARGIN_MM * pxPerMm;
 
   // Fit uses the natural receipt canvas ratio (720 × measured height).
-  const fit = computeReceiptFit(paper, 720, receiptHeightPx || 720, PAGE_MARGIN_MM);
-  const receiptScale = pxPerMm > 0 ? (fit.imgW * pxPerMm) / 720 : 1;
+  const fit = computeReceiptFit(paper, 1040, receiptHeightPx || 700, PAGE_MARGIN_MM);
+  const receiptScale = pxPerMm > 0 ? (fit.imgW * pxPerMm) / 1040 : 1;
 
   return (
     <>
@@ -299,7 +299,7 @@ function ScaledReceiptPreview({
       <div
         ref={measureRef}
         aria-hidden
-        style={{ position: "fixed", left: -10000, top: 0, width: 720 }}
+        style={{ position: "fixed", left: -10000, top: 0, width: 1040 }}
         dangerouslySetInnerHTML={{ __html: html }}
       />
 
@@ -314,7 +314,7 @@ function ScaledReceiptPreview({
               position: "absolute",
               left: fit.x * pxPerMm,
               top: fit.y * pxPerMm,
-              width: 720,
+              width: 1040,
               transform: `scale(${receiptScale})`,
               transformOrigin: "top left",
             }}
