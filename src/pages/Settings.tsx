@@ -136,13 +136,26 @@ export default function Settings() {
             <div>
               <Label>{t("logo")}</Label>
               <Input type="file" accept="image/*" onChange={e => setLogo(e.target.files?.[0] ?? null)} />
-              {form.logo_url && !logo && <img src={form.logo_url} className="mt-2 h-14 w-14 rounded object-cover" alt="logo" />}
+              {(logo || form.logo_url) && (
+                <img
+                  src={logo ? URL.createObjectURL(logo) : form.logo_url}
+                  className="mt-2 h-14 w-14 rounded border bg-white object-contain p-1"
+                  alt="logo"
+                />
+              )}
             </div>
             <div>
               <Label>{lang === "bn" ? "সম্পাদকের স্বাক্ষর" : "Editor signature"}</Label>
               <Input type="file" accept="image/*" onChange={e => setSignature(e.target.files?.[0] ?? null)} />
-              {form.editor_signature_url && !signature && <img src={form.editor_signature_url} className="mt-2 h-12 rounded border bg-white object-contain px-2" alt="signature" />}
+              {(signature || form.editor_signature_url) && (
+                <img
+                  src={signature ? URL.createObjectURL(signature) : form.editor_signature_url}
+                  className="mt-2 h-12 rounded border bg-white object-contain px-2"
+                  alt="signature"
+                />
+              )}
               <p className="mt-1 text-xs text-muted-foreground">{lang === "bn" ? "আপলোড করলে রশিদে আদায়কারীর স্বাক্ষরের জায়গায় অটো বসবে।" : "Auto-placed on receipts where the collector signs."}</p>
+
             </div>
 
             <div className="sm:col-span-2 border-t pt-4 mt-2">
