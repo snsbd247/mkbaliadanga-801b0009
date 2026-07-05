@@ -53,19 +53,22 @@ function numToWordsBn(n: number): string {
 const amountWords = (n?: number | null) =>
   n == null ? "—" : `${numToWordsBn(n)} টাকা মাত্র।`;
 
-async function receiptHtml(r: LegacyIrrigationRecord, company: string, qr: string): Promise<string> {
+async function receiptHtml(r: LegacyIrrigationRecord, company: string, qr: string, logoUrl?: string | null): Promise<string> {
   const row = (k: string, v: string) =>
     `<tr>
        <td style="padding:6px 10px;border:1px solid #333;font-weight:600;width:52%;vertical-align:top;">${k}</td>
        <td style="padding:6px 10px;border:1px solid #333;font-weight:600;vertical-align:top;">: ${v}</td>
      </tr>`;
+  const brandBlock = logoUrl
+    ? `<img src="${logoUrl}" crossorigin="anonymous" style="max-width:170px;max-height:70px;object-fit:contain;display:block;" />`
+    : `<div style="font-size:15px;font-weight:700;max-width:180px;">${company}</div>`;
   const farmerLine = `${val(r.farmer_name)}${r.legacy_farmer_code ? `-${toBn(r.legacy_farmer_code)}` : ""}` +
     `${r.owner_type_name ? `/${r.owner_type_name}` : ""}${r.owner_fid ? `-${toBn(r.owner_fid)}` : ""}`;
   const paid = r.paid_amount ?? 0;
   return `
   <div style="width:720px;padding:22px 26px;font-family:'Noto Sans Bengali','Hind Siliguri',Arial,sans-serif;color:#111;background:#fff;border:2px solid #111;border-radius:6px;box-sizing:border-box;">
     <div style="display:flex;align-items:flex-start;justify-content:space-between;">
-      <div style="font-size:15px;font-weight:700;max-width:180px;">${company}</div>
+      <div style="max-width:180px;">${brandBlock}</div>
       <div style="text-align:center;flex:1;">
         <div style="font-size:20px;font-weight:700;text-decoration:underline;">সেচ চার্জ ও বিবিধ আদায় রশিদ</div>
       </div>
@@ -139,6 +142,7 @@ export async function downloadLegacyReceipts(
   if (!records.length) return;
   const branding = await loadBranding().catch(() => null);
   const company = branding?.company_name_bn || branding?.company_name || "সেচ রশিদ";
+  const logoUrl = branding?.logo_url || null;
 
   const paper = getPaperPreset(paperId);
   const pdf = new jsPDF({ unit: "mm", format: paper.format, orientation: paper.orientation });
@@ -149,10 +153,10 @@ export async function downloadLegacyReceipts(
     holder.style.position = "fixed";
     holder.style.left = "-10000px";
     holder.style.top = "0";
-    holder.innerHTML = await receiptHtml(records[i], company, qr);
+    holder.innerHTML = await receiptHtml(records[i], company, qr, logoUrl);
     document.body.appendChild(holder);
     try {
-      const canvas = await html2canvas(holder.firstElementChild as HTMLElement, { scale: 2, backgroundColor: "#fff" });
+      const canvas = await html2canvas(holder.firstElementChild as HTMLElement, { scale: 2, backgroundColor: "#fff", useCORS: true });
       const img = canvas.toDataURL("image/png");
       // Shared aspect-preserving fit — identical rule used by the on-screen preview.
       const { imgW, imgH, x, y } = computeReceiptFit(paper, canvas.width, canvas.height, PAGE_MARGIN_MM);
@@ -178,8 +182,9 @@ export async function downloadLegacyReceipts(
 export async function buildLegacyReceiptPreview(records: LegacyIrrigationRecord[]): Promise<string> {
   const branding = await loadBranding().catch(() => null);
   const company = branding?.company_name_bn || branding?.company_name || "সেচ রশিদ";
+  const logoUrl = branding?.logo_url || null;
   const parts = await Promise.all(
-    records.map(async (r) => receiptHtml(r, company, await makeQr(r))),
+    records.map(async (r) => receiptHtml(r, company, await makeQr(r), logoUrl)),
   );
   return parts.join('<div style="height:16px;"></div>');
 }
