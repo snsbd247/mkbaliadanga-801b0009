@@ -256,40 +256,87 @@ export default function LegacyIrrigationSearch() {
   );
 }
 
-/** Scales the fixed-width (720px) receipt HTML down to fit the dialog width so
- *  the whole receipt is visible without horizontal scrolling. */
-function ScaledReceiptPreview({ html }: { html: string }) {
+/** Renders the fixed-width (720px) receipt HTML inside a scaled representation
+ *  of the selected paper page, using the EXACT same fit rule as the PDF export
+ *  so the preview never drifts from the printed output. Optionally overlays
+ *  safe-area guides (printable margin + center lines). */
+function ScaledReceiptPreview({
+  html, paperId, showGuides,
+}: { html: string; paperId: string; showGuides: boolean }) {
   const outerRef = useRef<HTMLDivElement>(null);
-  const innerRef = useRef<HTMLDivElement>(null);
-  const [scale, setScale] = useState(1);
-  const [height, setHeight] = useState<number | undefined>(undefined);
+  const measureRef = useRef<HTMLDivElement>(null);
+  const [pageWidthPx, setPageWidthPx] = useState(0);
+  const [receiptHeightPx, setReceiptHeightPx] = useState(0);
+
+  const paper = getPaperPreset(paperId);
 
   useLayoutEffect(() => {
     const outer = outerRef.current;
-    const inner = innerRef.current;
-    if (!outer || !inner) return;
+    const measure = measureRef.current;
+    if (!outer || !measure) return;
     const update = () => {
-      const avail = outer.clientWidth;
-      const s = Math.min(1, avail / 720);
-      setScale(s);
-      setHeight(inner.offsetHeight * s);
+      setPageWidthPx(outer.clientWidth);
+      setReceiptHeightPx(measure.offsetHeight);
     };
     update();
     const ro = new ResizeObserver(update);
     ro.observe(outer);
     return () => ro.disconnect();
-  }, [html]);
+  }, [html, paperId]);
+
+  // px-per-mm derived from the page width so the whole page fits the dialog.
+  const pxPerMm = pageWidthPx / paper.widthMm;
+  const pageHeightPx = paper.heightMm * pxPerMm;
+  const marginPx = PAGE_MARGIN_MM * pxPerMm;
+
+  // Fit uses the natural receipt canvas ratio (720 × measured height).
+  const fit = computeReceiptFit(paper, 720, receiptHeightPx || 720, PAGE_MARGIN_MM);
+  const receiptScale = pxPerMm > 0 ? (fit.imgW * pxPerMm) / 720 : 1;
 
   return (
-    <div ref={outerRef} className="rounded-md bg-muted/30 p-3 overflow-hidden">
-      <div style={{ height }}>
+    <>
+      {/* Hidden natural-size render, used only to measure the receipt height. */}
+      <div
+        ref={measureRef}
+        aria-hidden
+        style={{ position: "fixed", left: -10000, top: 0, width: 720 }}
+        dangerouslySetInnerHTML={{ __html: html }}
+      />
+
+      <div ref={outerRef} className="rounded-md bg-muted/30 p-3 overflow-hidden">
         <div
-          ref={innerRef}
-          style={{ width: 720, transform: `scale(${scale})`, transformOrigin: "top left" }}
-          dangerouslySetInnerHTML={{ __html: html }}
-        />
+          className="relative mx-auto bg-white shadow-sm"
+          style={{ width: pageWidthPx || "100%", height: pageHeightPx || undefined }}
+        >
+          {/* The receipt, placed exactly where the PDF will place it. */}
+          <div
+            style={{
+              position: "absolute",
+              left: fit.x * pxPerMm,
+              top: fit.y * pxPerMm,
+              width: 720,
+              transform: `scale(${receiptScale})`,
+              transformOrigin: "top left",
+            }}
+            dangerouslySetInnerHTML={{ __html: html }}
+          />
+
+          {showGuides && (
+            <div className="pointer-events-none absolute inset-0">
+              {/* Printable safe area */}
+              <div
+                className="absolute border-2 border-dashed border-primary/70"
+                style={{ left: marginPx, top: marginPx, right: marginPx, bottom: marginPx }}
+              />
+              {/* Center guides */}
+              <div className="absolute top-0 bottom-0 border-l border-destructive/50" style={{ left: "50%" }} />
+              <div className="absolute left-0 right-0 border-t border-destructive/50" style={{ top: "50%" }} />
+            </div>
+          )}
+        </div>
       </div>
-    </div>
+    </>
   );
 }
+
 
