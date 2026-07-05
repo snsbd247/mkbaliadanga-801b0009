@@ -40,11 +40,16 @@ export DEBIAN_FRONTEND=noninteractive
 # `--dry-run` (or MK_DRY_RUN=1) runs every validation step (git status, sudo,
 # disk, read-only checks) WITHOUT changing any files, pulling code, or building.
 DRY_RUN="${MK_DRY_RUN:-0}"
+# `--no-seed` (or MK_NO_SEED=1) skips the admin/permission seeders entirely, so
+# a pure code update never touches user/admin accounts.
+NO_SEED="${MK_NO_SEED:-0}"
 for arg in "$@"; do
   case "$arg" in
     --dry-run|-n) DRY_RUN=1 ;;
+    --no-seed) NO_SEED=1 ;;
   esac
 done
+export MK_NO_SEED="${NO_SEED}"
 
 # Detect a read-only project filesystem so callers get a precise error instead
 # of an opaque "Read-only file system" mid-deploy.
