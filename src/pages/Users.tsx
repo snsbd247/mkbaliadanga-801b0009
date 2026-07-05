@@ -51,6 +51,8 @@ export default function Users() {
   const [createOpen, setCreateOpen] = useState(false);
   const [resetFor, setResetFor] = useState<any | null>(null);
   const [resetPwd, setResetPwd] = useState("");
+  const [editFor, setEditFor] = useState<any | null>(null);
+  const [editForm, setEditForm] = useState({ username: "", email: "", full_name: "" });
   const [busy, setBusy] = useState(false);
 
   const [form, setForm] = useState({
