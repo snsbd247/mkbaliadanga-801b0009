@@ -376,7 +376,27 @@ export default function Users() {
         </Table>
       </Card>
 
+      {/* Edit user dialog */}
+      <Dialog open={!!editFor} onOpenChange={(o) => !o && setEditFor(null)}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>{t("edit")} — {editFor?.full_name || editFor?.email}</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <div><Label>{t("fullName")}</Label>
+              <Input value={editForm.full_name} onChange={e => setEditForm({ ...editForm, full_name: e.target.value })} /></div>
+            <div><Label>{t("username")}</Label>
+              <Input value={editForm.username} onChange={e => setEditForm({ ...editForm, username: e.target.value })} /></div>
+            <div><Label>{t("email")}</Label>
+              <Input type="email" value={editForm.email} onChange={e => setEditForm({ ...editForm, email: e.target.value })} /></div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditFor(null)}>{t("cancel")}</Button>
+            <Button onClick={saveEdit} disabled={busy}>{busy ? "…" : t("save")}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Permissions dialog */}
+
       <Dialog open={!!permFor} onOpenChange={(o) => !o && setPermFor(null)}>
         <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
