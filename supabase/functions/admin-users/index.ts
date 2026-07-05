@@ -147,6 +147,7 @@ Deno.serve(async (req) => {
       if (username !== undefined) profilePatch.username = username;
       if (email !== undefined) profilePatch.email = email;
       if (full_name !== undefined) profilePatch.full_name = full_name;
+      if (office_id !== undefined) profilePatch.office_id = office_id;
       if (Object.keys(profilePatch).length) {
         const { error: pErr } = await admin.from("profiles").update(profilePatch).eq("id", user_id);
         if (pErr) return json({ error: pErr.message }, 400);
