@@ -38,6 +38,9 @@ export default function LegacyIrrigationSearch() {
   const [searching, setSearching] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [downloading, setDownloading] = useState(false);
+  const [progress, setProgress] = useState({ done: 0, total: 0 });
+  const [preview, setPreview] = useState<{ rows: LegacyIrrigationRecord[]; html: string } | null>(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
 
   async function doSearch() {
     if (!code.trim()) return;
@@ -64,11 +67,35 @@ export default function LegacyIrrigationSearch() {
   const toggleAll = () =>
     setSelected(allSelected ? new Set() : new Set(records.map((r) => r.id)));
 
-  async function download(rows: LegacyIrrigationRecord[]) {
+  async function openPreview(rows: LegacyIrrigationRecord[]) {
     if (!rows.length) return;
-    setDownloading(true);
+    setPreviewLoading(true);
     try {
-      await downloadLegacyReceipts(rows);
+      const html = await buildLegacyReceiptPreview(rows);
+      setPreview({ rows, html });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : tx("Preview failed", "প্রিভিউ ব্যর্থ হয়েছে"));
+    } finally {
+      setPreviewLoading(false);
+    }
+  }
+
+  async function confirmDownload() {
+    if (!preview) return;
+    const rows = preview.rows;
+    const mode = rows.length === 1 ? "single" : "bulk";
+    setPreview(null);
+    setDownloading(true);
+    setProgress({ done: 0, total: rows.length });
+    try {
+      await downloadLegacyReceipts(rows, (done, total) => setProgress({ done, total }));
+      toast.success(tx(`${rows.length} receipt(s) downloaded`, `${rows.length} টি রশিদ ডাউনলোড হয়েছে`));
+      // Best-effort audit log — non-fatal on failure.
+      LegacyIrrigationApi.logDownload({
+        receipt_nos: rows.map((r) => r.receipt_no ?? null),
+        count: rows.length,
+        mode,
+      }).catch(() => {/* ignore */});
     } catch (e) {
       toast.error(e instanceof Error ? e.message : tx("Download failed", "ডাউনলোড ব্যর্থ হয়েছে"));
     } finally {
