@@ -107,6 +107,7 @@ import LandsImport from "./pages/LandsImport";
 import OpeningDueImport from "./pages/OpeningDueImport";
 import IrrigationInvoiceImport from "./pages/IrrigationInvoiceImport";
 import LegacyIrrigationImport from "./pages/LegacyIrrigationImport";
+import LegacyIrrigationSearch from "./pages/LegacyIrrigationSearch";
 import PaymentsImport from "./pages/PaymentsImport";
 import FarmerMerge from "./pages/admin/FarmerMerge";
 
