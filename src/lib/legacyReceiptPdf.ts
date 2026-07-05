@@ -53,11 +53,11 @@ function numToWordsBn(n: number): string {
 const amountWords = (n?: number | null) =>
   n == null ? "—" : `${numToWordsBn(n)} টাকা মাত্র।`;
 
-async function receiptHtml(r: LegacyIrrigationRecord, company: string, qr: string, logoUrl?: string | null): Promise<string> {
+async function receiptHtml(r: LegacyIrrigationRecord, company: string, qr: string, logoUrl?: string | null, editorSigUrl?: string | null): Promise<string> {
   const cell = (k: string, v: string) =>
     `<tr>
-       <td style="padding:5px 8px;border:1px solid #333;font-weight:600;width:48%;vertical-align:top;">${k}</td>
-       <td style="padding:5px 8px;border:1px solid #333;font-weight:600;vertical-align:top;">: ${v}</td>
+       <td style="padding:10px 8px;border:1px solid #333;font-weight:600;width:48%;vertical-align:top;">${k}</td>
+       <td style="padding:10px 8px;border:1px solid #333;font-weight:600;vertical-align:top;">: ${v}</td>
      </tr>`;
   const brandBlock = logoUrl
     ? `<img src="${logoUrl}" crossorigin="anonymous" style="max-width:170px;max-height:70px;object-fit:contain;display:block;" />`
