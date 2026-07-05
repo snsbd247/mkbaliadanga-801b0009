@@ -186,7 +186,7 @@ export default function VerifyReceipt() {
                 {T.voidedOn}: {new Date(voided.at).toLocaleString()}
               </div>
             )}
-            {rateLimited && (
+            {(rateLimited || (error && !voided)) && (
               <Button size="sm" variant="outline" className="mt-4" onClick={verify}>{T.retry}</Button>
             )}
           </div>
