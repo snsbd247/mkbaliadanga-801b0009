@@ -271,4 +271,56 @@ class LegacyIrrigationController extends Controller
 
         return response()->json(['ok' => true]);
     }
+
+    /**
+     * Public (no-auth) verification for a legacy সেচ receipt by its receipt_no.
+     * Used by the QR code printed on legacy receipts (token `legacy-{receiptNo}`).
+     */
+    public function verify(string $receiptNo): JsonResponse
+    {
+        $receiptNo = trim($receiptNo);
+
+        $rec = LegacyIrrigationRecord::query()
+            ->where('receipt_no', $receiptNo)
+            ->orderByDesc('collection_date')
+            ->first();
+
+        if (! $rec) {
+            return response()->json([
+                'ok' => false,
+                'error' => 'Legacy receipt not found: '.$receiptNo,
+            ], 404);
+        }
+
+        $office = $rec->office_id ? Office::find($rec->office_id) : null;
+
+        $mobile = (string) ($rec->mobile_no ?? '');
+        $mobileMasked = $mobile !== ''
+            ? preg_replace('/^(\d{3})\d+(\d{2})$/', '$1*****$2', $mobile)
+            : null;
+
+        return response()->json([
+            'ok' => true,
+            'company' => [
+                'name_bn' => config('app.name'),
+                'name' => config('app.name'),
+            ],
+            'office' => $office?->name,
+            'receipt' => [
+                'receipt_no' => (string) $rec->receipt_no,
+                'date' => optional($rec->collection_date)->toIso8601String() ?? $rec->created_at?->toIso8601String(),
+                'kind' => 'irrigation',
+                'status' => 'approved',
+                'amount' => (float) ($rec->paid_amount ?? 0),
+                'method' => null,
+                'note' => $rec->season_year ? ('মৌসুম: '.$rec->season_year) : null,
+            ],
+            'farmer' => [
+                'name' => $rec->farmer_name,
+                'member_no' => $rec->legacy_farmer_code,
+                'village' => $rec->village,
+                'mobile_masked' => $mobileMasked,
+            ],
+        ]);
+    }
 }
