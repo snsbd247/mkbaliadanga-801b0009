@@ -4,13 +4,15 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, Search } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Loader2, Search, Download } from "lucide-react";
 import { toast } from "sonner";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import { LegacyIrrigationApi, LegacyIrrigationRecord } from "@/lib/api/legacyIrrigation";
 import { ApiError } from "@/lib/api/client";
+import { downloadLegacyReceipts } from "@/lib/legacyReceiptPdf";
 import { useLang } from "@/i18n/LanguageProvider";
 
 const MONTH_NAMES = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -30,10 +32,13 @@ export default function LegacyIrrigationSearch() {
   const [code, setCode] = useState("");
   const [records, setRecords] = useState<LegacyIrrigationRecord[]>([]);
   const [searching, setSearching] = useState(false);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [downloading, setDownloading] = useState(false);
 
   async function doSearch() {
     if (!code.trim()) return;
     setSearching(true);
+    setSelected(new Set());
     try {
       const rows = await LegacyIrrigationApi.list({ farmer_code: code.trim() });
       setRecords(rows);
@@ -42,6 +47,28 @@ export default function LegacyIrrigationSearch() {
       toast.error(e instanceof ApiError ? e.message : tx("Search failed", "সার্চ ব্যর্থ হয়েছে"));
     } finally {
       setSearching(false);
+    }
+  }
+
+  const toggle = (id: string) =>
+    setSelected((s) => {
+      const n = new Set(s);
+      n.has(id) ? n.delete(id) : n.add(id);
+      return n;
+    });
+  const allSelected = records.length > 0 && selected.size === records.length;
+  const toggleAll = () =>
+    setSelected(allSelected ? new Set() : new Set(records.map((r) => r.id)));
+
+  async function download(rows: LegacyIrrigationRecord[]) {
+    if (!rows.length) return;
+    setDownloading(true);
+    try {
+      await downloadLegacyReceipts(rows);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : tx("Download failed", "ডাউনলোড ব্যর্থ হয়েছে"));
+    } finally {
+      setDownloading(false);
     }
   }
 
@@ -73,9 +100,27 @@ export default function LegacyIrrigationSearch() {
 
       {records.length > 0 && (
         <Card className="p-0 overflow-x-auto">
+          <div className="flex items-center justify-between gap-2 p-3 border-b">
+            <span className="text-sm text-muted-foreground">
+              {selected.size > 0
+                ? tx(`${selected.size} selected`, `${selected.size} টি নির্বাচিত`)
+                : tx("Select rows to download receipts", "রশিদ ডাউনলোড করতে সারি নির্বাচন করুন")}
+            </span>
+            <Button
+              size="sm"
+              disabled={selected.size === 0 || downloading}
+              onClick={() => download(records.filter((r) => selected.has(r.id)))}
+            >
+              {downloading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Download className="h-4 w-4 mr-2" />}
+              {tx("Download Selected Receipts", "নির্বাচিত রশিদ ডাউনলোড")}
+            </Button>
+          </div>
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead className="w-10">
+                  <Checkbox checked={allSelected} onCheckedChange={toggleAll} aria-label="select all" />
+                </TableHead>
                 <TableHead>{tx("Season", "সিজন")}</TableHead>
                 <TableHead>{tx("Mouza", "মৌজা")}</TableHead>
                 <TableHead>{tx("Dag", "দাগ")}</TableHead>
@@ -85,11 +130,15 @@ export default function LegacyIrrigationSearch() {
                 <TableHead>{tx("Receipt", "রশিদ")}</TableHead>
                 <TableHead>{tx("Paid", "পরিশোধ")}</TableHead>
                 <TableHead>{tx("Date", "তারিখ")}</TableHead>
+                <TableHead className="text-right">{tx("Receipt", "রশিদ")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {records.map((r) => (
                 <TableRow key={r.id}>
+                  <TableCell>
+                    <Checkbox checked={selected.has(r.id)} onCheckedChange={() => toggle(r.id)} aria-label="select row" />
+                  </TableCell>
                   <TableCell>{r.season_year ?? "—"}</TableCell>
                   <TableCell>{r.mouza_name ?? "—"}</TableCell>
                   <TableCell>{r.dag_no ?? "—"}</TableCell>
@@ -99,14 +148,19 @@ export default function LegacyIrrigationSearch() {
                   <TableCell>{r.receipt_no ?? "—"}</TableCell>
                   <TableCell>{r.paid_amount ?? "—"}</TableCell>
                   <TableCell>{fmtDisplayDate(r.collection_date)}</TableCell>
+                  <TableCell className="text-right">
+                    <Button variant="ghost" size="sm" disabled={downloading} onClick={() => download([r])}>
+                      <Download className="h-4 w-4" />
+                    </Button>
+                  </TableCell>
                 </TableRow>
               ))}
               <TableRow className="font-semibold bg-muted/50">
-                <TableCell colSpan={3} className="text-right">{tx("Total", "মোট")}</TableCell>
+                <TableCell colSpan={4} className="text-right">{tx("Total", "মোট")}</TableCell>
                 <TableCell>{records.reduce((s, r) => s + (r.land_shatak ?? 0), 0)}</TableCell>
                 <TableCell colSpan={3} className="text-right">{tx("Total Paid", "মোট পরিশোধ")}</TableCell>
                 <TableCell>{records.reduce((s, r) => s + (r.paid_amount ?? 0), 0)}</TableCell>
-                <TableCell />
+                <TableCell colSpan={2} />
               </TableRow>
             </TableBody>
           </Table>
