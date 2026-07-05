@@ -45,6 +45,8 @@ export default function LegacyIrrigationSearch() {
   const [progress, setProgress] = useState({ done: 0, total: 0 });
   const [preview, setPreview] = useState<{ rows: LegacyIrrigationRecord[]; html: string } | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
+  const [paperId, setPaperId] = useState<string>(DEFAULT_PAPER_ID);
+  const [showGuides, setShowGuides] = useState(false);
 
   async function doSearch() {
     if (!code.trim()) return;
