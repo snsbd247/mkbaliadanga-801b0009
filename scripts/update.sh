@@ -325,7 +325,7 @@ block = f'''
     # Keep this before the SPA fallback; otherwise /storage/... returns index.html and
     # images look broken after reload.
     location /storage/ {{
-        alias {app_dir}/backend/public/storage/;
+        root {app_dir}/backend/public;
         try_files $uri =404;
         access_log off;
         expires 30d;

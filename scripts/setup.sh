@@ -362,7 +362,7 @@ server {
     # Keep this before the SPA fallback; otherwise /storage/... returns index.html and
     # images look broken after reload.
     location /storage/ {
-        alias ${APP_DIR}/backend/public/storage/;
+        root ${APP_DIR}/backend/public;
         try_files \$uri =404;
         access_log off;
         expires 30d;
