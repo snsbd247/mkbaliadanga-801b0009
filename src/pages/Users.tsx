@@ -15,7 +15,7 @@ import { useLang } from "@/i18n/LanguageProvider";
 import { fmtDate } from "@/lib/format";
 import { toast } from "sonner";
 import { ALL_MODULES, type ModuleKey } from "@/lib/permissions";
-import { ShieldCheck, Plus, Trash2, KeyRound } from "lucide-react";
+import { ShieldCheck, Plus, Trash2, KeyRound, Pencil } from "lucide-react";
 import { useAuth } from "@/auth/AuthProvider";
 import { DeleteButton } from "@/components/ui/action-icon-button";
 import { z } from "zod";
