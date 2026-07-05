@@ -39,21 +39,20 @@ class SuperAdminSeeder extends Seeder
         $developerRole->permissions()->syncWithoutDetaching([$wildcard->id]);
         $superAdminRole->permissions()->syncWithoutDetaching([$wildcard->id]);
 
-        // Developer account (ismail162 / Admin@123).
+        // Developer account (ismail162). Default password only on first create —
+        // NEVER overwrite an existing user's (possibly changed) password.
         $developer = $this->ensureUser('ismail162', [
             'name' => 'Developer',
             'email' => 'ismail162@mohammadkhani.com',
-            'password' => Hash::make('Admin@123'),
             'office_id' => $office->id,
             'is_active' => true,
         ]);
         $developer->roles()->syncWithoutDetaching([$developerRole->id]);
 
-        // Super admin account (suparadmin / Admin@123).
+        // Super admin account (suparadmin). Same rule — preserve existing password.
         $superAdmin = $this->ensureUser('suparadmin', [
             'name' => 'Super Admin',
             'email' => 'suparadmin@mohammadkhani.com',
-            'password' => Hash::make('Admin@123'),
             'office_id' => $office->id,
             'is_active' => true,
         ]);
