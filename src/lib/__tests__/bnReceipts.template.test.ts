@@ -44,7 +44,7 @@ const cases: Array<{ name: string; data: BnReceiptData; expectTitle: string; exp
       previous_due: 200,
       collected_amount: 2075,
     },
-    expectTitle: "সেচ চার্জ সংগ্রহের রশিদ",
+    expectTitle: "সেচ চার্জ ও বিবিধ আদায় রশিদ",
     expectRow: "চার্জের পরিমাণ",
   },
   {
@@ -84,8 +84,13 @@ describe("Bangla receipt template (visual regression)", () => {
       await downloadBnReceiptPdf(c.data, "both");
       expect(capturedHtml).toContain(c.expectTitle);
       expect(capturedHtml).toContain(c.expectRow);
-      expect(capturedHtml).toContain("কৃষকের কপি");
-      expect(capturedHtml).toContain("অফিস কপি");
+      if (c.data.kind === "irrigation") {
+        // Official irrigation receipt is always a single copy (no farmer/office split).
+        expect(capturedHtml).toContain("কৃষকের কপি");
+      } else {
+        expect(capturedHtml).toContain("কৃষকের কপি");
+        expect(capturedHtml).toContain("অফিস কপি");
+      }
       expect(capturedHtml).toContain(c.data.receipt_no.split("-")[0]);
     });
   }
@@ -93,7 +98,7 @@ describe("Bangla receipt template (visual regression)", () => {
   it("missing collector_signature_url renders fixed-size placeholder line", async () => {
     await downloadBnReceiptPdf(cases[0].data, "farmer");
     expect(capturedHtml).toContain("আদায়কারীর স্বাক্ষর");
-    expect(capturedHtml).toContain("width:140px");
+    expect(capturedHtml).toContain("border-top:1px solid #111");
     expect(capturedHtml).not.toContain("<img src=\"data:image");
   });
 
