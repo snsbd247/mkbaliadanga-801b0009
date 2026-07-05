@@ -272,6 +272,9 @@ php artisan admin:verify --fix || warn "  ✗ admin verification reported proble
 php artisan config:clear; php artisan route:clear; php artisan view:clear
 php artisan config:cache
 php artisan route:cache
+# Public storage symlink so uploaded logo/signature files are served at /storage/…
+php artisan storage:link --force 2>/dev/null || php artisan storage:link || warn "  ✗ storage:link failed"
+
 
 chown -R www-data:www-data "${APP_DIR}/backend/storage" "${APP_DIR}/backend/bootstrap/cache"
 chmod -R 775 "${APP_DIR}/backend/storage" "${APP_DIR}/backend/bootstrap/cache"
