@@ -19,6 +19,7 @@ import { decodeSpreadsheetBuffer } from "@/lib/csvDecode";
 import { normalizeFarmerCode } from "@/lib/farmerCode";
 import { useLang } from "@/i18n/LanguageProvider";
 import { analyzeDagNo, parseDagNumbers } from "@/lib/dagParser";
+import { classifyImportRow, validateOwnerType } from "@/lib/landsImportMapping";
 
 /**
  * Bulk Lands Import wizard — owner-cultivated + barga (sharecropper) lands.
@@ -460,9 +461,8 @@ export default function LandsImport() {
           errors.push(`land_size: সংখ্যা নয় (${sizeRaw})`);
         else if (num(sizeRaw) <= 0) errors.push("land_size: ০ এর বেশি হতে হবে");
 
-        const ot = String(raw.owner_type ?? "").trim().toLowerCase();
-        if (ot && !isBorgaType(ot) && !["own", "owner", "নিজে", "মালিক"].includes(ot))
-          warns.push(`owner_type চেনা যায়নি (own/borga): ${raw.owner_type}`);
+        const otCheck = validateOwnerType(raw.owner_type);
+        if (!otCheck.ok) warns.push(otCheck.message!);
 
         const borga = isBorgaType(raw.owner_type);
         if (borga) {
@@ -953,6 +953,7 @@ export default function LandsImport() {
                   <TableHead>{tx("Size", "পরিমাণ")}</TableHead>
                   <TableHead>own/borga</TableHead>
                   <TableHead>{tx("Sharecropper", "বর্গাদার")}</TableHead>
+                  <TableHead>{tx("Maps to (dry-run)", "যেভাবে ম্যাপ হবে")}</TableHead>
                   <TableHead>{tx("Issue", "সমস্যা")}</TableHead>
                 </TableRow>
               </TableHeader>
@@ -993,6 +994,19 @@ export default function LandsImport() {
                     <TableCell className="text-right">{String(r.raw.land_size ?? "")}</TableCell>
                     <TableCell>{isBorgaType(r.raw.owner_type) ? "borga" : "own"}</TableCell>
                     <TableCell className="font-mono text-xs">{String(r.raw.sharecropper_id ?? "")}</TableCell>
+                    <TableCell className="text-xs max-w-[260px]">
+                      {(() => {
+                        const m = classifyImportRow(r.raw as any);
+                        return (
+                          <span className="block">
+                            <Badge variant={m.createsBorgaRelation ? "secondary" : "outline"} className="mb-1">
+                              {m.ownerTab} {m.createsBorgaRelation ? "+ borga" : ""}
+                            </Badge>
+                            <span className="block text-muted-foreground">{tx(m.summary.en, m.summary.bn)}</span>
+                          </span>
+                        );
+                      })()}
+                    </TableCell>
                     <TableCell className="text-xs max-w-[280px]">
                       {r.errorMsg && <span className="text-destructive">{r.errorMsg}</span>}
                       {r.warnMsg && <span className="block text-amber-600">⚠ {r.warnMsg}</span>}
