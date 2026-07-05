@@ -36,7 +36,7 @@ function normalizeStorageUrl(url?: string | null): string | null | undefined {
     if (!parsed.pathname.startsWith("/storage/")) return url;
     const [, , bucket, ...pathParts] = parsed.pathname.split("/");
     if (!bucket || pathParts.length === 0) return url;
-    const safePath = pathParts.map(encodeURIComponent).join("/");
+    const safePath = pathParts.map((part) => encodeURIComponent(decodeURIComponent(part))).join("/");
     return `${parsed.origin}/api/storage/public/${encodeURIComponent(bucket)}/${safePath}${parsed.search}`;
   } catch {
     return url;
