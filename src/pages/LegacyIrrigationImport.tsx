@@ -691,69 +691,7 @@ export default function LegacyIrrigationImport() {
           )}
         </TabsContent>
 
-        {/* ── Search tab ── */}
-        <TabsContent value="search" className="space-y-4">
-          <Card className="p-4">
-            <div className="flex items-end gap-2">
-              <div className="flex-1 max-w-xs">
-                <Label>{tx("Farmer Code", "ফার্মার কোড")}</Label>
-                <Input
-                  value={code}
-                  onChange={(e) => setCode(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && doSearch()}
-                  placeholder={tx("e.g. 2473", "যেমন 2473")}
-                  className="mt-2"
-                />
-              </div>
-              <Button onClick={doSearch} disabled={searching}>
-                {searching ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Search className="h-4 w-4 mr-2" />}
-                {tx("Search", "খুঁজুন")}
-              </Button>
-            </div>
-          </Card>
 
-          {records.length > 0 && (
-            <Card className="p-0 overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>{tx("Season", "সিজন")}</TableHead>
-                    <TableHead>{tx("Mouza", "মৌজা")}</TableHead>
-                    <TableHead>{tx("Dag", "দাগ")}</TableHead>
-                    <TableHead>{tx("Land", "জমি")}</TableHead>
-                    <TableHead>{tx("Rate", "রেট")}</TableHead>
-                    <TableHead>{tx("Owner/Sharecropper", "মালিক/বর্গা")}</TableHead>
-                    <TableHead>{tx("Receipt", "রশিদ")}</TableHead>
-                    <TableHead>{tx("Paid", "পরিশোধ")}</TableHead>
-                    <TableHead>{tx("Date", "তারিখ")}</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {records.map((r) => (
-                    <TableRow key={r.id}>
-                      <TableCell>{r.season_year ?? "—"}</TableCell>
-                      <TableCell>{r.mouza_name ?? "—"}</TableCell>
-                      <TableCell>{r.dag_no ?? "—"}</TableCell>
-                      <TableCell>{r.land_shatak ?? "—"}</TableCell>
-                      <TableCell>{r.rate ?? "—"}</TableCell>
-                      <TableCell>{r.owner_type_name ?? "—"}</TableCell>
-                      <TableCell>{r.receipt_no ?? "—"}</TableCell>
-                      <TableCell>{r.paid_amount ?? "—"}</TableCell>
-                      <TableCell>{fmtDisplayDate(r.collection_date)}</TableCell>
-                    </TableRow>
-                  ))}
-                  <TableRow className="font-semibold bg-muted/50">
-                    <TableCell colSpan={3} className="text-right">{tx("Total", "মোট")}</TableCell>
-                    <TableCell>{records.reduce((s, r) => s + (r.land_shatak ?? 0), 0)}</TableCell>
-                    <TableCell colSpan={3} className="text-right">{tx("Total Paid", "মোট পরিশোধ")}</TableCell>
-                    <TableCell>{records.reduce((s, r) => s + (r.paid_amount ?? 0), 0)}</TableCell>
-                    <TableCell />
-                  </TableRow>
-                </TableBody>
-              </Table>
-            </Card>
-          )}
-        </TabsContent>
 
         {/* ── Batches tab ── */}
         <TabsContent value="batches" className="space-y-4">
