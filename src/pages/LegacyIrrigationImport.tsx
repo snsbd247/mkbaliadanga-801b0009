@@ -21,7 +21,7 @@ import { Upload, Loader2, AlertTriangle, Trash2, Download } from "lucide-react";
 import { toast } from "sonner";
 import { decodeSpreadsheetBuffer } from "@/lib/csvDecode";
 import {
-  LegacyIrrigationApi, LegacyIrrigationRow, LegacyIrrigationRecord, LegacyBatch,
+  LegacyIrrigationApi, LegacyIrrigationRow, LegacyBatch,
 } from "@/lib/api/legacyIrrigation";
 import { SeasonsApi } from "@/lib/api/catalog";
 import { ApiError } from "@/lib/api/client";
