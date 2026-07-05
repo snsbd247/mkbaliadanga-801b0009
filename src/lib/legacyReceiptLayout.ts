@@ -9,7 +9,7 @@ export interface PaperPreset {
   id: string;
   labelEn: string;
   labelBn: string;
-  format: "a4";
+  format: "a4" | "a5";
   orientation: PaperOrientation;
   widthMm: number;
   heightMm: number;
@@ -17,8 +17,28 @@ export interface PaperPreset {
 
 const A4_SHORT = 210; // mm
 const A4_LONG = 297; // mm
+const A5_SHORT = 148; // mm
+const A5_LONG = 210; // mm
 
 export const PAPER_PRESETS: Record<string, PaperPreset> = {
+  "a5-landscape": {
+    id: "a5-landscape",
+    labelEn: "A5 Landscape",
+    labelBn: "এ৫ ল্যান্ডস্কেপ",
+    format: "a5",
+    orientation: "landscape",
+    widthMm: A5_LONG,
+    heightMm: A5_SHORT,
+  },
+  "a5-portrait": {
+    id: "a5-portrait",
+    labelEn: "A5 Portrait",
+    labelBn: "এ৫ পোর্ট্রেট",
+    format: "a5",
+    orientation: "portrait",
+    widthMm: A5_SHORT,
+    heightMm: A5_LONG,
+  },
   "a4-landscape": {
     id: "a4-landscape",
     labelEn: "A4 Landscape",
@@ -39,7 +59,7 @@ export const PAPER_PRESETS: Record<string, PaperPreset> = {
   },
 };
 
-export const DEFAULT_PAPER_ID = "a4-landscape";
+export const DEFAULT_PAPER_ID = "a5-landscape";
 
 /** Fixed CSS pixel width the receipt HTML is authored at. */
 export const RECEIPT_WIDTH_PX = 720;
