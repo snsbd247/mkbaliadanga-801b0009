@@ -162,7 +162,7 @@ export async function downloadLegacyReceipts(
     holder.style.position = "fixed";
     holder.style.left = "-10000px";
     holder.style.top = "0";
-    holder.innerHTML = await receiptHtml(records[i], company, qr, logoUrl);
+    holder.innerHTML = await receiptHtml(records[i], company, qr, logoUrl, editorSigUrl);
     document.body.appendChild(holder);
     try {
       const canvas = await html2canvas(holder.firstElementChild as HTMLElement, { scale: 2, backgroundColor: "#fff", useCORS: true });
