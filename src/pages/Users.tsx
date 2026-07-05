@@ -471,7 +471,21 @@ export default function Users() {
               <Input value={editForm.username} onChange={e => setEditForm({ ...editForm, username: e.target.value })} /></div>
             <div><Label>{t("email")}</Label>
               <Input type="email" value={editForm.email} onChange={e => setEditForm({ ...editForm, email: e.target.value })} /></div>
+            {(() => {
+              const role = (editFor?.roles?.[0] as string) ?? "staff";
+              const isGlobal = role === "developer" || role === "super_admin";
+              if (isGlobal) return <p className="text-xs text-muted-foreground">All offices</p>;
+              return (
+                <div><Label>{t("office")}</Label>
+                  <Select value={editForm.office_id} onValueChange={v => setEditForm({ ...editForm, office_id: v })}>
+                    <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
+                    <SelectContent>{offices.map(o => <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>)}</SelectContent>
+                  </Select>
+                </div>
+              );
+            })()}
           </div>
+
           <DialogFooter>
             <Button variant="outline" onClick={() => setEditFor(null)}>{t("cancel")}</Button>
             <Button onClick={saveEdit} disabled={busy}>{busy ? "…" : t("save")}</Button>
