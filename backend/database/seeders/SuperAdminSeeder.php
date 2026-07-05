@@ -68,10 +68,13 @@ class SuperAdminSeeder extends Seeder
         $user = User::query()->where('username', $username)->first();
 
         if ($user === null) {
-            // First-time creation gets the default password. Later updates never
-            // touch the password so a changed password survives update.sh.
+            // First-time creation gets the configured default password. Later
+            // updates never touch the password so a changed password survives
+            // update.sh.
+            $defaultPassword = (string) config('admin.default_password', 'Admin@123');
+
             return User::query()->create(array_merge(
-                ['id' => (string) Str::uuid(), 'username' => $username, 'password' => Hash::make('Admin@123')],
+                ['id' => (string) Str::uuid(), 'username' => $username, 'password' => Hash::make($defaultPassword)],
                 $attributes,
             ));
         }

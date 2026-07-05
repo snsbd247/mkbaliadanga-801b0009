@@ -40,11 +40,16 @@ export DEBIAN_FRONTEND=noninteractive
 # `--dry-run` (or MK_DRY_RUN=1) runs every validation step (git status, sudo,
 # disk, read-only checks) WITHOUT changing any files, pulling code, or building.
 DRY_RUN="${MK_DRY_RUN:-0}"
+# `--no-seed` (or MK_NO_SEED=1) skips the admin/permission seeders entirely, so
+# a pure code update never touches user/admin accounts.
+NO_SEED="${MK_NO_SEED:-0}"
 for arg in "$@"; do
   case "$arg" in
     --dry-run|-n) DRY_RUN=1 ;;
+    --no-seed) NO_SEED=1 ;;
   esac
 done
+export MK_NO_SEED="${NO_SEED}"
 
 # Detect a read-only project filesystem so callers get a precise error instead
 # of an opaque "Read-only file system" mid-deploy.
@@ -246,13 +251,17 @@ log "  ✓ migrations applied; ⏭  sample data seeders intentionally skipped on
 # any real data (firstOrCreate / updateOrCreate / syncWithoutDetaching only).
 #   developer    -> ismail162  / Admin@123
 #   super_admin  -> suparadmin / Admin@123
-log "Ensuring permissions + required admin accounts (idempotent)…"
-log "  → running: php artisan db:seed --class=PermissionsSeeder"
-php artisan db:seed --class=Database\\Seeders\\PermissionsSeeder --force && log "  ✓ PermissionsSeeder ok" || warn "  ✗ PermissionsSeeder failed"
-log "  → running: php artisan db:seed --class=SuperAdminSeeder"
-php artisan db:seed --class=Database\\Seeders\\SuperAdminSeeder --force && log "  ✓ SuperAdminSeeder ok" || warn "  ✗ SuperAdminSeeder failed"
-log "Verifying required admin accounts (developer + super_admin)…"
-php artisan admin:verify --fix || warn "  ✗ admin verification reported problems — check output above"
+if [ "${NO_SEED}" = "1" ]; then
+  warn "--no-seed: skipping permission/admin seeders and admin auto-repair (accounts untouched)."
+else
+  log "Ensuring permissions + required admin accounts (idempotent)…"
+  log "  → running: php artisan db:seed --class=PermissionsSeeder"
+  php artisan db:seed --class=Database\\Seeders\\PermissionsSeeder --force && log "  ✓ PermissionsSeeder ok" || warn "  ✗ PermissionsSeeder failed"
+  log "  → running: php artisan db:seed --class=SuperAdminSeeder"
+  php artisan db:seed --class=Database\\Seeders\\SuperAdminSeeder --force && log "  ✓ SuperAdminSeeder ok" || warn "  ✗ SuperAdminSeeder failed"
+  log "Verifying required admin accounts (developer + super_admin)…"
+  php artisan admin:verify --fix || warn "  ✗ admin verification reported problems — check output above"
+fi
 php artisan config:clear; php artisan route:clear; php artisan view:clear
 php artisan config:cache
 php artisan route:cache
@@ -273,8 +282,13 @@ npm run build
 # 5. Final verification (BEFORE reloading services)
 # ──────────────────────────────────────────────────────────────────────────
 cd "${APP_DIR}/backend"
-log "Final admin verification report (detected roles + active status)…"
-php artisan admin:verify --fix || warn "  ✗ final admin verification reported problems — check output above"
+if [ "${NO_SEED}" = "1" ]; then
+  log "Final report: --no-seed set — admin accounts left untouched (report only)."
+  php artisan admin:verify || true
+else
+  log "Final admin verification report (detected roles + active status)…"
+  php artisan admin:verify --fix || warn "  ✗ final admin verification reported problems — check output above"
+fi
 
 # ──────────────────────────────────────────────────────────────────────────
 # 6. Reload services — DETACHED

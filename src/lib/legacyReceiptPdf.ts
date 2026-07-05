@@ -62,7 +62,7 @@ async function receiptHtml(r: LegacyIrrigationRecord, company: string, qr: strin
     `${r.owner_type_name ? `/${r.owner_type_name}` : ""}${r.owner_fid ? `-${toBn(r.owner_fid)}` : ""}`;
   const paid = r.paid_amount ?? 0;
   return `
-  <div style="width:720px;padding:22px 26px;font-family:'Noto Sans Bengali','Hind Siliguri',Arial,sans-serif;color:#111;background:#fff;">
+  <div style="width:720px;padding:22px 26px;font-family:'Noto Sans Bengali','Hind Siliguri',Arial,sans-serif;color:#111;background:#fff;border:2px solid #111;border-radius:6px;box-sizing:border-box;">
     <div style="display:flex;align-items:flex-start;justify-content:space-between;">
       <div style="font-size:15px;font-weight:700;max-width:180px;">${company}</div>
       <div style="text-align:center;flex:1;">
@@ -80,7 +80,7 @@ async function receiptHtml(r: LegacyIrrigationRecord, company: string, qr: strin
       </div>
       <div style="font-weight:600;">সংগৃহীত তারিখ: ${toBn(fmtDate(r.collection_date))} ইং</div>
     </div>
-    <table style="width:100%;border-collapse:collapse;font-size:13px;margin-top:10px;">
+    <table style="width:100%;border-collapse:collapse;font-size:13px;margin-top:10px;border:1px solid #333;">
       ${row("কৃষকের নাম ও আইডি/মালিকের নাম ও আইডি", farmerLine)}
       ${row("পিতার/স্বামীর নাম:", val(r.father_name))}
       ${row("গ্রাম/মহল্লা/মোবাইল নং:", `${val(r.village)}/${val(r.mobile_no)}`)}
@@ -91,13 +91,17 @@ async function receiptHtml(r: LegacyIrrigationRecord, company: string, qr: strin
       ${row("জমির পরিমাণ:", `${toBn(val(r.land_shatak))} শতক`)}
       ${row("চার্জের পরিমাণ (হাল)/জরিমানা:", `${toBn(val(r.rate))}`)}
       ${row("চার্জের পরিমাণ (বকেয়া)/জরিমানা:", `${toBn(val(r.due_amount))}`)}
-      ${row("মোট আদায়ের পরিমাণ:", toBn(String(paid)))}
+      ${row("মোট আদায়ের পরিমাণ:", `${toBn(String(paid))} টাকা`)}
       ${row("কথায়:", amountWords(paid))}
       ${row("হোল্ডিং এর বিবরন/পাটুয়ারীর নাম ও মোবা নং:", val(r.receipt_no))}
     </table>
-    <div style="display:flex;justify-content:space-between;margin-top:44px;font-size:12px;">
-      <div style="text-align:center;">________________________<br/>সদস্যের স্বাক্ষর/প্রদানকারীর স্বাক্ষর</div>
-      <div style="text-align:center;">________________________<br/>আদায়কারীর স্বাক্ষর</div>
+    <div style="display:flex;justify-content:space-between;margin-top:52px;font-size:12px;">
+      <div style="text-align:center;width:44%;">
+        <div style="border-top:1px solid #111;padding-top:4px;">সদস্যের স্বাক্ষর / প্রদানকারীর স্বাক্ষর</div>
+      </div>
+      <div style="text-align:center;width:44%;">
+        <div style="border-top:1px solid #111;padding-top:4px;">আদায়কারীর স্বাক্ষর</div>
+      </div>
     </div>
   </div>`;
 }
@@ -109,10 +113,18 @@ const slug = (s: unknown) =>
     .replace(/\s+/g, "-")
     .slice(0, 40) || "farmer";
 
+/** Build the same-origin verification URL a QR code should resolve to. */
+export function legacyVerifyUrl(r: LegacyIrrigationRecord): string {
+  const origin = typeof window !== "undefined" ? window.location.origin : "";
+  const token = r.receipt_no
+    ? `legacy-${r.receipt_no}`
+    : `legacy-${r.legacy_farmer_code ?? ""}-${r.collection_date ?? ""}`;
+  return `${origin}/verify/${encodeURIComponent(token)}`;
+}
+
 async function makeQr(r: LegacyIrrigationRecord): Promise<string> {
-  const payload = r.receipt_no ? String(r.receipt_no) : `${r.legacy_farmer_code ?? ""}-${r.collection_date ?? ""}`;
   try {
-    return await QRCode.toDataURL(payload, { margin: 0, width: 128 });
+    return await QRCode.toDataURL(legacyVerifyUrl(r), { margin: 0, width: 128 });
   } catch {
     return "";
   }
@@ -151,9 +163,11 @@ export async function downloadLegacyReceipts(
   }
 
   const first = records[0];
+  const today = new Date().toISOString().slice(0, 10);
+  // Consistent naming: farmer name + receipt no + date for both single & bulk.
   const name = records.length === 1
-    ? `sech-receipt-${slug(first.farmer_name)}-${first.receipt_no ?? fmtDate(first.collection_date)}.pdf`
-    : `sech-receipts-${slug(first.farmer_name)}-${records.length}-${new Date().toISOString().slice(0, 10)}.pdf`;
+    ? `sech-receipt-${slug(first.farmer_name)}-${slug(first.receipt_no ?? "no-receipt")}-${fmtDate(first.collection_date)}.pdf`
+    : `sech-receipts-${slug(first.farmer_name)}-${records.length}-${today}.pdf`;
   pdf.save(name);
 }
 

@@ -93,7 +93,7 @@ class CanonicalAdmins
             // Informational only: whether the account still uses the default
             // password. A changed password is expected and must NOT count as a
             // failure, otherwise admin:verify would keep trying to "fix" it.
-            $passwordOk = $exists && Hash::check('Admin@123', $user->password);
+            $passwordOk = $exists && Hash::check((string) config('admin.default_password', 'Admin@123'), $user->password);
             $tokenProbe = self::probeTokenHealth($user);
             $payloadProbe = self::probePayloadHealth($user);
             $out[] = [
@@ -138,15 +138,17 @@ class CanonicalAdmins
 
             $user = User::query()->where('username', $a['username'])->first();
             if (! $user) {
+                $defaultPassword = (string) config('admin.default_password', 'Admin@123');
                 $user = User::query()->create([
                     'name' => $a['name'],
                     'username' => $a['username'],
                     'email' => $a['username'].'@mohammadkhani.com',
-                    'password' => Hash::make('Admin@123'),
+                    'password' => Hash::make($defaultPassword),
                     'office_id' => $office->id,
                     'is_active' => true,
                 ]);
                 $actions[] = "Created missing user '{$a['username']}'.";
+                self::auditPasswordChange($user, 'admin.password.initialized', 'Canonical admin account created with default password.');
             } else {
                 // Repair profile + office/active state ONLY. Never reset the
                 // password of an existing account — an admin may have changed it,
@@ -174,6 +176,32 @@ class CanonicalAdmins
         }
 
         return $actions;
+    }
+
+    /**
+     * Record a password-related change against the audit_logs table.
+     * Best-effort — never throws, so it can't break login/deploy repair.
+     */
+    public static function auditPasswordChange(User $user, string $action, ?string $note = null, ?string $actorId = null): void
+    {
+        try {
+            \App\Models\AuditLog::record([
+                'user_id' => $actorId ?: $user->id,
+                'action' => $action,
+                'entity_type' => 'user',
+                'entity_id' => $user->id,
+                'office_id' => $user->office_id,
+                'meta' => array_filter([
+                    'username' => $user->username,
+                    'note' => $note,
+                ]),
+            ]);
+        } catch (\Throwable $e) {
+            Log::warning('Failed to record password audit log: '.$e->getMessage(), [
+                'username' => $user->username ?? null,
+                'action' => $action,
+            ]);
+        }
     }
 
     private static function ensureWildcardPermission(Role $role): void
