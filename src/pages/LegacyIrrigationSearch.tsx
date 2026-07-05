@@ -220,7 +220,28 @@ export default function LegacyIrrigationSearch() {
               {preview && preview.rows.length > 1 ? ` (${preview.rows.length})` : ""}
             </DialogTitle>
           </DialogHeader>
-          <ScaledReceiptPreview html={preview?.html ?? ""} />
+
+          <div className="flex flex-wrap items-center gap-4 text-sm">
+            <div className="flex items-center gap-2">
+              <Label className="whitespace-nowrap">{tx("Paper", "কাগজ")}</Label>
+              <select
+                className="h-9 rounded-md border bg-background px-2"
+                value={paperId}
+                onChange={(e) => setPaperId(e.target.value)}
+              >
+                {Object.values(PAPER_PRESETS).map((p) => (
+                  <option key={p.id} value={p.id}>{tx(p.labelEn, p.labelBn)}</option>
+                ))}
+              </select>
+            </div>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <Checkbox checked={showGuides} onCheckedChange={(v) => setShowGuides(!!v)} />
+              {tx("Safe-area guides", "সেফ-এরিয়া গাইড")}
+            </label>
+          </div>
+
+          <ScaledReceiptPreview html={preview?.html ?? ""} paperId={paperId} showGuides={showGuides} />
+
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setPreview(null)}>{tx("Cancel", "বাতিল")}</Button>
