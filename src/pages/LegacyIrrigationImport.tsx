@@ -742,14 +742,14 @@ export default function LegacyIrrigationImport() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>ব্যাচ আইডি</TableHead>
-                  <TableHead>ফাইল</TableHead>
-                  <TableHead>ইমপোর্ট করেছেন</TableHead>
-                  <TableHead>সারি</TableHead>
-                  <TableHead>স্কিপ</TableHead>
-                  <TableHead>স্টেটাস</TableHead>
-                  <TableHead>তারিখ</TableHead>
-                  <TableHead className="text-right">অ্যাকশন</TableHead>
+                  <TableHead>{tx("Batch ID", "ব্যাচ আইডি")}</TableHead>
+                  <TableHead>{tx("File", "ফাইল")}</TableHead>
+                  <TableHead>{tx("Imported by", "ইমপোর্ট করেছেন")}</TableHead>
+                  <TableHead>{tx("Rows", "সারি")}</TableHead>
+                  <TableHead>{tx("Skipped", "স্কিপ")}</TableHead>
+                  <TableHead>{tx("Status", "স্টেটাস")}</TableHead>
+                  <TableHead>{tx("Date", "তারিখ")}</TableHead>
+                  <TableHead className="text-right">{tx("Action", "অ্যাকশন")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -762,9 +762,9 @@ export default function LegacyIrrigationImport() {
                     <TableCell>{b.skipped ?? "—"}</TableCell>
                     <TableCell>
                       {b.status === "completed"
-                        ? <Badge variant="default">সম্পন্ন</Badge>
+                        ? <Badge variant="default">{tx("Completed", "সম্পন্ন")}</Badge>
                         : b.status
-                          ? <Badge variant="outline">চলমান</Badge>
+                          ? <Badge variant="outline">{tx("In progress", "চলমান")}</Badge>
                           : "—"}
                     </TableCell>
                     <TableCell>{b.created_at?.slice(0, 19).replace("T", " ")}</TableCell>
@@ -776,7 +776,7 @@ export default function LegacyIrrigationImport() {
                   </TableRow>
                 ))}
                 {batches.length === 0 && (
-                  <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-6">কোনো ব্যাচ নেই</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-6">{tx("No batches", "কোনো ব্যাচ নেই")}</TableCell></TableRow>
                 )}
               </TableBody>
             </Table>
