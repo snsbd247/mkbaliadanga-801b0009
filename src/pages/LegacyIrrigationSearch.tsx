@@ -94,7 +94,7 @@ export default function LegacyIrrigationSearch() {
     setDownloading(true);
     setProgress({ done: 0, total: rows.length });
     try {
-      await downloadLegacyReceipts(rows, (done, total) => setProgress({ done, total }));
+      await downloadLegacyReceipts(rows, (done, total) => setProgress({ done, total }), paperId);
       toast.success(tx(`${rows.length} receipt(s) downloaded`, `${rows.length} টি রশিদ ডাউনলোড হয়েছে`));
       // Best-effort audit log — non-fatal on failure.
       LegacyIrrigationApi.logDownload({
