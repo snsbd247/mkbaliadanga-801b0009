@@ -4,6 +4,7 @@ import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 import QRCode from "qrcode";
 import { loadBranding } from "@/lib/branding";
+import { computeReceiptFit, getPaperPreset, PAGE_MARGIN_MM } from "@/lib/legacyReceiptLayout";
 import type { LegacyIrrigationRecord } from "@/lib/api/legacyIrrigation";
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -133,15 +134,14 @@ async function makeQr(r: LegacyIrrigationRecord): Promise<string> {
 export async function downloadLegacyReceipts(
   records: LegacyIrrigationRecord[],
   onProgress?: (done: number, total: number) => void,
+  paperId?: string,
 ) {
   if (!records.length) return;
   const branding = await loadBranding().catch(() => null);
   const company = branding?.company_name_bn || branding?.company_name || "সেচ রশিদ";
 
-  const pdf = new jsPDF({ unit: "mm", format: "a4", orientation: "landscape" });
-  const pageW = pdf.internal.pageSize.getWidth();
-  const pageH = pdf.internal.pageSize.getHeight();
-  const margin = 10;
+  const paper = getPaperPreset(paperId);
+  const pdf = new jsPDF({ unit: "mm", format: paper.format, orientation: paper.orientation });
 
   for (let i = 0; i < records.length; i++) {
     const qr = await makeQr(records[i]);
@@ -154,18 +154,8 @@ export async function downloadLegacyReceipts(
     try {
       const canvas = await html2canvas(holder.firstElementChild as HTMLElement, { scale: 2, backgroundColor: "#fff" });
       const img = canvas.toDataURL("image/png");
-      // Fit within both page width and height, preserving aspect ratio.
-      const availW = pageW - margin * 2;
-      const availH = pageH - margin * 2;
-      const ratio = canvas.height / canvas.width;
-      let imgW = availW;
-      let imgH = imgW * ratio;
-      if (imgH > availH) {
-        imgH = availH;
-        imgW = imgH / ratio;
-      }
-      const x = (pageW - imgW) / 2;
-      const y = (pageH - imgH) / 2;
+      // Shared aspect-preserving fit — identical rule used by the on-screen preview.
+      const { imgW, imgH, x, y } = computeReceiptFit(paper, canvas.width, canvas.height, PAGE_MARGIN_MM);
       if (i > 0) pdf.addPage();
       pdf.addImage(img, "PNG", x, y, imgW, imgH);
     } finally {
