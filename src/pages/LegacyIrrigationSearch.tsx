@@ -188,8 +188,8 @@ export default function LegacyIrrigationSearch() {
                   <TableCell>{r.paid_amount ?? "—"}</TableCell>
                   <TableCell>{fmtDisplayDate(r.collection_date)}</TableCell>
                   <TableCell className="text-right">
-                    <Button variant="ghost" size="sm" disabled={downloading} onClick={() => download([r])}>
-                      <Download className="h-4 w-4" />
+                    <Button variant="ghost" size="sm" disabled={downloading || previewLoading} onClick={() => openPreview([r])}>
+                      <Eye className="h-4 w-4" />
                     </Button>
                   </TableCell>
                 </TableRow>
