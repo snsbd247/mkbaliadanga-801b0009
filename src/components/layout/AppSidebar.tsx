@@ -64,6 +64,7 @@ export function AppSidebar() {
         { url: "/voters/history", icon: FileBarChart, label: t("voterHistory"), permKey: "farmers" },
         { url: "/reports/voter-audit", icon: FileBarChart, label: t("voterAudit"), permKey: "farmers" },
         { url: "/land-history", icon: FileBarChart, label: t("landHistory"), permKey: "farmers" },
+        { url: "/members/old-data", icon: FileBarChart, label: lang === "bn" ? "পুরনো ডাটা" : "OLD Data", permKey: "farmers" },
       ],
     },
 
