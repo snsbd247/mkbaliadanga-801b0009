@@ -5,14 +5,18 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Loader2, Search, Download } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
+import {
+  Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle,
+} from "@/components/ui/dialog";
+import { Loader2, Search, Download, Eye } from "lucide-react";
 import { toast } from "sonner";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import { LegacyIrrigationApi, LegacyIrrigationRecord } from "@/lib/api/legacyIrrigation";
 import { ApiError } from "@/lib/api/client";
-import { downloadLegacyReceipts } from "@/lib/legacyReceiptPdf";
+import { downloadLegacyReceipts, buildLegacyReceiptPreview } from "@/lib/legacyReceiptPdf";
 import { useLang } from "@/i18n/LanguageProvider";
 
 const MONTH_NAMES = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
