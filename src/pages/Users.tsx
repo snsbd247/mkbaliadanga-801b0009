@@ -448,7 +448,7 @@ export default function Users() {
                   <Button size="sm" variant="outline" onClick={() => { setEditFor(u); setEditForm({ username: u.username ?? "", email: u.email ?? "", full_name: u.full_name ?? "", office_id: u.office_id ?? "" }); }} title={t("edit")}>
                     <Pencil className="h-4 w-4" />
                   </Button>
-                  <Button size="sm" variant="outline" onClick={() => { setResetFor(u); setResetPwd(""); }} title={t("resetPasswordTitle")}>
+                  <Button size="sm" variant="outline" onClick={() => { setResetFor(u); setResetPwd(""); setResetPwd2(""); }} title={t("resetPasswordTitle")}>
                     <KeyRound className="h-4 w-4" />
                   </Button>
                   <DeleteButton onConfirm={() => deleteUser(u)} disabled={u.id === me?.id} title={t("deleteTitle")} />
