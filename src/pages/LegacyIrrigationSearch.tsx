@@ -205,6 +205,28 @@ export default function LegacyIrrigationSearch() {
           </Table>
         </Card>
       )}
+
+      <Dialog open={!!preview} onOpenChange={(o) => !o && setPreview(null)}>
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              {tx("Verify Receipt", "রশিদ যাচাই")}
+              {preview && preview.rows.length > 1 ? ` (${preview.rows.length})` : ""}
+            </DialogTitle>
+          </DialogHeader>
+          <div
+            className="rounded-md bg-muted/30 p-3"
+            dangerouslySetInnerHTML={{ __html: preview?.html ?? "" }}
+          />
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setPreview(null)}>{tx("Cancel", "বাতিল")}</Button>
+            <Button onClick={confirmDownload} disabled={downloading}>
+              {downloading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Download className="h-4 w-4 mr-2" />}
+              {tx("Download", "ডাউনলোড")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
