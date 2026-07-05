@@ -118,7 +118,7 @@ Deno.serve(async (req) => {
     }
 
     if (body.action === "update_profile") {
-      const { user_id, username, email, full_name } = body;
+      const { user_id, username, email, full_name, office_id } = body;
       if (!user_id) return json({ error: "Missing user_id" }, 400);
 
       // Guard: only developers may edit developer accounts.
