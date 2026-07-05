@@ -156,29 +156,46 @@ export default function Users() {
     load();
   }
 
+  async function logAudit(action: string, target: string, meta: Record<string, unknown>) {
+    try {
+      await db.rpc("log_developer_access", {
+        _action: action,
+        _blocked: false,
+        _meta: { target_user: target, ...meta } as any,
+      });
+    } catch { /* audit failure must not break UI */ }
+  }
+
   async function resetPassword() {
     if (!resetFor) return;
     const role = (resetFor.roles?.[0] as string) ?? "staff";
     const policy = passwordPolicyIssues(resetPwd, role, t);
     if (policy.length) return toast.error(`${t("pwPolicyPrefix")}: ${policy.join(", ")}`);
+    if (resetPwd !== resetPwd2) return toast.error(t("passwordsDoNotMatch" as any) || "Passwords do not match");
     const ok = await callAdmin({ action: "reset_password", user_id: resetFor.id, password: resetPwd });
     if (!ok) return;
+    await logAudit("reset_password", resetFor.id, {});
     toast.success(t("passwordUpdated"));
-    setResetFor(null); setResetPwd("");
+    setResetFor(null); setResetPwd(""); setResetPwd2("");
   }
 
   async function saveEdit() {
     if (!editFor) return;
     if (!/^[a-zA-Z0-9_.-]{3,30}$/.test(editForm.username)) return toast.error(t("validationFailed"));
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(editForm.email)) return toast.error(t("validationFailed"));
+    const role = (editFor.roles?.[0] as string) ?? "staff";
+    const isGlobal = role === "developer" || role === "super_admin";
+    const office_id = isGlobal ? null : (editForm.office_id || null);
     const ok = await callAdmin({
       action: "update_profile",
       user_id: editFor.id,
       username: editForm.username,
       email: editForm.email,
       full_name: editForm.full_name,
+      office_id,
     });
     if (!ok) return;
+    await logAudit("update_profile", editFor.id, { username: editForm.username, email: editForm.email });
     toast.success(t("saved"));
     setEditFor(null);
     load();
@@ -186,19 +203,28 @@ export default function Users() {
 
   async function setRole(uid: string, role: "developer" | "super_admin" | "admin" | "committee" | "staff") {
     if (uid === me?.id) return toast.error(t("cannotChangeOwnRole" as any) || "You cannot change your own role");
+    const target = list.find((u) => u.id === uid);
+    const currentRole = (target?.roles?.[0] as string) ?? "staff";
     if ((role === "developer" || role === "super_admin") && !isDeveloper) {
       return toast.error("Only developers can assign this role");
+    }
+    // Guard: changing a Super Admin away from super_admin is developer-only.
+    if (currentRole === "super_admin" && role !== "super_admin" && !isDeveloper) {
+      return toast.error("Only developers can change a Super Admin's role");
     }
     await db.from("user_roles").delete().eq("user_id", uid);
     const { error } = await db.from("user_roles").insert({ user_id: uid, role });
     if (error) return toast.error(error.message);
+    await logAudit("update_role", uid, { from: currentRole, to: role });
     toast.success(t("saved")); load();
   }
   async function setOffice(uid: string, office_id: string) {
     const { error } = await db.from("profiles").update({ office_id: office_id || null }).eq("id", uid);
     if (error) return toast.error(error.message);
+    await logAudit("update_office", uid, { office_id: office_id || null });
     load();
   }
+
 
   async function openPerms(u: any) {
     setPermFor(u);
