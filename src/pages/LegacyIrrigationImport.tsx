@@ -453,19 +453,8 @@ export default function LegacyIrrigationImport() {
     }
   }
 
-  async function doSearch() {
-    if (!code.trim()) return;
-    setSearching(true);
-    try {
-      const rows = await LegacyIrrigationApi.list({ farmer_code: code.trim() });
-      setRecords(rows);
-      if (!rows.length) toast.info(tx("No records found for this code", "এই কোডে কোনো রেকর্ড পাওয়া যায়নি"));
-    } catch (e) {
-      toast.error(e instanceof ApiError ? e.message : tx("Search failed", "সার্চ ব্যর্থ হয়েছে"));
-    } finally {
-      setSearching(false);
-    }
-  }
+
+
   async function loadBatches() {
     try { setBatches(await LegacyIrrigationApi.batches()); } catch { /* ignore */ }
   }
