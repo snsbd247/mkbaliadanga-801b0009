@@ -546,9 +546,19 @@ export default function Users() {
         <DialogContent>
           <DialogHeader><DialogTitle>{t("resetPasswordTitle")} — {resetFor?.username || resetFor?.email}</DialogTitle></DialogHeader>
           <div className="space-y-3">
-            <Label>{t("newPassword")}</Label>
-            <Input type="password" value={resetPwd} onChange={e => setResetPwd(e.target.value)} placeholder={resetFor?.roles?.includes("super_admin") ? t("pwPlaceholderSuper") : t("pwPlaceholderStaff")} />
+            <div>
+              <Label>{t("newPassword")}</Label>
+              <Input type="password" value={resetPwd} onChange={e => setResetPwd(e.target.value)} placeholder={resetFor?.roles?.includes("super_admin") ? t("pwPlaceholderSuper") : t("pwPlaceholderStaff")} />
+            </div>
+            <div>
+              <Label>{t("confirmPassword" as any) || "Confirm password"}</Label>
+              <Input type="password" value={resetPwd2} onChange={e => setResetPwd2(e.target.value)} />
+              {resetPwd2 && resetPwd !== resetPwd2 && (
+                <p className="text-[11px] text-destructive mt-1">{t("passwordsDoNotMatch" as any) || "Passwords do not match"}</p>
+              )}
+            </div>
           </div>
+
           <DialogFooter>
             <Button variant="outline" onClick={() => setResetFor(null)}>{t("cancel")}</Button>
             <Button onClick={resetPassword} disabled={busy}>{busy ? "…" : t("update")}</Button>
