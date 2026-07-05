@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useLayoutEffect, useRef } from "react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
