@@ -444,7 +444,12 @@ export default function LegacyIrrigationImport() {
 
 
   async function loadBatches() {
-    try { setBatches(await LegacyIrrigationApi.batches()); } catch { /* ignore */ }
+    try {
+      const res = await LegacyIrrigationApi.batches();
+      // Backend may return a raw array or a wrapped/paginated payload; normalise to an array.
+      const list = Array.isArray(res) ? res : Array.isArray((res as any)?.data) ? (res as any).data : [];
+      setBatches(list);
+    } catch { setBatches([]); }
   }
   async function removeBatch(id: string) {
     if (!confirm(tx("Delete this entire batch?", "এই পুরো ব্যাচ মুছে ফেলবেন?"))) return;
