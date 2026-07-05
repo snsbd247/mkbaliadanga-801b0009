@@ -429,7 +429,7 @@ export default function LegacyIrrigationImport() {
         skippedDb,
         batchId,
       });
-      toast.success(`${inserted} সারি ইমপোর্ট হয়েছে`);
+      toast.success(tx(`${inserted} rows imported`, `${inserted} সারি ইমপোর্ট হয়েছে`));
       setParsed([]);
       setResumeId("");
       setResumeInfo(null);
@@ -437,8 +437,8 @@ export default function LegacyIrrigationImport() {
     } catch (e) {
       toast.error(
         e instanceof ApiError
-          ? `${e.message} — একই ব্যাচ আইডি (${batchId}) দিয়ে রিজিউম করতে পারেন।`
-          : "ইমপোর্ট ব্যর্থ হয়েছে",
+          ? tx(`${e.message} — you can resume with the same batch ID (${batchId}).`, `${e.message} — একই ব্যাচ আইডি (${batchId}) দিয়ে রিজিউম করতে পারেন।`)
+          : tx("Import failed", "ইমপোর্ট ব্যর্থ হয়েছে"),
       );
     } finally {
       setSaving(false);
@@ -451,9 +451,9 @@ export default function LegacyIrrigationImport() {
     try {
       const rows = await LegacyIrrigationApi.list({ farmer_code: code.trim() });
       setRecords(rows);
-      if (!rows.length) toast.info("এই কোডে কোনো রেকর্ড পাওয়া যায়নি");
+      if (!rows.length) toast.info(tx("No records found for this code", "এই কোডে কোনো রেকর্ড পাওয়া যায়নি"));
     } catch (e) {
-      toast.error(e instanceof ApiError ? e.message : "সার্চ ব্যর্থ হয়েছে");
+      toast.error(e instanceof ApiError ? e.message : tx("Search failed", "সার্চ ব্যর্থ হয়েছে"));
     } finally {
       setSearching(false);
     }
@@ -462,13 +462,13 @@ export default function LegacyIrrigationImport() {
     try { setBatches(await LegacyIrrigationApi.batches()); } catch { /* ignore */ }
   }
   async function removeBatch(id: string) {
-    if (!confirm("এই পুরো ব্যাচ মুছে ফেলবেন?")) return;
+    if (!confirm(tx("Delete this entire batch?", "এই পুরো ব্যাচ মুছে ফেলবেন?"))) return;
     try {
       const res = await LegacyIrrigationApi.deleteBatch(id);
-      toast.success(`${res.deleted} সারি মোছা হয়েছে`);
+      toast.success(tx(`${res.deleted} rows deleted`, `${res.deleted} সারি মোছা হয়েছে`));
       loadBatches();
     } catch (e) {
-      toast.error(e instanceof ApiError ? e.message : "মোছা যায়নি");
+      toast.error(e instanceof ApiError ? e.message : tx("Could not delete", "মোছা যায়নি"));
     }
   }
 
