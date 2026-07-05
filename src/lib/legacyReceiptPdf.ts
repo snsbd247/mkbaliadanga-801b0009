@@ -156,7 +156,7 @@ export async function downloadLegacyReceipts(
     holder.innerHTML = await receiptHtml(records[i], company, qr, logoUrl);
     document.body.appendChild(holder);
     try {
-      const canvas = await html2canvas(holder.firstElementChild as HTMLElement, { scale: 2, backgroundColor: "#fff" });
+      const canvas = await html2canvas(holder.firstElementChild as HTMLElement, { scale: 2, backgroundColor: "#fff", useCORS: true });
       const img = canvas.toDataURL("image/png");
       // Shared aspect-preserving fit — identical rule used by the on-screen preview.
       const { imgW, imgH, x, y } = computeReceiptFit(paper, canvas.width, canvas.height, PAGE_MARGIN_MM);
