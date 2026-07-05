@@ -178,6 +178,32 @@ class CanonicalAdmins
         return $actions;
     }
 
+    /**
+     * Record a password-related change against the audit_logs table.
+     * Best-effort — never throws, so it can't break login/deploy repair.
+     */
+    public static function auditPasswordChange(User $user, string $action, ?string $note = null, ?string $actorId = null): void
+    {
+        try {
+            \App\Models\AuditLog::record([
+                'user_id' => $actorId ?: $user->id,
+                'action' => $action,
+                'entity_type' => 'user',
+                'entity_id' => $user->id,
+                'office_id' => $user->office_id,
+                'meta' => array_filter([
+                    'username' => $user->username,
+                    'note' => $note,
+                ]),
+            ]);
+        } catch (\Throwable $e) {
+            Log::warning('Failed to record password audit log: '.$e->getMessage(), [
+                'username' => $user->username ?? null,
+                'action' => $action,
+            ]);
+        }
+    }
+
     private static function ensureWildcardPermission(Role $role): void
     {
         $wildcard = Permission::query()->firstOrCreate(
