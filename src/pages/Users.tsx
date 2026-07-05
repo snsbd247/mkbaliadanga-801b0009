@@ -52,8 +52,14 @@ export default function Users() {
   const [resetFor, setResetFor] = useState<any | null>(null);
   const [resetPwd, setResetPwd] = useState("");
   const [editFor, setEditFor] = useState<any | null>(null);
-  const [editForm, setEditForm] = useState({ username: "", email: "", full_name: "" });
+  const [editForm, setEditForm] = useState({ username: "", email: "", full_name: "", office_id: "" });
+  const [resetPwd2, setResetPwd2] = useState("");
   const [busy, setBusy] = useState(false);
+
+  // Filters
+  const [search, setSearch] = useState("");
+  const [roleFilter, setRoleFilter] = useState("all");
+  const [officeFilter, setOfficeFilter] = useState("all");
 
   const [form, setForm] = useState({
     username: "", email: "", full_name: "", password: "",
