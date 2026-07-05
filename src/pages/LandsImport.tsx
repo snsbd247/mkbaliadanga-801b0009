@@ -953,6 +953,7 @@ export default function LandsImport() {
                   <TableHead>{tx("Size", "পরিমাণ")}</TableHead>
                   <TableHead>own/borga</TableHead>
                   <TableHead>{tx("Sharecropper", "বর্গাদার")}</TableHead>
+                  <TableHead>{tx("Maps to (dry-run)", "যেভাবে ম্যাপ হবে")}</TableHead>
                   <TableHead>{tx("Issue", "সমস্যা")}</TableHead>
                 </TableRow>
               </TableHeader>
