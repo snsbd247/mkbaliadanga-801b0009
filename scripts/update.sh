@@ -308,6 +308,39 @@ log "Reloading PHP-FPM & Nginx (detached — deploy already complete)…"
 for conf in /etc/nginx/sites-enabled/*.conf /etc/nginx/sites-available/*.conf; do
   [ -f "$conf" ] || continue
   sed -i 's#try_files \$uri \$uri/ /index.html;#try_files \$uri /index.html;#' "$conf" 2>/dev/null || true
+  if grep -q "root ${APP_DIR}/dist;" "$conf" 2>/dev/null && ! grep -q "location /storage/" "$conf" 2>/dev/null; then
+    python3 - "$conf" "${APP_DIR}" <<'PY' || true
+from pathlib import Path
+import sys
+
+conf = Path(sys.argv[1])
+app_dir = sys.argv[2]
+text = conf.read_text()
+if "location /storage/" in text:
+    raise SystemExit(0)
+
+block = f'''
+
+    # Uploaded files (logo/signature/farmer photos/etc.) live on Laravel's public disk.
+    # Keep this before the SPA fallback; otherwise /storage/... returns index.html and
+    # images look broken after reload.
+    location /storage/ {{
+        alias {app_dir}/backend/public/storage/;
+        try_files $uri =404;
+        access_log off;
+        expires 30d;
+        add_header Cache-Control "public, max-age=2592000" always;
+    }}
+'''
+
+marker = "\n    # SPA fallback"
+if marker in text:
+    text = text.replace(marker, block + marker, 1)
+else:
+    text = text.replace("\n}", block + "\n}", 1)
+conf.write_text(text)
+PY
+  fi
 done
 
 # ✅ Success marker is printed BEFORE the reload so the stream can flush it.
