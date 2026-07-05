@@ -994,6 +994,19 @@ export default function LandsImport() {
                     <TableCell className="text-right">{String(r.raw.land_size ?? "")}</TableCell>
                     <TableCell>{isBorgaType(r.raw.owner_type) ? "borga" : "own"}</TableCell>
                     <TableCell className="font-mono text-xs">{String(r.raw.sharecropper_id ?? "")}</TableCell>
+                    <TableCell className="text-xs max-w-[260px]">
+                      {(() => {
+                        const m = classifyImportRow(r.raw as any);
+                        return (
+                          <span className="block">
+                            <Badge variant={m.createsBorgaRelation ? "secondary" : "outline"} className="mb-1">
+                              {m.ownerTab} {m.createsBorgaRelation ? "+ borga" : ""}
+                            </Badge>
+                            <span className="block text-muted-foreground">{tx(m.summary.en, m.summary.bn)}</span>
+                          </span>
+                        );
+                      })()}
+                    </TableCell>
                     <TableCell className="text-xs max-w-[280px]">
                       {r.errorMsg && <span className="text-destructive">{r.errorMsg}</span>}
                       {r.warnMsg && <span className="block text-amber-600">⚠ {r.warnMsg}</span>}
