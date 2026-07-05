@@ -461,9 +461,8 @@ export default function LandsImport() {
           errors.push(`land_size: সংখ্যা নয় (${sizeRaw})`);
         else if (num(sizeRaw) <= 0) errors.push("land_size: ০ এর বেশি হতে হবে");
 
-        const ot = String(raw.owner_type ?? "").trim().toLowerCase();
-        if (ot && !isBorgaType(ot) && !["own", "owner", "নিজে", "মালিক"].includes(ot))
-          warns.push(`owner_type চেনা যায়নি (own/borga): ${raw.owner_type}`);
+        const otCheck = validateOwnerType(raw.owner_type);
+        if (!otCheck.ok) warns.push(otCheck.message!);
 
         const borga = isBorgaType(raw.owner_type);
         if (borga) {
