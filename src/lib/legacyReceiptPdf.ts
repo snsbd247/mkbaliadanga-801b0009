@@ -163,9 +163,11 @@ export async function downloadLegacyReceipts(
   }
 
   const first = records[0];
+  const today = new Date().toISOString().slice(0, 10);
+  // Consistent naming: farmer name + receipt no + date for both single & bulk.
   const name = records.length === 1
-    ? `sech-receipt-${slug(first.farmer_name)}-${first.receipt_no ?? fmtDate(first.collection_date)}.pdf`
-    : `sech-receipts-${slug(first.farmer_name)}-${records.length}-${new Date().toISOString().slice(0, 10)}.pdf`;
+    ? `sech-receipt-${slug(first.farmer_name)}-${slug(first.receipt_no ?? "no-receipt")}-${fmtDate(first.collection_date)}.pdf`
+    : `sech-receipts-${slug(first.farmer_name)}-${records.length}-${today}.pdf`;
   pdf.save(name);
 }
 
