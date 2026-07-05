@@ -606,14 +606,14 @@ export default function LegacyIrrigationImport() {
           {/* Per-row validation errors */}
           {invalidRows.length > 0 && (
             <Card className="p-0 overflow-x-auto">
-              <div className="p-3 text-sm font-medium text-destructive">সমস্যাযুক্ত সারি ({invalidRows.length}) — ঠিক করে আবার আপলোড করুন</div>
+              <div className="p-3 text-sm font-medium text-destructive">{tx("Problem rows", "সমস্যাযুক্ত সারি")} ({invalidRows.length}) — {tx("fix and upload again", "ঠিক করে আবার আপলোড করুন")}</div>
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>সারি</TableHead>
-                    <TableHead>নাম</TableHead>
-                    <TableHead>রশিদ</TableHead>
-                    <TableHead>সমস্যা</TableHead>
+                    <TableHead>{tx("Row", "সারি")}</TableHead>
+                    <TableHead>{tx("Name", "নাম")}</TableHead>
+                    <TableHead>{tx("Receipt", "রশিদ")}</TableHead>
+                    <TableHead>{tx("Issue", "সমস্যা")}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
