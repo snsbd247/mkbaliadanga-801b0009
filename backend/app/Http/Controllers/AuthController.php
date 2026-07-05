@@ -188,6 +188,12 @@ class AuthController extends Controller
         $user->update(['password' => Hash::make($data['password'])]);
         $user->tokens()->delete();
 
+        \App\Support\CanonicalAdmins::auditPasswordChange(
+            $user,
+            'user.password.reset',
+            'Password reset via forgot-password token.',
+        );
+
         \Illuminate\Support\Facades\DB::table('password_reset_tokens')
             ->where('email', $data['email'])->delete();
 
