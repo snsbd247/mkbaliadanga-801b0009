@@ -251,13 +251,17 @@ log "  ✓ migrations applied; ⏭  sample data seeders intentionally skipped on
 # any real data (firstOrCreate / updateOrCreate / syncWithoutDetaching only).
 #   developer    -> ismail162  / Admin@123
 #   super_admin  -> suparadmin / Admin@123
-log "Ensuring permissions + required admin accounts (idempotent)…"
-log "  → running: php artisan db:seed --class=PermissionsSeeder"
-php artisan db:seed --class=Database\\Seeders\\PermissionsSeeder --force && log "  ✓ PermissionsSeeder ok" || warn "  ✗ PermissionsSeeder failed"
-log "  → running: php artisan db:seed --class=SuperAdminSeeder"
-php artisan db:seed --class=Database\\Seeders\\SuperAdminSeeder --force && log "  ✓ SuperAdminSeeder ok" || warn "  ✗ SuperAdminSeeder failed"
-log "Verifying required admin accounts (developer + super_admin)…"
-php artisan admin:verify --fix || warn "  ✗ admin verification reported problems — check output above"
+if [ "${NO_SEED}" = "1" ]; then
+  warn "--no-seed: skipping permission/admin seeders and admin auto-repair (accounts untouched)."
+else
+  log "Ensuring permissions + required admin accounts (idempotent)…"
+  log "  → running: php artisan db:seed --class=PermissionsSeeder"
+  php artisan db:seed --class=Database\\Seeders\\PermissionsSeeder --force && log "  ✓ PermissionsSeeder ok" || warn "  ✗ PermissionsSeeder failed"
+  log "  → running: php artisan db:seed --class=SuperAdminSeeder"
+  php artisan db:seed --class=Database\\Seeders\\SuperAdminSeeder --force && log "  ✓ SuperAdminSeeder ok" || warn "  ✗ SuperAdminSeeder failed"
+  log "Verifying required admin accounts (developer + super_admin)…"
+  php artisan admin:verify --fix || warn "  ✗ admin verification reported problems — check output above"
+fi
 php artisan config:clear; php artisan route:clear; php artisan view:clear
 php artisan config:cache
 php artisan route:cache
