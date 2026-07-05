@@ -684,18 +684,18 @@ export default function LegacyIrrigationImport() {
           <Card className="p-4">
             <div className="flex items-end gap-2">
               <div className="flex-1 max-w-xs">
-                <Label>ফার্মার কোড</Label>
+                <Label>{tx("Farmer Code", "ফার্মার কোড")}</Label>
                 <Input
                   value={code}
                   onChange={(e) => setCode(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && doSearch()}
-                  placeholder="যেমন 2473"
+                  placeholder={tx("e.g. 2473", "যেমন 2473")}
                   className="mt-2"
                 />
               </div>
               <Button onClick={doSearch} disabled={searching}>
                 {searching ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Search className="h-4 w-4 mr-2" />}
-                খুঁজুন
+                {tx("Search", "খুঁজুন")}
               </Button>
             </div>
           </Card>
@@ -705,15 +705,15 @@ export default function LegacyIrrigationImport() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>সিজন</TableHead>
-                    <TableHead>মৌজা</TableHead>
-                    <TableHead>দাগ</TableHead>
-                    <TableHead>জমি</TableHead>
-                    <TableHead>রেট</TableHead>
-                    <TableHead>মালিক/বর্গা</TableHead>
-                    <TableHead>রশিদ</TableHead>
-                    <TableHead>পরিশোধ</TableHead>
-                    <TableHead>তারিখ</TableHead>
+                    <TableHead>{tx("Season", "সিজন")}</TableHead>
+                    <TableHead>{tx("Mouza", "মৌজা")}</TableHead>
+                    <TableHead>{tx("Dag", "দাগ")}</TableHead>
+                    <TableHead>{tx("Land", "জমি")}</TableHead>
+                    <TableHead>{tx("Rate", "রেট")}</TableHead>
+                    <TableHead>{tx("Owner/Sharecropper", "মালিক/বর্গা")}</TableHead>
+                    <TableHead>{tx("Receipt", "রশিদ")}</TableHead>
+                    <TableHead>{tx("Paid", "পরিশোধ")}</TableHead>
+                    <TableHead>{tx("Date", "তারিখ")}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
