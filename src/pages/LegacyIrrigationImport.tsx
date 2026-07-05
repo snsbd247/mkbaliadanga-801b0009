@@ -185,10 +185,6 @@ export default function LegacyIrrigationImport() {
   const [seasonOptions, setSeasonOptions] = useState<string[]>([]);
   const [seasonMap, setSeasonMap] = useState<Record<string, string>>({});
 
-  // search tab
-  const [code, setCode] = useState("");
-  const [records, setRecords] = useState<LegacyIrrigationRecord[]>([]);
-  const [searching, setSearching] = useState(false);
   const [batches, setBatches] = useState<LegacyBatch[]>([]);
 
   const distinctSeasons = useMemo(
