@@ -375,17 +375,22 @@ export default function LegacyIrrigationImport() {
     if (!id) return;
     try {
       const s = await LegacyIrrigationApi.batchStatus(id);
-      if (!s.exists) { setResumeInfo("এই ব্যাচ আইডি পাওয়া যায়নি — নতুন ব্যাচ হিসেবে চলবে।"); return; }
+      if (!s.exists) { setResumeInfo(tx("Batch ID not found — will run as a new batch.", "এই ব্যাচ আইডি পাওয়া যায়নি — নতুন ব্যাচ হিসেবে চলবে।")); return; }
       const a = s.audit;
       setResumeInfo(
-        `স্টেটাস: ${a?.status ?? "—"} • এখন পর্যন্ত ইমপোর্ট: ${s.record_count}` +
-        (a?.total_rows ? ` / ${a.total_rows}` : "") +
-        `${a?.file_name ? ` • ফাইল: ${a.file_name}` : ""}`,
+        tx(
+          `Status: ${a?.status ?? "—"} • Imported so far: ${s.record_count}` +
+            (a?.total_rows ? ` / ${a.total_rows}` : "") +
+            `${a?.file_name ? ` • File: ${a.file_name}` : ""}`,
+          `স্টেটাস: ${a?.status ?? "—"} • এখন পর্যন্ত ইমপোর্ট: ${s.record_count}` +
+            (a?.total_rows ? ` / ${a.total_rows}` : "") +
+            `${a?.file_name ? ` • ফাইল: ${a.file_name}` : ""}`,
+        ),
       );
       setSkipDbDup(true); // resume: skip already-inserted receipts
-      toast.info("রিজিউম মোড: আগে থেকে থাকা রশিদ স্কিপ করা হবে");
+      toast.info(tx("Resume mode: existing receipts will be skipped", "রিজিউম মোড: আগে থেকে থাকা রশিদ স্কিপ করা হবে"));
     } catch (e) {
-      setResumeInfo(e instanceof ApiError ? e.message : "স্টেটাস আনা যায়নি");
+      setResumeInfo(e instanceof ApiError ? e.message : tx("Could not fetch status", "স্টেটাস আনা যায়নি"));
     }
   }
 
