@@ -93,7 +93,7 @@ class CanonicalAdmins
             // Informational only: whether the account still uses the default
             // password. A changed password is expected and must NOT count as a
             // failure, otherwise admin:verify would keep trying to "fix" it.
-            $passwordOk = $exists && Hash::check('Admin@123', $user->password);
+            $passwordOk = $exists && Hash::check((string) config('admin.default_password', 'Admin@123'), $user->password);
             $tokenProbe = self::probeTokenHealth($user);
             $payloadProbe = self::probePayloadHealth($user);
             $out[] = [
