@@ -248,7 +248,7 @@ export default function LegacyIrrigationImport() {
           : XLSX.read(reader.result as ArrayBuffer, { type: "array" });
         const sheet = wb.Sheets[wb.SheetNames[0]];
         const json = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, { defval: "" });
-        if (!json.length) { setHeaderError("ফাইলে কোনো সারি নেই।"); return; }
+        if (!json.length) { setHeaderError(tx("No rows in file.", "ফাইলে কোনো সারি নেই।")); return; }
 
         // ── Auto header mapping ──
         const rawHeaders = Object.keys(json[0]);
@@ -261,15 +261,15 @@ export default function LegacyIrrigationImport() {
             headerMap.set(h, canonical);
             mappedCanonicals.add(canonical);
             if (normHeader(h) !== normHeader(canonical)) {
-              warnings.push(`"${h}" কলামটি "${canonical}" হিসেবে ধরা হয়েছে`);
+              warnings.push(tx(`Column "${h}" mapped as "${canonical}"`, `"${h}" কলামটি "${canonical}" হিসেবে ধরা হয়েছে`));
             }
           } else {
-            warnings.push(`"${h}" কলামটি চেনা যায়নি — উপেক্ষা করা হবে`);
+            warnings.push(tx(`Column "${h}" not recognized — will be ignored`, `"${h}" কলামটি চেনা যায়নি — উপেক্ষা করা হবে`));
           }
         }
         const missing = REQUIRED_HEADERS.filter((h) => !mappedCanonicals.has(h));
         if (missing.length) {
-          setHeaderError(`প্রয়োজনীয় কলাম নেই বা চেনা যায়নি: ${missing.join(", ")}`);
+          setHeaderError(tx(`Required columns missing or unrecognized: ${missing.join(", ")}`, `প্রয়োজনীয় কলাম নেই বা চেনা যায়নি: ${missing.join(", ")}`));
           setHeaderWarnings(warnings);
           return;
         }
