@@ -25,6 +25,7 @@ import {
 } from "@/lib/api/legacyIrrigation";
 import { SeasonsApi } from "@/lib/api/catalog";
 import { ApiError } from "@/lib/api/client";
+import { useLang } from "@/i18n/LanguageProvider";
 
 const MONTHS: Record<string, string> = {
   JAN: "01", FEB: "02", MAR: "03", APR: "04", MAY: "05", JUN: "06",
@@ -153,6 +154,7 @@ function mapRow(r: Record<string, unknown>): { row: LegacyIrrigationRow; errors:
 }
 
 export default function LegacyIrrigationImport() {
+  const { tx } = useLang();
   const fileRef = useRef<HTMLInputElement>(null);
   const [parsed, setParsed] = useState<ParsedRow[]>([]);
   const [headerError, setHeaderError] = useState<string | null>(null);
@@ -246,7 +248,7 @@ export default function LegacyIrrigationImport() {
           : XLSX.read(reader.result as ArrayBuffer, { type: "array" });
         const sheet = wb.Sheets[wb.SheetNames[0]];
         const json = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, { defval: "" });
-        if (!json.length) { setHeaderError("ফাইলে কোনো সারি নেই।"); return; }
+        if (!json.length) { setHeaderError(tx("No rows in file.", "ফাইলে কোনো সারি নেই।")); return; }
 
         // ── Auto header mapping ──
         const rawHeaders = Object.keys(json[0]);
@@ -259,15 +261,15 @@ export default function LegacyIrrigationImport() {
             headerMap.set(h, canonical);
             mappedCanonicals.add(canonical);
             if (normHeader(h) !== normHeader(canonical)) {
-              warnings.push(`"${h}" কলামটি "${canonical}" হিসেবে ধরা হয়েছে`);
+              warnings.push(tx(`Column "${h}" mapped as "${canonical}"`, `"${h}" কলামটি "${canonical}" হিসেবে ধরা হয়েছে`));
             }
           } else {
-            warnings.push(`"${h}" কলামটি চেনা যায়নি — উপেক্ষা করা হবে`);
+            warnings.push(tx(`Column "${h}" not recognized — will be ignored`, `"${h}" কলামটি চেনা যায়নি — উপেক্ষা করা হবে`));
           }
         }
         const missing = REQUIRED_HEADERS.filter((h) => !mappedCanonicals.has(h));
         if (missing.length) {
-          setHeaderError(`প্রয়োজনীয় কলাম নেই বা চেনা যায়নি: ${missing.join(", ")}`);
+          setHeaderError(tx(`Required columns missing or unrecognized: ${missing.join(", ")}`, `প্রয়োজনীয় কলাম নেই বা চেনা যায়নি: ${missing.join(", ")}`));
           setHeaderWarnings(warnings);
           return;
         }
@@ -292,9 +294,9 @@ export default function LegacyIrrigationImport() {
           if (c > 1) p.dupInFile = true;
         }
         setParsed(rows);
-        toast.success(`${rows.length} সারি পড়া হয়েছে`);
+        toast.success(tx(`${rows.length} rows read`, `${rows.length} সারি পড়া হয়েছে`));
       } catch (e) {
-        setHeaderError(e instanceof Error ? e.message : "ফাইল পড়া যায়নি।");
+        setHeaderError(e instanceof Error ? e.message : tx("Could not read file.", "ফাইল পড়া যায়নি।"));
       }
     };
     reader.readAsArrayBuffer(file);
@@ -373,17 +375,22 @@ export default function LegacyIrrigationImport() {
     if (!id) return;
     try {
       const s = await LegacyIrrigationApi.batchStatus(id);
-      if (!s.exists) { setResumeInfo("এই ব্যাচ আইডি পাওয়া যায়নি — নতুন ব্যাচ হিসেবে চলবে।"); return; }
+      if (!s.exists) { setResumeInfo(tx("Batch ID not found — will run as a new batch.", "এই ব্যাচ আইডি পাওয়া যায়নি — নতুন ব্যাচ হিসেবে চলবে।")); return; }
       const a = s.audit;
       setResumeInfo(
-        `স্টেটাস: ${a?.status ?? "—"} • এখন পর্যন্ত ইমপোর্ট: ${s.record_count}` +
-        (a?.total_rows ? ` / ${a.total_rows}` : "") +
-        `${a?.file_name ? ` • ফাইল: ${a.file_name}` : ""}`,
+        tx(
+          `Status: ${a?.status ?? "—"} • Imported so far: ${s.record_count}` +
+            (a?.total_rows ? ` / ${a.total_rows}` : "") +
+            `${a?.file_name ? ` • File: ${a.file_name}` : ""}`,
+          `স্টেটাস: ${a?.status ?? "—"} • এখন পর্যন্ত ইমপোর্ট: ${s.record_count}` +
+            (a?.total_rows ? ` / ${a.total_rows}` : "") +
+            `${a?.file_name ? ` • ফাইল: ${a.file_name}` : ""}`,
+        ),
       );
       setSkipDbDup(true); // resume: skip already-inserted receipts
-      toast.info("রিজিউম মোড: আগে থেকে থাকা রশিদ স্কিপ করা হবে");
+      toast.info(tx("Resume mode: existing receipts will be skipped", "রিজিউম মোড: আগে থেকে থাকা রশিদ স্কিপ করা হবে"));
     } catch (e) {
-      setResumeInfo(e instanceof ApiError ? e.message : "স্টেটাস আনা যায়নি");
+      setResumeInfo(e instanceof ApiError ? e.message : tx("Could not fetch status", "স্টেটাস আনা যায়নি"));
     }
   }
 
@@ -422,7 +429,7 @@ export default function LegacyIrrigationImport() {
         skippedDb,
         batchId,
       });
-      toast.success(`${inserted} সারি ইমপোর্ট হয়েছে`);
+      toast.success(tx(`${inserted} rows imported`, `${inserted} সারি ইমপোর্ট হয়েছে`));
       setParsed([]);
       setResumeId("");
       setResumeInfo(null);
@@ -430,8 +437,8 @@ export default function LegacyIrrigationImport() {
     } catch (e) {
       toast.error(
         e instanceof ApiError
-          ? `${e.message} — একই ব্যাচ আইডি (${batchId}) দিয়ে রিজিউম করতে পারেন।`
-          : "ইমপোর্ট ব্যর্থ হয়েছে",
+          ? tx(`${e.message} — you can resume with the same batch ID (${batchId}).`, `${e.message} — একই ব্যাচ আইডি (${batchId}) দিয়ে রিজিউম করতে পারেন।`)
+          : tx("Import failed", "ইমপোর্ট ব্যর্থ হয়েছে"),
       );
     } finally {
       setSaving(false);
@@ -444,9 +451,9 @@ export default function LegacyIrrigationImport() {
     try {
       const rows = await LegacyIrrigationApi.list({ farmer_code: code.trim() });
       setRecords(rows);
-      if (!rows.length) toast.info("এই কোডে কোনো রেকর্ড পাওয়া যায়নি");
+      if (!rows.length) toast.info(tx("No records found for this code", "এই কোডে কোনো রেকর্ড পাওয়া যায়নি"));
     } catch (e) {
-      toast.error(e instanceof ApiError ? e.message : "সার্চ ব্যর্থ হয়েছে");
+      toast.error(e instanceof ApiError ? e.message : tx("Search failed", "সার্চ ব্যর্থ হয়েছে"));
     } finally {
       setSearching(false);
     }
@@ -455,25 +462,25 @@ export default function LegacyIrrigationImport() {
     try { setBatches(await LegacyIrrigationApi.batches()); } catch { /* ignore */ }
   }
   async function removeBatch(id: string) {
-    if (!confirm("এই পুরো ব্যাচ মুছে ফেলবেন?")) return;
+    if (!confirm(tx("Delete this entire batch?", "এই পুরো ব্যাচ মুছে ফেলবেন?"))) return;
     try {
       const res = await LegacyIrrigationApi.deleteBatch(id);
-      toast.success(`${res.deleted} সারি মোছা হয়েছে`);
+      toast.success(tx(`${res.deleted} rows deleted`, `${res.deleted} সারি মোছা হয়েছে`));
       loadBatches();
     } catch (e) {
-      toast.error(e instanceof ApiError ? e.message : "মোছা যায়নি");
+      toast.error(e instanceof ApiError ? e.message : tx("Could not delete", "মোছা যায়নি"));
     }
   }
 
   return (
     <div className="space-y-6">
-      <PageHeader title="পুরনো সেচ ডাটা ইমপোর্ট" description="আগের সফটওয়্যারের সেচ কালেকশন হিস্ট্রি (আলাদা টেবিল)" />
+      <PageHeader title={tx("Import Legacy Irrigation Data", "পুরনো সেচ ডাটা ইমপোর্ট")} description={tx("Irrigation collection history from the old software (separate table)", "আগের সফটওয়্যারের সেচ কালেকশন হিস্ট্রি (আলাদা টেবিল)")} />
 
       <Tabs defaultValue="import" onValueChange={(v) => v === "batches" && loadBatches()}>
         <TabsList>
-          <TabsTrigger value="import">ইমপোর্ট</TabsTrigger>
-          <TabsTrigger value="search">কৃষক খুঁজুন</TabsTrigger>
-          <TabsTrigger value="batches">ব্যাচ ব্যবস্থাপনা</TabsTrigger>
+          <TabsTrigger value="import">{tx("Import", "ইমপোর্ট")}</TabsTrigger>
+          <TabsTrigger value="search">{tx("Find Farmer", "কৃষক খুঁজুন")}</TabsTrigger>
+          <TabsTrigger value="batches">{tx("Batch Management", "ব্যাচ ব্যবস্থাপনা")}</TabsTrigger>
         </TabsList>
 
         {/* ── Import tab ── */}
@@ -481,7 +488,7 @@ export default function LegacyIrrigationImport() {
           <Card className="p-4 space-y-4">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
-                <Label>Excel/CSV ফাইল নির্বাচন করুন</Label>
+                <Label>{tx("Select Excel/CSV file", "Excel/CSV ফাইল নির্বাচন করুন")}</Label>
                 <input
                   ref={fileRef}
                   type="file"
@@ -490,18 +497,18 @@ export default function LegacyIrrigationImport() {
                   onChange={(e) => e.target.files?.[0] && onFile(e.target.files[0])}
                 />
                 <p className="text-xs text-muted-foreground mt-1">
-                  প্রয়োজনীয় কলাম: FARMER_NAME, SESSON_YEAR, RECEIPT_NO, PAID_AMOUNT
+                  {tx("Required columns", "প্রয়োজনীয় কলাম")}: FARMER_NAME, SESSON_YEAR, RECEIPT_NO, PAID_AMOUNT
                 </p>
               </div>
               <Button variant="outline" onClick={downloadTemplate}>
-                <Download className="h-4 w-4 mr-2" /> টেমপ্লেট ডাউনলোড
+                <Download className="h-4 w-4 mr-2" /> {tx("Download Template", "টেমপ্লেট ডাউনলোড")}
               </Button>
             </div>
 
             {headerError && (
               <Alert variant="destructive">
                 <AlertTriangle className="h-4 w-4" />
-                <AlertTitle>ফাইল সমস্যা</AlertTitle>
+                <AlertTitle>{tx("File Problem", "ফাইল সমস্যা")}</AlertTitle>
                 <AlertDescription>{headerError}</AlertDescription>
               </Alert>
             )}
@@ -509,7 +516,7 @@ export default function LegacyIrrigationImport() {
             {headerWarnings.length > 0 && (
               <Alert>
                 <AlertTriangle className="h-4 w-4" />
-                <AlertTitle>কলাম ম্যাপিং সতর্কতা</AlertTitle>
+                <AlertTitle>{tx("Column Mapping Warning", "কলাম ম্যাপিং সতর্কতা")}</AlertTitle>
                 <AlertDescription>
                   <ul className="list-disc pl-4 space-y-0.5 text-xs">
                     {headerWarnings.map((w, i) => <li key={i}>{w}</li>)}
@@ -522,49 +529,49 @@ export default function LegacyIrrigationImport() {
               <>
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div className="flex flex-wrap items-center gap-2">
-                    <Badge variant="secondary">মোট: {parsed.length}</Badge>
-                    <Badge variant="default">সঠিক: {cleanRows.length}</Badge>
-                    {invalidRows.length > 0 && <Badge variant="destructive">সমস্যাযুক্ত: {invalidRows.length}</Badge>}
-                    {dupRows.length > 0 && <Badge variant="outline">ডুপ্লিকেট রশিদ: {dupRows.length}</Badge>}
+                    <Badge variant="secondary">{tx("Total", "মোট")}: {parsed.length}</Badge>
+                    <Badge variant="default">{tx("Valid", "সঠিক")}: {cleanRows.length}</Badge>
+                    {invalidRows.length > 0 && <Badge variant="destructive">{tx("With issues", "সমস্যাযুক্ত")}: {invalidRows.length}</Badge>}
+                    {dupRows.length > 0 && <Badge variant="outline">{tx("Duplicate receipts", "ডুপ্লিকেট রশিদ")}: {dupRows.length}</Badge>}
                   </div>
                   {(invalidRows.length > 0 || dupRows.length > 0) && (
                     <Button variant="outline" size="sm" onClick={downloadInvalid}>
-                      <Download className="h-4 w-4 mr-2" /> সমস্যাযুক্ত রো রিপোর্ট
+                      <Download className="h-4 w-4 mr-2" /> {tx("Problem Rows Report", "সমস্যাযুক্ত রো রিপোর্ট")}
                     </Button>
                   )}
                 </div>
 
                 <div className="space-y-2">
-                  <Label>ফাইলের মধ্যে ডুপ্লিকেট রশিদ হলে</Label>
+                  <Label>{tx("If duplicate receipts within the file", "ফাইলের মধ্যে ডুপ্লিকেট রশিদ হলে")}</Label>
                   <RadioGroup value={dupMode} onValueChange={(v) => setDupMode(v as "skip" | "block")} className="flex gap-6">
                     <div className="flex items-center gap-2">
                       <RadioGroupItem value="skip" id="dm-skip" />
-                      <Label htmlFor="dm-skip" className="font-normal">স্কিপ করুন (প্রথমটি রাখা হবে)</Label>
+                      <Label htmlFor="dm-skip" className="font-normal">{tx("Skip (keep the first)", "স্কিপ করুন (প্রথমটি রাখা হবে)")}</Label>
                     </div>
                     <div className="flex items-center gap-2">
                       <RadioGroupItem value="block" id="dm-block" />
-                      <Label htmlFor="dm-block" className="font-normal">ইমপোর্ট ব্লক করুন</Label>
+                      <Label htmlFor="dm-block" className="font-normal">{tx("Block import", "ইমপোর্ট ব্লক করুন")}</Label>
                     </div>
                   </RadioGroup>
                 </div>
 
                 <div className="flex items-center gap-2">
                   <Checkbox id="dbdup" checked={skipDbDup} onCheckedChange={(v) => setSkipDbDup(!!v)} />
-                  <Label htmlFor="dbdup" className="font-normal">ডাটাবেজে আগে থেকে থাকা রশিদ নম্বর স্কিপ করুন</Label>
+                  <Label htmlFor="dbdup" className="font-normal">{tx("Skip receipt numbers already in the database", "ডাটাবেজে আগে থেকে থাকা রশিদ নম্বর স্কিপ করুন")}</Label>
                 </div>
 
                 <div className="space-y-2 border-t pt-3">
-                  <Label htmlFor="resume">থেমে যাওয়া ব্যাচ রিজিউম (ঐচ্ছিক — ব্যাচ আইডি দিন)</Label>
+                  <Label htmlFor="resume">{tx("Resume a stopped batch (optional — enter batch ID)", "থেমে যাওয়া ব্যাচ রিজিউম (ঐচ্ছিক — ব্যাচ আইডি দিন)")}</Label>
                   <div className="flex flex-wrap items-center gap-2">
                     <Input
                       id="resume"
                       value={resumeId}
                       onChange={(e) => setResumeId(e.target.value)}
-                      placeholder="ব্যাচ আইডি (UUID)"
+                      placeholder={tx("Batch ID (UUID)", "ব্যাচ আইডি (UUID)")}
                       className="max-w-xs font-mono text-xs"
                     />
                     <Button variant="outline" size="sm" onClick={checkResume} disabled={!resumeId.trim()}>
-                      স্টেটাস দেখুন
+                      {tx("View Status", "স্টেটাস দেখুন")}
                     </Button>
                   </div>
                   {resumeInfo && <p className="text-xs text-muted-foreground">{resumeInfo}</p>}
@@ -578,16 +585,16 @@ export default function LegacyIrrigationImport() {
             <Card className="p-4 space-y-3">
               <Alert>
                 <AlertTriangle className="h-4 w-4" />
-                <AlertTitle>সিজন ম্যাচ হয়নি</AlertTitle>
-                <AlertDescription>নিচের সিজনগুলো সিস্টেমে নেই। প্রতিটির জন্য সঠিক সিজন নির্বাচন করুন অথবা মূল লেখা রাখুন।</AlertDescription>
+                <AlertTitle>{tx("Season Not Matched", "সিজন ম্যাচ হয়নি")}</AlertTitle>
+                <AlertDescription>{tx("The seasons below are not in the system. Select the correct season for each, or keep the original text.", "নিচের সিজনগুলো সিস্টেমে নেই। প্রতিটির জন্য সঠিক সিজন নির্বাচন করুন অথবা মূল লেখা রাখুন।")}</AlertDescription>
               </Alert>
               {unmatchedSeasons.map((s) => (
                 <div key={s} className="flex items-center gap-3">
                   <span className="min-w-32 text-sm font-medium">{s}</span>
                   <Select value={seasonMap[s] ?? ""} onValueChange={(v) => setSeasonMap((m) => ({ ...m, [s]: v }))}>
-                    <SelectTrigger className="max-w-xs"><SelectValue placeholder="সিজন নির্বাচন করুন" /></SelectTrigger>
+                    <SelectTrigger className="max-w-xs"><SelectValue placeholder={tx("Select season", "সিজন নির্বাচন করুন")} /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value={s}>মূল লেখা রাখুন ({s})</SelectItem>
+                      <SelectItem value={s}>{tx("Keep original text", "মূল লেখা রাখুন")} ({s})</SelectItem>
                       {seasonOptions.map((o) => <SelectItem key={o} value={o}>{o}</SelectItem>)}
                     </SelectContent>
                   </Select>
@@ -599,14 +606,14 @@ export default function LegacyIrrigationImport() {
           {/* Per-row validation errors */}
           {invalidRows.length > 0 && (
             <Card className="p-0 overflow-x-auto">
-              <div className="p-3 text-sm font-medium text-destructive">সমস্যাযুক্ত সারি ({invalidRows.length}) — ঠিক করে আবার আপলোড করুন</div>
+              <div className="p-3 text-sm font-medium text-destructive">{tx("Problem rows", "সমস্যাযুক্ত সারি")} ({invalidRows.length}) — {tx("fix and upload again", "ঠিক করে আবার আপলোড করুন")}</div>
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>সারি</TableHead>
-                    <TableHead>নাম</TableHead>
-                    <TableHead>রশিদ</TableHead>
-                    <TableHead>সমস্যা</TableHead>
+                    <TableHead>{tx("Row", "সারি")}</TableHead>
+                    <TableHead>{tx("Name", "নাম")}</TableHead>
+                    <TableHead>{tx("Receipt", "রশিদ")}</TableHead>
+                    <TableHead>{tx("Issue", "সমস্যা")}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -620,7 +627,7 @@ export default function LegacyIrrigationImport() {
                   ))}
                 </TableBody>
               </Table>
-              {invalidRows.length > 50 && <p className="text-xs text-muted-foreground p-3">প্রথম ৫০টি দেখানো হয়েছে।</p>}
+              {invalidRows.length > 50 && <p className="text-xs text-muted-foreground p-3">{tx("Showing first 50.", "প্রথম ৫০টি দেখানো হয়েছে।")}</p>}
             </Card>
           )}
 
@@ -630,13 +637,13 @@ export default function LegacyIrrigationImport() {
               {blockedByDup && (
                 <Alert variant="destructive">
                   <AlertTriangle className="h-4 w-4" />
-                  <AlertDescription>ডুপ্লিকেট রশিদ থাকায় ইমপোর্ট ব্লক করা হয়েছে। "স্কিপ" নির্বাচন করুন বা ফাইল ঠিক করুন।</AlertDescription>
+                  <AlertDescription>{tx('Import is blocked due to duplicate receipts. Choose "Skip" or fix the file.', 'ডুপ্লিকেট রশিদ থাকায় ইমপোর্ট ব্লক করা হয়েছে। "স্কিপ" নির্বাচন করুন বা ফাইল ঠিক করুন।')}</AlertDescription>
                 </Alert>
               )}
               <div className="flex items-center gap-3">
                 <Button onClick={save} disabled={!canImport || saving}>
                   {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Upload className="h-4 w-4 mr-2" />}
-                  {importableRows.length} সারি ইমপোর্ট করুন
+                  {tx(`Import ${importableRows.length} rows`, `${importableRows.length} সারি ইমপোর্ট করুন`)}
                 </Button>
               </div>
               {saving && (
@@ -651,20 +658,20 @@ export default function LegacyIrrigationImport() {
           {/* Batch report */}
           {report && (
             <Card className="p-4 space-y-2">
-              <div className="font-medium">ইমপোর্ট রিপোর্ট</div>
+              <div className="font-medium">{tx("Import Report", "ইমপোর্ট রিপোর্ট")}</div>
               <div className="flex flex-wrap gap-2">
-                <Badge variant="default">ইমপোর্ট হয়েছে: {report.inserted}</Badge>
-                {report.skippedFile > 0 && <Badge variant="outline">ফাইল ডুপ্লিকেট স্কিপ: {report.skippedFile}</Badge>}
-                {report.skippedDb.length > 0 && <Badge variant="outline">ডাটাবেজ ডুপ্লিকেট স্কিপ: {report.skippedDb.length}</Badge>}
-                <Badge variant="secondary">ব্যাচ: {report.batchId.slice(0, 8)}…</Badge>
+                <Badge variant="default">{tx("Imported", "ইমপোর্ট হয়েছে")}: {report.inserted}</Badge>
+                {report.skippedFile > 0 && <Badge variant="outline">{tx("File duplicates skipped", "ফাইল ডুপ্লিকেট স্কিপ")}: {report.skippedFile}</Badge>}
+                {report.skippedDb.length > 0 && <Badge variant="outline">{tx("DB duplicates skipped", "ডাটাবেজ ডুপ্লিকেট স্কিপ")}: {report.skippedDb.length}</Badge>}
+                <Badge variant="secondary">{tx("Batch", "ব্যাচ")}: {report.batchId.slice(0, 8)}…</Badge>
               </div>
               {(report.skippedDb.length > 0 || report.skippedFile > 0) && (
                 <div className="space-y-2">
                   {report.skippedDb.length > 0 && (
-                    <p className="text-xs text-muted-foreground">স্কিপ হওয়া রশিদ: {report.skippedDb.slice(0, 30).join(", ")}{report.skippedDb.length > 30 ? " …" : ""}</p>
+                    <p className="text-xs text-muted-foreground">{tx("Skipped receipts", "স্কিপ হওয়া রশিদ")}: {report.skippedDb.slice(0, 30).join(", ")}{report.skippedDb.length > 30 ? " …" : ""}</p>
                   )}
                   <Button variant="outline" size="sm" onClick={downloadSkipped}>
-                    স্কিপ হওয়া রো রিপোর্ট (Excel)
+                    {tx("Skipped Rows Report (Excel)", "স্কিপ হওয়া রো রিপোর্ট (Excel)")}
                   </Button>
                 </div>
               )}
@@ -677,18 +684,18 @@ export default function LegacyIrrigationImport() {
           <Card className="p-4">
             <div className="flex items-end gap-2">
               <div className="flex-1 max-w-xs">
-                <Label>ফার্মার কোড</Label>
+                <Label>{tx("Farmer Code", "ফার্মার কোড")}</Label>
                 <Input
                   value={code}
                   onChange={(e) => setCode(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && doSearch()}
-                  placeholder="যেমন 2473"
+                  placeholder={tx("e.g. 2473", "যেমন 2473")}
                   className="mt-2"
                 />
               </div>
               <Button onClick={doSearch} disabled={searching}>
                 {searching ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Search className="h-4 w-4 mr-2" />}
-                খুঁজুন
+                {tx("Search", "খুঁজুন")}
               </Button>
             </div>
           </Card>
@@ -698,15 +705,15 @@ export default function LegacyIrrigationImport() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>সিজন</TableHead>
-                    <TableHead>মৌজা</TableHead>
-                    <TableHead>দাগ</TableHead>
-                    <TableHead>জমি</TableHead>
-                    <TableHead>রেট</TableHead>
-                    <TableHead>মালিক/বর্গা</TableHead>
-                    <TableHead>রশিদ</TableHead>
-                    <TableHead>পরিশোধ</TableHead>
-                    <TableHead>তারিখ</TableHead>
+                    <TableHead>{tx("Season", "সিজন")}</TableHead>
+                    <TableHead>{tx("Mouza", "মৌজা")}</TableHead>
+                    <TableHead>{tx("Dag", "দাগ")}</TableHead>
+                    <TableHead>{tx("Land", "জমি")}</TableHead>
+                    <TableHead>{tx("Rate", "রেট")}</TableHead>
+                    <TableHead>{tx("Owner/Sharecropper", "মালিক/বর্গা")}</TableHead>
+                    <TableHead>{tx("Receipt", "রশিদ")}</TableHead>
+                    <TableHead>{tx("Paid", "পরিশোধ")}</TableHead>
+                    <TableHead>{tx("Date", "তারিখ")}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -735,14 +742,14 @@ export default function LegacyIrrigationImport() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>ব্যাচ আইডি</TableHead>
-                  <TableHead>ফাইল</TableHead>
-                  <TableHead>ইমপোর্ট করেছেন</TableHead>
-                  <TableHead>সারি</TableHead>
-                  <TableHead>স্কিপ</TableHead>
-                  <TableHead>স্টেটাস</TableHead>
-                  <TableHead>তারিখ</TableHead>
-                  <TableHead className="text-right">অ্যাকশন</TableHead>
+                  <TableHead>{tx("Batch ID", "ব্যাচ আইডি")}</TableHead>
+                  <TableHead>{tx("File", "ফাইল")}</TableHead>
+                  <TableHead>{tx("Imported by", "ইমপোর্ট করেছেন")}</TableHead>
+                  <TableHead>{tx("Rows", "সারি")}</TableHead>
+                  <TableHead>{tx("Skipped", "স্কিপ")}</TableHead>
+                  <TableHead>{tx("Status", "স্টেটাস")}</TableHead>
+                  <TableHead>{tx("Date", "তারিখ")}</TableHead>
+                  <TableHead className="text-right">{tx("Action", "অ্যাকশন")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -755,9 +762,9 @@ export default function LegacyIrrigationImport() {
                     <TableCell>{b.skipped ?? "—"}</TableCell>
                     <TableCell>
                       {b.status === "completed"
-                        ? <Badge variant="default">সম্পন্ন</Badge>
+                        ? <Badge variant="default">{tx("Completed", "সম্পন্ন")}</Badge>
                         : b.status
-                          ? <Badge variant="outline">চলমান</Badge>
+                          ? <Badge variant="outline">{tx("In progress", "চলমান")}</Badge>
                           : "—"}
                     </TableCell>
                     <TableCell>{b.created_at?.slice(0, 19).replace("T", " ")}</TableCell>
@@ -769,7 +776,7 @@ export default function LegacyIrrigationImport() {
                   </TableRow>
                 ))}
                 {batches.length === 0 && (
-                  <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-6">কোনো ব্যাচ নেই</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-6">{tx("No batches", "কোনো ব্যাচ নেই")}</TableCell></TableRow>
                 )}
               </TableBody>
             </Table>
