@@ -140,6 +140,8 @@ export async function downloadLegacyReceipts(
 
   const pdf = new jsPDF({ unit: "mm", format: "a4", orientation: "landscape" });
   const pageW = pdf.internal.pageSize.getWidth();
+  const pageH = pdf.internal.pageSize.getHeight();
+  const margin = 10;
 
   for (let i = 0; i < records.length; i++) {
     const qr = await makeQr(records[i]);
@@ -152,15 +154,26 @@ export async function downloadLegacyReceipts(
     try {
       const canvas = await html2canvas(holder.firstElementChild as HTMLElement, { scale: 2, backgroundColor: "#fff" });
       const img = canvas.toDataURL("image/png");
-      const imgW = pageW - 20;
-      const imgH = (canvas.height / canvas.width) * imgW;
+      // Fit within both page width and height, preserving aspect ratio.
+      const availW = pageW - margin * 2;
+      const availH = pageH - margin * 2;
+      const ratio = canvas.height / canvas.width;
+      let imgW = availW;
+      let imgH = imgW * ratio;
+      if (imgH > availH) {
+        imgH = availH;
+        imgW = imgH / ratio;
+      }
+      const x = (pageW - imgW) / 2;
+      const y = (pageH - imgH) / 2;
       if (i > 0) pdf.addPage();
-      pdf.addImage(img, "PNG", 10, 12, imgW, imgH);
+      pdf.addImage(img, "PNG", x, y, imgW, imgH);
     } finally {
       document.body.removeChild(holder);
     }
     onProgress?.(i + 1, records.length);
   }
+
 
   const first = records[0];
   const today = new Date().toISOString().slice(0, 10);
