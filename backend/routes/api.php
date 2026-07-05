@@ -55,6 +55,11 @@ Route::prefix('auth')->group(function () {
     });
 });
 
+// Public file delivery for user-uploaded images saved on Laravel's public disk.
+// This avoids SPA fallback serving index.html for /storage/... image URLs.
+Route::get('/storage/public/{bucket}/{path}', [StorageController::class, 'publicFile'])
+    ->where('path', '.*');
+
 // ── Batch 1: Admin / Users / Roles / Offices / Audit ──────────────────
 Route::middleware(['auth:sanctum', 'branch.scope'])->group(function () {
     // Users

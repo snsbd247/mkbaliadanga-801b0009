@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
  * Storage gateway — a Laravel replacement for Supabase Storage buckets
@@ -16,6 +17,8 @@ use Illuminate\Support\Facades\Storage;
  * Routes (behind auth:sanctum):
  *   POST /api/storage/upload   multipart: bucket, path, file
  *   POST /api/storage/remove   { bucket, paths: [] }
+ * Public route:
+ *   GET  /api/storage/public/{bucket}/{path}
  */
 class StorageController extends Controller
 {
@@ -61,5 +64,21 @@ class StorageController extends Controller
             Storage::disk('public')->delete("$bucket/" . $this->safe($p));
         }
         return response()->json(['ok' => true]);
+    }
+
+    public function publicFile(string $bucket, string $path): StreamedResponse
+    {
+        $bucket = $this->safe($bucket);
+        $path = $this->safe($path);
+        $full = "$bucket/$path";
+
+        if (! Storage::disk('public')->exists($full)) {
+            abort(404, 'File not found.');
+        }
+
+        $response = Storage::disk('public')->response($full);
+        $response->headers->set('Cache-Control', 'public, max-age=2592000');
+        $response->headers->set('Access-Control-Allow-Origin', '*');
+        return $response;
     }
 }

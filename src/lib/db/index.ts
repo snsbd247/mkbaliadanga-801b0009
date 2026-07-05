@@ -195,6 +195,12 @@ async function laravelInvoke<T = any>(name: string, opts?: { body?: unknown }): 
 }
 
 function laravelStorageBucket(bucket: string) {
+  const publicStorageUrl = (path: string) => {
+    const origin = (api.defaults.baseURL || "").replace(/\/api\/?$/, "");
+    const safePath = path.split("/").map(encodeURIComponent).join("/");
+    return `${origin}/api/storage/public/${encodeURIComponent(bucket)}/${safePath}`;
+  };
+
   return {
     async upload(path: string, file: File | Blob, _opts?: unknown) {
       try {
@@ -211,8 +217,7 @@ function laravelStorageBucket(bucket: string) {
       }
     },
     getPublicUrl(path: string) {
-      const base = (api.defaults.baseURL || "").replace(/\/api\/?$/, "");
-      return { data: { publicUrl: `${base}/storage/${bucket}/${path}` } };
+      return { data: { publicUrl: publicStorageUrl(path) } };
     },
     async remove(paths: string[]) {
       try {
@@ -223,8 +228,7 @@ function laravelStorageBucket(bucket: string) {
       }
     },
     async createSignedUrl(path: string, _expiresIn: number) {
-      const base = (api.defaults.baseURL || "").replace(/\/api\/?$/, "");
-      return { data: { signedUrl: `${base}/storage/${bucket}/${path}` }, error: null };
+      return { data: { signedUrl: publicStorageUrl(path) }, error: null };
     },
   };
 }
