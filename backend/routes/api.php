@@ -60,6 +60,10 @@ Route::prefix('auth')->group(function () {
 Route::get('/storage/public/{bucket}/{path}', [StorageController::class, 'publicFile'])
     ->where('path', '.*');
 
+// Public (no-auth) legacy সেচ receipt verification for printed QR codes.
+Route::get('/legacy-irrigation/verify/{receiptNo}', [LegacyIrrigationController::class, 'verify']);
+
+
 // ── Batch 1: Admin / Users / Roles / Offices / Audit ──────────────────
 Route::middleware(['auth:sanctum', 'branch.scope'])->group(function () {
     // Users
