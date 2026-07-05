@@ -491,7 +491,7 @@ export default function LegacyIrrigationImport() {
       <Tabs defaultValue="import" onValueChange={(v) => v === "batches" && loadBatches()}>
         <TabsList>
           <TabsTrigger value="import">{tx("Import", "ইমপোর্ট")}</TabsTrigger>
-          <TabsTrigger value="search">{tx("Find Farmer", "কৃষক খুঁজুন")}</TabsTrigger>
+          
           <TabsTrigger value="batches">{tx("Batch Management", "ব্যাচ ব্যবস্থাপনা")}</TabsTrigger>
         </TabsList>
 
