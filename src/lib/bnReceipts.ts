@@ -700,7 +700,24 @@ function buildHtml(d: BnReceiptData, copy: ReceiptCopy, lang: ReceiptLang, orgLa
   return wrap;
 }
 
+/**
+ * Shared builder for the official "সেচ চার্জ ও বিবিধ আদায় রশিদ" HTML (single copy).
+ * Both the live irrigation module and the legacy-data receipt generator MUST use this
+ * so the two layouts can never diverge (same template, fonts, borders, signature row).
+ */
+export function buildOfficialIrrigationReceiptHtml(
+  data: BnReceiptData,
+  qrDataUrl?: string | null,
+  lang: ReceiptLang = "bn",
+): string {
+  return copyHtml(data, STR[lang].farmerCopy, data.collector_signature_url, lang, "two-line", "sm", qrDataUrl, false, DEFAULT_TEMPLATE);
+}
+
+/** Render width (px) used for the official irrigation receipt canvas. Shared across modules. */
+export const IRRIGATION_RECEIPT_RENDER_WIDTH = IRRIGATION_RECEIPT_PAGE.renderWidthPx;
+
 /** Test-only: build a single receipt copy's HTML without touching the DOM. */
+
 export function buildReceiptCopyHtmlForTest(
   data: BnReceiptData,
   copy: "farmer" | "office" = "farmer",

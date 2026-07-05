@@ -6,6 +6,7 @@ import QRCode from "qrcode";
 import { loadBranding } from "@/lib/branding";
 import { computeReceiptFit, getPaperPreset, PAGE_MARGIN_MM } from "@/lib/legacyReceiptLayout";
 import type { LegacyIrrigationRecord } from "@/lib/api/legacyIrrigation";
+import { buildOfficialIrrigationReceiptHtml, type BnReceiptData } from "@/lib/bnReceipts";
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 function fmtDate(v?: string | null): string {
@@ -18,121 +19,51 @@ function fmtDate(v?: string | null): string {
   }
   return s;
 }
-const val = (v: unknown) => (v == null || v === "" ? "—" : String(v));
 
-// Bengali numeral conversion + amount-in-words (টাকা).
-const BN_DIGITS = ["০", "১", "২", "৩", "৪", "৫", "৬", "৭", "৮", "৯"];
-const toBn = (v: unknown) => String(v ?? "").replace(/[0-9]/g, (d) => BN_DIGITS[+d]);
 
-const ONES = ["", "এক", "দুই", "তিন", "চার", "পাঁচ", "ছয়", "সাত", "আট", "নয়", "দশ",
-  "এগারো", "বারো", "তেরো", "চৌদ্দ", "পনেরো", "ষোল", "সতেরো", "আঠারো", "উনিশ", "বিশ",
-  "একুশ", "বাইশ", "তেইশ", "চব্বিশ", "পঁচিশ", "ছাব্বিশ", "সাতাশ", "আটাশ", "ঊনত্রিশ", "ত্রিশ",
-  "একত্রিশ", "বত্রিশ", "তেত্রিশ", "চৌত্রিশ", "পঁয়ত্রিশ", "ছত্রিশ", "সাঁইত্রিশ", "আটত্রিশ", "ঊনচল্লিশ", "চল্লিশ",
-  "একচল্লিশ", "বিয়াল্লিশ", "তেতাল্লিশ", "চুয়াল্লিশ", "পঁয়তাল্লিশ", "ছেচল্লিশ", "সাতচল্লিশ", "আটচল্লিশ", "ঊনপঞ্চাশ", "পঞ্চাশ",
-  "একান্ন", "বায়ান্ন", "তিপ্পান্ন", "চুয়ান্ন", "পঞ্চান্ন", "ছাপ্পান্ন", "সাতান্ন", "আটান্ন", "ঊনষাট", "ষাট",
-  "একষট্টি", "বাষট্টি", "তেষট্টি", "চৌষট্টি", "পঁয়ষট্টি", "ছেষট্টি", "সাতষট্টি", "আটষট্টি", "ঊনসত্তর", "সত্তর",
-  "একাত্তর", "বাহাত্তর", "তিয়াত্তর", "চুয়াত্তর", "পঁচাত্তর", "ছিয়াত্তর", "সাতাত্তর", "আটাত্তর", "ঊনআশি", "আশি",
-  "একাশি", "বিরাশি", "তিরাশি", "চুরাশি", "পঁচাশি", "ছিয়াশি", "সাতাশি", "আটাশি", "ঊননব্বই", "নব্বই",
-  "একানব্বই", "বিরানব্বই", "তিরানব্বই", "চুরানব্বই", "পঁচানব্বই", "ছিয়ানব্বই", "সাতানব্বই", "আটানব্বই", "নিরানব্বই"];
 
-function numToWordsBn(n: number): string {
-  n = Math.floor(Math.abs(n));
-  if (n === 0) return "শূন্য";
-  const parts: string[] = [];
-  const units: [number, string][] = [[10000000, "কোটি"], [100000, "লক্ষ"], [1000, "হাজার"], [100, "শত"]];
-  for (const [div, name] of units) {
-    if (n >= div) {
-      const q = Math.floor(n / div);
-      parts.push(`${ONES[q] ?? numToWordsBn(q)} ${name}`);
-      n %= div;
-    }
-  }
-  if (n > 0) parts.push(ONES[n]);
-  return parts.join(" ");
-}
-const amountWords = (n?: number | null) =>
-  n == null ? "—" : `${numToWordsBn(n)} টাকা মাত্র।`;
-
-async function receiptHtml(r: LegacyIrrigationRecord, company: string, qr: string, logoUrl?: string | null, editorSigUrl?: string | null): Promise<string> {
+/**
+ * Map a legacy irrigation record into the shared BnReceiptData shape so the SAME
+ * official receipt template renders both live and legacy receipts (no divergence).
+ */
+export function mapLegacyToReceiptData(
+  r: LegacyIrrigationRecord,
+  branding: { company_name_bn?: string | null; company_name?: string | null; logo_url?: string | null; editor_signature_url?: string | null } | null,
+): BnReceiptData {
+  const hal = r.rate ?? 0;
+  const due = r.due_amount ?? 0;
   const paid = r.paid_amount ?? 0;
-  const farmerNamePart = `${val(r.farmer_name)}${r.legacy_farmer_code ? `-${toBn(r.legacy_farmer_code)}` : ""}`;
-  const ownerPart = `${val(r.owner_type_name)}${r.owner_fid ? `-${toBn(r.owner_fid)}` : ""}`;
-
-  // Single-column rows, identical order to the official "সেচ চার্জ ও বিবিধ আদায় রশিদ".
-  const rows: Array<[string, string]> = [
-    ["farmer", `${farmerNamePart}/${ownerPart}`],
-    ["পিতার/স্বামীর নাম", val(r.father_name)],
-    ["গ্রাম/মহল্লা/মোবাইল নং", `${val(r.village)}${r.mobile_no ? "/" + toBn(String(r.mobile_no)) : ""}`],
-    ["কৃষক এবং মালিক সভ্য সদস্য", `${toBn(val(r.legacy_farmer_code))}/${toBn(val(r.owner_fid))}`],
-    ["মৌজা", val(r.mouza_name)],
-    ["landKind", `${val(r.owner_type_name)}/ ${toBn(val(r.rate))}`],
-    ["দাগ নং", toBn(val(r.dag_no))],
-    ["জমির পরিমাণ", `${toBn(val(r.land_shatak))} শতক`],
-    ["চার্জের পরিমাণ (হাল)/জরিমানা", `${toBn(val(r.rate))}৳/০৳`],
-    ["চার্জের পরিমাণ (বকেয়া)/জরিমানা", `${toBn(val(r.due_amount))}৳/০৳`],
-    ["মোট আদায়ের পরিমাণ", `${toBn(String(paid))}৳`],
-    ["কথায়", amountWords(paid)],
-    ["হোল্ডিং এর বিবরন/পাটুয়ারীর নাম ও মোবা নং", toBn(val(r.receipt_no))],
-  ];
-
-  const cellWrap = "word-break:break-word;overflow-wrap:anywhere;white-space:pre-line;line-height:1.2;";
-  const officialRows = rows.map(([k, v], idx) => {
-    const isLast = idx === rows.length - 1;
-    const rowPadY = isLast ? "1px 0 6px 12px" : "1px 0 1px 12px";
-    const rowPadColon = isLast ? "1px 8px 6px 4px" : "1px 8px 1px 4px";
-    const rowPadVal = isLast ? "1px 12px 6px 0" : "1px 12px 1px 0";
-    const label = k === "farmer"
-      ? `কৃষকের নাম ও আইডি/মালিকের নাম ও আইডি`
-      : k === "landKind"
-        ? `জমির ধরন/ চার্জ রেট (একর/বিঘা)`
-        : k;
-    return `
-      <tr>
-        <td style="padding:${rowPadY};vertical-align:top;width:46%;font-size:18px;line-height:1.2;font-weight:600;">${label}</td>
-        <td style="padding:${rowPadColon};vertical-align:top;width:14px;font-size:18px;line-height:1.2;font-weight:700;">:</td>
-        <td style="padding:${rowPadVal};vertical-align:top;font-size:18px;line-height:1.2;font-weight:600;${cellWrap}">${v}</td>
-      </tr>`;
-  }).join("");
-
-  const logo = logoUrl
-    ? `<img src="${logoUrl}" crossorigin="anonymous" style="max-width:215px;height:64px;object-fit:contain;object-position:left center;" />`
-    : `<div style="height:64px;display:flex;align-items:center;justify-content:flex-start;text-align:left;font-size:18px;font-weight:700;color:#111;">${company}</div>`;
-
-  const fontFamily = `'Noto Sans Bengali','Hind Siliguri','SolaimanLipi',sans-serif`;
-
-  return `
-  <div style="position:relative;width:1040px;font-family:${fontFamily};color:#111;background:#fff;padding:20px 26px 24px;min-height:650px;box-sizing:border-box;">
-    <div style="display:grid;grid-template-columns:240px 1fr 128px;align-items:start;min-height:92px;">
-      <div style="padding-top:16px;">${logo}</div>
-      <div style="text-align:center;padding-top:24px;">
-        <div style="display:inline-block;font-size:25px;font-weight:800;line-height:1.1;text-decoration:underline;text-underline-offset:4px;text-decoration-thickness:2px;">সেচ চার্জ ও বিবিধ আদায় রশিদ</div>
-      </div>
-      <div style="text-align:right;padding-top:14px;">
-        ${qr ? `<img src="${qr}" style="width:78px;height:78px;display:block;margin-left:auto;" /><div style="font-size:11px;color:#111;margin-top:2px;">যাচাই করুন</div>` : ""}
-      </div>
-    </div>
-
-    <div style="display:grid;grid-template-columns:1fr auto;column-gap:24px;margin-top:4px;font-size:21px;line-height:1.35;">
-      <div>
-        <div>রশিদ নং: ${toBn(val(r.receipt_no))}</div>
-        <div>আদায়ের তথ্য: ${val(r.season_year)}</div>
-      </div>
-      <div style="white-space:nowrap;padding-top:30px;">সংগৃহীত তারিখ: ${toBn(fmtDate(r.collection_date))} ইং</div>
-    </div>
-
-    <table style="width:100%;border:2px solid #111;border-collapse:collapse;margin-top:14px;table-layout:fixed;">
-      <tbody>${officialRows}</tbody>
-    </table>
-
-    <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-top:54px;font-size:19px;line-height:1.2;">
-      <div style="border-top:1px solid #111;padding-top:2px;min-width:260px;">সদস্যের স্বাক্ষর/প্রদানকারীর স্বাক্ষর</div>
-      <div style="text-align:right;min-width:170px;">
-        ${editorSigUrl ? `<img src="${editorSigUrl}" crossorigin="anonymous" style="height:34px;margin:0 0 2px auto;display:block;" />` : ""}
-        <div style="border-top:1px solid #111;padding-top:2px;">সম্পাদকের স্বাক্ষর</div>
-      </div>
-    </div>
-  </div>`;
+  return {
+    kind: "irrigation",
+    receipt_no: String(r.receipt_no ?? ""),
+    receipt_no_display: r.receipt_no ? String(r.receipt_no) : null,
+    date: r.collection_date ?? new Date().toISOString().slice(0, 10),
+    bill_info: r.season_year ?? undefined,
+    company_name_bn: branding?.company_name_bn ?? null,
+    company_name: branding?.company_name ?? undefined,
+    logo_url: branding?.logo_url ?? null,
+    owner_self: true,
+    farmer: {
+      name: r.farmer_name ?? "—",
+      member_no: r.legacy_farmer_code ?? null,
+      father_or_husband: r.father_name ?? null,
+      village: r.village ?? null,
+      mobile: r.mobile_no ?? null,
+      mouza: r.mouza_name ?? null,
+      field_type_bn: r.owner_type_name ?? null,
+      land_size: r.land_shatak ?? null,
+      dag_no: r.dag_no ?? null,
+    },
+    rate: r.rate ?? null,
+    member_summary: `${r.legacy_farmer_code ?? "N/A"}/${r.owner_fid ?? "N/A"}`,
+    current_season_charge: hal,
+    total_outstanding: due,
+    collected_amount: paid,
+    collector_signature_url: branding?.editor_signature_url ?? null,
+    verify_url: legacyVerifyUrl(r),
+  };
 }
+
 
 const slug = (s: unknown) =>
   String(s ?? "")
@@ -165,9 +96,6 @@ export async function downloadLegacyReceipts(
 ) {
   if (!records.length) return;
   const branding = await loadBranding().catch(() => null);
-  const company = branding?.company_name_bn || branding?.company_name || "সেচ রশিদ";
-  const logoUrl = branding?.logo_url || null;
-  const editorSigUrl = branding?.editor_signature_url || null;
 
   const paper = getPaperPreset(paperId);
   const pdf = new jsPDF({ unit: "mm", format: paper.format, orientation: paper.orientation });
@@ -178,7 +106,9 @@ export async function downloadLegacyReceipts(
     holder.style.position = "fixed";
     holder.style.left = "-10000px";
     holder.style.top = "0";
-    holder.innerHTML = await receiptHtml(records[i], company, qr, logoUrl, editorSigUrl);
+    holder.style.width = "1040px";
+    holder.style.background = "#fff";
+    holder.innerHTML = buildOfficialIrrigationReceiptHtml(mapLegacyToReceiptData(records[i], branding), qr);
     document.body.appendChild(holder);
     try {
       const canvas = await html2canvas(holder.firstElementChild as HTMLElement, { scale: 2, backgroundColor: "#fff", useCORS: true });
@@ -206,11 +136,8 @@ export async function downloadLegacyReceipts(
 /** Build preview HTML (for a verification modal) for the given records. */
 export async function buildLegacyReceiptPreview(records: LegacyIrrigationRecord[]): Promise<string> {
   const branding = await loadBranding().catch(() => null);
-  const company = branding?.company_name_bn || branding?.company_name || "সেচ রশিদ";
-  const logoUrl = branding?.logo_url || null;
-  const editorSigUrl = branding?.editor_signature_url || null;
   const parts = await Promise.all(
-    records.map(async (r) => receiptHtml(r, company, await makeQr(r), logoUrl, editorSigUrl)),
+    records.map(async (r) => buildOfficialIrrigationReceiptHtml(mapLegacyToReceiptData(r, branding), await makeQr(r))),
   );
   return parts.join('<div style="height:16px;"></div>');
 }
