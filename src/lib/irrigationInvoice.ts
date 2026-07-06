@@ -19,6 +19,7 @@
 import { supabase } from "@/integrations/supabase/client";
 
 import { db } from "@/lib/db";
+import { splitBillableArea } from "@/lib/irrigationBargaSplit";
 export type InvoiceStatus = "draft" | "generated" | "partial_paid" | "paid" | "overdue" | "cancelled";
 
 export interface ChargeSettings {
@@ -177,16 +178,72 @@ export function calcInvoice(input: InvoiceCalcInput): InvoiceCalcResult {
   };
 }
 
+async function loadBillingContext(land_id: string, as_of: string) {
+  const { data: land, error: landError } = await db
+    .from("lands" as any)
+    .select("farmer_id,owner_farmer_id,land_size,area_decimal")
+    .eq("id", land_id)
+    .maybeSingle();
+  if (landError) throw landError;
+
+  const owner = (land as any)?.owner_farmer_id || (land as any)?.farmer_id;
+  const total = Number((land as any)?.land_size ?? (land as any)?.area_decimal ?? 0) || 0;
+  if (!owner) return { owner, total, relations: [] as any[] };
+
+  let relations: any[] = [];
+  try {
+    const { data } = await db
+      .from("land_relations" as any)
+      .select("sharecropper_farmer_id,area_decimal,share_percentage,valid_from,valid_to,deleted_at")
+      .eq("land_id", land_id)
+      .is("deleted_at", null);
+    relations = ((data ?? []) as any[]).filter((r) => {
+      if (!r.sharecropper_farmer_id) return false;
+      const fromOk = !r.valid_from || String(r.valid_from).slice(0, 10) <= as_of;
+      const toOk = !r.valid_to || String(r.valid_to).slice(0, 10) >= as_of;
+      return fromOk && toOk;
+    });
+  } catch (e) {
+    console.warn("land_relations unavailable — billing owner only", e);
+  }
+
+  return { owner, total, relations };
+}
+
+async function resolveBillingSplitsFallback(land_id: string, as_of: string): Promise<BillingSplit[]> {
+  const ctx = await loadBillingContext(land_id, as_of);
+  if (!ctx.owner) return [];
+  return splitBillableArea({
+    owner_farmer_id: ctx.owner,
+    parcel_area: ctx.total,
+    relations: ctx.relations,
+  });
+}
+
 /**
  * Resolve who should be billed for a land at the given date.
  * Returns { billed_farmer_id, owner_farmer_id, is_borga }.
  */
 export async function resolveBilledFarmer(land_id: string, as_of: string = new Date().toISOString().slice(0, 10)) {
-  const { data, error } = await db.rpc("get_billed_farmer_for_land", { _land_id: land_id, _as_of: as_of });
-  if (error) throw error;
-  const row = Array.isArray(data) ? data[0] : data;
+  try {
+    const { data, error } = await db.rpc("get_billed_farmer_for_land", { _land_id: land_id, _as_of: as_of });
+    if (error) throw error;
+    const row = Array.isArray(data) ? data[0] : data;
+    if (row?.farmer_id || row?.billed_farmer_id) {
+      return {
+        billed_farmer_id: (row?.farmer_id ?? row?.billed_farmer_id) as string,
+        owner_farmer_id: row?.owner_farmer_id as string,
+        is_borga: !!row?.is_borga,
+      };
+    }
+  } catch (e) {
+    console.warn("get_billed_farmer_for_land unavailable — using table fallback", e);
+  }
+
+  const splits = await resolveBillingSplitsFallback(land_id, as_of);
+  const row = splits.find((s) => s.is_borga) ?? splits[0];
   return {
-    billed_farmer_id: row?.farmer_id as string,
+    billed_farmer_id: row?.billed_farmer_id as string,
     owner_farmer_id: row?.owner_farmer_id as string,
     is_borga: !!row?.is_borga,
   };
@@ -229,8 +286,12 @@ export async function resolveBillingSplits(
     }))
     .filter((s) => s.billed_farmer_id && s.billed_area > 0);
   if (splits.length) return splits;
-  const fallback = await resolveBilledFarmer(land_id, as_of);
-  return [{ ...fallback, billed_area: 0 }];
+
+  const fallback = await resolveBillingSplitsFallback(land_id, as_of);
+  if (fallback.length) return fallback;
+
+  const billed = await resolveBilledFarmer(land_id, as_of);
+  return [{ ...billed, billed_area: 0 }];
 }
 
 
