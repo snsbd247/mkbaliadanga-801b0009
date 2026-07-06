@@ -18,3 +18,10 @@ export const BACKEND_MODE: BackendMode =
 
 export const isLaravelBackend = BACKEND_MODE === "laravel";
 export const isSupabaseBackend = BACKEND_MODE === "supabase";
+
+// Human-readable label + API base for debug panels.
+export const BACKEND_API_BASE: string =
+  isLaravelBackend ? (apiUrl ?? "(VITE_API_URL unset)") : "Lovable Cloud (Supabase Edge Functions)";
+
+export const BACKEND_LABEL: string =
+  isLaravelBackend ? "VPS (Laravel/MySQL)" : "Lovable Cloud";
