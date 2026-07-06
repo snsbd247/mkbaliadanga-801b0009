@@ -323,16 +323,48 @@ export default function ReceiptTemplatePage() {
         </Card>
 
         <Card className="p-4">
-          <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center justify-between mb-2 gap-2 flex-wrap">
             <h3 className="font-semibold">Live preview</h3>
-            <span className="text-xs text-muted-foreground">Sample data — updates instantly</span>
+            <div className="flex items-center gap-2">
+              <div className="flex rounded-md border overflow-hidden text-xs">
+                <button
+                  type="button"
+                  onClick={() => setPreviewMode("payment")}
+                  className={`px-3 py-1 ${previewMode === "payment" ? "bg-primary text-primary-foreground" : "bg-background"}`}
+                >
+                  পেমেন্ট রশিদ
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPreviewMode("irrigation")}
+                  className={`px-3 py-1 ${previewMode === "irrigation" ? "bg-primary text-primary-foreground" : "bg-background"}`}
+                  data-testid="preview-irrigation"
+                >
+                  সেচ রশিদ
+                </button>
+              </div>
+              <span className="text-xs text-muted-foreground">Sample data</span>
+            </div>
           </div>
-          <iframe
-            key={previewUrl.length}
-            src={previewUrl}
-            title="Receipt preview"
-            className="w-full h-[70vh] border rounded-md bg-white"
-          />
+          {previewMode === "payment" ? (
+            <iframe
+              key={previewUrl.length}
+              src={previewUrl}
+              title="Receipt preview"
+              className="w-full h-[70vh] border rounded-md bg-white"
+            />
+          ) : irrLoading || !irrUrl ? (
+            <div className="w-full h-[70vh] border rounded-md bg-white flex items-center justify-center">
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            </div>
+          ) : (
+            <iframe
+              key={irrUrl.length}
+              src={irrUrl}
+              title="Irrigation receipt preview"
+              className="w-full h-[70vh] border rounded-md bg-white"
+            />
+          )}
         </Card>
       </div>
     </>
