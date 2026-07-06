@@ -107,20 +107,28 @@ export default function ReceiptTemplatePage() {
   useEffect(() => {
     if (previewMode !== "irrigation") return;
     let cancelled = false;
+    let objUrl: string | null = null;
     setIrrLoading(true);
     (async () => {
       try {
         const data = { ...buildSampleReceipt("irrigation"), logo_url: brand.logo_url ?? null };
-        const url = await previewBnReceiptPdf(data as any, "farmer", {
+        const dataUri = await previewBnReceiptPdf(data as any, "farmer", {
           template: { ...tpl, logo_url: brand.logo_url ?? null },
         });
-        if (!cancelled) setIrrUrl(url);
+        // Chromium won't render a data: PDF inline in an iframe — convert to a blob URL.
+        const blob = await (await fetch(dataUri)).blob();
+        objUrl = URL.createObjectURL(blob);
+        if (!cancelled) setIrrUrl(objUrl);
       } finally {
         if (!cancelled) setIrrLoading(false);
       }
     })();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+      if (objUrl) URL.revokeObjectURL(objUrl);
+    };
   }, [previewMode, tpl, brand.logo_url]);
+
 
   async function save() {
     if (serialError) { toast.error(serialError); return; }
