@@ -1261,6 +1261,12 @@ function GenerateTab({ seasons, offices, userId, isSuper }: any) {
   const [prevDueWarning, setPrevDueWarning] = useState<{ farmers: number; total: number } | null>(null);
   const [skippedNoRate, setSkippedNoRate] = useState(0);
   const [skipExisting, setSkipExisting] = useState(true);
+  // Wizard: 1=Season, 2=Details, 3=Land types, 4=Preview & confirm.
+  const [step, setStep] = useState(1);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  // Lands excluded from the preview, with a human-readable reason.
+  const [excluded, setExcluded] = useState<Array<{ dag: string; mouza: string; land_type: string; reason: string }>>([]);
+  const [showExcluded, setShowExcluded] = useState(false);
   // Land-type filter — only selected land types are invoiced. Keyed by land_type_id.
   const [landTypeList, setLandTypeList] = useState<Array<{ id: string; code: string | null; name_bn: string | null; name_en: string | null }>>([]);
   const [fieldTypes, setFieldTypes] = useState<Set<string>>(() => new Set());
