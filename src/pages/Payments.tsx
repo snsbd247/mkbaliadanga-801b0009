@@ -793,6 +793,18 @@ export default function Payments() {
                 )}
               </div>
             )}
+            {invoiceEmpty && (
+              <div
+                role="alert"
+                data-testid="no-invoices-alert"
+                className="rounded-md border border-amber-500/50 bg-amber-500/10 p-2 text-xs text-amber-700 dark:text-amber-400"
+              >
+                {tx(
+                  "No open irrigation invoices found for this farmer. If you expected some, an invoice may be filtered out — check the console log for details.",
+                  "এই কৃষকের কোনো খোলা সেচ ইনভয়েস পাওয়া যায়নি। থাকার কথা থাকলে কোনো ইনভয়েস ফিল্টার হয়ে থাকতে পারে — বিস্তারিত কনসোল লগে দেখুন।",
+                )}
+              </div>
+            )}
             <div className="space-y-2">
 
               <div className="flex items-center justify-between">
