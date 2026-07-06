@@ -188,6 +188,9 @@ export default function Seasons() {
           isAdmin && (
             <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) { setEditId(null); setForm(emptyForm); } }}>
               <div className="inline-flex gap-2">
+                <Button variant="outline" onClick={openAudit}>
+                  <History className="h-4 w-4 mr-1" />{tx("Audit log", "অডিট লগ")}
+                </Button>
                 <Button variant="outline" onClick={generateNext}>
                   <Plus className="h-4 w-4 mr-1" />{tx("Generate next (6 months)", "নতুন সিজন অটো (৬ মাস)")}
                 </Button>
