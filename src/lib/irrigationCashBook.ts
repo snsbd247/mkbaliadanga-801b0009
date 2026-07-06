@@ -64,6 +64,7 @@ const NALA = ["নালা", "drain", "canal", "খাল"];
 const MAINT_IN = ["রক্ষণাবেক্ষণ", "maintenance", "মেরামত"];
 const LATE = ["বিলম্ব", "late", "delay", "জরিমানা"];
 const POND = ["পুকুর", "pond", "মাছ", "সরী", "lease", "ইজারা"];
+const HAWLAT = ["হাওলাত", "হওলাত", "haowlat", "hawlat", "howlat", "loan received"];
 
 // ── Expense (expenses.head) keyword → column ────────────────────────────────
 const LABOR = ["শ্রমিক", "labor", "labour", "মজুরি", "মজুর"];
