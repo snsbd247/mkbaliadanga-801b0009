@@ -635,6 +635,7 @@ function copyHtml(d: BnReceiptData, copyLabel: string, signatureUrl: string | nu
         <tbody>${officialRows}</tbody>
       </table>
 
+      ${tpl.show_signature_line !== false ? `
       <div style="position:relative;z-index:1;display:flex;justify-content:space-between;align-items:flex-end;margin-top:54px;font-size:19px;line-height:1.2;">
         <div style="border-top:1px solid #111;padding-top:2px;min-width:260px;">${lang === "bn" ? "সদস্যের স্বাক্ষর/প্রদানকারীর স্বাক্ষর" : "Member / Payer signature"}</div>
         <div style="text-align:right;min-width:170px;">
@@ -643,7 +644,8 @@ function copyHtml(d: BnReceiptData, copyLabel: string, signatureUrl: string | nu
             : ""}
           <div style="border-top:1px solid #111;padding-top:2px;">${t.collectorSig}</div>
         </div>
-      </div>
+      </div>` : ""}
+      ${(() => { const fn = (lang === "bn" ? tpl.footer_note_bn : tpl.footer_note) || ""; return fn.trim() ? `<div style="position:relative;z-index:1;text-align:center;font-size:13px;color:#555;margin-top:14px;">${fn}</div>` : ""; })()}
     </div>`;
   }
 
