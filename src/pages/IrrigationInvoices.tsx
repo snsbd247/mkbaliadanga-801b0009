@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { db } from "@/lib/db";
+import { checkRpcContract } from "@/lib/db";
 import { postIrrigationDiscount, takeLastImbalance, checkRequiredAccounts, formatImbalance } from "@/lib/accountingPosting";
 import { resolveRowMouzaName } from "@/lib/mouzaQuery";
 import { PageHeader } from "@/components/layout/PageHeader";
@@ -1440,6 +1441,21 @@ function GenerateTab({ seasons, offices, userId, isSuper }: any) {
     setSkippedNoRate(0);
     setExcluded([]);
     try {
+      // Validate the backend RPC contract before building any preview so a
+      // missing required RPC (e.g. get_land_billing_split) surfaces a clear
+      // message with a traceable request_id instead of a silent fallback.
+      const contract = await checkRpcContract();
+      if (!contract.ok && contract.missing.length) {
+        const requestId =
+          (globalThis.crypto as any)?.randomUUID?.() ?? `req_${Date.now()}`;
+        toast.error(
+          tx(
+            `Required backend RPCs missing: ${contract.missing.join(", ")}. Ref: ${requestId}`,
+            `প্রয়োজনীয় ব্যাকএন্ড RPC নেই: ${contract.missing.join(", ")}। রেফ: ${requestId}`,
+          ),
+        );
+        console.warn("[RPC contract] missing required RPCs", { requestId, missing: contract.missing });
+      }
       let lq = db.from("lands").select("id, farmer_id, owner_farmer_id, land_size, office_id, dag_no, mouza, field_type, land_type_id, notes").is("deleted_at", null);
       if (officeId) lq = lq.eq("office_id", officeId);
       const { data: lands, error: lerr } = await lq;

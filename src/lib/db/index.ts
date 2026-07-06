@@ -175,6 +175,57 @@ class LaravelQueryBuilder<T = any> implements PromiseLike<Result<T>> {
 
 type RpcResult<T = any> = { data: T | null; error: { message: string } | null };
 
+export interface RpcContract {
+  available: string[];
+  required: string[];
+  missing: string[];
+  ok: boolean;
+  message: string;
+}
+
+/**
+ * Validate the backend RPC contract. Only meaningful in Laravel/VPS mode; in
+ * Supabase mode all RPCs are assumed present (functions are deployed centrally).
+ * Never throws — returns { ok:false, missing } so callers can surface a clear
+ * user error instead of failing mid-flow.
+ */
+export async function checkRpcContract(): Promise<RpcContract> {
+  if (!isLaravelBackend) {
+    return { available: [], required: [], missing: [], ok: true, message: "Supabase RPCs assumed available." };
+  }
+  try {
+    const { data } = await api.get(`/rpc/_contract`);
+    return {
+      available: data?.available ?? [],
+      required: data?.required ?? [],
+      missing: data?.missing ?? [],
+      ok: !!data?.ok,
+      message: data?.message ?? "",
+    };
+  } catch (e: any) {
+    // 409 (missing RPCs) surfaces as an axios error with a response body.
+    const body = e?.response?.data;
+    if (body && typeof body === "object") {
+      return {
+        available: body.available ?? [],
+        required: body.required ?? [],
+        missing: body.missing ?? [],
+        ok: !!body.ok,
+        message: body.message ?? "Missing required RPCs.",
+      };
+    }
+    return {
+      available: [],
+      required: [],
+      missing: [],
+      ok: false,
+      message: e?.message || "RPC contract endpoint unreachable.",
+    };
+  }
+}
+
+
+
 async function laravelRpc<T = any>(name: string, params?: Record<string, unknown>): Promise<RpcResult<T>> {
   try {
     const { data } = await api.post(`/rpc/${name}`, params ?? {});
