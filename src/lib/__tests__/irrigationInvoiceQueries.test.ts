@@ -16,7 +16,7 @@ vi.mock("@/lib/db", () => {
   return { db: { from: vi.fn(() => builder) } };
 });
 
-import { fetchOpenIrrigationInvoices } from "../irrigationInvoiceQueries";
+import { fetchOpenIrrigationInvoices, fetchOpenIrrigationInvoicesResult } from "../irrigationInvoiceQueries";
 
 beforeEach(() => {
   orderMock.mockReset();
