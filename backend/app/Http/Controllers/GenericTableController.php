@@ -609,14 +609,34 @@ class GenericTableController extends Controller
     public function delete(Request $request, string $table): JsonResponse
     {
         $table = $this->table($table);
+        $this->authorizeWrite($request, $table);
         $filters = $request->input('filters', []);
         if (empty($filters)) {
             abort(400, 'ফিল্টার ছাড়া ডিলিট করা যাবে না।');
         }
+
+        // Snapshot guarded rows before deletion for the audit trail.
+        $before = [];
+        if (isset(self::WRITE_GUARD[$table])) {
+            $pre = DB::table($table);
+            $this->scope($request, $pre, $table);
+            $this->applyFilters($pre, $table, $filters);
+            $before = array_map(fn ($r) => (array) $r, $pre->get()->all());
+        }
+
         $query = DB::table($table);
         $this->scope($request, $query, $table);
         $this->applyFilters($query, $table, $filters);
         $count = $query->delete();
+
+        $this->recordAudit(
+            $request,
+            'delete',
+            $table,
+            array_filter(array_map(fn ($r) => $r['id'] ?? null, $before)),
+            ['deleted' => $count, 'old_data' => $before],
+        );
+
         return response()->json(['deleted' => $count]);
     }
 }
