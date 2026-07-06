@@ -1747,7 +1747,7 @@ function GenerateTab({ seasons, offices, userId, isSuper }: any) {
 
       // Prior-season open dues
       let oldQ = db.from("irrigation_invoices" as any)
-        .select("id,farmer_id,due_amount,delay_fee")
+        .select("id,farmer_id,due_amount,delay_fee,invoice_status")
         .neq("season_id", seasonId).gt("due_amount", 0).is("deleted_at", null)
         .neq("invoice_status", "cancelled")
         .in("farmer_id", Array.from(targetByFarmer.keys()));
