@@ -4,6 +4,7 @@ import {
   computeIrrigationDueByFarmer,
   isActiveInvoice,
   assertNoLegacyDueSource,
+  detectDueMismatch,
   type DueInvoiceRow,
 } from "../dues";
 
