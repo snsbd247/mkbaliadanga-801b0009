@@ -280,7 +280,20 @@ export default function Payments() {
 
   useEffect(() => { document.title = `${t("payments")} — ${t("appName")}`; load(); checkRole(); loadPriority(); }, []);
   useEffect(() => { load(); /* refresh on filters */ }, [showDeleted, period]);
-  useEffect(() => { if (farmerId) { loadDues(); loadSavingsBalance(farmerId); } else { setOpenIrr([]); setSavingsBalance(0); } }, [farmerId]);
+  useEffect(() => { if (farmerId) { loadDues(); loadSavingsBalance(farmerId); } else { setOpenIrr([]); setCancelledIrr([]); setSavingsBalance(0); } setInvoiceFilter("open"); }, [farmerId]);
+  // Lazy-load cancelled/soft-deleted invoices only when that filter is selected.
+  useEffect(() => {
+    if (invoiceFilter !== "cancelled" || !farmerId) return;
+    let active = true;
+    (async () => {
+      const { data } = await db
+        .from("irrigation_invoices")
+        .select("id,invoice_no,due_amount,due_date,invoice_status,deleted_at")
+        .eq("farmer_id", farmerId);
+      if (active) setCancelledIrr(filterInvoicesByStatus((data as any[]) ?? [], "cancelled"));
+    })();
+    return () => { active = false; };
+  }, [invoiceFilter, farmerId]);
   useEffect(() => {
     const f = params.get("farmer"); if (f) setFarmerId(f);
     const pr = params.get("period");
