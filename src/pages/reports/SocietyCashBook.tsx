@@ -215,7 +215,7 @@ export default function SocietyCashBook() {
             <thead>
               <tr>
                 {[tx("Date", "তারিখ"), tx("Receipt no", "রশিদ নং"), tx("Received from", "কাহার নিকট প্রাপ্ত"), tx("Share", "শেয়ার"), tx("Savings deposit", "সঞ্চয়ের আমানত"), tx("Bank withdrawal", "ব্যাংক উত্তোলন"), tx("Loan collection", "কর্জের আদায়"), tx("Loan interest collection", "কর্জের সুদ আদায়"), tx("Form", "ফরম"), tx("Loan received", "হাওলাত গ্রহণ"), tx("Miscellaneous", "বিবিধ"), tx("Total", "মোট")].map((h) => (
-                  <th key={h} className="border border-black p-1">{h}</th>
+                  <th key={h} title={h} className="border border-black p-1 bn-cb-th">{h}</th>
                 ))}
               </tr>
             </thead>
@@ -273,18 +273,18 @@ export default function SocietyCashBook() {
           <table className="w-full border-collapse text-xs bn-cb-table" aria-label={tx("Expense cash book", "খরচ ক্যাশ বহি")}>
             <thead>
               <tr>
-                <th rowSpan={2} className="border border-black p-1">{tx("Date", "তারিখ")}</th>
-                <th rowSpan={2} className="border border-black p-1">{tx("Voucher no", "ভাউচার নং")}</th>
-                <th rowSpan={2} className="border border-black p-1">{tx("Paid to", "কাহাকে প্রদত্ত হইল")}</th>
-                <th rowSpan={2} className="border border-black p-1">{tx("Deposit refund", "জমানত ফেরত")}</th>
-                <th rowSpan={2} className="border border-black p-1">{tx("Bank deposit", "ব্যাংক জমা")}</th>
+                <th rowSpan={2} title={tx("Date", "তারিখ")} className="border border-black p-1 bn-cb-th">{tx("Date", "তারিখ")}</th>
+                <th rowSpan={2} title={tx("Voucher no", "ভাউচার নং")} className="border border-black p-1 bn-cb-th">{tx("Voucher no", "ভাউচার নং")}</th>
+                <th rowSpan={2} title={tx("Paid to", "কাহাকে প্রদত্ত হইল")} className="border border-black p-1 bn-cb-th">{tx("Paid to", "কাহাকে প্রদত্ত হইল")}</th>
+                <th rowSpan={2} title={tx("Deposit refund", "জমানত ফেরত")} className="border border-black p-1 bn-cb-th">{tx("Deposit refund", "জমানত ফেরত")}</th>
+                <th rowSpan={2} title={tx("Bank deposit", "ব্যাংক জমা")} className="border border-black p-1 bn-cb-th">{tx("Bank deposit", "ব্যাংক জমা")}</th>
                 <th colSpan={3} className="border border-black p-1 text-center">{tx("Purpose", "কি বাবদ")}</th>
-                <th rowSpan={2} className="border border-black p-1">{tx("Total", "মোট")}</th>
+                <th rowSpan={2} title={tx("Total", "মোট")} className="border border-black p-1 bn-cb-th">{tx("Total", "মোট")}</th>
               </tr>
               <tr>
-                <th className="border border-black p-1">{tx("Loan disbursement", "ঋণ প্রদান")}</th>
-                <th className="border border-black p-1">{tx("Salary allowance", "বেতন ভাতা")}</th>
-                <th className="border border-black p-1">{tx("Miscellaneous", "বিবিধ")}</th>
+                <th title={tx("Loan disbursement", "ঋণ প্রদান")} className="border border-black p-1 bn-cb-th">{tx("Loan disbursement", "ঋণ প্রদান")}</th>
+                <th title={tx("Salary allowance", "বেতন ভাতা")} className="border border-black p-1 bn-cb-th">{tx("Salary allowance", "বেতন ভাতা")}</th>
+                <th title={tx("Miscellaneous", "বিবিধ")} className="border border-black p-1 bn-cb-th">{tx("Miscellaneous", "বিবিধ")}</th>
               </tr>
             </thead>
             <tbody>
@@ -333,6 +333,9 @@ export default function SocietyCashBook() {
         /* Screen: keep headers on one line and let the wide layout scroll horizontally */
         .bn-cb-table th { white-space: nowrap; vertical-align: bottom; }
         .bn-cb-table td { white-space: nowrap; }
+        /* Header cells truncate with ellipsis (tooltip via title) so long
+           Bangla/English labels never bleed into the neighbouring table. */
+        .bn-cb-th { max-width: 96px; overflow: hidden; text-overflow: ellipsis; }
         /* Mobile: stack tables, each scrolls horizontally on its own. */
         .bn-cb-cols > section { min-width: 0; overflow-x: auto; }
         .bn-cb-table { width: 100%; min-width: max-content; }
@@ -350,6 +353,7 @@ export default function SocietyCashBook() {
           .bn-cb-table th, .bn-cb-table td { white-space: normal; word-wrap: break-word; overflow-wrap: anywhere; }
           /* Two equal columns kept side-by-side and top-aligned on every page */
           .bn-cb-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; align-items: start; min-width: 0; }
+          .bn-cb-th { max-width: none; overflow: visible; text-overflow: clip; }
           .bn-cb-cols > section { break-inside: auto; overflow-x: visible; }
           /* Repeat header on each printed page and never split a row */
           .bn-cb-table { width: 100%; }
