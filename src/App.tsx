@@ -308,6 +308,8 @@ const App = () => (
                 <Route path="/farmers/import" element={<RequirePerm module="farmers" action="can_add"><FarmersImport /></RequirePerm>} />
                 
                 <Route path="/users" element={<RequireRole roles={["super_admin"]}><Users /></RequireRole>} />
+                <Route path="/admin/health" element={<RequireRole roles={["admin","super_admin"]}><AdminHealthCheck /></RequireRole>} />
+
                 <Route path="/settings" element={<RequireRole roles={["super_admin"]}><Settings /></RequireRole>} />
                 <Route path="/scan" element={<RequirePerm module="payments"><Scan /></RequirePerm>} />
                 <Route path="/cashbook" element={<RequirePerm module="cashbook"><Cashbook /></RequirePerm>} />
