@@ -53,21 +53,11 @@ export default function LegacyIrrigationSearch() {
 
   async function doSearch() {
     const q = code.trim();
-    // ── Input validation: clear error for empty / too short / bad characters ──
-    if (!q) {
-      setInputError(tx("Please enter a search term", "একটি সার্চ টার্ম লিখুন"));
-      return;
-    }
-    if (!/^[0-9]+$/.test(q)) {
-      setInputError(tx("Only digits are allowed (farmer code)", "শুধু সংখ্যা লিখুন (ফার্মার কোড)"));
-      return;
-    }
-    if (q.length < 3) {
-      setInputError(tx("Enter at least 3 digits", "কমপক্ষে ৩ সংখ্যা লিখুন"));
-      return;
-    }
-    if (q.length > 15) {
-      setInputError(tx("Too many digits", "অনেক বেশি সংখ্যা"));
+    // ── Input validation: farmer code only (numeric, min 3, max 15) ──
+    const err = validateFarmerCode(q);
+    if (err) {
+      const m = FARMER_CODE_MESSAGES[err];
+      setInputError(tx(m.en, m.bn));
       return;
     }
     setInputError(null);
