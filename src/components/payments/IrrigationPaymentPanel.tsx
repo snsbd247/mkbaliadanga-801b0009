@@ -678,7 +678,14 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
                   <>
                     <TableRow key={inv.id} className={checked ? "bg-muted/30" : ""}>
                       <TableCell><input type="checkbox" checked={checked} onChange={() => toggleInvoice(inv.id)} /></TableCell>
-                      <TableCell className="font-mono text-xs">{inv.invoice_no}</TableCell>
+                      <TableCell className="font-mono text-xs">
+                        {inv.invoice_no}
+                        {!(inv as any).invoice_status && (
+                          <Badge variant="outline" className="ml-1 text-[9px] px-1 py-0 border-amber-400 text-amber-600">
+                            {tx(invoiceStatusBadge(null).label_en, invoiceStatusBadge(null).label_bn)}
+                          </Badge>
+                        )}
+                      </TableCell>
                       <TableCell className="text-xs">
                         {(inv.owner?.name_bn || inv.owner?.name_en || "—")}
                         {inv.is_borga && <Badge variant="outline" className="ml-1 text-[9px] px-1 py-0">{tx("Borga", "বর্গা")}</Badge>}
