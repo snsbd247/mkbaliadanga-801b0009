@@ -23,6 +23,7 @@ import {
 import { useBranding } from "@/lib/branding";
 import { notifyReceiptTemplateChange } from "@/lib/receiptTemplate";
 import { checkReceiptSerialRpc, setReceiptSerialStart } from "@/lib/receiptSerial";
+import DiagnosticsPanel from "@/components/system/DiagnosticsPanel";
 import { logAudit } from "@/lib/audit";
 import { previewBnReceiptPdf } from "@/lib/bnReceipts";
 import { buildSampleReceipt } from "@/lib/sampleReceipts";
@@ -389,6 +390,10 @@ export default function ReceiptTemplatePage() {
             />
           )}
         </Card>
+      </div>
+
+      <div className="mt-4">
+        <DiagnosticsPanel />
       </div>
     </>
   );
