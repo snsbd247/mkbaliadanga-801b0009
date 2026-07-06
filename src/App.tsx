@@ -32,6 +32,7 @@ import Payments from "./pages/Payments";
 import CombinedPayment from "./pages/CombinedPayment";
 import Reports from "./pages/Reports";
 import Users from "./pages/Users";
+import AdminHealthCheck from "./pages/AdminHealthCheck";
 import AuditLogs from "./pages/AuditLogs";
 import Settings from "./pages/Settings";
 import Scan from "./pages/Scan";
