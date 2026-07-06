@@ -1747,16 +1747,16 @@ function GenerateTab({ seasons, offices, userId, isSuper }: any) {
 
       // Prior-season open dues
       let oldQ = db.from("irrigation_invoices" as any)
-        .select("id,farmer_id,due_amount,delay_fee")
+        .select("id,farmer_id,due_amount,delay_fee,invoice_status")
         .neq("season_id", seasonId).gt("due_amount", 0).is("deleted_at", null)
-        .neq("invoice_status", "cancelled").neq("invoice_status", "carried_forward")
+        .neq("invoice_status", "cancelled")
         .in("farmer_id", Array.from(targetByFarmer.keys()));
       if (officeId) oldQ = oldQ.eq("office_id", officeId);
       const { data: old } = await oldQ;
 
       const totals = new Map<string, number>();
       const oldByFarmer = new Map<string, string[]>();
-      for (const r of ((old as any[]) ?? [])) {
+      for (const r of ((old as any[]) ?? []).filter((r: any) => r.invoice_status !== "carried_forward")) {
         // Carry only principal dues — exclude the late fee (জরিমানা) so it doesn't roll into the new season.
         const carryAmt = Math.max(0, Number(r.due_amount || 0) - Number(r.delay_fee || 0));
         if (carryAmt <= 0) continue;
