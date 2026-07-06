@@ -115,7 +115,19 @@ export default function BankAccounts() {
       void logAudit({ office_id: created?.office_id ?? null, module: "bank_account", action_type: "create", reference_id: created?.id ?? null, new_data: created ?? a });
       if (created?.id) {
         void postBankOpening({ bankAccountId: created.id, openingBalance: Number(created.opening_balance || 0), bankLabel: `${a.bank_name} ${a.account_no}`, officeId: created?.office_id ?? null, createdBy: user?.id });
-      }
+  }
+
+  // Backfill: post any bank account's opening balance that has no opening journal yet.
+  async function postAllOpenings() {
+    const list = accounts.filter(ac => Number(ac.opening_balance || 0) !== 0);
+    if (list.length === 0) return toast.info("কোন ওপেনিং ব্যালেন্স নেই");
+    let posted = 0, existed = 0;
+    for (const ac of list) {
+      const res = await postBankOpening({ bankAccountId: ac.id, openingBalance: Number(ac.opening_balance || 0), bankLabel: `${ac.bank_name} ${ac.account_no}`, officeId: ac.office_id ?? null, createdBy: user?.id });
+      if (res === "posted") posted++; else if (res === "exists") existed++;
+    }
+    toast.success(`ওপেনিং পোস্ট সম্পন্ন — নতুন: ${posted}, আগে থেকেই ছিল: ${existed}`);
+  }
       toast.success("Account added");
     }
     setOpenA(false); setEditAccId(null); load();
