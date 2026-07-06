@@ -53,6 +53,7 @@ import Diagnostics from "./pages/Diagnostics";
 import Accounts from "./pages/Accounts";
 import Ledger from "./pages/Ledger";
 import FinancialReports from "./pages/FinancialReports";
+import FinancialSummary from "./pages/FinancialSummary";
 import JournalEntry from "./pages/JournalEntry";
 import LedgerIntegrity from "./pages/LedgerIntegrity";
 import Approvals from "./pages/Approvals";
