@@ -1,48 +1,40 @@
-# সেচ ইনভয়েস — Wizard, Preview, Validation, Exports & Pay flow
+## লক্ষ্য
+পেমেন্ট রিসিভ করার পর ভুল হলে (বেশি/কম টাকা, ভুল কৃষক, বা ভুল ইনভয়েস) সেই রিসিপ্ট এডিট করার সুবিধা যোগ করা। এডিট করতে পারবেন কেবল **ডেভেলপার**, **সুপারএডমিন**, অথবা যাদের `payments` মডিউলে **এডিট পার্মিশন** দেওয়া আছে।
 
-All work stays in the existing `src/pages/IrrigationInvoices.tsx` (the `GenerateTab` and `InvoiceListTab`) plus small helpers. No schema/backend changes needed — the payment prefill route (`/payments?farmer=…&irr=…`) already exists.
+## নকশার মূলনীতি (কোনো মডিউল যেন না ভাঙে)
+সরাসরি `payments` রো পরিবর্তন করলে সংশ্লিষ্ট ব্যালেন্স (ইনভয়েস due/paid, সেভিংস, লোন, লেজার) ভুল হয়ে যাবে। তাই নিরাপদ পদ্ধতি:
 
-## 1. Step-by-step invoice creation wizard
-Convert `GenerateTab`'s flat form into a 4-step wizard (local `step` state, no new deps):
-- **Step 1 — Season** (required)
-- **Step 2 — Office** (optional) + Due date (required) + fallback rate + default category
-- **Step 3 — Land types** (the existing land-type filter chips)
-- **Step 4 — Preview & confirm** (existing preview table + create button)
+**"রিভার্স → পুনঃপ্রয়োগ" (একই রিসিপ্ট নম্বরে)**
+1. পুরনো পেমেন্টের সব বরাদ্দ (allocations) বাতিলের মতো করে উল্টো প্রয়োগ করা — ঠিক বর্তমান `voidPayment` লজিকের মতোই (ইনভয়েস due পুনঃগণনা, সেভিংস withdraw রিভার্সাল ইত্যাদি)।
+2. নতুন মান (কৃষক/ইনভয়েস/পরিমাণ) দিয়ে বরাদ্দ আবার প্রয়োগ করা।
+3. **রিসিপ্ট নম্বর অপরিবর্তিত** রাখা যাতে রিপোর্ট ও ভেরিফিকেশন সামঞ্জস্যপূর্ণ থাকে।
+4. প্রতিটি ধাপ `audit_logs`-এ (কে, কখন, পুরনো ও নতুন মান) লিপিবদ্ধ করা।
 
-A progress header shows the 4 steps; Back/Next buttons gate progress. Next is disabled until the current step's required fields validate. Existing preview/create logic is reused unchanged — only the layout is reorganized into steps.
+পুরো কাজটি একটি এজ ফাংশনে (service role, একক লেনদেন) করা হবে যাতে অর্ধেক আপডেট হয়ে ডেটা নষ্ট না হয়।
 
-## 2. Clearer "excluded lands" reporting in preview
-Today the preview only shows a count (`X lands had no rate — skipped`). Change the preview collection loop to also collect an `excluded` list with `{ dag, mouza, land_type_name, reason }` where reason is one of:
-- জমির ধরনে রেট কনফিগ করা নেই (no season rate + no fallback)
-- জমির ধরন নির্বাচিত ফিল্টারে নেই
-- ইতিমধ্যে ইনভয়েস আছে (skip-existing)
+## ধাপসমূহ
 
-Render an expandable "বাদ পড়া জমি (N)" panel listing each excluded land with its reason, so it's obvious what to fix.
+### ১. পার্মিশন গেট
+- বিদ্যমান `n("payments", "n")` হুক (can_edit) ব্যবহার। ডেভেলপার/সুপারএডমিন এমনিতেই `FULL` পায়।
+- এডিট বোতাম ও এজ ফাংশন — উভয় জায়গায় এই চেক বসানো হবে (ক্লায়েন্ট UI + সার্ভার-সাইড উভয়ে)।
 
-## 3. Inline field validation
-Add per-field error state in the wizard. Show inline red messages when:
-- Season not selected
-- Due date empty or in the past
-- (Step 3) no land type selected
+### ২. এজ ফাংশন `payment-edit`
+- ইনপুট: `payment_id`, নতুন `farmer_id`, নতুন `allocations` (kind + reference_id + amount), `note`, `reason`।
+- JWT থেকে ইউজার যাচাই → রোল ও পার্মিশন যাচাই।
+- পুরনো allocations রিভার্স (irrigation invoice, savings, loan, share অনুযায়ী)।
+- নতুন allocations প্রয়োগ, `payments` ও `payment_allocations` হালনাগাদ।
+- `audit_logs`-এ `action: "edit"` এন্ট্রি।
 
-Block Next/Create while errors exist, with a top-of-step error summary (reusing the pattern of `FormErrorSummary`).
+### ৩. UI — `Payments.tsx`-এ "Edit" বোতাম
+- বর্তমান "Void" বোতামের পাশে, একই শর্তে (approved ও not voided) কিন্তু পার্মিশন থাকলে।
+- একটি ডায়ালগ: কৃষক পরিবর্তন, ইনভয়েস/বরাদ্দ ও পরিমাণ সম্পাদনা, এবং বাধ্যতামূলক কারণ (reason)।
+- সেভ করলে `payment-edit` ফাংশন কল, সফল হলে তালিকা রিফ্রেশ।
 
-## 4. Preview PDF + Excel export before confirming
-Add two buttons in the Step-4 preview toolbar:
-- **Export Excel** — reuse `exportInvoicesXLSX` from `@/lib/irrigationExports`, mapping the preview rows to the same column shape.
-- **Export PDF** — a printable draft (marked "খসড়া / DRAFT") built from the preview rows, reusing the existing invoice PDF/print helpers used by `InvoiceListTab`.
+### ৪. যাচাই
+- এডিটের আগে ও পরে সংশ্লিষ্ট ইনভয়েস/সেভিংস ব্যালেন্স মিলিয়ে দেখা।
+- অন্যান্য মডিউল (রিপোর্ট, লেজার, ভেরিফাই রিসিপ্ট) ভাঙেনি তা পরীক্ষা।
 
-These run on preview data before any invoice is created.
-
-## 5. Direct "Pay" action from each generated invoice
-In `InvoiceListTab`'s row actions, add a **Pay** button (money icon) shown when the invoice has due > 0 and is not cancelled. It navigates to:
-```text
-/payments?farmer=<farmer_id>&irr=<invoice_id>
-```
-The Payments page already reads `farmer` and `irr` params and preloads the allocation with the correct due amount — so the amount is prefilled automatically.
-
-## Technical notes
-- No new packages; wizard is local state.
-- Reuse `loadSeasonRateMap`, `resolveRateForLand`, `exportInvoicesXLSX`, and existing PDF preview builder.
-- The earlier `[object Object]` rates line is already fixed.
-- The `get_land_billing_split` RPC toast is a separate pre-existing backend gap; I'll confirm whether it blocks preview and, if so, guard it so the wizard still works (surface as a soft warning, not a hard failure).
+## টেকনিক্যাল বিবরণ
+- পরিবর্তিত/নতুন ফাইল: `supabase/functions/payment-edit/index.ts` (নতুন), `src/pages/Payments.tsx` (Edit বোতাম + ডায়ালগ), সম্ভবত একটি ছোট কম্পোনেন্ট `EditPaymentDialog.tsx`।
+- রিভার্সাল লজিক বর্তমান `voidPayment`-এর সাথে অভিন্ন রাখা হবে, যাতে আচরণ পরীক্ষিত ও সামঞ্জস্যপূর্ণ থাকে।
+- কোনো নতুন টেবিল দরকার নেই; বিদ্যমান `audit_logs`, `payment_allocations` ব্যবহার হবে।
