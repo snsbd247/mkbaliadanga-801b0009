@@ -1848,7 +1848,14 @@ function GenerateTab({ seasons, offices, userId, isSuper }: any) {
             <div className="space-y-3">
               {errors.noRate && (
                 <div className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
-                  {errors.noRate}
+                  <p>{errors.noRate}</p>
+                  <Link
+                    to="/seasons"
+                    className="mt-2 inline-flex items-center gap-1 font-medium underline underline-offset-2 hover:opacity-80"
+                  >
+                    <SettingsIcon className="h-3.5 w-3.5" />
+                    {tx("Configure season rates", "সিজন রেট কনফিগার করুন")}
+                  </Link>
                 </div>
               )}
               {skippedNoRate > 0 && (
