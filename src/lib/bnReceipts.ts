@@ -572,6 +572,7 @@ function copyHtml(d: BnReceiptData, copyLabel: string, signatureUrl: string | nu
        </div>` : "";
 
   if (officialIrrigationReceipt) {
+    const accent = (tpl.accent_color || "").trim() || "#111";
     const red = "#111";
     const blue = "#111";
     const padCfg = getIrrigationReceiptPadding();
@@ -613,9 +614,9 @@ function copyHtml(d: BnReceiptData, copyLabel: string, signatureUrl: string | nu
     <div style="position:relative;font-family:${fontFamily};color:#111;padding:${padCfg.page}px ${padCfg.page}px ${padCfg.bottom}px;min-height:650px;box-sizing:border-box;" data-receipt-copy="${copyLabel}">
       ${watermark}
       <div style="position:relative;z-index:1;display:grid;grid-template-columns:240px 1fr 128px;align-items:start;min-height:92px;">
-        <div style="padding-top:16px;">${logo}</div>
+        <div style="padding-top:16px;">${tpl.show_logo ? logo : ""}</div>
         <div style="text-align:center;padding-top:24px;">
-          <div style="display:inline-block;font-size:25px;font-weight:800;line-height:1.1;text-decoration:underline;text-underline-offset:4px;text-decoration-thickness:2px;">${titleFor(d.kind, lang)}</div>
+          <div style="display:inline-block;font-size:25px;font-weight:800;line-height:1.1;color:${accent};text-decoration:underline;text-underline-offset:4px;text-decoration-thickness:2px;">${titleFor(d.kind, lang)}</div>
         </div>
         <div style="text-align:right;padding-top:14px;">
           ${qrDataUrl && tpl.qr_placement !== "none" ? `<img src="${qrDataUrl}" style="width:78px;height:78px;display:block;margin-left:auto;" /><div style="font-size:11px;color:#111;margin-top:2px;">${lang === "bn" ? "যাচাই করুন" : "Scan to verify"}</div>` : ""}
@@ -630,10 +631,11 @@ function copyHtml(d: BnReceiptData, copyLabel: string, signatureUrl: string | nu
         <div style="white-space:nowrap;padding-top:30px;">${t.date} ${fmtOfficialDate(d.date, lang)}</div>
       </div>
 
-      <table style="position:relative;z-index:1;width:100%;border:2px solid #111;border-collapse:collapse;margin-top:14px;table-layout:fixed;">
+      <table style="position:relative;z-index:1;width:100%;border:2px solid ${accent};border-collapse:collapse;margin-top:14px;table-layout:fixed;">
         <tbody>${officialRows}</tbody>
       </table>
 
+      ${tpl.show_signature_line !== false ? `
       <div style="position:relative;z-index:1;display:flex;justify-content:space-between;align-items:flex-end;margin-top:54px;font-size:19px;line-height:1.2;">
         <div style="border-top:1px solid #111;padding-top:2px;min-width:260px;">${lang === "bn" ? "সদস্যের স্বাক্ষর/প্রদানকারীর স্বাক্ষর" : "Member / Payer signature"}</div>
         <div style="text-align:right;min-width:170px;">
@@ -642,7 +644,8 @@ function copyHtml(d: BnReceiptData, copyLabel: string, signatureUrl: string | nu
             : ""}
           <div style="border-top:1px solid #111;padding-top:2px;">${t.collectorSig}</div>
         </div>
-      </div>
+      </div>` : ""}
+      ${(() => { const fn = (lang === "bn" ? tpl.footer_note_bn : tpl.footer_note) || ""; return fn.trim() ? `<div style="position:relative;z-index:1;text-align:center;font-size:13px;color:#555;margin-top:14px;">${fn}</div>` : ""; })()}
     </div>`;
   }
 

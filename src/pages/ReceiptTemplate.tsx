@@ -22,6 +22,8 @@ import {
 } from "@/lib/paymentReceiptPdf";
 import { useBranding } from "@/lib/branding";
 import { notifyReceiptTemplateChange } from "@/lib/receiptTemplate";
+import { previewBnReceiptPdf } from "@/lib/bnReceipts";
+import { buildSampleReceipt } from "@/lib/sampleReceipts";
 
 const SAMPLE: PaymentReceiptData = {
   receipt_no: "ABCD1234",
@@ -98,6 +100,36 @@ export default function ReceiptTemplatePage() {
     };
   }, [previewUrl]);
 
+  // Live preview of the official সেচ (irrigation) receipt using the current template.
+  const [previewMode, setPreviewMode] = useState<"payment" | "irrigation">("payment");
+  const [irrUrl, setIrrUrl] = useState<string | null>(null);
+  const [irrLoading, setIrrLoading] = useState(false);
+  useEffect(() => {
+    if (previewMode !== "irrigation") return;
+    let cancelled = false;
+    let objUrl: string | null = null;
+    setIrrLoading(true);
+    (async () => {
+      try {
+        const data = { ...buildSampleReceipt("irrigation"), logo_url: brand.logo_url ?? null };
+        const dataUri = await previewBnReceiptPdf(data as any, "farmer", {
+          template: { ...tpl, logo_url: brand.logo_url ?? null },
+        });
+        // Chromium won't render a data: PDF inline in an iframe — convert to a blob URL.
+        const blob = await (await fetch(dataUri)).blob();
+        objUrl = URL.createObjectURL(blob);
+        if (!cancelled) setIrrUrl(objUrl);
+      } finally {
+        if (!cancelled) setIrrLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+      if (objUrl) URL.revokeObjectURL(objUrl);
+    };
+  }, [previewMode, tpl, brand.logo_url]);
+
+
   async function save() {
     if (serialError) { toast.error(serialError); return; }
     setSaving(true);
@@ -160,7 +192,7 @@ export default function ReceiptTemplatePage() {
     <>
       <PageHeader
         title="Receipt Template"
-        description="Customize the scan-payment PDF receipt and preview before saving."
+        description="পেমেন্ট ও সেচ রশিদ কাস্টমাইজ করুন — ডান পাশে দুটোই প্রিভিউ করে সেভ করুন।"
         actions={
           <div className="flex gap-2">
             <Button variant="outline" size="sm" asChild>
@@ -299,16 +331,48 @@ export default function ReceiptTemplatePage() {
         </Card>
 
         <Card className="p-4">
-          <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center justify-between mb-2 gap-2 flex-wrap">
             <h3 className="font-semibold">Live preview</h3>
-            <span className="text-xs text-muted-foreground">Sample data — updates instantly</span>
+            <div className="flex items-center gap-2">
+              <div className="flex rounded-md border overflow-hidden text-xs">
+                <button
+                  type="button"
+                  onClick={() => setPreviewMode("payment")}
+                  className={`px-3 py-1 ${previewMode === "payment" ? "bg-primary text-primary-foreground" : "bg-background"}`}
+                >
+                  পেমেন্ট রশিদ
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPreviewMode("irrigation")}
+                  className={`px-3 py-1 ${previewMode === "irrigation" ? "bg-primary text-primary-foreground" : "bg-background"}`}
+                  data-testid="preview-irrigation"
+                >
+                  সেচ রশিদ
+                </button>
+              </div>
+              <span className="text-xs text-muted-foreground">Sample data</span>
+            </div>
           </div>
-          <iframe
-            key={previewUrl.length}
-            src={previewUrl}
-            title="Receipt preview"
-            className="w-full h-[70vh] border rounded-md bg-white"
-          />
+          {previewMode === "payment" ? (
+            <iframe
+              key={previewUrl.length}
+              src={previewUrl}
+              title="Receipt preview"
+              className="w-full h-[70vh] border rounded-md bg-white"
+            />
+          ) : irrLoading || !irrUrl ? (
+            <div className="w-full h-[70vh] border rounded-md bg-white flex items-center justify-center">
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            </div>
+          ) : (
+            <iframe
+              key={irrUrl.length}
+              src={irrUrl}
+              title="Irrigation receipt preview"
+              className="w-full h-[70vh] border rounded-md bg-white"
+            />
+          )}
         </Card>
       </div>
     </>
