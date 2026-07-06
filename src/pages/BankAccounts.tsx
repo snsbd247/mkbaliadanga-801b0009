@@ -562,6 +562,48 @@ export default function BankAccounts() {
           <DialogFooter><Button variant="outline" onClick={() => setEditTxn(null)}>Cancel</Button><Button onClick={saveEditTxn}>Save</Button></DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={!!pendingDelete} onOpenChange={(o) => { if (!o && !deleting) setPendingDelete(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {pendingDelete?.kind === "account" ? "ব্যাংক অ্যাকাউন্ট ডিলিট করবেন?" : "লেনদেন ডিলিট করবেন?"}
+            </AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-2 text-sm">
+                {pendingDelete?.kind === "account" ? (
+                  <>
+                    <p>নিচের অ্যাকাউন্টটি স্থায়ীভাবে মুছে যাবে। এটি ফিরিয়ে আনা যাবে না।</p>
+                    <div className="rounded-md border p-2 bg-muted/40">
+                      <div><span className="text-muted-foreground">ব্যাংক:</span> {pendingDelete.item.bank_name} — {pendingDelete.item.account_no}</div>
+                      <div><span className="text-muted-foreground">স্ট্রিম:</span> {streamLabel(pendingDelete.item.stream)}</div>
+                      <div><span className="text-muted-foreground">বর্তমান ব্যালেন্স:</span> {money(balances.get(pendingDelete.item.id) ?? 0)}</div>
+                    </div>
+                    <p className="text-destructive">সতর্কতা: অ্যাকাউন্ট মুছলে এর লেনদেনগুলো অনাথ (orphan) হয়ে যেতে পারে।</p>
+                  </>
+                ) : pendingDelete ? (
+                  <>
+                    <p>নিচের লেনদেনটি মুছে যাবে। এটি ফিরিয়ে আনা যাবে না।</p>
+                    <div className="rounded-md border p-2 bg-muted/40">
+                      <div><span className="text-muted-foreground">তারিখ:</span> {fmtDate(pendingDelete.item.txn_date)}</div>
+                      <div><span className="text-muted-foreground">ধরন:</span> {pendingDelete.item.txn_type}</div>
+                      <div><span className="text-muted-foreground">পরিমাণ:</span> {money(pendingDelete.item.amount)}</div>
+                      {pendingDelete.item.note && <div><span className="text-muted-foreground">নোট:</span> {pendingDelete.item.note}</div>}
+                    </div>
+                    {pendingDelete.item.link_id && <p className="text-destructive">সংযুক্ত ক্যাশবুক এন্ট্রিও (জমা/উত্তোলন) একসাথে মুছে ফেলা হবে।</p>}
+                  </>
+                ) : null}
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>বাতিল</AlertDialogCancel>
+            <AlertDialogAction onClick={(e) => { e.preventDefault(); confirmDelete(); }} disabled={deleting} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              {deleting ? "ডিলিট হচ্ছে…" : "ডিলিট করুন"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }
