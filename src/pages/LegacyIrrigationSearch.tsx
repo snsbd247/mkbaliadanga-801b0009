@@ -35,9 +35,21 @@ function fmtDisplayDate(v: unknown): string {
   return s;
 }
 
+/** Which legacy field a result row matched against the search term. */
+function matchedField(r: LegacyIrrigationRecord, term: string): "code" | "mobile" | "fid" | null {
+  const t = term.trim();
+  if (!t) return null;
+  if ((r.legacy_farmer_code ?? "") === t) return "code";
+  if ((r.owner_fid ?? "") === t) return "fid";
+  if ((r.mobile_no ?? "").includes(t) || (r.owner_mobile_no ?? "").includes(t)) return "mobile";
+  return null;
+}
+
 export default function LegacyIrrigationSearch() {
   const { tx } = useLang();
   const [code, setCode] = useState("");
+  const [term, setTerm] = useState("");
+  const [inputError, setInputError] = useState<string | null>(null);
   const [records, setRecords] = useState<LegacyIrrigationRecord[]>([]);
   const [searching, setSearching] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -49,13 +61,32 @@ export default function LegacyIrrigationSearch() {
   const [showGuides, setShowGuides] = useState(false);
 
   async function doSearch() {
-    if (!code.trim()) return;
+    const q = code.trim();
+    // ── Input validation: clear error for empty / too short / bad characters ──
+    if (!q) {
+      setInputError(tx("Please enter a search term", "একটি সার্চ টার্ম লিখুন"));
+      return;
+    }
+    if (!/^[0-9]+$/.test(q)) {
+      setInputError(tx("Only digits are allowed (farmer code, mobile, or farmer ID)", "শুধু সংখ্যা লিখুন (ফার্মার কোড, মোবাইল বা ফার্মার আইডি)"));
+      return;
+    }
+    if (q.length < 3) {
+      setInputError(tx("Enter at least 3 digits", "কমপক্ষে ৩ সংখ্যা লিখুন"));
+      return;
+    }
+    if (q.length > 15) {
+      setInputError(tx("Too many digits", "অনেক বেশি সংখ্যা"));
+      return;
+    }
+    setInputError(null);
     setSearching(true);
     setSelected(new Set());
     try {
       // Search by legacy code, mobile number, or farmer ID.
-      const rows = await LegacyIrrigationApi.list({ q: code.trim() });
+      const rows = await LegacyIrrigationApi.list({ q });
       setRecords(rows);
+      setTerm(q);
       if (!rows.length) toast.info(tx("No records found", "কোনো রেকর্ড পাওয়া যায়নি"));
     } catch (e) {
       toast.error(e instanceof ApiError ? e.message : tx("Search failed", "সার্চ ব্যর্থ হয়েছে"));
@@ -63,6 +94,7 @@ export default function LegacyIrrigationSearch() {
       setSearching(false);
     }
   }
+
 
   const toggle = (id: string) =>
     setSelected((s) => {
@@ -123,11 +155,23 @@ export default function LegacyIrrigationSearch() {
             <Label>{tx("Farmer Code / Mobile / Farmer ID", "ফার্মার কোড / মোবাইল / ফার্মার আইডি")}</Label>
             <Input
               value={code}
-              onChange={(e) => setCode(e.target.value)}
+              onChange={(e) => { setCode(e.target.value); if (inputError) setInputError(null); }}
               onKeyDown={(e) => e.key === "Enter" && doSearch()}
-              placeholder={tx("e.g. 2473 or 01700000000", "যেমন 2473 বা 01700000000")}
+              placeholder={tx("Farmer code (e.g. 2473), mobile (01700000000) or farmer ID", "ফার্মার কোড (যেমন 2473), মোবাইল (01700000000) বা ফার্মার আইডি")}
               className="mt-2"
+              aria-invalid={!!inputError}
+              inputMode="numeric"
             />
+            {inputError ? (
+              <p className="mt-1 text-xs text-destructive">{inputError}</p>
+            ) : (
+              <p className="mt-1 text-xs text-muted-foreground">
+                {tx(
+                  "Search by farmer code, mobile number, or farmer ID (digits only, min 3).",
+                  "ফার্মার কোড, মোবাইল নম্বর বা ফার্মার আইডি দিয়ে খুঁজুন (শুধু সংখ্যা, কমপক্ষে ৩)।",
+                )}
+              </p>
+            )}
           </div>
           <Button onClick={doSearch} disabled={searching}>
             {searching ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Search className="h-4 w-4 mr-2" />}
@@ -135,6 +179,7 @@ export default function LegacyIrrigationSearch() {
           </Button>
         </div>
       </Card>
+
 
       {records.length > 0 && (
         <Card className="p-0 overflow-x-auto">
@@ -167,6 +212,7 @@ export default function LegacyIrrigationSearch() {
                 <TableHead className="w-10">
                   <Checkbox checked={allSelected} onCheckedChange={toggleAll} aria-label="select all" />
                 </TableHead>
+                <TableHead>{tx("Matched", "মিল")}</TableHead>
                 <TableHead>{tx("Season", "সিজন")}</TableHead>
                 <TableHead>{tx("Mouza", "মৌজা")}</TableHead>
                 <TableHead>{tx("Dag", "দাগ")}</TableHead>
@@ -185,6 +231,21 @@ export default function LegacyIrrigationSearch() {
                   <TableCell>
                     <Checkbox checked={selected.has(r.id)} onCheckedChange={() => toggle(r.id)} aria-label="select row" />
                   </TableCell>
+                  <TableCell>
+                    {(() => {
+                      const m = matchedField(r, term);
+                      if (!m) return <span className="text-muted-foreground">—</span>;
+                      const label =
+                        m === "code" ? tx("Farmer code", "ফার্মার কোড")
+                        : m === "mobile" ? tx("Mobile", "মোবাইল")
+                        : tx("Farmer ID", "ফার্মার আইডি");
+                      return (
+                        <span className="inline-block rounded bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary whitespace-nowrap">
+                          {label}
+                        </span>
+                      );
+                    })()}
+                  </TableCell>
                   <TableCell>{r.season_year ?? "—"}</TableCell>
                   <TableCell>{r.mouza_name ?? "—"}</TableCell>
                   <TableCell>{r.dag_no ?? "—"}</TableCell>
@@ -202,7 +263,7 @@ export default function LegacyIrrigationSearch() {
                 </TableRow>
               ))}
               <TableRow className="font-semibold bg-muted/50">
-                <TableCell colSpan={4} className="text-right">{tx("Total", "মোট")}</TableCell>
+                <TableCell colSpan={5} className="text-right">{tx("Total", "মোট")}</TableCell>
                 <TableCell>{records.reduce((s, r) => s + (r.land_shatak ?? 0), 0)}</TableCell>
                 <TableCell colSpan={3} className="text-right">{tx("Total Paid", "মোট পরিশোধ")}</TableCell>
                 <TableCell>{records.reduce((s, r) => s + (r.paid_amount ?? 0), 0)}</TableCell>
