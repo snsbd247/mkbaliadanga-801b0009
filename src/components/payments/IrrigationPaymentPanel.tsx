@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { db } from "@/lib/db";
 import { fetchOpenIrrigationInvoices } from "@/lib/irrigationInvoiceQueries";
-import { invoiceStatusBadge } from "@/lib/dues";
+import { InvoiceStatusBadge } from "@/components/payments/InvoiceStatusBadge";
 import { useAuth } from "@/auth/AuthProvider";
 import { useLang } from "@/i18n/LanguageProvider";
 import { Card } from "@/components/ui/card";
@@ -681,11 +681,7 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
                       <TableCell><input type="checkbox" checked={checked} onChange={() => toggleInvoice(inv.id)} /></TableCell>
                       <TableCell className="font-mono text-xs">
                         {inv.invoice_no}
-                        {!(inv as any).invoice_status && (
-                          <Badge variant="outline" className="ml-1 text-[9px] px-1 py-0 border-amber-400 text-amber-600">
-                            {tx(invoiceStatusBadge(null).label_en, invoiceStatusBadge(null).label_bn)}
-                          </Badge>
-                        )}
+                        <InvoiceStatusBadge status={(inv as any).invoice_status} className="ml-1" />
                       </TableCell>
                       <TableCell className="text-xs">
                         {(inv.owner?.name_bn || inv.owner?.name_en || "—")}
