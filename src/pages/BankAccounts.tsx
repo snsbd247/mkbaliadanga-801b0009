@@ -321,7 +321,7 @@ export default function BankAccounts() {
         description={`Total balance: ${money(totalBal)}`}
         actions={
           <>
-            <Button size="sm" variant="outline" onClick={postAllOpenings}><Banknote className="h-4 w-4 mr-1" />ওপেনিং পোস্ট</Button>
+            <Button size="sm" variant="outline" onClick={previewOpenings}><Banknote className="h-4 w-4 mr-1" />ওপেনিং পোস্ট</Button>
             <Dialog open={openA} onOpenChange={(o) => { setOpenA(o); if (!o) setEditAccId(null); }}>
               <DialogTrigger asChild><Button size="sm" variant="outline" onClick={openAddAccount}><Plus className="h-4 w-4 mr-1" />Account</Button></DialogTrigger>
               <DialogContent>
