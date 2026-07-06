@@ -80,7 +80,7 @@ class FunctionController extends Controller
         }
 
         return match ($action) {
-            'list' => $this->adminUsersList($request),
+            'list' => $this->adminUsersList($request, $isDeveloper, $isSuper),
             'create' => $this->adminUsersCreate($request, $actor, $isDeveloper),
             'delete' => $this->adminUsersDelete($request, $actor, $isDeveloper),
             'reset_password' => $this->adminUsersResetPassword($request),
