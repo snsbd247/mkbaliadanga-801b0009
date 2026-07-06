@@ -119,22 +119,30 @@ export async function setReceiptSerialStart(
   nextSerial: number,
 ): Promise<{ ok: boolean; message: string }> {
   if (isLaravelBackend) {
-    return setReceiptSerialStartDirect(nextSerial);
+    logDiagnostic("/api/db receipt_settings (direct)", "info", "VPS backend — /api/fn ও /api/rpc বাইপাস করা হলো");
+    const res = await setReceiptSerialStartDirect(nextSerial);
+    logDiagnostic("/api/db receipt_settings (direct)", res.ok ? "ok" : "error", res.message);
+    return res;
   }
 
   const functionAttempt = () => (db as any).functions.invoke("receipt-serial-admin", { body: { p_start: nextSerial } });
   let functionResult = await functionAttempt();
   if (functionResult.error) {
+    logDiagnostic("/api/fn/receipt-serial-admin", "error", errorMessage(functionResult.error));
     await new Promise((r) => setTimeout(r, 800));
     functionResult = await functionAttempt();
   }
-  if (!functionResult.error) return { ok: true, message: "Serial start updated" };
+  if (!functionResult.error) {
+    logDiagnostic("/api/fn/receipt-serial-admin", "ok", "Serial start updated");
+    return { ok: true, message: "Serial start updated" };
+  }
   const functionUnavailable = isRpcUnavailable(functionResult.error);
 
   const attempt = () => (db as any).rpc("admin_set_receipt_serial_start", { p_start: nextSerial });
 
   let { error } = await attempt();
   if (error && isRpcUnavailable(error)) {
+    logDiagnostic("/api/rpc/admin_set_receipt_serial_start", "error", errorMessage(error));
     // brief backoff, then a single automatic retry
     await new Promise((r) => setTimeout(r, 1500));
     ({ error } = await attempt());
@@ -142,13 +150,14 @@ export async function setReceiptSerialStart(
 
   if (error) {
     if (isRpcUnavailable(error)) {
-      return setReceiptSerialStartDirect(nextSerial);
+      logDiagnostic("/api/db receipt_settings (fallback)", "fallback", "RPC/endpoint unavailable — direct table fallback ব্যবহার করা হলো");
+      const res = await setReceiptSerialStartDirect(nextSerial);
+      logDiagnostic("/api/db receipt_settings (fallback)", res.ok ? "ok" : "error", res.message);
+      return res;
     }
+    logDiagnostic("/api/rpc/admin_set_receipt_serial_start", "error", error.message);
     return { ok: false, message: error.message };
   }
-  if (functionUnavailable) {
-    // Kept for completeness if an RPC succeeds after the edge endpoint is absent.
-    return { ok: true, message: "Serial start updated" };
-  }
+  logDiagnostic("/api/rpc/admin_set_receipt_serial_start", "ok", functionUnavailable ? "RPC fallback succeeded" : "Serial start updated");
   return { ok: true, message: "Serial start updated" };
 }
