@@ -1,8 +1,8 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { db } from "@/lib/db";
-import { fetchOpenIrrigationInvoicesResult } from "@/lib/irrigationInvoiceQueries";
+import { fetchOpenIrrigationInvoicesResult, filterInvoicesByStatus } from "@/lib/irrigationInvoiceQueries";
 import { invoiceStatusBadge, computeIrrigationDue, detectDueMismatch } from "@/lib/dues";
 import { logAudit } from "@/lib/audit";
 import { fetchReceiptAuditLogs } from "@/lib/receiptAudit";
@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/input";
 import { MouzaSelect } from "@/components/locations/MouzaSelect";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { FarmerSearchSelect } from "@/components/farmers/FarmerSearchSelect";
@@ -72,6 +73,14 @@ export default function Payments() {
   const [openIrr, setOpenIrr] = useState<any[]>([]);
   const [dueMismatch, setDueMismatch] = useState<import("@/lib/dues").DueMismatchResult | null>(null);
   const [invoiceEmpty, setInvoiceEmpty] = useState(false);
+  const [invoiceLoading, setInvoiceLoading] = useState(false);
+  const [invoiceFilter, setInvoiceFilter] = useState<"open" | "cancelled">("open");
+  // In-flight request token to ignore stale responses / prevent concurrent races.
+  const dueReqRef = useRef(0);
+  // Per-farmer invoice cache to avoid redundant refetches on revisit.
+  const invoiceCacheRef = useRef<Map<string, any[]>>(new Map());
+  const [cancelledIrr, setCancelledIrr] = useState<any[]>([]);
+  const displayInvoices = invoiceFilter === "open" ? openIrr : cancelledIrr;
   const [isAdmin, setIsAdmin] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [idemKey, setIdemKey] = useState<string>(newKey());
@@ -271,7 +280,20 @@ export default function Payments() {
 
   useEffect(() => { document.title = `${t("payments")} — ${t("appName")}`; load(); checkRole(); loadPriority(); }, []);
   useEffect(() => { load(); /* refresh on filters */ }, [showDeleted, period]);
-  useEffect(() => { if (farmerId) { loadDues(); loadSavingsBalance(farmerId); } else { setOpenIrr([]); setSavingsBalance(0); } }, [farmerId]);
+  useEffect(() => { if (farmerId) { loadDues(); loadSavingsBalance(farmerId); } else { setOpenIrr([]); setCancelledIrr([]); setSavingsBalance(0); } setInvoiceFilter("open"); }, [farmerId]);
+  // Lazy-load cancelled/soft-deleted invoices only when that filter is selected.
+  useEffect(() => {
+    if (invoiceFilter !== "cancelled" || !farmerId) return;
+    let active = true;
+    (async () => {
+      const { data } = await db
+        .from("irrigation_invoices")
+        .select("id,invoice_no,due_amount,due_date,invoice_status,deleted_at")
+        .eq("farmer_id", farmerId);
+      if (active) setCancelledIrr(filterInvoicesByStatus((data as any[]) ?? [], "cancelled"));
+    })();
+    return () => { active = false; };
+  }, [invoiceFilter, farmerId]);
   useEffect(() => {
     const f = params.get("farmer"); if (f) setFarmerId(f);
     const pr = params.get("period");
@@ -373,21 +395,39 @@ export default function Payments() {
     if (error) return toast.error(error.message);
     toast.success(t("restored")); load();
   }
-  async function loadDues() {
+  async function loadDues(opts?: { force?: boolean }) {
+    const fid = farmerId;
+    // Serve from cache on revisit unless a forced refresh is requested.
+    if (!opts?.force && invoiceCacheRef.current.has(fid)) {
+      const cached = invoiceCacheRef.current.get(fid)!;
+      setOpenIrr(cached);
+      setInvoiceEmpty(!!fid && cached.length === 0);
+      return;
+    }
+    // Concurrency guard: only the latest request may commit its result.
+    const reqId = ++dueReqRef.current;
+    setInvoiceLoading(true);
     // Shared query util keeps filtering identical to IrrigationPaymentPanel and
     // keeps NULL invoice_status invoices visible (see irrigationInvoiceQueries).
     const { rows, error, traceId } = await fetchOpenIrrigationInvoicesResult(
-      farmerId,
+      fid,
       "id,invoice_no,payable_amount,paid_amount,due_amount,due_date,generated_at,office_id,is_borga,delay_fee,maintenance_amount,canal_amount,irrigation_amount,other_charge,invoice_status",
     );
+    // Ignore stale responses (a newer farmer selection has superseded this one).
+    if (reqId !== dueReqRef.current) return;
+    setInvoiceLoading(false);
     if (error) {
-      toast.error(tx(`Failed to load invoices (trace: ${traceId}): ${error.message}`, `ইনভয়েস লোড ব্যর্থ (ট্রেস: ${traceId}): ${error.message}`));
+      toast.error(
+        tx(`Failed to load invoices (trace: ${traceId})`, `ইনভয়েস লোড ব্যর্থ (ট্রেস: ${traceId})`),
+        { description: error.message, action: { label: tx("Retry", "আবার চেষ্টা"), onClick: () => loadDues({ force: true }) } },
+      );
     }
+    if (!error) invoiceCacheRef.current.set(fid, rows);
     setOpenIrr(rows);
     // Diagnose missing invoices: flag when a farmer is selected but nothing came back.
-    const isEmpty = !error && !!farmerId && rows.length === 0;
+    const isEmpty = !error && !!fid && rows.length === 0;
     setInvoiceEmpty(isEmpty);
-    if (isEmpty) console.warn("[payments] no open irrigation invoices returned for farmer", farmerId);
+    if (isEmpty) console.warn("[payments] no open irrigation invoices returned for farmer", fid);
 
     // Cross-check: the Farmer List irrigation-due total (canonical) must equal
     // the sum of open invoices we render here. If they diverge, an invoice is
@@ -828,14 +868,27 @@ export default function Payments() {
                     )}
                   </div>
                   {a.kind === "irrigation" && (
-                    <Select value={a.reference_id} onValueChange={(v) => updateAlloc(i, { reference_id: v })}>
-                      <SelectTrigger><SelectValue placeholder={openIrr.length ? "Pick invoice" : "No open invoices"} /></SelectTrigger>
-                      <SelectContent>{openIrr.map(ic => (
-                        <SelectItem key={ic.id} value={ic.id}>
-                          {ic.invoice_no}{!ic.invoice_status ? ` (${invoiceStatusBadge(null).label_bn})` : ""} — {fmtDate(ic.due_date)} — Due {money(ic.due_amount)}
-                        </SelectItem>
-                      ))}</SelectContent>
-                    </Select>
+                    invoiceLoading ? (
+                      <div className="space-y-2" data-testid="invoice-loading-skeleton">
+                        <Skeleton className="h-9 w-full" />
+                        <Skeleton className="h-9 w-2/3" />
+                      </div>
+                    ) : (
+                    <div className="space-y-2">
+                      <div className="flex gap-1">
+                        <Button type="button" size="sm" variant={invoiceFilter === "open" ? "default" : "outline"} onClick={() => setInvoiceFilter("open")}>{tx("Open", "খোলা")}</Button>
+                        <Button type="button" size="sm" variant={invoiceFilter === "cancelled" ? "default" : "outline"} onClick={() => setInvoiceFilter("cancelled")}>{tx("Cancelled", "বাতিল")}</Button>
+                      </div>
+                      <Select value={a.reference_id} onValueChange={(v) => updateAlloc(i, { reference_id: v })} disabled={invoiceFilter === "cancelled"}>
+                        <SelectTrigger><SelectValue placeholder={displayInvoices.length ? "Pick invoice" : (invoiceFilter === "cancelled" ? "No cancelled invoices" : "No open invoices")} /></SelectTrigger>
+                        <SelectContent>{displayInvoices.map(ic => (
+                          <SelectItem key={ic.id} value={ic.id}>
+                            {ic.invoice_no}{!ic.invoice_status ? ` (${invoiceStatusBadge(null).label_bn})` : ""} — {fmtDate(ic.due_date)} — Due {money(ic.due_amount)}
+                          </SelectItem>
+                        ))}</SelectContent>
+                      </Select>
+                    </div>
+                    )
                   )}
                   <Input type="number" placeholder={t("amountPh")} value={a.amount || ""} onChange={(e) => updateAlloc(i, { amount: +e.target.value })} />
                 </div>

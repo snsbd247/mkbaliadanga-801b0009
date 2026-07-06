@@ -15,6 +15,19 @@
 import { db } from "@/lib/db";
 import { isActiveInvoice, type DueInvoiceRow } from "@/lib/dues";
 
+export type InvoiceStatusFilter = "open" | "cancelled";
+
+/**
+ * Client-side status filter for a set of invoices. Cancelled = soft-deleted OR
+ * invoice_status === "cancelled". Open = everything else (NULL status stays
+ * open — mirrors the deleted_at regression rule in isActiveInvoice).
+ */
+export function filterInvoicesByStatus<T extends DueInvoiceRow>(rows: T[], filter: InvoiceStatusFilter): T[] {
+  return (rows ?? []).filter((r) => (filter === "open" ? isActiveInvoice(r) : !isActiveInvoice(r)));
+}
+
+
+
 function splitTopLevelSelect(select: string): string[] {
   const parts: string[] = [];
   let buf = "";

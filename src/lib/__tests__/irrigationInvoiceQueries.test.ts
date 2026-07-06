@@ -101,3 +101,26 @@ describe("fetchOpenIrrigationInvoicesResult (error surfacing)", () => {
     expect(res.traceId).toBeTruthy();
   });
 });
+
+import { filterInvoicesByStatus } from "../irrigationInvoiceQueries";
+
+describe("filterInvoicesByStatus (Open/Cancelled UI filter)", () => {
+  const rows = [
+    { id: "open-null", due_amount: 100, invoice_status: null },
+    { id: "open-generated", due_amount: 50, invoice_status: "generated" },
+    { id: "cancelled", due_amount: 0, invoice_status: "cancelled" },
+    { id: "deleted", due_amount: 30, invoice_status: "generated", deleted_at: "2026-01-01" },
+  ] as any[];
+
+  it("Open keeps NULL + active, drops cancelled and soft-deleted", () => {
+    expect(filterInvoicesByStatus(rows, "open").map((r) => r.id)).toEqual(["open-null", "open-generated"]);
+  });
+
+  it("Cancelled keeps only cancelled + soft-deleted (deleted_at regression rule)", () => {
+    expect(filterInvoicesByStatus(rows, "cancelled").map((r) => r.id)).toEqual(["cancelled", "deleted"]);
+  });
+
+  it("handles null/empty input", () => {
+    expect(filterInvoicesByStatus(null as any, "open")).toEqual([]);
+  });
+});
