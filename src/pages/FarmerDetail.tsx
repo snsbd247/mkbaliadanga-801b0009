@@ -20,6 +20,7 @@ import { Plus, Printer, FileDown, Receipt, Pencil, Trash2, FileSpreadsheet, File
 import { useLang } from "@/i18n/LanguageProvider";
 import { money, money2, fmtDate } from "@/lib/format";
 import { toBool } from "@/lib/bool";
+import { computeIrrigationDue } from "@/lib/dues";
 import { toast } from "sonner";
 import { QRCodeSVG } from "qrcode.react";
 import { useNavigate } from "react-router-dom";
@@ -375,7 +376,8 @@ export default function FarmerDetail() {
     if (inv.error) console.error("irrigation_invoices fetch error:", inv.error);
     const invRows = inv.data ?? [];
     const visibleInvCount = invRows.filter((r: any) => r.invoice_status !== "cancelled").length;
-    setInvDue(invRows.reduce((a: number, r: any) => a + Number(r.due_amount || 0), 0));
+    // Canonical due (shared with Farmer List): excludes cancelled/deleted, keeps NULL status.
+    setInvDue(computeIrrigationDue(invRows as any));
     // Detect invoices hidden from the current user due to office permissions
     try {
       const { data: trueCount } = await db.rpc("count_farmer_invoices", { _farmer_id: id! });

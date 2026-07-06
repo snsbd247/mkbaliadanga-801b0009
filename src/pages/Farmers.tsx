@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { db } from "@/lib/db";
+import { computeIrrigationDueByFarmer } from "@/lib/dues";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -338,11 +339,14 @@ export default function Farmers() {
     const map: Record<string, { net_due: number; loan_due: number; irr_due: number; savings_bal: number }> = {};
     ids.forEach((id) => { map[id] = { net_due: 0, loan_due: 0, irr_due: 0, savings_bal: 0 }; });
 
-    ((invoiceRes.data as any[]) ?? []).forEach((r) => {
-      if (!r.farmer_id || r.invoice_status === "cancelled") return;
-      map[r.farmer_id] ??= { net_due: 0, loan_due: 0, irr_due: 0, savings_bal: 0 };
-      map[r.farmer_id].irr_due += Math.max(0, Number(r.due_amount || 0));
+    // Canonical irrigation-due computation shared with FarmerDetail so the two
+    // views always agree (keeps NULL invoice_status, drops cancelled/deleted).
+    const irrByFarmer = computeIrrigationDueByFarmer((invoiceRes.data as any[]) ?? []);
+    Object.entries(irrByFarmer).forEach(([fid, due]) => {
+      map[fid] ??= { net_due: 0, loan_due: 0, irr_due: 0, savings_bal: 0 };
+      map[fid].irr_due += due;
     });
+
 
     ((savingsRes.data as any[]) ?? []).forEach((r) => {
       if (!r.farmer_id || r.status !== "approved") return;
