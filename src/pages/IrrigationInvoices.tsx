@@ -1338,6 +1338,79 @@ function GenerateTab({ seasons, offices, userId, isSuper }: any) {
     };
   }
 
+  // ── Validation ──
+  function validateStep(s: number): Record<string, string> {
+    const e: Record<string, string> = {};
+    if (s >= 1 && !seasonId) e.season = tx("Please select a season", "একটি সিজন নির্বাচন করুন");
+    if (s >= 2) {
+      if (!dueDate) e.dueDate = tx("Due date is required", "মেয়াদের তারিখ আবশ্যক");
+      else if (dueDate < new Date().toISOString().slice(0, 10)) e.dueDate = tx("Due date cannot be in the past", "মেয়াদের তারিখ অতীতে হতে পারে না");
+      if (rateOverride < 0) e.rateOverride = tx("Fallback rate cannot be negative", "ফলব্যাক রেট ঋণাত্মক হতে পারে না");
+    }
+    if (s >= 3 && fieldTypes.size === 0) e.landTypes = tx("Select at least one land type", "অন্তত একটি জমির ধরন নির্বাচন করুন");
+    return e;
+  }
+  function validateAll(): boolean {
+    const e = validateStep(3);
+    setErrors(e);
+    return Object.keys(e).length === 0;
+  }
+  function goNext() {
+    const e = validateStep(step);
+    setErrors(e);
+    if (Object.keys(e).length === 0) setStep((s) => Math.min(4, s + 1));
+  }
+  function goBack() {
+    setErrors({});
+    setStep((s) => Math.max(1, s - 1));
+  }
+
+  // ── Draft exports (before invoices are created) ──
+  function previewToExportRows() {
+    return (previewRows ?? []).map((r: any) => ({
+      invoice_no: tx("DRAFT", "খসড়া"),
+      farmers: { name_bn: r.billed?.is_borga ? tx("Sharecropper", "বর্গাদার") : tx("Owner", "মালিক") },
+      lands: { dag_no: r.land?.dag_no, land_size: r.billedArea > 0 ? r.billedArea : r.land?.land_size, mouza: r.land?.mouza },
+      seasons: seasons.find((s: any) => s.id === seasonId) ?? null,
+      land_type_name: r.rateRow?.land_type_name ?? r.land?.land_type_name ?? r.land?.field_type ?? "",
+      season_rate: Number(r.manualRate) > 0 ? Number(r.manualRate) : r.rate,
+      payable_amount: r.calc?.payable_amount ?? 0,
+      paid_amount: 0,
+      due_amount: r.calc?.payable_amount ?? 0,
+      due_date: dueDate,
+      invoice_status: "draft",
+    }));
+  }
+  function exportDraftExcel() {
+    const rows = previewToExportRows();
+    if (!rows.length) return toast.error(tx("Nothing to export", "রপ্তানির কিছু নেই"));
+    exportInvoicesXLSX(rows as any, "invoice-draft.xlsx", "bn");
+  }
+  function exportDraftPdf() {
+    const rows = previewToExportRows();
+    if (!rows.length) return toast.error(tx("Nothing to export", "রপ্তানির কিছু নেই"));
+    exportTablePDF({
+      title: tx("Invoice Draft (unofficial)", "ইনভয়েস খসড়া (অনানুষ্ঠানিক)"),
+      columns: [
+        { header: tx("Mouza", "মৌজা"), key: "mouza" },
+        { header: tx("Dag", "দাগ"), key: "dag" },
+        { header: tx("Land size", "জমির পরিমাণ"), key: "land" },
+        { header: tx("Land type", "জমির ধরন"), key: "lt" },
+        { header: tx("Rate", "রেট"), key: "rate" },
+        { header: tx("Payable", "প্রদেয়"), key: "payable" },
+      ],
+      rows: rows.map((r: any) => ({
+        mouza: r.lands?.mouza || "—",
+        dag: formatDagNumbers(r.lands?.dag_no) || "—",
+        land: formatLandSize(r.lands?.land_size, "short"),
+        lt: r.land_type_name || "—",
+        rate: money(r.season_rate),
+        payable: money(r.payable_amount),
+      })),
+      fileName: "invoice-draft.pdf",
+    });
+  }
+
   async function preview() {
     if (!validateAll()) return;
     setBusy(true);
