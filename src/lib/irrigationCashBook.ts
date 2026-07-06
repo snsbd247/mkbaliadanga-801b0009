@@ -97,7 +97,7 @@ export function buildIrrJamaRows(input: IrrCashBookInput, lang: ReportLang = "bn
       date: (p.created_at || "").slice(0, 10), receiptNo: p.receipt_no ?? "",
       name: farmerNames[p.farmer_id ?? ""] ?? (lang === "bn" ? "সেচ চার্জ" : "Irrigation charge"),
       sechCharge: amt, nalaCharge: 0, maintenance: 0, lateFee: 0,
-      bankWithdraw: 0, pond: 0, misc: 0, total: amt,
+      bankWithdraw: 0, pond: 0, hawlat: 0, misc: 0, total: amt,
     });
   }
   for (const o of officeIncomes) {
