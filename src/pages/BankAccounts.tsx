@@ -225,7 +225,8 @@ export default function BankAccounts() {
       { ...common, bank_account_id: xf.from_id, txn_type: "transfer_out", counterparty_account_id: xf.to_id },
       { ...common, bank_account_id: xf.to_id, txn_type: "transfer_in", counterparty_account_id: xf.from_id },
     ]);
-    if (error) return toast.error(error.message);
+    if (error) return toast.error("ট্রান্সফার ব্যর্থ: " + error.message);
+    void logAudit({ office_id: fromAcc?.office_id ?? null, module: "bank_transaction", action_type: "create", reference_id: group, new_data: { transfer_group: group, from_id: xf.from_id, to_id: xf.to_id, amount: xf.amount, txn_date: xf.txn_date } });
     toast.success("Transfer recorded"); setOpenX(false); load();
     setXf({ from_id: "", to_id: "", amount: 0, txn_date: new Date().toISOString().slice(0, 10), note: "" });
   }
