@@ -55,6 +55,7 @@ export default function SocietyCashBook() {
   const [from, setFrom] = useState(`${fyStartYear}-07-01`);
   const [to, setTo] = useState(`${fyStartYear + 1}-06-30`);
   const [input, setInput] = useState<any>(null);
+  const [opening, setOpening] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -109,6 +110,38 @@ export default function SocietyCashBook() {
     })();
   }, [from, to, officeId, lang]);
 
+  // Opening balance = cumulative cash-in-hand carried from all months before `from`.
+  useEffect(() => {
+    (async () => {
+      try {
+        const before = from;
+        let savQ = sb.from("savings_transactions").select("type,amount,txn_date,farmer_id,office_id,deleted_at").is("deleted_at", null).lt("txn_date", before);
+        let lpQ = sb.from("loan_payments").select("amount,principal_amount,interest_amount,paid_on,loan_id,office_id,status").lt("paid_on", before);
+        let btQ = sb.from("bank_transactions").select("txn_type,amount,txn_date,office_id").lt("txn_date", before);
+        let oiQ = sb.from("office_incomes").select("income_type,amount,received_on,office_id,stream").eq("stream", "saving").lt("received_on", before);
+        let exQ = sb.from("expenses").select("head,amount,expense_date,is_bank_deposit,office_id,stream,deleted_at").is("deleted_at", null).eq("stream", "savings").lt("expense_date", before);
+        let lnQ = sb.from("loans").select("principal,issued_on,farmer_id,office_id,status,deleted_at").is("deleted_at", null).lt("issued_on", before);
+        if (officeId) {
+          savQ = savQ.eq("office_id", officeId); lpQ = lpQ.eq("office_id", officeId); btQ = btQ.eq("office_id", officeId);
+          oiQ = oiQ.eq("office_id", officeId); exQ = exQ.eq("office_id", officeId); lnQ = lnQ.eq("office_id", officeId);
+        }
+        const [sav, lp, bt, oi, ex, ln] = await Promise.all([savQ, lpQ, btQ, oiQ, exQ, lnQ]);
+        const priorInput = {
+          savings: sav.data ?? [],
+          loanPayments: (lp.data ?? []).filter((r: any) => r.status === "approved"),
+          bankTx: bt.data ?? [], officeIncomes: oi.data ?? [], expenses: ex.data ?? [],
+          loansIssued: (ln.data ?? []).filter((r: any) => r.status !== "rejected"),
+          farmerNames: {}, loanFarmers: {},
+        };
+        const jt = sumJama(buildJamaRows(priorInput, lang));
+        const kt = sumKharch(buildKharchRows(priorInput, lang));
+        setOpening(jt.total - kt.total);
+      } catch {
+        setOpening(0);
+      }
+    })();
+  }, [from, officeId]);
+
   const jamaRows = useMemo<JamaRow[]>(() => (input ? buildJamaRows(input, lang) : []), [input, lang]);
   const kharchRows = useMemo<KharchRow[]>(() => (input ? buildKharchRows(input, lang) : []), [input, lang]);
   const jamaTot = useMemo(() => sumJama(jamaRows), [jamaRows]);
@@ -120,6 +153,14 @@ export default function SocietyCashBook() {
   const formatMoney = lang === "bn" ? bnMoney : enMoney;
   const formatDate = lang === "bn" ? bnDate : enDate;
   const formatText = (s: string) => lang === "bn" ? bnText(s) : s;
+  // Signed money that still shows zeros (used for summary/closing rows).
+  const formatSigned = (nv: number) => {
+    const abs = lang === "bn" ? (bnMoney(Math.abs(nv)) || (lang === "bn" ? "০" : "0")) : (enMoney(Math.abs(nv)) || "0");
+    return nv < 0 ? `-${abs}` : abs;
+  };
+  const incomeWithOpening = jamaTot.total + opening;    // মোট আয় (গত মাসের জেরসহ)
+  const closingBalance = incomeWithOpening - kharchTot.total; // হস্ত মজুদ তহবিল
+
 
   const exportCsv = () => {
     downloadCsv(`${tx("society-cashbook-income", "সমিতি-ক্যাশবহি-জমা")}-${from}_${to}`, jamaRows, [
@@ -205,6 +246,18 @@ export default function SocietyCashBook() {
                 <td className="border border-black p-1 text-right">{formatMoney(jamaTot.misc)}</td>
                 <td className="border border-black p-1 text-right">{formatMoney(jamaTot.total)}</td>
               </tr>
+              <tr className="font-bold">
+                <td colSpan={10} className="border border-black p-1 text-right">{tx("Total income=", "মোট আয়=")}</td>
+                <td className="border border-black p-1 text-right">{formatSigned(jamaTot.total)}</td>
+              </tr>
+              <tr className="font-bold">
+                <td colSpan={10} className="border border-black p-1 text-right">{tx("Carried from previous month=", "গত মাস হতে আগত টাকা=")}</td>
+                <td className="border border-black p-1 text-right">{formatSigned(opening)}</td>
+              </tr>
+              <tr className="font-bold">
+                <td colSpan={10} className="border border-black p-1 text-right">{tx("Grand total income=", "সর্বমোট আয়=")}</td>
+                <td className="border border-black p-1 text-right">{formatSigned(incomeWithOpening)}</td>
+              </tr>
             </tbody>
           </table>
         </section>
@@ -254,6 +307,18 @@ export default function SocietyCashBook() {
                 <td className="border border-black p-1 text-right">{formatMoney(kharchTot.salary)}</td>
                 <td className="border border-black p-1 text-right">{formatMoney(kharchTot.misc)}</td>
                 <td className="border border-black p-1 text-right">{formatMoney(kharchTot.total)}</td>
+              </tr>
+              <tr className="font-bold">
+                <td colSpan={8} className="border border-black p-1 text-right">{tx("Total income (with opening)=", "মোট আয় (জেরসহ)=")}</td>
+                <td className="border border-black p-1 text-right">{formatSigned(incomeWithOpening)}</td>
+              </tr>
+              <tr className="font-bold">
+                <td colSpan={8} className="border border-black p-1 text-right">{tx("Total expense=", "মোট ব্যয়=")}</td>
+                <td className="border border-black p-1 text-right">{formatSigned(kharchTot.total)}</td>
+              </tr>
+              <tr className="font-bold">
+                <td colSpan={8} className="border border-black p-1 text-right">{tx("Cash in hand=", "হস্ত মজুদ তহবিল=")}</td>
+                <td className={`border border-black p-1 text-right ${closingBalance < 0 ? "text-red-600" : ""}`}>{formatSigned(closingBalance)}</td>
               </tr>
             </tbody>
           </table>
