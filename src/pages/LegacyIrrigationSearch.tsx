@@ -263,7 +263,7 @@ export default function LegacyIrrigationSearch() {
                 </TableRow>
               ))}
               <TableRow className="font-semibold bg-muted/50">
-                <TableCell colSpan={4} className="text-right">{tx("Total", "মোট")}</TableCell>
+                <TableCell colSpan={5} className="text-right">{tx("Total", "মোট")}</TableCell>
                 <TableCell>{records.reduce((s, r) => s + (r.land_shatak ?? 0), 0)}</TableCell>
                 <TableCell colSpan={3} className="text-right">{tx("Total Paid", "মোট পরিশোধ")}</TableCell>
                 <TableCell>{records.reduce((s, r) => s + (r.paid_amount ?? 0), 0)}</TableCell>
