@@ -1556,12 +1556,7 @@ function GenerateTab({ seasons, offices, userId, isSuper }: any) {
         setErrors((prev) => ({ ...prev, noRate: msg }));
         toast.error(msg);
         // Fetch the precise list of missing season/land-type rates for a diagnostic report.
-        try {
-          const { data: diag } = await db.functions.invoke("irrigation-missing-rates", {
-            body: { season_id: seasonId, office_id: officeId || null, land_type_ids: Array.from(fieldTypes) },
-          });
-          setMissingRates(((diag as any)?.missing ?? []) as Array<{ land_type_id: string; land_type_name: string }>);
-        } catch { setMissingRates([]); }
+        fetchMissingRates({ seasonId, officeId: officeId || null, landTypeIds: Array.from(fieldTypes) });
         return;
       }
       setMissingRates([]);
