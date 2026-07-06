@@ -239,6 +239,9 @@ export default function Seasons() {
                   <TableCell className="text-right">
                     {isAdmin && (
                       <div className="inline-flex gap-1 justify-end">
+                        <Button size="sm" variant="outline" onClick={() => openEdit(s)}>
+                          <Pencil className="h-3.5 w-3.5 mr-1" /> {tx("Edit", "এডিট")}
+                        </Button>
                         <Button size="sm" variant="outline" onClick={() => { setCfSeason(s); setCfOpen(true); }}>
                           <History className="h-3.5 w-3.5 mr-1" /> {tx("Carry-forward dues", "বকেয়া carry-forward")}
                         </Button>
