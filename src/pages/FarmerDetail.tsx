@@ -1195,15 +1195,15 @@ export default function FarmerDetail() {
         </Card>
       )}
 
-      {!farmer.is_voter && (
+      {!toBool(farmer.is_voter) && (
         <Card className="p-3 mb-4 border-amber-500/40 bg-amber-50 dark:bg-amber-950/30 text-sm">
           ⚠️ {tx("This farmer is not enabled as Voter / Savings A/C. No savings, loan or share data will exist. Toggle Voter from Edit above to enable.", "এই ফার্মার Voter / Savings A/C হিসেবে এনাবল নেই। সঞ্চয়, ঋণ এবং শেয়ার সংক্রান্ত কোন তথ্য বা ট্রাঞ্জেকশন থাকবে না। এনাবল করতে উপরে Edit থেকে Voter টগল চালু করুন।")}
         </Card>
       )}
 
       <div className="grid gap-4 md:grid-cols-4 mb-4">
-        {!!farmer.is_voter && <div className="stat-card"><div className="text-xs text-muted-foreground">{t("totalSavings")}</div><div className="text-xl font-bold mt-1">{money(savingsBal)}</div></div>}
-        {!!farmer.is_voter && <div className="stat-card"><div className="text-xs text-muted-foreground">{t("shareBalance")}</div><div className="text-xl font-bold mt-1">{money(share?.balance ?? 0)}</div></div>}
+        {toBool(farmer.is_voter) && <div className="stat-card"><div className="text-xs text-muted-foreground">{t("totalSavings")}</div><div className="text-xl font-bold mt-1">{money(savingsBal)}</div></div>}
+        {toBool(farmer.is_voter) && <div className="stat-card"><div className="text-xs text-muted-foreground">{t("shareBalance")}</div><div className="text-xl font-bold mt-1">{money(share?.balance ?? 0)}</div></div>}
         
         <div className="stat-card"><div className="text-xs text-muted-foreground">{t("irrigation")} {t("dueAmount")}</div><div className={"text-xl font-bold mt-1 " + (irrDue > 0 ? "due-text" : "")}>{money(irrDue)}</div></div>
       </div>
@@ -1216,13 +1216,13 @@ export default function FarmerDetail() {
           <TabsTrigger value="land_history">{tx("Land History", "ভূমির ইতিহাস")}</TabsTrigger>
           <TabsTrigger value="land_transfers">{tx("Transfer History", "হস্তান্তর ইতিহাস")}</TabsTrigger>
           {borgaOut.length > 0 && <TabsTrigger value="owned_borga">{tx("Owned (Borga)", "মালিকানাধীন জমি")}</TabsTrigger>}
-          {!!farmer.is_voter && <TabsTrigger value="savings">{t("savings")}</TabsTrigger>}
-          {!!farmer.is_voter && <TabsTrigger value="loans">{tx("Loans", "ঋণ")}</TabsTrigger>}
+          {toBool(farmer.is_voter) && <TabsTrigger value="savings">{t("savings")}</TabsTrigger>}
+          {toBool(farmer.is_voter) && <TabsTrigger value="loans">{tx("Loans", "ঋণ")}</TabsTrigger>}
           <TabsTrigger value="statement">{t("statement")}</TabsTrigger>
           
           <TabsTrigger value="irr_invoices">{t("irrigation")}</TabsTrigger>
           <TabsTrigger value="payments">{t("pgPaymentsTab")}</TabsTrigger>
-          {!!farmer.is_voter && <TabsTrigger value="shares">{t("shareBalance")}</TabsTrigger>}
+          {toBool(farmer.is_voter) && <TabsTrigger value="shares">{t("shareBalance")}</TabsTrigger>}
           <TabsTrigger value="notes">{tx("Notes", "নোট")}</TabsTrigger>
         </TabsList>
 
