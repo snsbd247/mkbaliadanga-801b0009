@@ -883,9 +883,27 @@ export default function Payments() {
                       </div>
                     ) : (
                     <div className="space-y-2">
-                      <div className="flex gap-1">
+                      <div className="flex flex-wrap items-center gap-1">
                         <Button type="button" size="sm" variant={invoiceFilter === "open" ? "default" : "outline"} onClick={() => setInvoiceFilter("open")}>{tx("Open", "খোলা")}</Button>
                         <Button type="button" size="sm" variant={invoiceFilter === "cancelled" ? "default" : "outline"} onClick={() => setInvoiceFilter("cancelled")}>{tx("Cancelled", "বাতিল")}</Button>
+                        <Input
+                          className="h-8 w-40"
+                          placeholder={tx("Search no./date", "নম্বর/তারিখ খুঁজুন")}
+                          value={invoiceSearch}
+                          onChange={(e) => setInvoiceSearch(e.target.value)}
+                          data-testid="invoice-search"
+                        />
+                        <Select value={invoiceSort} onValueChange={(v: any) => setInvoiceSort(v)}>
+                          <SelectTrigger className="h-8 w-32"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="due_date">{tx("Due date", "তারিখ")}</SelectItem>
+                            <SelectItem value="invoice_no">{tx("Invoice no.", "নম্বর")}</SelectItem>
+                            <SelectItem value="due_amount">{tx("Due amount", "পরিমাণ")}</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <Button type="button" size="sm" variant="outline" onClick={() => setInvoiceSortDir(invoiceSortDir === "asc" ? "desc" : "asc")}>
+                          {invoiceSortDir === "asc" ? "↑" : "↓"}
+                        </Button>
                       </div>
                       <Select value={a.reference_id} onValueChange={(v) => updateAlloc(i, { reference_id: v })} disabled={invoiceFilter === "cancelled"}>
                         <SelectTrigger><SelectValue placeholder={displayInvoices.length ? "Pick invoice" : (invoiceFilter === "cancelled" ? "No cancelled invoices" : "No open invoices")} /></SelectTrigger>
@@ -895,7 +913,13 @@ export default function Payments() {
                           </SelectItem>
                         ))}</SelectContent>
                       </Select>
+                      {a.reference_id && (
+                        <Button type="button" size="sm" variant="link" className="h-6 px-0" onClick={() => openInvoiceDetails(displayInvoices.find((x) => x.id === a.reference_id))}>
+                          {tx("View details", "বিস্তারিত দেখুন")}
+                        </Button>
+                      )}
                     </div>
+
                     )
                   )}
                   <Input type="number" placeholder={t("amountPh")} value={a.amount || ""} onChange={(e) => updateAlloc(i, { amount: +e.target.value })} />
