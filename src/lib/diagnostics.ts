@@ -81,6 +81,7 @@ export function getDiagnostics(): DiagnosticEntry[] {
 
 export function clearDiagnostics(): void {
   entries = [];
+  persist();
   listeners.forEach((fn) => fn(entries));
 }
 
