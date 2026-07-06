@@ -23,16 +23,20 @@ type Order = { column: string; ascending: boolean };
 type Result<T = any> = { data: T; error: { message: string } | null; count: number | null };
 
 /**
- * The Laravel/MySQL gateway resolves only ONE level of embeds (e.g.
- * `lands(...)`, `farmers(...)`). Nested embeds inside an embed — like
- * `mouzas(name)` inside `lands(...)` — are not supported and would be forwarded
- * verbatim to MySQL, producing `Unknown column 'mouzas(name)'`.
+ * The Laravel/MySQL gateway does not support every PostgREST-style embed. Some
+ * nested embeds — like `mouzas(name)` inside `lands(...)` — are forwarded
+ * verbatim to MySQL and blow up with `Unknown column 'mouzas(name)'`.
  *
- * This sanitizer walks the PostgREST-style select string and strips any embed
- * that is nested inside another embed, keeping scalar columns. Top-level embeds
- * are preserved. It is a no-op for plain column lists and `*`.
+ * This sanitizer strips embeds whose relation name is in the unsupported set,
+ * at any nesting level, before the query runs. Scalar columns and supported
+ * embeds are preserved. It is a no-op for plain column lists and `*`.
+ *
+ * Rows still resolve those names through text-column fallbacks (e.g.
+ * `resolveMouzaName` uses `lands.mouza`), so no data is lost.
  */
-export function sanitizeEmbedSelect(select: string, depth = 0): string {
+const UNSUPPORTED_LARAVEL_EMBEDS = new Set(["mouzas"]);
+
+export function sanitizeEmbedSelect(select: string): string {
   if (!select || select === "*" || !select.includes("(")) return select;
   const parts: string[] = [];
   let buf = "";
@@ -50,13 +54,16 @@ export function sanitizeEmbedSelect(select: string, depth = 0): string {
   for (const part of parts) {
     const m = part.match(/^([^(]+)\((.*)\)$/s);
     if (!m) { kept.push(part); continue; } // scalar column
-    // `part` is an embed. Drop embeds nested inside another embed (depth > 0).
-    if (depth > 0) continue;
-    const [, name, inner] = m;
-    kept.push(`${name.trim()}(${sanitizeEmbedSelect(inner, depth + 1)})`);
+    const [, rawName, inner] = m;
+    // Strip an embed alias/hint (e.g. "owner:farmers!fk") down to the relation.
+    const relation = rawName.trim().split(":").pop()!.split("!")[0].trim();
+    if (UNSUPPORTED_LARAVEL_EMBEDS.has(relation)) continue;
+    kept.push(`${rawName.trim()}(${sanitizeEmbedSelect(inner)})`);
   }
   return kept.join(",");
 }
+
+
 
 
 
