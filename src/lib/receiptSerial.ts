@@ -24,13 +24,16 @@ export function isRpcUnavailable(err: unknown): boolean {
  * "not available / schema cache" error we care about.
  */
 export async function checkReceiptSerialRpc(): Promise<{ available: boolean; message: string }> {
+  const viaFunction = await (db as any).functions.invoke("receipt-serial-admin", { body: { check: true } });
+  if (!viaFunction.error) return { available: true, message: "Receipt serial admin endpoint available" };
+
   const { error } = await (db as any).rpc("admin_set_receipt_serial_start", { p_start: -1 });
   if (!error) return { available: true, message: "RPC available" };
   if (isRpcUnavailable(error)) {
     return {
       available: false,
       message:
-        "admin_set_receipt_serial_start RPC পাওয়া যায়নি। মাইগ্রেশন প্রয়োগ করুন এবং PostgREST schema cache reload করুন (মাইগ্রেশনের শেষে NOTIFY pgrst, 'reload schema';)।",
+        "Receipt serial admin endpoint/RPC পাওয়া যায়নি। অ্যাপটি নতুন করে publish/deploy করুন; backend schema cache reload মাইগ্রেশনে যুক্ত আছে।",
     };
   }
   // Any other error (e.g. our -1 validation rejection or permission) means the
@@ -46,6 +49,14 @@ export async function checkReceiptSerialRpc(): Promise<{ available: boolean; mes
 export async function setReceiptSerialStart(
   nextSerial: number,
 ): Promise<{ ok: boolean; message: string }> {
+  const functionAttempt = () => (db as any).functions.invoke("receipt-serial-admin", { body: { p_start: nextSerial } });
+  let functionResult = await functionAttempt();
+  if (functionResult.error) {
+    await new Promise((r) => setTimeout(r, 800));
+    functionResult = await functionAttempt();
+  }
+  if (!functionResult.error) return { ok: true, message: "Serial start updated" };
+
   const attempt = () => (db as any).rpc("admin_set_receipt_serial_start", { p_start: nextSerial });
 
   let { error } = await attempt();
@@ -60,7 +71,7 @@ export async function setReceiptSerialStart(
       return {
         ok: false,
         message:
-          "সিরিয়াল সেট করা যায়নি: RPC এখনও লোড হয়নি। কিছুক্ষণ পর আবার চেষ্টা করুন বা মাইগ্রেশন/schema reload যাচাই করুন।",
+          "সিরিয়াল সেট করা যায়নি: backend endpoint/RPC এখনও লোড হয়নি। অ্যাপটি publish/deploy করে আবার চেষ্টা করুন।",
       };
     }
     return { ok: false, message: error.message };
