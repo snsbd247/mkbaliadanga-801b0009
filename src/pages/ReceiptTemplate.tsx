@@ -224,6 +224,24 @@ export default function ReceiptTemplatePage() {
             </div>
           </div>
 
+          <div className="grid gap-2 pt-2 border-t">
+            <h4 className="text-sm font-semibold">রিসিপ্ট ক্রমিক নম্বর (Serial number)</h4>
+            <div>
+              <Label className="text-xs">শুরুর ক্রমিক নম্বর</Label>
+              <Input
+                type="number"
+                min={0}
+                value={serialStart}
+                onChange={(e) => setSerialStart(e.target.value)}
+                placeholder="যেমন 4641"
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                এই নম্বরের ঠিক পরের নম্বর থেকে রিসিপ্ট তৈরি শুরু হবে। যেমন 4641 দিলে প্রথম রিসিপ্ট হবে 4642।
+                নিরাপত্তার জন্য বর্তমান নম্বরের চেয়ে ছোট মান দিলে নম্বর পিছাবে না (ডুপ্লিকেট এড়াতে)।
+              </p>
+            </div>
+          </div>
+
 
 
           <div className="grid gap-2 pt-2 border-t">
