@@ -369,14 +369,18 @@ export default function Payments() {
     toast.success(t("restored")); load();
   }
   async function loadDues() {
+    // NOTE: do NOT use PostgREST `.neq("invoice_status","cancelled")` here — it
+    // silently drops rows where invoice_status is NULL/empty, which hides valid
+    // unpaid invoices (matching FarmerDetail which filters cancelled in JS).
     const i = await db.from("irrigation_invoices")
-      .select("id,invoice_no,payable_amount,paid_amount,due_amount,due_date,generated_at,office_id,is_borga,delay_fee,maintenance_amount,canal_amount,irrigation_amount,other_charge")
+      .select("id,invoice_no,payable_amount,paid_amount,due_amount,due_date,generated_at,office_id,is_borga,delay_fee,maintenance_amount,canal_amount,irrigation_amount,other_charge,invoice_status")
       .eq("farmer_id", farmerId)
       .is("deleted_at", null)
-      .neq("invoice_status", "cancelled")
       .gt("due_amount", 0)
       .order("due_date", { ascending: true });
-    setOpenIrr(i.data ?? []);
+    const rows = (i.data ?? []).filter((r: any) => r.invoice_status !== "cancelled");
+    setOpenIrr(rows);
+
 
     // Preload allocations from URL ?irr=id1,id2 — used by FarmerDetail "Pay" flow
     const irrParam = params.get("irr");
