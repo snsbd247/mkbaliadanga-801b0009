@@ -195,66 +195,26 @@ export default function Payments() {
       if (!ok) return toast.error(tx("Cannot save: ", "সংরক্ষণ করা যাচ্ছে না: ") + errors.join("; "));
     }
     const p = editPayment;
-    const before: any = {};
-    const after: any = {};
-    // 1) Land fields (mouza, land size)
-    if (editLandId) {
-      const { data: land } = await db.from("lands").select("mouza,land_size").eq("id", editLandId).maybeSingle();
-      const newMouza = editForm.mouza.trim();
-      const newSize = Number(editForm.land_size) || 0;
-      if (land && (land.mouza !== newMouza || Number(land.land_size || 0) !== newSize)) {
-        before.land = { mouza: land.mouza, land_size: land.land_size };
-        after.land = { mouza: newMouza, land_size: newSize };
-        await db.from("lands").update({ mouza: newMouza, land_size: newSize } as any).eq("id", editLandId);
-      }
+    setEditLoading(true);
+    // All writes happen server-side (payment-edit edge function) so that users with
+    // the payments edit permission — not just admins — can safely edit, and every
+    // linked module (invoice due/paid, allocation, savings, audit) stays consistent.
+    const { data, error } = await supabase.functions.invoke("payment-edit", {
+      body: {
+        payment_id: p.id,
+        reason: editForm.reason.trim(),
+        amount: Math.round(Number(editForm.amount) || 0),
+        note: editForm.note,
+        mouza: editLandId ? editForm.mouza : null,
+        land_size: editLandId ? editForm.land_size : null,
+        owner_farmer_id: editInvoiceId ? (editForm.owner_farmer_id || null) : null,
+        delay_fee: editInvoiceId ? Math.round(Number(editForm.delay_fee) || 0) : null,
+      },
+    });
+    setEditLoading(false);
+    if (error || (data as any)?.error) {
+      return toast.error((data as any)?.error || error?.message || tx("Failed to update receipt", "রসিদ হালনাগাদ ব্যর্থ হয়েছে"));
     }
-    // 2) Invoice: owner + delay fee (recompute payable/due)
-    if (editInvoiceId) {
-      const { data: inv } = await db.from("irrigation_invoices")
-        .select("owner_farmer_id,delay_fee,payable_amount,due_amount,paid_amount").eq("id", editInvoiceId).maybeSingle();
-      if (inv) {
-        const oldFee = Number((inv as any).delay_fee || 0);
-        const newFee = Math.round(Number(editForm.delay_fee) || 0);
-        const newOwner = editForm.owner_farmer_id || null;
-        const patch: any = {};
-        if ((inv as any).owner_farmer_id !== newOwner) { before.owner = (inv as any).owner_farmer_id; after.owner = newOwner; patch.owner_farmer_id = newOwner; }
-        if (oldFee !== newFee) {
-          before.delay_fee = oldFee; after.delay_fee = newFee;
-          patch.delay_fee = newFee;
-          patch.payable_amount = Number((inv as any).payable_amount || 0) + (newFee - oldFee);
-          patch.due_amount = Math.max(0, Number((inv as any).due_amount || 0) + (newFee - oldFee));
-        }
-        if (Object.keys(patch).length) await db.from("irrigation_invoices").update(patch).eq("id", editInvoiceId);
-      }
-    }
-    // 3) Payment amount adjustment (reflect in invoice paid_amount + allocation row)
-    const newAmount = Math.round(Number(editForm.amount) || 0);
-    if (newAmount !== Number(p.amount || 0)) {
-      before.amount = Number(p.amount || 0); after.amount = newAmount;
-      const diff = newAmount - Number(p.amount || 0);
-      await db.from("payments").update({ amount: newAmount } as any).eq("id", p.id);
-      if (editInvoiceId) {
-        const { data: inv2 } = await db.from("irrigation_invoices").select("paid_amount,payable_amount").eq("id", editInvoiceId).maybeSingle();
-        if (inv2) {
-          const st = computeInvoiceDue((inv2 as any).payable_amount, Number((inv2 as any).paid_amount || 0) + diff);
-          await db.from("irrigation_invoices").update({ paid_amount: st.paid, due_amount: st.due, invoice_status: st.status } as any).eq("id", editInvoiceId);
-        }
-        const { data: iip } = await db.from("irrigation_invoice_payments").select("id,collected_amount").eq("payment_id", p.id).eq("invoice_id", editInvoiceId).maybeSingle();
-        if (iip) await db.from("irrigation_invoice_payments").update({ collected_amount: Math.max(0, Number((iip as any).collected_amount || 0) + diff), irrigation_collected: Math.max(0, Number((iip as any).collected_amount || 0) + diff) } as any).eq("id", (iip as any).id);
-      }
-      const { data: pa } = await db.from("payment_allocations").select("id").eq("payment_id", p.id).eq("kind", "irrigation").maybeSingle();
-      if (pa) await db.from("payment_allocations").update({ amount: newAmount } as any).eq("id", (pa as any).id);
-    }
-    // 4) Note (applies to all kinds incl. savings)
-    const newNote = editForm.note.trim() || null;
-    if ((p.note ?? null) !== newNote) {
-      before.note = p.note ?? null; after.note = newNote;
-      await db.from("payments").update({ note: newNote } as any).eq("id", p.id);
-    }
-    await db.from("audit_logs").insert({
-      user_id: user?.id, action: "edit", entity: "payments", entity_id: p.id, office_id: p.office_id ?? null,
-      old_values: before, new_values: { ...after, reason: editForm.reason.trim() }, meta: { receipt_no: p.receipt_no },
-    } as any);
     toast.success(tx("Receipt updated", "রসিদ হালনাগাদ হয়েছে"));
     setEditOpen(false); setEditPayment(null);
     load();
