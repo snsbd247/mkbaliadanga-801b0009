@@ -125,11 +125,11 @@ import {
 
 const EN_JAMA = {
   date: "Date", receiptNo: "Receipt no", receivedFrom: "Received from", total: "Total", grandTotal: "Grand total",
-  cols: ["Irrigation charge", "Canal charge", "Maintenance", "Late fee", "Bank withdrawal", "Pond", "Miscellaneous"],
+  cols: ["Irrigation charge", "Canal charge", "Maintenance", "Late fee", "Bank withdrawal", "Pond", "Loan received", "Miscellaneous"],
 };
 const BN_JAMA = {
   date: "তারিখ", receiptNo: "রশিদ নং", receivedFrom: "কাহার নিকট হতে", total: "মোট", grandTotal: "সর্বমোট",
-  cols: ["সেচ চার্জ", "নালা চার্জ", "রক্ষণাবেক্ষণ", "বিলম্ব ফি", "ব্যাংকে উত্তোলন", "পুকুর", "বিবিধ"],
+  cols: ["সেচ চার্জ", "নালা চার্জ", "রক্ষণাবেক্ষণ", "বিলম্ব ফি", "ব্যাংকে উত্তোলন", "পুকুর", "হাওলাত গ্রহণ", "বিবিধ"],
 };
 const EN_KHARCH = {
   date: "Date", voucherNo: "Voucher no", purpose: "Purpose", total: "Total", grandTotal: "Grand total",

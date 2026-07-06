@@ -12,6 +12,7 @@ export type JamaRow = {
   loanPrincipal: number;  // কর্জের আদায় (আমানত)
   loanInterest: number;   // কর্জের সুদ আদায়
   form: number;           // ফরম
+  hawlat: number;         // হাওলাত গ্রহণ
   misc: number;           // বিবিধ
   total: number;          // মোট
 };
@@ -72,7 +73,7 @@ export function buildJamaRows(input: CashBookInput, lang: ReportLang = "bn"): Ja
     rows.push({
       date: s.txn_date, receiptNo: s.receipt_no ?? "", name: farmerNames[s.farmer_id ?? ""] ?? "",
       share: isShare ? amt : 0, savings: isShare ? 0 : amt,
-      bankWithdraw: 0, loanPrincipal: 0, loanInterest: 0, form: 0, misc: 0, total: amt,
+      bankWithdraw: 0, loanPrincipal: 0, loanInterest: 0, form: 0, hawlat: 0, misc: 0, total: amt,
     });
   }
   for (const l of loanPayments) {
@@ -83,7 +84,7 @@ export function buildJamaRows(input: CashBookInput, lang: ReportLang = "bn"): Ja
     rows.push({
       date: l.paid_on, receiptNo: l.receipt_no ?? "", name: farmerNames[fid] ?? "",
       share: 0, savings: 0, bankWithdraw: 0, loanPrincipal: principal, loanInterest: interest,
-      form: 0, misc: 0, total,
+      form: 0, hawlat: 0, misc: 0, total,
     });
   }
   for (const b of bankTx) {
@@ -91,16 +92,19 @@ export function buildJamaRows(input: CashBookInput, lang: ReportLang = "bn"): Ja
     const amt = n(b.amount);
     rows.push({
       date: b.txn_date, receiptNo: b.reference_no ?? "", name: lang === "bn" ? "ব্যাংক উত্তোলন" : "Bank withdrawal",
-      share: 0, savings: 0, bankWithdraw: amt, loanPrincipal: 0, loanInterest: 0, form: 0, misc: 0, total: amt,
+      share: 0, savings: 0, bankWithdraw: amt, loanPrincipal: 0, loanInterest: 0, form: 0, hawlat: 0, misc: 0, total: amt,
     });
   }
   for (const o of officeIncomes) {
     const amt = n(o.amount);
-    const isForm = (o.income_type ?? "").toLowerCase().includes("form") || o.income_type === "ফরম";
+    const it = (o.income_type ?? "").toLowerCase();
+    const isForm = it.includes("form") || o.income_type === "ফরম";
+    const isHawlat = ["হাওলাত", "হওলাত", "haowlat", "hawlat", "howlat"].some((w) => (o.income_type ?? "").toLowerCase().includes(w.toLowerCase()));
     rows.push({
       date: o.received_on, receiptNo: o.receipt_no ?? "", name: o.payer_name ?? "",
       share: 0, savings: 0, bankWithdraw: 0, loanPrincipal: 0, loanInterest: 0,
-      form: isForm ? amt : 0, misc: isForm ? 0 : amt, total: amt,
+      form: isForm ? amt : 0, hawlat: isHawlat ? amt : 0,
+      misc: isForm || isHawlat ? 0 : amt, total: amt,
     });
   }
   return rows.sort((a, b) => a.date.localeCompare(b.date));
@@ -142,8 +146,8 @@ export function sumJama(rows: JamaRow[]) {
   return rows.reduce((a, r) => ({
     share: a.share + r.share, savings: a.savings + r.savings, bankWithdraw: a.bankWithdraw + r.bankWithdraw,
     loanPrincipal: a.loanPrincipal + r.loanPrincipal, loanInterest: a.loanInterest + r.loanInterest,
-    form: a.form + r.form, misc: a.misc + r.misc, total: a.total + r.total,
-  }), { share: 0, savings: 0, bankWithdraw: 0, loanPrincipal: 0, loanInterest: 0, form: 0, misc: 0, total: 0 });
+    form: a.form + r.form, hawlat: a.hawlat + r.hawlat, misc: a.misc + r.misc, total: a.total + r.total,
+  }), { share: 0, savings: 0, bankWithdraw: 0, loanPrincipal: 0, loanInterest: 0, form: 0, hawlat: 0, misc: 0, total: 0 });
 }
 
 export function sumKharch(rows: KharchRow[]) {

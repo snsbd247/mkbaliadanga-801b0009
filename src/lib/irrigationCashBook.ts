@@ -13,6 +13,7 @@ export type IrrJamaRow = {
   lateFee: number;        // বিলম্ব ফি
   bankWithdraw: number;   // ব্যাংকে উত্তোলন
   pond: number;           // পুকুর
+  hawlat: number;         // হাওলাত গ্রহণ
   misc: number;           // বিবিধ
   total: number;          // মোট
 };
@@ -63,6 +64,7 @@ const NALA = ["নালা", "drain", "canal", "খাল"];
 const MAINT_IN = ["রক্ষণাবেক্ষণ", "maintenance", "মেরামত"];
 const LATE = ["বিলম্ব", "late", "delay", "জরিমানা"];
 const POND = ["পুকুর", "pond", "মাছ", "সরী", "lease", "ইজারা"];
+const HAWLAT = ["হাওলাত", "হওলাত", "haowlat", "hawlat", "howlat", "loan received"];
 
 // ── Expense (expenses.head) keyword → column ────────────────────────────────
 const LABOR = ["শ্রমিক", "labor", "labour", "মজুরি", "মজুর"];
@@ -96,7 +98,7 @@ export function buildIrrJamaRows(input: IrrCashBookInput, lang: ReportLang = "bn
       date: (p.created_at || "").slice(0, 10), receiptNo: p.receipt_no ?? "",
       name: farmerNames[p.farmer_id ?? ""] ?? (lang === "bn" ? "সেচ চার্জ" : "Irrigation charge"),
       sechCharge: amt, nalaCharge: 0, maintenance: 0, lateFee: 0,
-      bankWithdraw: 0, pond: 0, misc: 0, total: amt,
+      bankWithdraw: 0, pond: 0, hawlat: 0, misc: 0, total: amt,
     });
   }
   for (const o of officeIncomes) {
@@ -105,12 +107,13 @@ export function buildIrrJamaRows(input: IrrCashBookInput, lang: ReportLang = "bn
     const row: IrrJamaRow = {
       date: o.received_on, receiptNo: o.receipt_no ?? "", name: o.payer_name ?? "",
       sechCharge: 0, nalaCharge: 0, maintenance: 0, lateFee: 0,
-      bankWithdraw: 0, pond: 0, misc: 0, total: amt,
+      bankWithdraw: 0, pond: 0, hawlat: 0, misc: 0, total: amt,
     };
     if (has(t, NALA)) row.nalaCharge = amt;
     else if (has(t, LATE)) row.lateFee = amt;
     else if (has(t, MAINT_IN)) row.maintenance = amt;
     else if (has(t, POND)) row.pond = amt;
+    else if (has(t, HAWLAT)) row.hawlat = amt;
     else row.misc = amt;
     rows.push(row);
   }
@@ -121,7 +124,7 @@ export function buildIrrJamaRows(input: IrrCashBookInput, lang: ReportLang = "bn
       date: b.txn_date, receiptNo: b.reference_no ?? "",
       name: lang === "bn" ? "ব্যাংক উত্তোলন" : "Bank withdrawal",
       sechCharge: 0, nalaCharge: 0, maintenance: 0, lateFee: 0,
-      bankWithdraw: amt, pond: 0, misc: 0, total: amt,
+      bankWithdraw: amt, pond: 0, hawlat: 0, misc: 0, total: amt,
     });
   }
   return rows.sort((a, b) => a.date.localeCompare(b.date));
@@ -163,8 +166,8 @@ export function sumIrrJama(rows: IrrJamaRow[]) {
     sechCharge: a.sechCharge + r.sechCharge, nalaCharge: a.nalaCharge + r.nalaCharge,
     maintenance: a.maintenance + r.maintenance, lateFee: a.lateFee + r.lateFee,
     bankWithdraw: a.bankWithdraw + r.bankWithdraw, pond: a.pond + r.pond,
-    misc: a.misc + r.misc, total: a.total + r.total,
-  }), { sechCharge: 0, nalaCharge: 0, maintenance: 0, lateFee: 0, bankWithdraw: 0, pond: 0, misc: 0, total: 0 });
+    hawlat: a.hawlat + r.hawlat, misc: a.misc + r.misc, total: a.total + r.total,
+  }), { sechCharge: 0, nalaCharge: 0, maintenance: 0, lateFee: 0, bankWithdraw: 0, pond: 0, hawlat: 0, misc: 0, total: 0 });
 }
 
 export function sumIrrKharch(rows: IrrKharchRow[]) {
@@ -182,7 +185,7 @@ export function sumIrrKharch(rows: IrrKharchRow[]) {
 
 // ── Ordered column keys (single source of truth for rendering + export) ──────
 export const JAMA_COL_KEYS = [
-  "sechCharge", "nalaCharge", "maintenance", "lateFee", "bankWithdraw", "pond", "misc",
+  "sechCharge", "nalaCharge", "maintenance", "lateFee", "bankWithdraw", "pond", "hawlat", "misc",
 ] as const;
 export const KHARCH_COL_KEYS = [
   "labor", "partsBuy", "partsRepair", "transport", "hospitality", "publicity", "salary",

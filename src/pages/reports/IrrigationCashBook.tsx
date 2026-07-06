@@ -152,6 +152,7 @@ export default function IrrigationCashBook() {
     { key: "lateFee", label: rt("Late fee", "বিলম্ব ফি") },
     { key: "bankWithdraw", label: rt("Bank withdrawal", "ব্যাংকে উত্তোলন") },
     { key: "pond", label: rt("Pond", "পুকুর") },
+    { key: "hawlat", label: rt("Loan received", "হাওলাত গ্রহণ") },
     { key: "misc", label: rt("Miscellaneous", "বিবিধ") },
   ];
   const KHARCH_COLS: { key: keyof IrrKharchRow; label: string }[] = [
