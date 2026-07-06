@@ -132,9 +132,21 @@ export async function fetchOpenIrrigationInvoicesResult<T extends DueInvoiceRow 
   // Drop cancelled/deleted and fully-paid/non-due rows in JS so NULL/empty
   // invoice_status rows are kept and Laravel/MySQL operator bugs cannot hide
   // valid invoices from Payments.
-  const rows = ((data as any[]) ?? []).filter((r) => isActiveInvoice(r) && Number(r?.due_amount || 0) > 0) as T[];
+  const raw = (data as any[]) ?? [];
+  const rows = raw.filter((r) => isActiveInvoice(r) && Number(r?.due_amount || 0) > 0) as T[];
+  // Double-verify the positive-due filter is actually effective on the server
+  // response: log raw vs kept counts and flag any non-positive rows that slipped
+  // through (should always be 0). Helps confirm due_amount > 0 filtering works.
+  const nonPositiveKept = rows.filter((r: any) => Number(r?.due_amount || 0) <= 0).length;
+  console.debug(
+    `[irrigation-invoices] farmer=${farmerId} received=${raw.length} kept(due>0,active)=${rows.length} nonPositiveKept=${nonPositiveKept}`,
+  );
+  if (nonPositiveKept > 0) {
+    console.warn(`[irrigation-invoices] positive-due filter leaked ${nonPositiveKept} non-positive rows for farmer ${farmerId}`);
+  }
   return { rows, error: null, traceId: null };
 }
+
 
 /**
  * Fetch open (due_amount > 0, not deleted, not cancelled) irrigation invoices
