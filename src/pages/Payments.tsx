@@ -380,6 +380,30 @@ export default function Payments() {
     );
     setOpenIrr(rows);
 
+    // Cross-check: the Farmer List irrigation-due total (canonical) must equal
+    // the sum of open invoices we render here. If they diverge, an invoice is
+    // being dropped — surface a UI alert and log server-side so it can't hide.
+    try {
+      const { data: allRows } = await db
+        .from("irrigation_invoices")
+        .select("due_amount,invoice_status,deleted_at")
+        .eq("farmer_id", farmerId)
+        .is("deleted_at", null);
+      const listDue = computeIrrigationDue((allRows as any[]) ?? []);
+      const paymentsDue = rows.reduce((s: number, x: any) => s + Math.max(0, Number(x.due_amount || 0)), 0);
+      const result = detectDueMismatch(listDue, paymentsDue);
+      setDueMismatch(result.mismatch ? result : null);
+      if (result.mismatch) {
+        console.error("[due-mismatch]", { farmerId, ...result });
+        logAudit("due_mismatch", "irrigation_invoices", farmerId, {
+          list_due: result.listDue, payments_due: result.paymentsDue, diff: result.diff,
+        }).catch(() => {});
+      }
+    } catch (e) {
+      console.warn("due mismatch check failed", e);
+    }
+
+
 
 
     // Preload allocations from URL ?irr=id1,id2 — used by FarmerDetail "Pay" flow
