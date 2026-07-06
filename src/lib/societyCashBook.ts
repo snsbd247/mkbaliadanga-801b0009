@@ -12,6 +12,7 @@ export type JamaRow = {
   loanPrincipal: number;  // কর্জের আদায় (আমানত)
   loanInterest: number;   // কর্জের সুদ আদায়
   form: number;           // ফরম
+  hawlat: number;         // হাওলাত গ্রহণ
   misc: number;           // বিবিধ
   total: number;          // মোট
 };
