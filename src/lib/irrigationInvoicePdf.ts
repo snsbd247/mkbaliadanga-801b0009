@@ -31,7 +31,7 @@ export interface InvoicePdfSettings {
 }
 
 export const DEFAULT_INVOICE_SETTINGS: InvoicePdfSettings = {
-  paperFormat: "a4",
+  paperFormat: "a5-landscape",
   marginTopMm: 8,
   marginBottomMm: 8,
   marginLeftMm: 8,
