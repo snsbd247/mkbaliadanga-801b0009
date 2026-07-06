@@ -1364,7 +1364,14 @@ export default function Payments() {
               <div>
                 <p className="mb-1 font-medium">{tx("Transaction history", "লেনদেন হিস্ট্রি")}</p>
                 {detailTxns.length === 0 ? (
-                  <p className="text-muted-foreground">{tx("No transactions", "কোনো লেনদেন নেই")}</p>
+                  <div
+                    data-testid="invoice-no-transactions"
+                    role="status"
+                    className="rounded-md border border-dashed p-3 text-center text-muted-foreground"
+                  >
+                    <p className="font-medium">{tx("No transactions yet", "এখনো কোনো লেনদেন নেই")}</p>
+                    <p className="text-xs">{tx("This invoice has no payment records. It is shown as read-only.", "এই ইনভয়েসে কোনো পেমেন্ট রেকর্ড নেই। এটি কেবল-পঠন হিসেবে দেখানো হচ্ছে।")}</p>
+                  </div>
                 ) : (
                   <ul className="space-y-1">
                     {detailTxns.map((tItem) => (
