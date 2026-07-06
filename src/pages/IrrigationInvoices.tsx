@@ -1577,6 +1577,8 @@ function GenerateTab({ seasons, offices, userId, isSuper }: any) {
         return;
       }
       setMissingRates([]);
+      setMissingError(false);
+      setMissingDiag(null);
       setErrors((prev) => { const { noRate: _omit, ...rest } = prev; return rest; });
       toast.success(`${previewArr.length} ${tx("preview", "টি প্রিভিউ")}${noRate ? ` • ${noRate} ${tx("lands have no rate", "টি জমিতে রেট নেই")}` : ""}`);
     } catch (e: any) {
