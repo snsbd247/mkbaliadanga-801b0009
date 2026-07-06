@@ -376,6 +376,8 @@ export default function AuditLogs() {
                 <SelectItem value="scan">{t("scanAction")}</SelectItem>
                 <SelectItem value="issue">{t("issueAction")}</SelectItem>
                 <SelectItem value="revoke">{t("revokeAction")}</SelectItem>
+                <SelectItem value="edit">Edit (receipt)</SelectItem>
+                <SelectItem value="void">Void (receipt)</SelectItem>
               </SelectContent>
             </Select>
           </div>
