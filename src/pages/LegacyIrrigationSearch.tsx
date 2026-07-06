@@ -212,6 +212,7 @@ export default function LegacyIrrigationSearch() {
                 <TableHead className="w-10">
                   <Checkbox checked={allSelected} onCheckedChange={toggleAll} aria-label="select all" />
                 </TableHead>
+                <TableHead>{tx("Matched", "মিল")}</TableHead>
                 <TableHead>{tx("Season", "সিজন")}</TableHead>
                 <TableHead>{tx("Mouza", "মৌজা")}</TableHead>
                 <TableHead>{tx("Dag", "দাগ")}</TableHead>
