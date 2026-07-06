@@ -1511,6 +1511,7 @@ function GenerateTab({ seasons, offices, userId, isSuper }: any) {
       }
 
       setPreviewRows(previewArr.map((r) => ({ ...r, manualRate: "", manualReason: "" })));
+      setPreviewPage(0);
       setSkippedNoRate(noRate);
       setExcluded(excludedArr);
       // Fetch previous outstanding for the farmers in this preview
