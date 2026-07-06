@@ -231,6 +231,21 @@ export default function LegacyIrrigationSearch() {
                   <TableCell>
                     <Checkbox checked={selected.has(r.id)} onCheckedChange={() => toggle(r.id)} aria-label="select row" />
                   </TableCell>
+                  <TableCell>
+                    {(() => {
+                      const m = matchedField(r, term);
+                      if (!m) return <span className="text-muted-foreground">—</span>;
+                      const label =
+                        m === "code" ? tx("Farmer code", "ফার্মার কোড")
+                        : m === "mobile" ? tx("Mobile", "মোবাইল")
+                        : tx("Farmer ID", "ফার্মার আইডি");
+                      return (
+                        <span className="inline-block rounded bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary whitespace-nowrap">
+                          {label}
+                        </span>
+                      );
+                    })()}
+                  </TableCell>
                   <TableCell>{r.season_year ?? "—"}</TableCell>
                   <TableCell>{r.mouza_name ?? "—"}</TableCell>
                   <TableCell>{r.dag_no ?? "—"}</TableCell>
