@@ -73,7 +73,7 @@ export function buildJamaRows(input: CashBookInput, lang: ReportLang = "bn"): Ja
     rows.push({
       date: s.txn_date, receiptNo: s.receipt_no ?? "", name: farmerNames[s.farmer_id ?? ""] ?? "",
       share: isShare ? amt : 0, savings: isShare ? 0 : amt,
-      bankWithdraw: 0, loanPrincipal: 0, loanInterest: 0, form: 0, misc: 0, total: amt,
+      bankWithdraw: 0, loanPrincipal: 0, loanInterest: 0, form: 0, hawlat: 0, misc: 0, total: amt,
     });
   }
   for (const l of loanPayments) {
