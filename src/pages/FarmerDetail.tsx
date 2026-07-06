@@ -20,6 +20,7 @@ import { Plus, Printer, FileDown, Receipt, Pencil, Trash2, FileSpreadsheet, File
 import { useLang } from "@/i18n/LanguageProvider";
 import { money, money2, fmtDate } from "@/lib/format";
 import { toBool } from "@/lib/bool";
+import { computeIrrigationDue } from "@/lib/dues";
 import { toast } from "sonner";
 import { QRCodeSVG } from "qrcode.react";
 import { useNavigate } from "react-router-dom";
