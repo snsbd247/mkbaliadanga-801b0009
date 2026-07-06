@@ -306,6 +306,7 @@ const App = () => (
                 <Route path="/admin/retry-jobs" element={<RequireRole roles={["admin","super_admin"]}><RetryJobs /></RequireRole>} />
                 <Route path="/admin/audit-timeline" element={<RequireRole roles={["admin","super_admin"]}><AuditTimeline /></RequireRole>} />
                 <Route path="/admin/import-audit" element={<RequireRole roles={["admin","super_admin"]}><ImportAuditLogs /></RequireRole>} />
+                <Route path="/admin/rpc-fallback-audit" element={<RequireRole roles={["developer","super_admin"]}><RpcFallbackAudit /></RequireRole>} />
                 <Route path="/farmers/import" element={<RequirePerm module="farmers" action="can_add"><FarmersImport /></RequirePerm>} />
                 
                 <Route path="/users" element={<RequireRole roles={["super_admin"]}><Users /></RequireRole>} />
