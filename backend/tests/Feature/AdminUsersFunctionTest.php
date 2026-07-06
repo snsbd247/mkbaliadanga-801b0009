@@ -224,4 +224,60 @@ class AdminUsersFunctionTest extends TestCase
         $this->assertContains($userA->id, $ids);
         $this->assertContains($userB->id, $ids);
     }
+
+    public function test_super_admin_can_create_and_manage_non_privileged_users(): void
+    {
+        $officeId = (string) Str::uuid();
+        DB::table('offices')->insert(['id' => $officeId, 'name' => 'কার্যালয়']);
+        $superAdmin = $this->userWithRole('super', 'super_admin');
+
+        $res = $this->call($superAdmin, [
+            'action' => 'create',
+            'username' => 'staffbysuper',
+            'email' => 'staffbysuper@example.test',
+            'password' => '123456789',
+            'full_name' => 'Staff By Super',
+            'role' => 'staff',
+            'office_id' => $officeId,
+        ]);
+        $this->assertSame(201, $res['status']);
+        $userId = $res['json']['user_id'];
+
+        $update = $this->call($superAdmin, ['action' => 'set_role', 'user_id' => $userId, 'role' => 'committee']);
+        $this->assertSame(200, $update['status']);
+
+        $del = $this->call($superAdmin, ['action' => 'delete', 'user_id' => $userId]);
+        $this->assertSame(200, $del['status']);
+    }
+
+    public function test_super_admin_cannot_create_developer_or_super_admin(): void
+    {
+        $superAdmin = $this->userWithRole('super', 'super_admin');
+        $res = $this->call($superAdmin, [
+            'action' => 'create',
+            'username' => 'wannabedev',
+            'email' => 'wannabedev@example.test',
+            'password' => '123456789',
+            'full_name' => 'Wannabe Dev',
+            'role' => 'developer',
+            'office_id' => null,
+        ]);
+        $this->assertSame(403, $res['status']);
+    }
+
+    public function test_create_validation_errors_return_422(): void
+    {
+        $developer = $this->userWithRole('dev', 'developer');
+        $res = $this->call($developer, [
+            'action' => 'create',
+            'username' => 'ab', // too short
+            'email' => 'not-an-email',
+            'password' => 'short',
+            'full_name' => '',
+            'role' => 'staff',
+            'office_id' => null,
+        ]);
+        $this->assertSame(422, $res['status']);
+        $this->assertArrayHasKey('error', $res['json']);
+    }
 }
