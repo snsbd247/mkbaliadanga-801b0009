@@ -110,6 +110,9 @@ export interface BnReceiptData {
   village_union?: string | null;               // ইউনিয়ন (shown with গ্রাম)
   member_summary?: string | null;              // কৃষক এবং মালিক সভ্য সদস্য (e.g. "১৯০০/ N/A")
   rate_per_bigha?: number | null;              // বিঘা রেট (defaults to acre rate × 33/100)
+  /** বর্গা রশিদে কৃষক লাইনে দেখানো বর্গাদার লেবেল (e.g. "বর্গাদার - আফজাল হোসেন"). set হলে
+   *  farmer line হবে: "{cultivator_label}/ {মালিকের নাম-আইডি}". */
+  cultivator_label?: string | null;
   current_penalty?: number | null;             // হাল-এর জরিমানা (defaults to penalty_amount)
   due_penalty?: number | null;                 // বকেয়ার জরিমানা
   holding_description?: string | null;         // হোল্ডিং এর বিবরন
