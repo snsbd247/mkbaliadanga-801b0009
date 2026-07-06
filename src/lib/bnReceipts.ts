@@ -110,6 +110,9 @@ export interface BnReceiptData {
   village_union?: string | null;               // ইউনিয়ন (shown with গ্রাম)
   member_summary?: string | null;              // কৃষক এবং মালিক সভ্য সদস্য (e.g. "১৯০০/ N/A")
   rate_per_bigha?: number | null;              // বিঘা রেট (defaults to acre rate × 33/100)
+  /** বর্গা রশিদে কৃষক লাইনে দেখানো বর্গাদার লেবেল (e.g. "বর্গাদার - আফজাল হোসেন"). set হলে
+   *  farmer line হবে: "{cultivator_label}/ {মালিকের নাম-আইডি}". */
+  cultivator_label?: string | null;
   current_penalty?: number | null;             // হাল-এর জরিমানা (defaults to penalty_amount)
   due_penalty?: number | null;                 // বকেয়ার জরিমানা
   holding_description?: string | null;         // হোল্ডিং এর বিবরন
@@ -171,6 +174,14 @@ function moneyText(n: number | null | undefined, lang: ReceiptLang, suffix = "")
 function moneyInt(n: number | null | undefined, lang: ReceiptLang, suffix = ""): string {
   const v = Number(n ?? 0);
   const s = String(Math.round(v));
+  return `${digits(s, lang)}${suffix}`;
+}
+
+/** চার্জ রেট display: শতাংশ থাকলে ২ ডিজিট দশমিক দেখায় (e.g. ৩৩৩৩.৩৩), না থাকলে পূর্ণসংখ্যা. */
+function rateMoney(n: number | null | undefined, lang: ReceiptLang, suffix = ""): string {
+  const v = Number(n ?? 0);
+  const rounded = Math.round(v * 100) / 100;
+  const s = Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(2);
   return `${digits(s, lang)}${suffix}`;
 }
 
@@ -426,7 +437,10 @@ function copyHtml(d: BnReceiptData, copyLabel: string, signatureUrl: string | nu
     // 1. কৃষকের নাম ও আইডি / মালিকের নাম ও আইডি
     //    মালিক নিজে হলে শুধু মালিকের নাম; বর্গাদার হলে "বর্গাদার নাম / মালিকের নাম"।
     const idPart = `${d.farmer.name}${d.farmer.member_no ? "-" + digits(String(d.farmer.member_no), lang) : ""}`;
-    if (d.owner_self) {
+    if (d.cultivator_label && d.cultivator_label.trim()) {
+      // বর্গা রশিদ: "বর্গাদার - নাম/ মালিকের নাম-আইডি"
+      rows.push([t.farmerLine, `${d.cultivator_label.trim()}/ ${idPart}`]);
+    } else if (d.owner_self) {
       rows.push([t.farmerLine, idPart]);
     } else {
       const ownerPart = (d.land_owner_label && d.land_owner_label.trim())
@@ -451,7 +465,7 @@ function copyHtml(d: BnReceiptData, copyLabel: string, signatureUrl: string | nu
       ? Number(d.rate_per_bigha)
       : ratePerBighaFromAcre(ratePerAcre);
     const unit = lang === "bn" ? "টাকা" : "";
-    const rateText = ratePerAcre != null ? `${moneyInt(ratePerAcre, lang, unit)}/${moneyInt(ratePerBigha ?? 0, lang, unit)}` : "";
+    const rateText = ratePerAcre != null ? `${rateMoney(ratePerAcre, lang, unit)}/${rateMoney(ratePerBigha ?? 0, lang, unit)}` : "";
     rows.push([t.landKind, [normalizeLandTypeText(d.farmer.field_type_bn, d.bill_info), rateText].filter(Boolean).join("/ ") || "—"]);
     // 7. দাগ নং (একাধিক হতে পারে) — ডেমো অনুযায়ী ডট-সেপারেটেড
     const dagTokens = parseDagNumbers(d.farmer.dag_no);

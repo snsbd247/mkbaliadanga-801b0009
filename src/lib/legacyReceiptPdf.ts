@@ -33,6 +33,12 @@ export function mapLegacyToReceiptData(
   const hal = r.rate ?? 0;
   const due = r.due_amount ?? 0;
   const paid = r.paid_amount ?? 0;
+  // Legacy `rate` is stored per বিঘা. Official receipt shows per একর / per বিঘা,
+  // where একর রেট = বিঘা রেট × ১০০ / ৩৩ (1 bigha = 33 shotok, 1 acre = 100 shotok).
+  const bighaRate = r.rate ?? null;
+  const acreRate = bighaRate != null ? (bighaRate * 100) / 33 : null;
+  // বর্গা রেকর্ড হলে কৃষক লাইনে "বর্গাদার - নাম" আগে, তারপর মালিকের নাম/আইডি দেখাবে।
+  const isBorga = /বর্গা/.test(r.owner_type_name ?? "");
   return {
     kind: "irrigation",
     receipt_no: String(r.receipt_no ?? ""),
@@ -42,7 +48,8 @@ export function mapLegacyToReceiptData(
     company_name_bn: branding?.company_name_bn ?? null,
     company_name: branding?.company_name ?? undefined,
     logo_url: branding?.logo_url ?? null,
-    owner_self: true,
+    owner_self: !isBorga,
+    cultivator_label: isBorga ? (r.owner_type_name ?? null) : null,
     farmer: {
       name: r.farmer_name ?? "—",
       member_no: r.legacy_farmer_code ?? null,
@@ -50,11 +57,13 @@ export function mapLegacyToReceiptData(
       village: r.village ?? null,
       mobile: r.mobile_no ?? null,
       mouza: r.mouza_name ?? null,
-      field_type_bn: r.owner_type_name ?? null,
+      // Legacy data has no separate land-type; only the rate is shown on this row.
+      field_type_bn: null,
       land_size: r.land_shatak ?? null,
       dag_no: r.dag_no ?? null,
     },
-    rate: r.rate ?? null,
+    rate: acreRate,
+    rate_per_bigha: bighaRate,
     member_summary: `${r.legacy_farmer_code ?? "N/A"}/${r.owner_fid ?? "N/A"}`,
     current_season_charge: hal,
     total_outstanding: due,
