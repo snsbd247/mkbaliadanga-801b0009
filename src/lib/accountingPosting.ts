@@ -192,3 +192,68 @@ export async function postIrrigationDiscount(opts: {
     ],
   });
 }
+
+/** Stable journal reference for a bank account's opening-balance entry. */
+export const bankOpeningRef = (accountId: string) => `OPENING-BANK-${accountId}`;
+
+/**
+ * Post (or skip if already posted) a bank account's opening balance as a journal:
+ *   Dr Bank (1020) / Cr Opening Balance Equity (3000)
+ * Idempotent: keyed on reference `OPENING-BANK-<accountId>`. If a journal with
+ * that reference already exists it is left untouched (returns "exists"). Pass
+ * `force: true` to delete the previous opening journal and re-post (used when the
+ * opening balance is edited). Best-effort — never throws into the caller.
+ */
+export async function postBankOpening(opts: {
+  bankAccountId: string;
+  openingBalance: number;
+  bankLabel?: string | null;
+  entryDate?: string | null;
+  officeId?: string | null;
+  createdBy?: string | null;
+  force?: boolean;
+}): Promise<"posted" | "exists" | "skipped"> {
+  const amount = Math.round(Number(opts.openingBalance) || 0);
+  const ref = bankOpeningRef(opts.bankAccountId);
+  try {
+    const { data: existing } = await db
+      .from("journal_entries")
+      .select("id")
+      .eq("reference", ref)
+      .maybeSingle();
+    const existingId = (existing as any)?.id as string | undefined;
+    if (existingId) {
+      if (!opts.force) return "exists";
+      // Remove old opening journal (its ledger rows are cleaned up by the posting trigger).
+      try {
+        await db.from("journal_entry_lines").delete().eq("journal_id", existingId);
+      } catch { /* ignore */ }
+      await db.from("journal_entries").delete().eq("id", existingId);
+    }
+    if (amount === 0) return "skipped";
+    const [bank, equity] = await Promise.all([accountId(ACC.bank), accountId(ACC.openingEquity)]);
+    if (!bank || !equity) return "skipped";
+    const label = opts.bankLabel ? ` — ${opts.bankLabel}` : "";
+    const isNeg = amount < 0;
+    const abs = Math.abs(amount);
+    await createJournal({
+      reference: ref,
+      description: `ব্যাংক প্রারম্ভিক জের${label}`,
+      officeId: opts.officeId,
+      createdBy: opts.createdBy,
+      entryDate: opts.entryDate ?? null,
+      lines: isNeg
+        ? [
+            { account_id: equity, debit: abs, credit: 0, description: "প্রারম্ভিক জের (মূলধন)", position: 1 },
+            { account_id: bank, debit: 0, credit: abs, description: "ব্যাংক প্রারম্ভিক", position: 2 },
+          ]
+        : [
+            { account_id: bank, debit: abs, credit: 0, description: "ব্যাংক প্রারম্ভিক", position: 1 },
+            { account_id: equity, debit: 0, credit: abs, description: "প্রারম্ভিক জের (মূলধন)", position: 2 },
+          ],
+    });
+    return "posted";
+  } catch {
+    return "skipped";
+  }
+}
