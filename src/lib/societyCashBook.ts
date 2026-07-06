@@ -92,7 +92,7 @@ export function buildJamaRows(input: CashBookInput, lang: ReportLang = "bn"): Ja
     const amt = n(b.amount);
     rows.push({
       date: b.txn_date, receiptNo: b.reference_no ?? "", name: lang === "bn" ? "ব্যাংক উত্তোলন" : "Bank withdrawal",
-      share: 0, savings: 0, bankWithdraw: amt, loanPrincipal: 0, loanInterest: 0, form: 0, misc: 0, total: amt,
+      share: 0, savings: 0, bankWithdraw: amt, loanPrincipal: 0, loanInterest: 0, form: 0, hawlat: 0, misc: 0, total: amt,
     });
   }
   for (const o of officeIncomes) {
