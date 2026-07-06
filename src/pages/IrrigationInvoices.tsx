@@ -715,6 +715,13 @@ function InvoiceListTab({ seasons, offices, isSuper }: any) {
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
+                      {r.invoice_status !== "cancelled" && Number(r.due_amount) > 0 && (
+                        <Button asChild size="sm" variant="ghost" title={tx("Collect payment", "পেমেন্ট গ্রহণ")}>
+                          <Link to={`/payments?farmer=${r.farmer_id}&irr=${r.id}`}>
+                            <Wallet className="h-4 w-4 text-success" />
+                          </Link>
+                        </Button>
+                      )}
                       {r.invoice_status !== "cancelled" && r.invoice_status !== "paid" && (
                         <Button size="sm" variant="ghost" title={tx("Edit", "এডিট")} onClick={() => setEditInv(r)}><Pencil className="h-4 w-4" /></Button>
                       )}
