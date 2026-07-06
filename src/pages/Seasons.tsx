@@ -16,6 +16,7 @@ import { DeleteButton } from "@/components/ui/action-icon-button";
 import { Badge } from "@/components/ui/badge";
 import { money } from "@/lib/format";
 import { exportTablePDF } from "@/lib/exports";
+import { logAudit } from "@/lib/audit";
 
 type SeasonType = { id: string; code: string; name: string; name_bn: string | null };
 type LandType = { id: string; code: string; name: string; name_bn: string | null };
