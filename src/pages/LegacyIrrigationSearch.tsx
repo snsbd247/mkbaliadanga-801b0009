@@ -53,11 +53,8 @@ export default function LegacyIrrigationSearch() {
     setSearching(true);
     setSelected(new Set());
     try {
-      const term = code.trim();
       // Search by legacy code, mobile number, or farmer ID.
-      const rows = /^\d{3,6}$/.test(term)
-        ? await LegacyIrrigationApi.list({ farmer_code: term, q: term })
-        : await LegacyIrrigationApi.list({ q: term });
+      const rows = await LegacyIrrigationApi.list({ q: code.trim() });
       setRecords(rows);
       if (!rows.length) toast.info(tx("No records found", "কোনো রেকর্ড পাওয়া যায়নি"));
     } catch (e) {
