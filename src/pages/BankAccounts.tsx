@@ -192,6 +192,7 @@ export default function BankAccounts() {
           head: "Bank Deposit", payee: bankLabel, amount: tx.amount, method: "bank",
           note: `Cash deposited to ${bankLabel}${ref}${noteSuffix}`,
           expense_date: tx.txn_date, created_by: user?.id, stream: cbStream, link_id: linkId,
+          is_bank_deposit: true, bank_account_id: tx.bank_account_id,
         } as any);
         if (eErr) toast.error("Saved bank txn but cashbook expense failed: " + eErr.message);
       } else {
