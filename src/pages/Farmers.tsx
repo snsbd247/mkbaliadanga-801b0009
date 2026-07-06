@@ -311,6 +311,77 @@ export default function Farmers() {
     el?.scrollIntoView({ behavior: "smooth", block: "center" });
   }, [createErr, editErr]);
 
+  async function loadDueSummaryForFarmers(ids: string[]) {
+    if (!ids.length) return {};
+
+    const [invoiceRes, savingsRes, loansRes] = await Promise.all([
+      db.from("irrigation_invoices")
+        .select("farmer_id,due_amount,invoice_status,deleted_at")
+        .in("farmer_id", ids)
+        .is("deleted_at", null),
+      db.from("savings_transactions")
+        .select("farmer_id,type,status,amount,deleted_at")
+        .in("farmer_id", ids)
+        .is("deleted_at", null),
+      db.from("loans")
+        .select("id,farmer_id,principal,total_payable,status,deleted_at")
+        .in("farmer_id", ids)
+        .is("deleted_at", null),
+    ]);
+
+    const loans = ((loansRes.data as any[]) ?? []).filter((l) => l.status === "approved");
+    const loanIds = loans.map((l) => l.id).filter(Boolean);
+    const loanPaymentsRes = loanIds.length
+      ? await db.from("loan_payments").select("loan_id,amount,principal_amount").in("loan_id", loanIds)
+      : { data: [], error: null } as any;
+
+    const map: Record<string, { net_due: number; loan_due: number; irr_due: number; savings_bal: number }> = {};
+    ids.forEach((id) => { map[id] = { net_due: 0, loan_due: 0, irr_due: 0, savings_bal: 0 }; });
+
+    ((invoiceRes.data as any[]) ?? []).forEach((r) => {
+      if (!r.farmer_id || r.invoice_status === "cancelled") return;
+      map[r.farmer_id] ??= { net_due: 0, loan_due: 0, irr_due: 0, savings_bal: 0 };
+      map[r.farmer_id].irr_due += Math.max(0, Number(r.due_amount || 0));
+    });
+
+    ((savingsRes.data as any[]) ?? []).forEach((r) => {
+      if (!r.farmer_id || r.status !== "approved") return;
+      map[r.farmer_id] ??= { net_due: 0, loan_due: 0, irr_due: 0, savings_bal: 0 };
+      const amount = Number(r.amount || 0);
+      if (r.type === "deposit") map[r.farmer_id].savings_bal += amount;
+      if (r.type === "withdraw") map[r.farmer_id].savings_bal -= amount;
+    });
+
+    const paidByLoan: Record<string, number> = {};
+    ((loanPaymentsRes.data as any[]) ?? []).forEach((p) => {
+      if (!p.loan_id) return;
+      paidByLoan[p.loan_id] = (paidByLoan[p.loan_id] || 0) + Number(p.principal_amount || p.amount || 0);
+    });
+    loans.forEach((l) => {
+      if (!l.farmer_id) return;
+      map[l.farmer_id] ??= { net_due: 0, loan_due: 0, irr_due: 0, savings_bal: 0 };
+      const principal = Number(l.principal ?? l.total_payable ?? 0);
+      map[l.farmer_id].loan_due += Math.max(0, principal - (paidByLoan[l.id] || 0));
+    });
+
+    Object.values(map).forEach((d) => {
+      // Farmer list shows actual outstanding dues. Savings balance is separate
+      // and must not hide irrigation/loan dues in this column.
+      d.net_due = d.loan_due + d.irr_due;
+    });
+
+    if (invoiceRes.error || savingsRes.error || loansRes.error || loanPaymentsRes.error) {
+      console.warn("farmer due direct summary warning", {
+        invoices: invoiceRes.error,
+        savings: savingsRes.error,
+        loans: loansRes.error,
+        loanPayments: loanPaymentsRes.error,
+      });
+    }
+
+    return map;
+  }
+
   async function load() {
     // If the search includes dag-like tokens (comma / newline / whitespace
     // separated), also pull farmer_ids whose lands match ANY token. This lets
@@ -353,24 +424,7 @@ export default function Farmers() {
     setList(farmers);
     if (farmers.length) {
       const ids = farmers.map((f: any) => f.id).filter(Boolean);
-      // Fetch dues only for the farmers visible on this page. Calling the all-farmer
-      // summary can be truncated by the backend response limit, which made later
-      // farmers (for example 01167) show ৳0 even when irrigation invoices had dues.
-      let dues: any[] | null = null;
-      let dueError: any = null;
-      const pageSummary = await db.rpc("farmer_dues_summary_for" as any, { _farmer_ids: ids });
-      dues = (pageSummary.data as any[]) ?? null;
-      dueError = pageSummary.error;
-      if (dueError) {
-        console.warn("farmer_dues_summary_for failed; falling back to full summary", dueError);
-        const fullSummary = await db.rpc("farmer_dues_summary" as any);
-        dues = ((fullSummary.data as any[]) ?? []).filter((d: any) => ids.includes(d.farmer_id));
-        dueError = fullSummary.error;
-      }
-      if (dueError) console.error("farmer due summary fetch error:", dueError);
-      const map: Record<string, any> = {};
-      (dues ?? []).forEach((d: any) => { if (ids.includes(d.farmer_id)) map[d.farmer_id] = d; });
-      setDuesMap(map);
+      setDuesMap(await loadDueSummaryForFarmers(ids));
     } else {
       setDuesMap({});
     }
