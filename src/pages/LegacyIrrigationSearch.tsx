@@ -155,11 +155,23 @@ export default function LegacyIrrigationSearch() {
             <Label>{tx("Farmer Code / Mobile / Farmer ID", "ফার্মার কোড / মোবাইল / ফার্মার আইডি")}</Label>
             <Input
               value={code}
-              onChange={(e) => setCode(e.target.value)}
+              onChange={(e) => { setCode(e.target.value); if (inputError) setInputError(null); }}
               onKeyDown={(e) => e.key === "Enter" && doSearch()}
-              placeholder={tx("e.g. 2473 or 01700000000", "যেমন 2473 বা 01700000000")}
+              placeholder={tx("Farmer code (e.g. 2473), mobile (01700000000) or farmer ID", "ফার্মার কোড (যেমন 2473), মোবাইল (01700000000) বা ফার্মার আইডি")}
               className="mt-2"
+              aria-invalid={!!inputError}
+              inputMode="numeric"
             />
+            {inputError ? (
+              <p className="mt-1 text-xs text-destructive">{inputError}</p>
+            ) : (
+              <p className="mt-1 text-xs text-muted-foreground">
+                {tx(
+                  "Search by farmer code, mobile number, or farmer ID (digits only, min 3).",
+                  "ফার্মার কোড, মোবাইল নম্বর বা ফার্মার আইডি দিয়ে খুঁজুন (শুধু সংখ্যা, কমপক্ষে ৩)।",
+                )}
+              </p>
+            )}
           </div>
           <Button onClick={doSearch} disabled={searching}>
             {searching ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Search className="h-4 w-4 mr-2" />}
@@ -167,6 +179,7 @@ export default function LegacyIrrigationSearch() {
           </Button>
         </div>
       </Card>
+
 
       {records.length > 0 && (
         <Card className="p-0 overflow-x-auto">
