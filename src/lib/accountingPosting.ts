@@ -116,6 +116,7 @@ async function createJournal(opts: {
   description?: string | null;
   officeId?: string | null;
   createdBy?: string | null;
+  entryDate?: string | null;
   lines: Line[];
 }): Promise<void> {
   // Guard: lines must balance and be non-trivial.
@@ -128,7 +129,7 @@ async function createJournal(opts: {
     const { data: je, error } = await db
       .from("journal_entries")
       .insert({
-        entry_date: new Date().toISOString().slice(0, 10),
+        entry_date: opts.entryDate || new Date().toISOString().slice(0, 10),
         reference: opts.reference ?? null,
         description: opts.description ?? null,
         office_id: opts.officeId ?? null,
