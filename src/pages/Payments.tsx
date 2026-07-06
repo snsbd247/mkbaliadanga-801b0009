@@ -101,6 +101,8 @@ export default function Payments() {
   // Reset to first page whenever the filtered set changes.
   useEffect(() => { setInvoicePage(0); }, [invoiceFilter, invoiceSearch, invoiceSort, invoiceSortDir, openIrr, cancelledIrr]);
   const [isAdmin, setIsAdmin] = useState(false);
+  // Developer/super_admin (via isAdmin) OR users granted payments edit permission may edit receipts.
+  const canEditPayments = usePermission("payments", "can_edit");
   const [submitting, setSubmitting] = useState(false);
   const [idemKey, setIdemKey] = useState<string>(newKey());
   const [priority, setPriority] = useState<string[]>(["irrigation", "savings"]);
