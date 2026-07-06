@@ -53,6 +53,7 @@ import Diagnostics from "./pages/Diagnostics";
 import Accounts from "./pages/Accounts";
 import Ledger from "./pages/Ledger";
 import FinancialReports from "./pages/FinancialReports";
+import FinancialSummary from "./pages/FinancialSummary";
 import JournalEntry from "./pages/JournalEntry";
 import LedgerIntegrity from "./pages/LedgerIntegrity";
 import Approvals from "./pages/Approvals";
@@ -336,6 +337,7 @@ const App = () => (
                 <Route path="/accounts" element={<RequirePerm module="accounting"><Accounts /></RequirePerm>} />
                 <Route path="/ledger" element={<RequirePerm module="accounting"><Ledger /></RequirePerm>} />
                 <Route path="/financial-reports" element={<RequirePerm module="accounting"><FinancialReports /></RequirePerm>} />
+                <Route path="/financial-summary" element={<RequirePerm module="accounting"><FinancialSummary /></RequirePerm>} />
                 <Route path="/journal-entry" element={<RequirePerm module="accounting" action="can_add"><JournalEntry /></RequirePerm>} />
                 <Route path="/ledger-integrity" element={<RequirePerm module="accounting"><LedgerIntegrity /></RequirePerm>} />
                 <Route path="/approvals" element={<RequirePerm module="approvals"><Approvals /></RequirePerm>} />
