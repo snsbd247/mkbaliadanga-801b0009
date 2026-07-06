@@ -770,7 +770,7 @@ export default function Payments() {
                       <SelectTrigger><SelectValue placeholder={openIrr.length ? "Pick invoice" : "No open invoices"} /></SelectTrigger>
                       <SelectContent>{openIrr.map(ic => (
                         <SelectItem key={ic.id} value={ic.id}>
-                          {ic.invoice_no} — {fmtDate(ic.due_date)} — Due {money(ic.due_amount)}
+                          {ic.invoice_no}{!ic.invoice_status ? ` (${invoiceStatusBadge(null).label_bn})` : ""} — {fmtDate(ic.due_date)} — Due {money(ic.due_amount)}
                         </SelectItem>
                       ))}</SelectContent>
                     </Select>
