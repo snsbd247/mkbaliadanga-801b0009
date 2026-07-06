@@ -315,9 +315,10 @@ export default function BankAccounts() {
               <TableHead>Bank</TableHead><TableHead>Branch</TableHead><TableHead>Account No</TableHead>
               <TableHead>Type</TableHead><TableHead>স্ট্রিম</TableHead><TableHead className="text-right">Opening</TableHead>
               <TableHead className="text-right">Current Balance</TableHead><TableHead>Status</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
             </TableRow></TableHeader>
             <TableBody>
-              {accounts.length === 0 && <TableRow><TableCell colSpan={8} className="text-center py-8 text-muted-foreground">No bank accounts yet</TableCell></TableRow>}
+              {accounts.length === 0 && <TableRow><TableCell colSpan={9} className="text-center py-8 text-muted-foreground">No bank accounts yet</TableCell></TableRow>}
               {accounts.map(ac => (
                 <TableRow key={ac.id}>
                   <TableCell className="font-medium">{ac.bank_name}</TableCell>
@@ -328,6 +329,10 @@ export default function BankAccounts() {
                   <TableCell className="text-right">{money(ac.opening_balance)}</TableCell>
                   <TableCell className="text-right font-bold">{money(balances.get(ac.id) ?? 0)}</TableCell>
                   <TableCell><Badge variant={ac.is_active ? "default" : "outline"}>{ac.is_active ? "Active" : "Inactive"}</Badge></TableCell>
+                  <TableCell className="text-right whitespace-nowrap">
+                    <Button size="icon" variant="ghost" onClick={() => openEditAccount(ac)}><Pencil className="h-4 w-4" /></Button>
+                    <Button size="icon" variant="ghost" className="text-destructive" onClick={() => deleteAccount(ac)}><Trash2 className="h-4 w-4" /></Button>
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>
