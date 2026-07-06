@@ -19,6 +19,7 @@ import { ShieldCheck, Plus, Trash2, KeyRound, Pencil } from "lucide-react";
 import { useAuth } from "@/auth/AuthProvider";
 import { DeleteButton } from "@/components/ui/action-icon-button";
 import { z } from "zod";
+import { isLaravelBackend } from "@/lib/backend";
 
 // Minimal password policy — length only. Simple numeric passwords (e.g. 123456789) are allowed.
 function passwordPolicyIssues(pw: string, _role: string, t: (k: any) => string): string[] {
@@ -65,6 +66,19 @@ export default function Users() {
   useEffect(() => { document.title = `${t("users")} — ${t("appName")}`; load(); }, [isDeveloper]);
 
   async function load() {
+    if (isLaravelBackend) {
+      const [usersResponse, officesResponse] = await Promise.all([
+        invokeAdmin({ action: "list" }, false),
+        db.from("offices").select("id,name"),
+      ]);
+      setOffices(officesResponse.data ?? []);
+      if (usersResponse?.users) {
+        const users = usersResponse.users as any[];
+        setList(isDeveloper ? users : users.filter((u) => !(u.roles ?? []).includes("developer")));
+        return;
+      }
+    }
+
     const [p, r, o] = await Promise.all([
       db.from("profiles").select("*"),
       db.from("user_roles").select("*"),
@@ -93,14 +107,13 @@ export default function Users() {
     } catch { /* audit failure must not break UI */ }
   }
 
-  async function callAdmin(payload: any) {
-    setBusy(true);
+  async function invokeAdmin(payload: any, showToast = true) {
     const { data, error } = await db.functions.invoke("admin-users", { body: payload });
-    setBusy(false);
     if (error || data?.error) {
       const raw = String(data?.error ?? error?.message ?? "");
       // Detect a temporarily-unavailable / not-deployed edge function and give retry guidance.
       const unavailable = /not available on this server|Failed to (send|fetch)|Function not found|failed to reach|network|503|504/i.test(raw);
+      if (!showToast) return null;
       if (unavailable) {
         toast.error(t("adminFnUnavailable"), {
           description: t("adminFnRetryHint"),
@@ -111,6 +124,13 @@ export default function Users() {
       }
       return null;
     }
+    return data;
+  }
+
+  async function callAdmin(payload: any) {
+    setBusy(true);
+    const data = await invokeAdmin(payload, true);
+    setBusy(false);
     return data;
   }
 
@@ -217,6 +237,13 @@ export default function Users() {
     if (currentRole === "super_admin" && role !== "super_admin" && !isDeveloper) {
       return toast.error("Only developers can change a Super Admin's role");
     }
+    if (isLaravelBackend) {
+      const ok = await callAdmin({ action: "set_role", user_id: uid, role });
+      if (!ok) return;
+      await logAudit("update_role", uid, { from: currentRole, to: role });
+      toast.success(t("saved")); load();
+      return;
+    }
     await db.from("user_roles").delete().eq("user_id", uid);
     const { error } = await db.from("user_roles").insert({ user_id: uid, role });
     if (error) return toast.error(error.message);
@@ -224,6 +251,13 @@ export default function Users() {
     toast.success(t("saved")); load();
   }
   async function setOffice(uid: string, office_id: string) {
+    if (isLaravelBackend) {
+      const ok = await callAdmin({ action: "update_profile", user_id: uid, office_id: office_id || null });
+      if (!ok) return;
+      await logAudit("update_office", uid, { office_id: office_id || null });
+      load();
+      return;
+    }
     const { error } = await db.from("profiles").update({ office_id: office_id || null }).eq("id", uid);
     if (error) return toast.error(error.message);
     await logAudit("update_office", uid, { office_id: office_id || null });
