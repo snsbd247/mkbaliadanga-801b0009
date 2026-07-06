@@ -125,6 +125,33 @@ class FunctionController extends Controller
         return response()->json(['ok' => true, 'users' => $users]);
     }
 
+    /**
+     * Secured view of persisted admin-users failures (developer/super admin only).
+     */
+    private function adminUsersFailures(Request $request, bool $isDeveloper, bool $isSuper): JsonResponse
+    {
+        if (! ($isDeveloper || $isSuper)) {
+            return response()->json(['error' => 'Forbidden.'], 403);
+        }
+        $limit = min(200, max(1, (int) $request->input('limit', 50)));
+        $rows = AuditLog::query()
+            ->where('action', 'user.admin_failure')
+            ->orderByDesc('created_at')
+            ->limit($limit)
+            ->get()
+            ->map(fn ($row) => [
+                'id' => $row->id,
+                'created_at' => optional($row->created_at)->toIso8601String(),
+                'actor_id' => $row->user_id,
+                'detail' => is_array($row->meta) ? $row->meta : (json_decode((string) $row->meta, true) ?? []),
+            ])
+            ->values();
+
+        return response()->json(['ok' => true, 'failures' => $rows]);
+    }
+
+
+
     private function adminUsersCreate(Request $request, User $actor, bool $isDeveloper): JsonResponse
     {
         $validator = Validator::make($request->all(), [
