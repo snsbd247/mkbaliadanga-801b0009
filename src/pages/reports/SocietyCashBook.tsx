@@ -333,6 +333,9 @@ export default function SocietyCashBook() {
         /* Screen: keep headers on one line and let the wide layout scroll horizontally */
         .bn-cb-table th { white-space: nowrap; vertical-align: bottom; }
         .bn-cb-table td { white-space: nowrap; }
+        /* Header cells truncate with ellipsis (tooltip via title) so long
+           Bangla/English labels never bleed into the neighbouring table. */
+        .bn-cb-th { max-width: 96px; overflow: hidden; text-overflow: ellipsis; }
         /* Mobile: stack tables, each scrolls horizontally on its own. */
         .bn-cb-cols > section { min-width: 0; overflow-x: auto; }
         .bn-cb-table { width: 100%; min-width: max-content; }
