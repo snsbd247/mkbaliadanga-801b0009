@@ -143,7 +143,7 @@ export default function LegacyIrrigationSearch() {
       <Card className="p-4">
         <div className="flex items-end gap-2">
           <div className="flex-1 max-w-xs">
-            <Label>{tx("Farmer Code / Mobile / Farmer ID", "ফার্মার কোড / মোবাইল / ফার্মার আইডি")}</Label>
+            <Label>{tx("Farmer Code", "ফার্মার কোড")}</Label>
             <Input
               value={code}
               onChange={(e) => { setCode(e.target.value); if (inputError) setInputError(null); }}
