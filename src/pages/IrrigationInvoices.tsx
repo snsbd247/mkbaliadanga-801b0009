@@ -1749,7 +1749,7 @@ function GenerateTab({ seasons, offices, userId, isSuper }: any) {
       let oldQ = db.from("irrigation_invoices" as any)
         .select("id,farmer_id,due_amount,delay_fee")
         .neq("season_id", seasonId).gt("due_amount", 0).is("deleted_at", null)
-        .neq("invoice_status", "cancelled").neq("invoice_status", "carried_forward")
+        .neq("invoice_status", "cancelled")
         .in("farmer_id", Array.from(targetByFarmer.keys()));
       if (officeId) oldQ = oldQ.eq("office_id", officeId);
       const { data: old } = await oldQ;
