@@ -18,6 +18,7 @@ import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useLang } from "@/i18n/LanguageProvider";
+import { exportExcel } from "@/lib/exports";
 
 interface AccountRow {
   account_id: string; code: string; name: string; name_bn?: string | null; type: string;
@@ -59,6 +60,7 @@ export default function LedgerReconciliation() {
   const [report, setReport] = useState<Report | null>(null);
   const [detail, setDetail] = useState<Detail | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
+  const [bankCross, setBankCross] = useState<{ actual: number; ledger: number; diff: number } | null>(null);
 
   useEffect(() => {
     document.title = t("p5_monthlyReconciliationTitle");
@@ -82,7 +84,27 @@ export default function LedgerReconciliation() {
       const j = await res.json();
       if (!res.ok) { toast.error(j?.error || t("p5b_failed")); return; }
       setReport(j);
+      void loadBankCrossCheck(j);
     } finally { setLoading(false); }
+  }
+
+  // Cross-check: actual Bank balance (bank_accounts opening + all transactions)
+  // vs. the ledger's Bank account (code 1020) closing balance. A non-zero diff
+  // means bank activity has not fully flowed into the double-entry ledger.
+  async function loadBankCrossCheck(rep: Report) {
+    try {
+      const [{ data: accs }, { data: txns }] = await Promise.all([
+        db.from("bank_accounts").select("id,opening_balance"),
+        db.from("bank_transactions").select("bank_account_id,txn_type,amount"),
+      ]);
+      let actual = (accs ?? []).reduce((s: number, a: any) => s + Number(a.opening_balance || 0), 0);
+      for (const t of (txns ?? []) as any[]) {
+        const sign = ["deposit", "transfer_in", "interest"].includes(t.txn_type) ? 1 : -1;
+        actual += sign * Number(t.amount || 0);
+      }
+      const ledger = (rep.accounts.find((a) => a.code === "1020")?.closing_balance) ?? 0;
+      setBankCross({ actual, ledger, diff: Math.round((actual - ledger) * 100) / 100 });
+    } catch { setBankCross(null); }
   }
 
   async function openDetail(referenceType: string, referenceId: string) {
@@ -192,6 +214,38 @@ export default function LedgerReconciliation() {
     doc.save(`reconciliation-${year}-${String(month).padStart(2, "0")}.pdf`);
   }
 
+  function exportXlsx() {
+    if (!report) return;
+    const period = `${year}-${String(month).padStart(2, "0")}`;
+    const accountRows = report.accounts.map((a) => ({
+      Code: a.code,
+      Account: a.name_bn ? `${a.name} / ${a.name_bn}` : a.name,
+      Type: a.type,
+      Opening: a.opening_balance,
+      Debit: a.period_debit,
+      Credit: a.period_credit,
+      Closing: a.closing_balance,
+    }));
+    const mismatchRows = report.mismatches.length
+      ? report.mismatches.map((m) => ({
+          Kind: m.kind,
+          "Reference Type": m.reference_type,
+          "Reference ID": m.reference_id,
+          Debit: m.debit ?? "",
+          Credit: m.credit ?? "",
+          Diff: m.diff ?? "",
+          Entries: m.entry_count ?? "",
+        }))
+      : [{ Kind: "None", "Reference Type": "ledger is consistent", "Reference ID": "", Debit: "", Credit: "", Diff: "", Entries: "" }];
+    // Two sheets in one file: Accounts (with a totals + bank cross-check row) and Mismatches.
+    accountRows.push({ Code: "", Account: "— TOTALS —", Type: "", Opening: 0, Debit: report.summary.total_debit, Credit: report.summary.total_credit, Closing: report.summary.diff });
+    if (bankCross) {
+      accountRows.push({ Code: "", Account: "— BANK CROSS-CHECK (actual vs ledger) —", Type: "", Opening: bankCross.actual, Debit: bankCross.ledger, Credit: 0, Closing: bankCross.diff });
+    }
+    exportExcel(`reconciliation-${period}.xlsx`, `Recon ${period}`, [...accountRows, {} as any, ...mismatchRows]);
+  }
+
+
   if (!isSuper) {
     return (
       <>
@@ -213,6 +267,9 @@ export default function LedgerReconciliation() {
             </Button>
             <Button variant="outline" size="sm" onClick={exportPdf} disabled={!report}>
               <FileDown className="h-4 w-4" />PDF
+            </Button>
+            <Button variant="outline" size="sm" onClick={exportXlsx} disabled={!report}>
+              <FileDown className="h-4 w-4" />Excel
             </Button>
           </div>
         }
@@ -276,6 +333,25 @@ export default function LedgerReconciliation() {
               </div>
             </div>
           </Card>
+
+          {bankCross && (
+            <Card className="p-4 mb-4">
+              <div className="text-sm font-semibold mb-2">Cash/Bank ক্রস-চেক (Bank statement বনাম লেজার)</div>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
+                <div><div className="text-xs text-muted-foreground">প্রকৃত ব্যাংক ব্যালেন্স (স্টেটমেন্ট)</div><div className="font-mono font-semibold">{fmt(bankCross.actual)}</div></div>
+                <div><div className="text-xs text-muted-foreground">লেজার ব্যাংক (1020) সমাপনী</div><div className="font-mono font-semibold">{fmt(bankCross.ledger)}</div></div>
+                <div>
+                  <div className="text-xs text-muted-foreground">পার্থক্য</div>
+                  <div className={`font-mono font-semibold ${Math.abs(bankCross.diff) > 0.01 ? "text-destructive" : "text-success"}`}>{fmt(bankCross.diff)}</div>
+                </div>
+              </div>
+              {Math.abs(bankCross.diff) > 0.01 && (
+                <div className="text-xs text-destructive mt-2 flex items-center gap-1"><AlertTriangle className="h-3 w-3" /> ব্যাংক লেনদেন সম্পূর্ণভাবে লেজারে পোস্ট হয়নি — "ওপেনিং পোস্ট" চালান বা জার্নাল যাচাই করুন।</div>
+              )}
+            </Card>
+          )}
+
+
 
           <Card className="mb-4">
             <Table>
