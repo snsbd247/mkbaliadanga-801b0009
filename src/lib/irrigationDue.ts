@@ -47,13 +47,12 @@ export async function getIrrigationDueAggregate(opts?: { officeId?: string | nul
     .from("irrigation_invoices")
     .select("payable_amount,paid_amount,due_amount,due_date,invoice_status,office_id,season_id")
     .is("deleted_at", null)
-    .neq("invoice_status", "cancelled")
-    .neq("invoice_status", "carried_forward" as any);
+    .neq("invoice_status", "cancelled");
   if (opts?.officeId) q = q.eq("office_id", opts.officeId);
   if (opts?.seasonId) q = q.eq("season_id", opts.seasonId);
   const { data, error } = await q;
   if (error) throw error;
-  return aggregate(data ?? []);
+  return aggregate((data ?? []).filter((r: any) => r.invoice_status !== "carried_forward"));
 }
 
 /** Daily collections summary from irrigation_invoice_payments (split by current/previous). */
