@@ -1846,6 +1846,11 @@ function GenerateTab({ seasons, offices, userId, isSuper }: any) {
           {/* Step 4 — Preview & confirm */}
           {step === 4 && (
             <div className="space-y-3">
+              {errors.noRate && (
+                <div className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
+                  {errors.noRate}
+                </div>
+              )}
               {skippedNoRate > 0 && (
                 <div className="text-xs text-destructive">{skippedNoRate} {tx("lands had no rate — skipped.", "টি জমিতে রেট পাওয়া যায়নি — বাদ দেওয়া হয়েছে।")}</div>
               )}
