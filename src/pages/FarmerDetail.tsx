@@ -1221,7 +1221,7 @@ export default function FarmerDetail() {
           
           <TabsTrigger value="irr_invoices">{t("irrigation")}</TabsTrigger>
           <TabsTrigger value="payments">{t("pgPaymentsTab")}</TabsTrigger>
-          {farmer.is_voter && <TabsTrigger value="shares">{t("shareBalance")}</TabsTrigger>}
+          {!!farmer.is_voter && <TabsTrigger value="shares">{t("shareBalance")}</TabsTrigger>}
           <TabsTrigger value="notes">{tx("Notes", "নোট")}</TabsTrigger>
         </TabsList>
 
