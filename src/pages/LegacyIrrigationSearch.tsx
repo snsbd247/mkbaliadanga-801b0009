@@ -167,8 +167,8 @@ export default function LegacyIrrigationSearch() {
             ) : (
               <p className="mt-1 text-xs text-muted-foreground">
                 {tx(
-                  "Search by farmer code, mobile number, or farmer ID (digits only, min 3).",
-                  "ফার্মার কোড, মোবাইল নম্বর বা ফার্মার আইডি দিয়ে খুঁজুন (শুধু সংখ্যা, কমপক্ষে ৩)।",
+                  "Search by farmer code only (digits only, min 3).",
+                  "শুধু ফার্মার কোড দিয়ে খুঁজুন (শুধু সংখ্যা, কমপক্ষে ৩)।",
                 )}
               </p>
             )}
