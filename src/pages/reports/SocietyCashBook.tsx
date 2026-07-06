@@ -205,7 +205,7 @@ export default function SocietyCashBook() {
           {society}
           <span className="ml-2 font-normal">{lang === "bn" ? toBnDigits(`${formatDate(from)} - ${formatDate(to)}`) : `${formatDate(from)} - ${formatDate(to)}`}</span>
         </div>
-        <div className="bn-cb-cols grid grid-cols-2 gap-3 items-start">
+        <div className="bn-cb-cols grid grid-cols-1 md:grid-cols-2 gap-3 items-start">
         {/* জমা */}
         <section aria-label={tx("Income section", "জমা অংশ")}>
           <div className="text-center mb-1">
@@ -333,19 +333,24 @@ export default function SocietyCashBook() {
         /* Screen: keep headers on one line and let the wide layout scroll horizontally */
         .bn-cb-table th { white-space: nowrap; vertical-align: bottom; }
         .bn-cb-table td { white-space: nowrap; }
-        /* Wide enough that the 12/9 nowrap columns of both tables never overlap
-           in the middle; horizontal scroll handles anything past the viewport. */
-        .bn-cb-cols { min-width: 2200px; }
+        /* Mobile: stack tables, each scrolls horizontally on its own. */
+        .bn-cb-cols > section { min-width: 0; overflow-x: auto; }
+        .bn-cb-table { width: 100%; min-width: max-content; }
+        /* Desktop: size each column to its own content so the two nowrap tables
+           never overlap into each other; the wrapper handles horizontal scroll. */
+        @media (min-width: 768px) {
+          .bn-cb-cols { grid-template-columns: repeat(2, minmax(max-content, 1fr)); min-width: max-content; }
+        }
         @media print {
           body * { visibility: hidden; }
           .bn-cashbook, .bn-cashbook * { visibility: visible; }
           .bn-cashbook { position: absolute; left: 0; top: 0; width: 100%; padding: 0; overflow: visible; }
           /* Fit to page: allow wrapping and equal columns */
-          .bn-cb-table { table-layout: fixed; }
+          .bn-cb-table { table-layout: fixed; min-width: 0 !important; }
           .bn-cb-table th, .bn-cb-table td { white-space: normal; word-wrap: break-word; overflow-wrap: anywhere; }
           /* Two equal columns kept side-by-side and top-aligned on every page */
           .bn-cb-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; align-items: start; min-width: 0; }
-          .bn-cb-cols > section { break-inside: auto; }
+          .bn-cb-cols > section { break-inside: auto; overflow-x: visible; }
           /* Repeat header on each printed page and never split a row */
           .bn-cb-table { width: 100%; }
           .bn-cb-table thead { display: table-header-group; }
