@@ -966,8 +966,15 @@ export default function Payments() {
                         <SelectTrigger><SelectValue placeholder={displayInvoices.length ? "Pick invoice" : (invoiceFilter === "cancelled" ? "No cancelled invoices" : "No open invoices")} /></SelectTrigger>
                         <SelectContent>{pagedInvoices.map(ic => (
                           <SelectItem key={ic.id} value={ic.id}>
-                            {ic.invoice_no}{!ic.invoice_status ? ` (${invoiceStatusBadge(null).label_bn})` : ""} — {fmtDate(ic.due_date)} — Due {money(ic.due_amount)}
+                            {ic.invoice_no}{!ic.invoice_status ? ` (${invoiceStatusBadge(null).label_bn})` : ""} — {fmtDate(ic.due_date)} — Due{" "}
+                            <span
+                              data-testid="invoice-due-amount"
+                              className={Number(ic.due_amount || 0) > 0 ? "font-semibold text-destructive" : ""}
+                            >
+                              {money(ic.due_amount)}
+                            </span>
                           </SelectItem>
+
                         ))}</SelectContent>
                       </Select>
                       {displayInvoices.length > INVOICE_PAGE_SIZE && (
