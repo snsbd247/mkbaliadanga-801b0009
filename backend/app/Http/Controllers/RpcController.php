@@ -46,11 +46,8 @@ class RpcController extends Controller
         return response()->json(['result' => $result]);
     }
 
-    /**
-     * RPC contract validation — reports which RPCs are implemented on this
-     * server and returns a clear error (409) when a required RPC is missing.
-     */
-    public function contract(Request $request): JsonResponse
+    /** List of implemented RPC names (without the rpc_ prefix). */
+    public function availableRpcs(): array
     {
         $available = [];
         foreach (get_class_methods($this) as $m) {
@@ -59,22 +56,44 @@ class RpcController extends Controller
             }
         }
         sort($available);
+        return $available;
+    }
+
+    /**
+     * Pure contract evaluation — testable without an HTTP request. Reports the
+     * available/required/missing RPC lists and whether the contract holds.
+     */
+    public function evaluateContract(?array $required = null): array
+    {
+        $required = $required ?? static::REQUIRED_RPCS;
+        $available = $this->availableRpcs();
 
         $missing = array_values(array_filter(
-            self::REQUIRED_RPCS,
+            $required,
             fn ($name) => ! method_exists($this, 'rpc_' . $name)
         ));
 
-        return response()->json([
-            'available'      => $available,
-            'required'       => self::REQUIRED_RPCS,
-            'missing'        => $missing,
-            'ok'             => empty($missing),
-            'message'        => empty($missing)
+        return [
+            'available' => $available,
+            'required'  => array_values($required),
+            'missing'   => $missing,
+            'ok'        => empty($missing),
+            'message'   => empty($missing)
                 ? 'All required RPCs are available.'
                 : 'Missing required RPCs: ' . implode(', ', $missing),
-        ], empty($missing) ? 200 : 409);
+        ];
     }
+
+    /**
+     * RPC contract validation — reports which RPCs are implemented on this
+     * server and returns a clear error (409) when a required RPC is missing.
+     */
+    public function contract(Request $request): JsonResponse
+    {
+        $result = $this->evaluateContract();
+        return response()->json($result, $result['ok'] ? 200 : 409);
+    }
+
 
 
     // ── Farmer identifier helpers ─────────────────────────────────────
