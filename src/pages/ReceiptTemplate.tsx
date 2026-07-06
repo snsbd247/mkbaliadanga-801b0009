@@ -49,8 +49,19 @@ export default function ReceiptTemplatePage() {
   const brand = useBranding();
   const [tpl, setTpl] = useState<ReceiptTemplate>(DEFAULT_TEMPLATE);
   const [serialStart, setSerialStart] = useState<string>("0");
+  const [savedSerialStart, setSavedSerialStart] = useState<number>(0);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+
+  const serialError = (() => {
+    const raw = serialStart.trim();
+    if (raw === "") return "শুরুর ক্রমিক নম্বর দিতে হবে";
+    if (!/^\d+$/.test(raw)) return "শুধু ধনাত্মক পূর্ণসংখ্যা দেওয়া যাবে";
+    const n = Number(raw);
+    if (!Number.isFinite(n) || n < 0) return "ক্রমিক নম্বর ঋণাত্মক হতে পারবে না";
+    if (n > 9000000000) return "ক্রমিক নম্বর অনেক বড়";
+    return null;
+  })();
 
   useEffect(() => {
     document.title = "Receipt Template";
