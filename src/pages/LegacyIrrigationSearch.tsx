@@ -61,13 +61,32 @@ export default function LegacyIrrigationSearch() {
   const [showGuides, setShowGuides] = useState(false);
 
   async function doSearch() {
-    if (!code.trim()) return;
+    const q = code.trim();
+    // ── Input validation: clear error for empty / too short / bad characters ──
+    if (!q) {
+      setInputError(tx("Please enter a search term", "একটি সার্চ টার্ম লিখুন"));
+      return;
+    }
+    if (!/^[0-9]+$/.test(q)) {
+      setInputError(tx("Only digits are allowed (farmer code, mobile, or farmer ID)", "শুধু সংখ্যা লিখুন (ফার্মার কোড, মোবাইল বা ফার্মার আইডি)"));
+      return;
+    }
+    if (q.length < 3) {
+      setInputError(tx("Enter at least 3 digits", "কমপক্ষে ৩ সংখ্যা লিখুন"));
+      return;
+    }
+    if (q.length > 15) {
+      setInputError(tx("Too many digits", "অনেক বেশি সংখ্যা"));
+      return;
+    }
+    setInputError(null);
     setSearching(true);
     setSelected(new Set());
     try {
       // Search by legacy code, mobile number, or farmer ID.
-      const rows = await LegacyIrrigationApi.list({ q: code.trim() });
+      const rows = await LegacyIrrigationApi.list({ q });
       setRecords(rows);
+      setTerm(q);
       if (!rows.length) toast.info(tx("No records found", "কোনো রেকর্ড পাওয়া যায়নি"));
     } catch (e) {
       toast.error(e instanceof ApiError ? e.message : tx("Search failed", "সার্চ ব্যর্থ হয়েছে"));
@@ -75,6 +94,7 @@ export default function LegacyIrrigationSearch() {
       setSearching(false);
     }
   }
+
 
   const toggle = (id: string) =>
     setSelected((s) => {
