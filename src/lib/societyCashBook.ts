@@ -146,8 +146,8 @@ export function sumJama(rows: JamaRow[]) {
   return rows.reduce((a, r) => ({
     share: a.share + r.share, savings: a.savings + r.savings, bankWithdraw: a.bankWithdraw + r.bankWithdraw,
     loanPrincipal: a.loanPrincipal + r.loanPrincipal, loanInterest: a.loanInterest + r.loanInterest,
-    form: a.form + r.form, misc: a.misc + r.misc, total: a.total + r.total,
-  }), { share: 0, savings: 0, bankWithdraw: 0, loanPrincipal: 0, loanInterest: 0, form: 0, misc: 0, total: 0 });
+    form: a.form + r.form, hawlat: a.hawlat + r.hawlat, misc: a.misc + r.misc, total: a.total + r.total,
+  }), { share: 0, savings: 0, bankWithdraw: 0, loanPrincipal: 0, loanInterest: 0, form: 0, hawlat: 0, misc: 0, total: 0 });
 }
 
 export function sumKharch(rows: KharchRow[]) {
