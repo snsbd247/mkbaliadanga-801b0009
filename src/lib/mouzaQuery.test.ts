@@ -54,4 +54,20 @@ describe("mouzaQuery shared helpers", () => {
     expect(LAND_MOUZA_FIELDS).toContain("mouzas(name)");
     expect(LANDS_EMBED).toBe("lands(dag_no,land_size,mouza,mouzas(name))");
   });
+
+  it("resolves mouza on Laravel/MySQL where mouzas(name) is unavailable (text fallback)", () => {
+    // On the VPS backend the mouzas(name) embed is dropped, so rows arrive with
+    // only the `mouza` text column and no `mouzas` relation. The fallback must
+    // still surface the correct name.
+    const laravelRow = { lands: { mouza: "চরপাড়া" } }; // no `mouzas` key at all
+    expect(resolveRowMouzaName(laravelRow)).toBe("চরপাড়া");
+    expect(rowMatchesMouza(laravelRow, "চরপাড়া")).toBe(true);
+
+    const rows = [
+      { lands: { mouza: "বড়পাড়া" } },
+      { lands: { mouza: "চরপাড়া" } },
+      { lands: { mouza: "চরপাড়া" } },
+    ];
+    expect(buildMouzaOptions(rows, resolveRowMouzaName)).toHaveLength(2);
+  });
 });
