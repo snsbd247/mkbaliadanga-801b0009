@@ -205,7 +205,7 @@ export default function SocietyCashBook() {
           {society}
           <span className="ml-2 font-normal">{lang === "bn" ? toBnDigits(`${formatDate(from)} - ${formatDate(to)}`) : `${formatDate(from)} - ${formatDate(to)}`}</span>
         </div>
-        <div className="bn-cb-cols grid grid-cols-2 gap-3 items-start">
+        <div className="bn-cb-cols grid grid-cols-1 md:grid-cols-2 gap-3 items-start">
         {/* জমা */}
         <section aria-label={tx("Income section", "জমা অংশ")}>
           <div className="text-center mb-1">
