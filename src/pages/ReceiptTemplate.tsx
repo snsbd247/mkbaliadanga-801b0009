@@ -22,6 +22,8 @@ import {
 } from "@/lib/paymentReceiptPdf";
 import { useBranding } from "@/lib/branding";
 import { notifyReceiptTemplateChange } from "@/lib/receiptTemplate";
+import { checkReceiptSerialRpc, setReceiptSerialStart } from "@/lib/receiptSerial";
+import { logAudit } from "@/lib/audit";
 import { previewBnReceiptPdf } from "@/lib/bnReceipts";
 import { buildSampleReceipt } from "@/lib/sampleReceipts";
 
@@ -132,6 +134,16 @@ export default function ReceiptTemplatePage() {
 
   async function save() {
     if (serialError) { toast.error(serialError); return; }
+    const nextSerial = Math.floor(Number(serialStart) || 0);
+    const serialChanged = nextSerial !== savedSerialStart;
+
+    // Pre-flight: if the serial will change, confirm the RPC is reachable first
+    // so we fail early with clear guidance instead of a cryptic mid-save error.
+    if (serialChanged) {
+      const probe = await checkReceiptSerialRpc();
+      if (!probe.available) { toast.error(probe.message); return; }
+    }
+
     setSaving(true);
     try {
       const { error } = await db
@@ -157,11 +169,14 @@ export default function ReceiptTemplatePage() {
         .eq("id", 1);
       if (error) { toast.error(error.message); return; }
 
-      // Serial start goes through a server-validated + audited RPC.
-      const nextSerial = Math.floor(Number(serialStart) || 0);
-      if (nextSerial !== savedSerialStart) {
-        const { error: rpcErr } = await (db as any).rpc("admin_set_receipt_serial_start", { p_start: nextSerial });
-        if (rpcErr) { toast.error(rpcErr.message); return; }
+      // Audit the template save itself.
+      logAudit({ module: "receipt", action_type: "update", reference_id: "receipt_settings:1", new_data: { serial_start: nextSerial } });
+
+      // Serial start goes through a server-validated + audited RPC (with auto-retry).
+      if (serialChanged) {
+        const res = await setReceiptSerialStart(nextSerial);
+        if (!res.ok) { toast.error(res.message); return; }
+        logAudit({ module: "receipt", action_type: "override", reference_id: "receipt_serial_start", old_data: { serial_start: savedSerialStart }, new_data: { serial_start: nextSerial } });
         setSavedSerialStart(nextSerial);
       }
 

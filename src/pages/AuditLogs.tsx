@@ -121,7 +121,8 @@ export default function AuditLogs() {
     const s = search.toLowerCase();
     return list.filter((l) => {
       const u = profiles[l.user_id];
-      const hay = `${l.entity ?? ""} ${l.action ?? ""} ${u?.full_name ?? ""} ${u?.username ?? ""} ${l.entity_id ?? ""}`.toLowerCase();
+      const receiptNo = l.meta?.receipt_no ?? "";
+      const hay = `${l.entity ?? ""} ${l.action ?? ""} ${u?.full_name ?? ""} ${u?.username ?? ""} ${l.entity_id ?? ""} ${receiptNo}`.toLowerCase();
       return hay.includes(s);
     });
   }, [list, search, profiles]);
@@ -375,6 +376,8 @@ export default function AuditLogs() {
                 <SelectItem value="scan">{t("scanAction")}</SelectItem>
                 <SelectItem value="issue">{t("issueAction")}</SelectItem>
                 <SelectItem value="revoke">{t("revokeAction")}</SelectItem>
+                <SelectItem value="edit">Edit (receipt)</SelectItem>
+                <SelectItem value="void">Void (receipt)</SelectItem>
               </SelectContent>
             </Select>
           </div>
