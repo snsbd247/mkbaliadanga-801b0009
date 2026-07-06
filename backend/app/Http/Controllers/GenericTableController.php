@@ -414,12 +414,22 @@ class GenericTableController extends Controller
             if (! preg_match('/^[a-z][a-z0-9_]*$/', $relTable) || ! Schema::hasTable($relTable)) {
                 continue;
             }
+            // Prefer the fk column encoded in a PostgREST hint like
+            // "<base>_<column>_fkey" when present, then fall back to convention.
+            $fk = null;
+            $hint = $embed['fk_hint'] ?? null;
+            if ($hint && preg_match('/^' . preg_quote($baseTable, '/') . '_(.+)_fkey$/', $hint, $m)
+                && Schema::hasColumn($baseTable, $m[1])) {
+                $fk = $m[1];
+            }
             // Convention: base table has <singular_rel>_id referencing rel.id
-            $fk = Str::singular($relTable) . '_id';
-            if (! Schema::hasColumn($baseTable, $fk)) {
-                // try alias as fk source (alias_id)
-                $fk = Str::singular($embed['alias']) . '_id';
-                if (! Schema::hasColumn($baseTable, $fk)) continue;
+            if (! $fk) {
+                $fk = Str::singular($relTable) . '_id';
+                if (! Schema::hasColumn($baseTable, $fk)) {
+                    // try alias as fk source (alias_id)
+                    $fk = Str::singular($embed['alias']) . '_id';
+                    if (! Schema::hasColumn($baseTable, $fk)) continue;
+                }
             }
             $ids = array_values(array_unique(array_filter(array_map(fn ($r) => $r[$fk] ?? null, $rows))));
             $map = [];
