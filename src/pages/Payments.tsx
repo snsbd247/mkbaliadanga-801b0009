@@ -79,6 +79,8 @@ export default function Payments() {
   const dueReqRef = useRef(0);
   // Per-farmer invoice cache to avoid redundant refetches on revisit.
   const invoiceCacheRef = useRef<Map<string, any[]>>(new Map());
+  const [cancelledIrr, setCancelledIrr] = useState<any[]>([]);
+  const displayInvoices = invoiceFilter === "open" ? openIrr : cancelledIrr;
   const [isAdmin, setIsAdmin] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [idemKey, setIdemKey] = useState<string>(newKey());
