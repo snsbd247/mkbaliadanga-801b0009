@@ -390,7 +390,17 @@ class GenericTableController extends Controller
                 if (str_contains($name, ':')) {
                     [$alias, $name] = array_map('trim', explode(':', $name, 2));
                 }
-                $embeds[] = ['alias' => $alias, 'table' => $name, 'columns' => array_map('trim', explode(',', $inner))];
+                // Strip PostgREST fk-hint syntax, e.g. "farmers!invoices_farmer_id_fkey"
+                // → the relation table is "farmers"; the "!..." hint is Postgres-only.
+                $fkHint = null;
+                if (str_contains($name, '!')) {
+                    [$name, $fkHint] = array_map('trim', explode('!', $name, 2));
+                }
+                if ($alias === $embedRawAlias = $alias) {
+                    // keep alias without the "!hint" so the JSON key matches the client's expectation
+                    $alias = explode('!', $alias, 2)[0];
+                }
+                $embeds[] = ['alias' => $alias, 'table' => $name, 'columns' => array_map('trim', explode(',', $inner)), 'fk_hint' => $fkHint];
             } else {
                 $columns[] = $tok;
             }
