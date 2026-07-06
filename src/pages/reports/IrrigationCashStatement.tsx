@@ -55,6 +55,7 @@ export default function IrrigationCashStatement() {
   const [receipts, setReceipts] = useState<any[]>([]);
   const [expenses, setExpenses] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+  const [bankBalance, setBankBalance] = useState<number>(0);
 
   useEffect(() => { document.title = tx("Cash Statement (Irrigation)", "জমা খরচ হিসাব (সেচ)"); }, [lang]);
 
