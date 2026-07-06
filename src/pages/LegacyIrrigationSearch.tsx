@@ -120,12 +120,12 @@ export default function LegacyIrrigationSearch() {
       <Card className="p-4">
         <div className="flex items-end gap-2">
           <div className="flex-1 max-w-xs">
-            <Label>{tx("Farmer Code", "ফার্মার কোড")}</Label>
+            <Label>{tx("Farmer Code / Mobile / Farmer ID", "ফার্মার কোড / মোবাইল / ফার্মার আইডি")}</Label>
             <Input
               value={code}
               onChange={(e) => setCode(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && doSearch()}
-              placeholder={tx("e.g. 2473", "যেমন 2473")}
+              placeholder={tx("e.g. 2473 or 01700000000", "যেমন 2473 বা 01700000000")}
               className="mt-2"
             />
           </div>
