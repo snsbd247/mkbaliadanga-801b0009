@@ -95,7 +95,6 @@ class FunctionController extends Controller
     {
         $scopeOffice = $request->attributes->get('scope_office_id');
         $users = User::query()
-            ->with(['roles:id,name'])
             ->when($scopeOffice, fn ($query) => $query->where('office_id', $scopeOffice))
             ->orderBy('name')
             ->get()
