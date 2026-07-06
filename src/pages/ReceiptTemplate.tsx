@@ -49,8 +49,19 @@ export default function ReceiptTemplatePage() {
   const brand = useBranding();
   const [tpl, setTpl] = useState<ReceiptTemplate>(DEFAULT_TEMPLATE);
   const [serialStart, setSerialStart] = useState<string>("0");
+  const [savedSerialStart, setSavedSerialStart] = useState<number>(0);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+
+  const serialError = (() => {
+    const raw = serialStart.trim();
+    if (raw === "") return "শুরুর ক্রমিক নম্বর দিতে হবে";
+    if (!/^\d+$/.test(raw)) return "শুধু ধনাত্মক পূর্ণসংখ্যা দেওয়া যাবে";
+    const n = Number(raw);
+    if (!Number.isFinite(n) || n < 0) return "ক্রমিক নম্বর ঋণাত্মক হতে পারবে না";
+    if (n > 9000000000) return "ক্রমিক নম্বর অনেক বড়";
+    return null;
+  })();
 
   useEffect(() => {
     document.title = "Receipt Template";
@@ -58,7 +69,9 @@ export default function ReceiptTemplatePage() {
       const { data } = await db.from("receipt_settings").select("*").eq("id", 1).maybeSingle();
       if (data) {
         setTpl({ ...DEFAULT_TEMPLATE, ...(data as any) });
-        setSerialStart(String((data as any).receipt_serial_start ?? 0));
+        const s = Number((data as any).receipt_serial_start ?? 0) || 0;
+        setSerialStart(String(s));
+        setSavedSerialStart(s);
       }
       setLoading(false);
     })();
@@ -85,6 +98,7 @@ export default function ReceiptTemplatePage() {
   }, [previewUrl]);
 
   async function save() {
+    if (serialError) { toast.error(serialError); return; }
     setSaving(true);
     try {
       const { error } = await db
@@ -100,7 +114,6 @@ export default function ReceiptTemplatePage() {
           header_alignment: tpl.header_alignment,
           footer_note: tpl.footer_note,
           footer_note_bn: tpl.footer_note_bn,
-          receipt_serial_start: Math.max(0, Math.floor(Number(serialStart) || 0)),
           show_watermark: tpl.show_watermark,
           watermark_text: tpl.watermark_text,
           show_penalty_row: tpl.show_penalty_row,
@@ -110,8 +123,18 @@ export default function ReceiptTemplatePage() {
         })
         .eq("id", 1);
       if (error) { toast.error(error.message); return; }
+
+      // Serial start goes through a server-validated + audited RPC.
+      const nextSerial = Math.floor(Number(serialStart) || 0);
+      if (nextSerial !== savedSerialStart) {
+        const { error: rpcErr } = await (db as any).rpc("admin_set_receipt_serial_start", { p_start: nextSerial });
+        if (rpcErr) { toast.error(rpcErr.message); return; }
+        setSavedSerialStart(nextSerial);
+      }
+
       notifyReceiptTemplateChange();
       toast.success("Receipt template saved");
+
     } finally { setSaving(false); }
   }
 
@@ -140,7 +163,7 @@ export default function ReceiptTemplatePage() {
         actions={
           <div className="flex gap-2">
             <Button variant="outline" size="sm" onClick={reset}><RotateCcw className="h-4 w-4" />Reset</Button>
-            <Button size="sm" onClick={save} disabled={saving}>
+            <Button size="sm" onClick={save} disabled={saving || !!serialError}>
               {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}Save
             </Button>
           </div>
@@ -231,14 +254,21 @@ export default function ReceiptTemplatePage() {
               <Input
                 type="number"
                 min={0}
+                step={1}
                 value={serialStart}
                 onChange={(e) => setSerialStart(e.target.value)}
                 placeholder="যেমন 4641"
+                aria-invalid={!!serialError}
+                data-testid="serial-start-input"
               />
-              <p className="text-xs text-muted-foreground mt-1">
-                এই নম্বরের ঠিক পরের নম্বর থেকে রিসিপ্ট তৈরি শুরু হবে। যেমন 4641 দিলে প্রথম রিসিপ্ট হবে 4642।
-                নিরাপত্তার জন্য বর্তমান নম্বরের চেয়ে ছোট মান দিলে নম্বর পিছাবে না (ডুপ্লিকেট এড়াতে)।
-              </p>
+              {serialError ? (
+                <p className="text-xs text-destructive mt-1" data-testid="serial-start-error">{serialError}</p>
+              ) : (
+                <p className="text-xs text-muted-foreground mt-1">
+                  এই নম্বরের ঠিক পরের নম্বর থেকে রিসিপ্ট তৈরি শুরু হবে। যেমন 4641 দিলে প্রথম রিসিপ্ট হবে 4642।
+                  নিরাপত্তার জন্য বর্তমান নম্বরের চেয়ে ছোট মান দিলে নম্বর পিছাবে না (ডুপ্লিকেট এড়াতে)।
+                </p>
+              )}
             </div>
           </div>
 
