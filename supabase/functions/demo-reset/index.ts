@@ -1753,6 +1753,7 @@ const MODULE_VERIFY: Record<string, { table: string; page: string; page_label: s
     { table: "land_relations",         page: "/farmers",         page_label: "Farmers (Borga)",  required: false },
     { table: "land_history",           page: "/land-history",    page_label: "ভূমির ইতিহাস (Land History)", required: false },
     { table: "land_transfers",         page: "/farmers",         page_label: "জমি হস্তান্তর (Land Transfers)", required: false },
+    { table: "land_transfer_recipients", page: "/farmers",       page_label: "জমি হস্তান্তর প্রাপক (Transfer Recipients)", required: false },
     { table: "land_change_log",        page: "/farmers",         page_label: "জমি পরিবর্তন লগ (Land Change Log)", required: false },
     { table: "farmer_notes",           page: "/farmers",         page_label: "ফার্মার নোট (Farmer Notes)", required: false },
     { table: "voter_audit_logs",       page: "/voter-history",   page_label: "Voter Cancel/Reactivate History", required: false },
@@ -1837,14 +1838,14 @@ async function verifyRowCounts(admin: any, modules: string[]) {
 
 // ---- Preset definitions (mirrors src/lib/demoPresets.ts) ----
 const PRESETS: Record<string, { size: number; modules: string[]; monthsBack?: number }> = {
-  small:           { size: 25,  modules: ["locations","settings","accounting","farmers","irrigation","loans","savings","expenses","bank","assets"] },
-  medium:          { size: 50,  modules: ["locations","settings","accounting","farmers","irrigation","loans","savings","expenses","bank","assets"] },
-  large:           { size: 200, modules: ["locations","settings","accounting","farmers","irrigation","loans","savings","expenses","bank","assets"] },
-  year_ops:        { size: 50,  modules: ["locations","settings","accounting","farmers","irrigation","loans","savings","expenses","bank","assets"], monthsBack: 12 },
+  small:           { size: 25,  modules: ["locations","settings","accounting","farmers","irrigation","loans","savings","expenses","bank","cashbook","assets"] },
+  medium:          { size: 50,  modules: ["locations","settings","accounting","farmers","irrigation","loans","savings","expenses","bank","cashbook","assets"] },
+  large:           { size: 200, modules: ["locations","settings","accounting","farmers","irrigation","loans","savings","expenses","bank","cashbook","assets"] },
+  year_ops:        { size: 50,  modules: ["locations","settings","accounting","farmers","irrigation","loans","savings","expenses","bank","cashbook","assets"], monthsBack: 12 },
   loans_only:      { size: 50,  modules: ["locations","settings","accounting","farmers","loans"] },
   savings_only:    { size: 50,  modules: ["locations","settings","accounting","farmers","savings"] },
   irrigation_only: { size: 50,  modules: ["locations","settings","accounting","farmers","irrigation"] },
-  recent_features: { size: 25,  modules: ["locations","settings","accounting","farmers","irrigation","loans","savings","expenses","bank","assets"], monthsBack: 2 },
+  recent_features: { size: 25,  modules: ["locations","settings","accounting","farmers","irrigation","loans","savings","expenses","bank","cashbook","assets"], monthsBack: 2 },
   patwari_workflow:{ size: 40,  modules: ["locations","settings","accounting","farmers","irrigation"], monthsBack: 3 },
 };
 
