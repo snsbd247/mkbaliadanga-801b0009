@@ -337,11 +337,11 @@ function InvoiceListTab({ seasons, offices, isSuper }: any) {
         name: inv.farmers?.name_bn ?? inv.farmers?.name_en,
         farmer_code: inv.farmers?.farmer_code,
         mobile: inv.farmers?.mobile,
-        village: inv.farmers?.village ?? null,
+        village: inv.farmers?.village ?? inv.farmer?.village ?? null,
       },
       land: {
         mouza: mouzaName(inv),
-        dag_no: inv.lands?.dag_no,
+        dag_no: inv.lands?.dag_no ?? inv.land?.dag_no ?? inv.dag_no ?? null,
         // Use the land area frozen on the invoice at generation time, NOT the
         // farmer's current (possibly edited) land — past seasons must keep their
         // original area even after the land is later increased.
