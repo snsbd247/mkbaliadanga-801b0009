@@ -86,10 +86,19 @@ export default function Payments() {
   const [invoiceSortDir, setInvoiceSortDir] = useState<import("@/lib/irrigationInvoiceQueries").SortDir>("asc");
   const [detailInvoice, setDetailInvoice] = useState<any | null>(null);
   const [detailTxns, setDetailTxns] = useState<any[]>([]);
+  const [invoicePage, setInvoicePage] = useState(0);
+  const INVOICE_PAGE_SIZE = 10;
   const displayInvoices = useMemo(
     () => searchAndSortInvoices(invoiceFilter === "open" ? openIrr : cancelledIrr, invoiceSearch, invoiceSort, invoiceSortDir),
     [invoiceFilter, openIrr, cancelledIrr, invoiceSearch, invoiceSort, invoiceSortDir],
   );
+  const invoicePageCount = Math.max(1, Math.ceil(displayInvoices.length / INVOICE_PAGE_SIZE));
+  const pagedInvoices = useMemo(
+    () => displayInvoices.slice(invoicePage * INVOICE_PAGE_SIZE, invoicePage * INVOICE_PAGE_SIZE + INVOICE_PAGE_SIZE),
+    [displayInvoices, invoicePage],
+  );
+  // Reset to first page whenever the filtered set changes.
+  useEffect(() => { setInvoicePage(0); }, [invoiceFilter, invoiceSearch, invoiceSort, invoiceSortDir, openIrr, cancelledIrr]);
   const [isAdmin, setIsAdmin] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [idemKey, setIdemKey] = useState<string>(newKey());
