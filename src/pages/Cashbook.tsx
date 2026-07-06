@@ -89,7 +89,7 @@ export default function Cashbook() {
   const emptyV = {
     id: "" as string, stream: "irrigation" as Stream, head_id: "", amount: 0,
     payee: "", note: "", expense_date: new Date().toISOString().slice(0, 10),
-    method: "cash" as "cash" | "bank", bank_account_id: "",
+    method: "cash" as "cash" | "bank", bank_account_id: "", attachment_path: "" as string | null,
   };
   const [openV, setOpenV] = useState(false);
   const [v, setV] = useState(emptyV);
@@ -200,7 +200,7 @@ export default function Cashbook() {
       id: x.id, stream: (x.stream as Stream) || "savings", head_id: x.head_id || "",
       amount: Number(x.amount), payee: x.payee || "", note: x.note || "",
       expense_date: x.expense_date, method: x.is_bank_deposit ? "bank" : "cash",
-      bank_account_id: x.bank_account_id || "",
+      bank_account_id: x.bank_account_id || "", attachment_path: x.attachment_path || null,
     });
     setFile(null); setOpenV(true);
   }
@@ -234,8 +234,9 @@ export default function Cashbook() {
     for (const e of toSerialize) {
       const { data: no, error: rpcErr } = await sb.rpc("next_cashbook_voucher_no", { _office: officeId ?? null, _stream: stream });
       if (rpcErr) return toast.error(rpcErr.message);
-      const prefix = stream === "irrigation" ? "IRR-V" : "SAV-V";
-      const voucher_no = `${prefix}-${String(no).padStart(5, "0")}`;
+      // Format: mm-serial (month of the voucher + lifetime running serial), e.g. 01-4682.
+      const mm = (e.expense_date || "").slice(5, 7);
+      const voucher_no = `${mm}-${no}`;
       const { error: upErr } = await sb.from("expenses").update({ voucher_no }).eq("id", e.id);
       if (upErr) return toast.error(upErr.message);
     }
@@ -371,7 +372,11 @@ export default function Cashbook() {
                   <div><Label>{t("note")} ({tx("description", "বিবরণ")})</Label><Textarea value={v.note} onChange={ev => setV({ ...v, note: ev.target.value })} /></div>
                   <div><Label>{tx("Scan copy (image / PDF)", "স্ক্যান কপি (ছবি / PDF)")}</Label>
                     <Input type="file" accept="image/*,application/pdf" onChange={ev => setFile(ev.target.files?.[0] ?? null)} />
-                    {file && <p className="text-xs text-muted-foreground mt-1">{file.name} ({(file.size / 1024).toFixed(0)} KB)</p>}
+                    <div className="flex items-center gap-2 mt-1">
+                      {file && <span className="text-xs text-muted-foreground">{file.name} ({(file.size / 1024).toFixed(0)} KB)</span>}
+                      {file && <Button type="button" size="sm" variant="outline" onClick={() => window.open(URL.createObjectURL(file), "_blank")}>{tx("View", "ভিউ")}</Button>}
+                      {!file && v.attachment_path && <Button type="button" size="sm" variant="outline" onClick={() => downloadScan(v.attachment_path)}>{tx("View attached PDF/photo", "সংযুক্ত PDF/ছবি ভিউ")}</Button>}
+                    </div>
                   </div>
                 </div>
                 <DialogFooter>
