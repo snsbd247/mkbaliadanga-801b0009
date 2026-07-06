@@ -56,11 +56,11 @@ export default function ReceiptTemplatePage() {
 
   const serialError = (() => {
     const raw = serialStart.trim();
-    if (raw === "") return "শুরুর ক্রমিক নম্বর দিতে হবে";
-    if (!/^\d+$/.test(raw)) return "শুধু ধনাত্মক পূর্ণসংখ্যা দেওয়া যাবে";
+    if (raw === "") return "শুরুর ক্রমিক নম্বর দিতে হবে / Serial start is required";
+    if (!/^\d+$/.test(raw)) return "শুধু ধনাত্মক পূর্ণসংখ্যা দেওয়া যাবে / Only positive whole numbers allowed";
     const n = Number(raw);
-    if (!Number.isFinite(n) || n < 0) return "ক্রমিক নম্বর ঋণাত্মক হতে পারবে না";
-    if (n > 9000000000) return "ক্রমিক নম্বর অনেক বড়";
+    if (!Number.isFinite(n) || n < 0) return "ক্রমিক নম্বর ঋণাত্মক হতে পারবে না / Serial cannot be negative";
+    if (n > 9000000000) return "ক্রমিক নম্বর অনেক বড় / Serial is too large";
     return null;
   })();
 
