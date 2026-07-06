@@ -2034,7 +2034,35 @@ function GenerateTab({ seasons, offices, userId, isSuper }: any) {
                   })}
                 </TableBody>
               </Table>
-              {previewRows.length > 100 && <p className="text-xs text-muted-foreground mt-2">{tx("Showing first 100 only", "শুধু প্রথম ১০০ টি দেখানো হয়েছে")}</p>}
+              <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <span>{tx("Rows per page", "প্রতি পৃষ্ঠায় সারি")}</span>
+                  <Select value={String(previewPageSize)} onValueChange={(v) => { setPreviewPageSize(Number(v)); setPreviewPage(0); }}>
+                    <SelectTrigger className="h-7 w-[80px] text-xs"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {[25, 50, 100, 200].map((n) => <SelectItem key={n} value={String(n)}>{n}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                {(() => {
+                  const pageCount = Math.max(1, Math.ceil(previewRows.length / previewPageSize));
+                  const page = Math.min(previewPage, pageCount - 1);
+                  const from = previewRows.length === 0 ? 0 : page * previewPageSize + 1;
+                  const to = Math.min(previewRows.length, (page + 1) * previewPageSize);
+                  return (
+                    <div className="flex items-center gap-2 text-xs">
+                      <span className="text-muted-foreground">{from}–{to} / {previewRows.length}</span>
+                      <Button variant="outline" size="sm" className="h-7" disabled={page <= 0} onClick={() => setPreviewPage((p) => Math.max(0, p - 1))}>
+                        <ChevronLeft className="h-4 w-4" /> {tx("Prev", "পূর্ববর্তী")}
+                      </Button>
+                      <span className="text-muted-foreground">{tx("Page", "পৃষ্ঠা")} {page + 1}/{pageCount}</span>
+                      <Button variant="outline" size="sm" className="h-7" disabled={page >= pageCount - 1} onClick={() => setPreviewPage((p) => Math.min(pageCount - 1, p + 1))}>
+                        {tx("Next", "পরবর্তী")} <ChevronRight className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  );
+                })()}
+              </div>
             </div>
           </CardContent>
         </Card>
