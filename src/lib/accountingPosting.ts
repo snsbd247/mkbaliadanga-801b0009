@@ -12,8 +12,10 @@ import { db } from "@/lib/db";
 
 const ACC = {
   cash: { code: "1010", name: "Cash", name_bn: "নগদ", type: "asset" },
+  bank: { code: "1020", name: "Bank", name_bn: "ব্যাংক", type: "asset" },
   irrigationIncome: { code: "4010", name: "Irrigation Income", name_bn: "সেচ আয়", type: "income" },
   discountExpense: { code: "5050", name: "Discount Expense", name_bn: "ডিসকাউন্ট খরচ", type: "expense" },
+  openingEquity: { code: "3000", name: "Opening Balance Equity", name_bn: "প্রারম্ভিক জের (মূলধন)", type: "equity" },
 } as const;
 
 const cache = new Map<string, string>();
@@ -114,6 +116,7 @@ async function createJournal(opts: {
   description?: string | null;
   officeId?: string | null;
   createdBy?: string | null;
+  entryDate?: string | null;
   lines: Line[];
 }): Promise<void> {
   // Guard: lines must balance and be non-trivial.
@@ -123,22 +126,33 @@ async function createJournal(opts: {
     return;
   }
   try {
+    // Insert the journal UNPOSTED first. The ledger-posting trigger
+    // (post_journal_to_ledger) fires only on UPDATE/DELETE, so we add the
+    // lines while unposted, then flip `posted` to true — that UPDATE is what
+    // generates the ledger_entries rows.
     const { data: je, error } = await db
       .from("journal_entries")
       .insert({
-        entry_date: new Date().toISOString().slice(0, 10),
+        entry_date: opts.entryDate || new Date().toISOString().slice(0, 10),
         reference: opts.reference ?? null,
         description: opts.description ?? null,
         office_id: opts.officeId ?? null,
-        posted: true,
-        posted_at: new Date().toISOString(),
+        posted: false,
         created_by: opts.createdBy ?? null,
       })
       .select("id")
       .single();
     if (error || !je) return;
     const journalId = (je as any).id;
-    await db.from("journal_entry_lines").insert(opts.lines.map((l) => ({ ...l, journal_id: journalId })));
+    const { error: lineErr } = await db
+      .from("journal_entry_lines")
+      .insert(opts.lines.map((l) => ({ ...l, journal_id: journalId })));
+    if (lineErr) return;
+    // Flip to posted → trigger writes the ledger entries.
+    await db
+      .from("journal_entries")
+      .update({ posted: true, posted_at: new Date().toISOString() })
+      .eq("id", journalId);
   } catch {
     /* posting failure must not break the caller */
   }
@@ -189,4 +203,69 @@ export async function postIrrigationDiscount(opts: {
       { account_id: income, debit: 0, credit: delta, description: "সেচ আয় (গ্রস)", position: 2 },
     ],
   });
+}
+
+/** Stable journal reference for a bank account's opening-balance entry. */
+export const bankOpeningRef = (accountId: string) => `OPENING-BANK-${accountId}`;
+
+/**
+ * Post (or skip if already posted) a bank account's opening balance as a journal:
+ *   Dr Bank (1020) / Cr Opening Balance Equity (3000)
+ * Idempotent: keyed on reference `OPENING-BANK-<accountId>`. If a journal with
+ * that reference already exists it is left untouched (returns "exists"). Pass
+ * `force: true` to delete the previous opening journal and re-post (used when the
+ * opening balance is edited). Best-effort — never throws into the caller.
+ */
+export async function postBankOpening(opts: {
+  bankAccountId: string;
+  openingBalance: number;
+  bankLabel?: string | null;
+  entryDate?: string | null;
+  officeId?: string | null;
+  createdBy?: string | null;
+  force?: boolean;
+}): Promise<"posted" | "exists" | "skipped"> {
+  const amount = Math.round(Number(opts.openingBalance) || 0);
+  const ref = bankOpeningRef(opts.bankAccountId);
+  try {
+    const { data: existing } = await db
+      .from("journal_entries")
+      .select("id")
+      .eq("reference", ref)
+      .maybeSingle();
+    const existingId = (existing as any)?.id as string | undefined;
+    if (existingId) {
+      if (!opts.force) return "exists";
+      // Remove old opening journal (its ledger rows are cleaned up by the posting trigger).
+      try {
+        await db.from("journal_entry_lines").delete().eq("journal_id", existingId);
+      } catch { /* ignore */ }
+      await db.from("journal_entries").delete().eq("id", existingId);
+    }
+    if (amount === 0) return "skipped";
+    const [bank, equity] = await Promise.all([accountId(ACC.bank), accountId(ACC.openingEquity)]);
+    if (!bank || !equity) return "skipped";
+    const label = opts.bankLabel ? ` — ${opts.bankLabel}` : "";
+    const isNeg = amount < 0;
+    const abs = Math.abs(amount);
+    await createJournal({
+      reference: ref,
+      description: `ব্যাংক প্রারম্ভিক জের${label}`,
+      officeId: opts.officeId,
+      createdBy: opts.createdBy,
+      entryDate: opts.entryDate ?? null,
+      lines: isNeg
+        ? [
+            { account_id: equity, debit: abs, credit: 0, description: "প্রারম্ভিক জের (মূলধন)", position: 1 },
+            { account_id: bank, debit: 0, credit: abs, description: "ব্যাংক প্রারম্ভিক", position: 2 },
+          ]
+        : [
+            { account_id: bank, debit: abs, credit: 0, description: "ব্যাংক প্রারম্ভিক", position: 1 },
+            { account_id: equity, debit: 0, credit: abs, description: "প্রারম্ভিক জের (মূলধন)", position: 2 },
+          ],
+    });
+    return "posted";
+  } catch {
+    return "skipped";
+  }
 }

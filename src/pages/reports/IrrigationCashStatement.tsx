@@ -55,6 +55,7 @@ export default function IrrigationCashStatement() {
   const [receipts, setReceipts] = useState<any[]>([]);
   const [expenses, setExpenses] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+  const [bankBalance, setBankBalance] = useState<number>(0);
 
   useEffect(() => { document.title = tx("Cash Statement (Irrigation)", "জমা খরচ হিসাব (সেচ)"); }, [lang]);
 
@@ -77,6 +78,22 @@ export default function IrrigationCashStatement() {
       const payRows = (pay.data ?? []).filter((p: any) => !p.deleted_at && !p.voided_at && p.status !== "rejected");
       setReceipts([...payRows, ...(off.data ?? [])]);
       setExpenses(exp.data ?? []);
+
+      // Bank balance (irrigation stream) as of `to` — shown as a separate line, not mixed into cash-in-hand.
+      let bankQ = sb.from("bank_accounts").select("id,opening_balance,stream,office_id").in("stream", ["sech", "sech_small"]);
+      if (officeId) bankQ = bankQ.eq("office_id", officeId);
+      const { data: banks } = await bankQ;
+      const ids = (banks ?? []).map((b: any) => b.id);
+      let bbal = (banks ?? []).reduce((s: number, b: any) => s + Number(b.opening_balance || 0), 0);
+      if (ids.length) {
+        let btQ = sb.from("bank_transactions").select("bank_account_id,txn_type,amount,txn_date").in("bank_account_id", ids).lte("txn_date", to);
+        const { data: bt } = await btQ;
+        (bt ?? []).forEach((t: any) => {
+          const sign = ["deposit", "transfer_in", "interest"].includes(t.txn_type) ? 1 : -1;
+          bbal += sign * Number(t.amount || 0);
+        });
+      }
+      setBankBalance(bbal);
       setLoading(false);
     })();
   }, [from, to, officeId]);
@@ -106,6 +123,7 @@ export default function IrrigationCashStatement() {
       { section: tx("Fund", "তহবিল"), desc: tx("Cash in hand fund", "হস্তমজুদ তহবিল"), amount: closingFund },
       { section: tx("Grand total", "সর্বমোট"), desc: tx("Grand total (income)", "সর্বমোট (জমা)"), amount: grandIncome },
       { section: tx("Grand total", "সর্বমোট"), desc: tx("Grand total (expense)", "সর্বমোট (খরচ)"), amount: grandExpense },
+      { section: tx("Bank", "ব্যাংক"), desc: tx("Bank balance (as of end date)", "ব্যাংক ব্যালেন্স (তারিখ পর্যন্ত)"), amount: bankBalance },
     ];
     downloadCsv(`${tx("irrigation-cash-statement", "সেচ-জমা-খরচ")}-${from}_${to}`, rows, [
       { header: tx("Section", "বিভাগ"), accessor: (r) => r.section },
@@ -208,6 +226,10 @@ export default function IrrigationCashStatement() {
               <td className="border border-black p-1 text-right">{formatMoney(grandIncome)}</td>
               <td colSpan={2} className="border border-black p-1 text-right">{tx("Grand total=", "সর্বমোট=")}</td>
               <td className="border border-black p-1 text-right">{formatMoney(grandExpense)}</td>
+            </tr>
+            <tr className="font-bold">
+              <td colSpan={5} className="border border-black p-1 text-right">{tx("Bank balance (as of end date)=", "ব্যাংক ব্যালেন্স (তারিখ পর্যন্ত)=")}</td>
+              <td className="border border-black p-1 text-right">{formatMoney(bankBalance)}</td>
             </tr>
           </tbody>
         </table>

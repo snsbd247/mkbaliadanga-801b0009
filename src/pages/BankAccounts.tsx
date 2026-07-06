@@ -18,6 +18,7 @@ import { useAuth } from "@/auth/AuthProvider";
 import { exportTablePDF, exportExcel } from "@/lib/exports";
 import { useLang } from "@/i18n/LanguageProvider";
 import { logAudit } from "@/lib/audit";
+import { postBankOpening } from "@/lib/accountingPosting";
 
 
 const sb = db as any;
@@ -102,16 +103,35 @@ export default function BankAccounts() {
       const { error } = await sb.from("bank_accounts").update(a).eq("id", editAccId);
       if (error) return toast.error("আপডেট ব্যর্থ: " + error.message);
       void logAudit({ office_id: (prev as any)?.office_id ?? null, module: "bank_account", action_type: "update", reference_id: editAccId, old_data: prev, new_data: a });
+      // Re-post opening journal only when the opening balance actually changed.
+      if (Number(prev?.opening_balance || 0) !== Number(a.opening_balance || 0)) {
+        void postBankOpening({ bankAccountId: editAccId, openingBalance: Number(a.opening_balance || 0), bankLabel: `${a.bank_name} ${a.account_no}`, officeId: (prev as any)?.office_id ?? null, createdBy: user?.id, force: true });
+      }
       toast.success("Account updated");
     } else {
       const { data, error } = await sb.from("bank_accounts").insert(a).select();
       if (error) return toast.error("যোগ ব্যর্থ: " + error.message);
       const created = Array.isArray(data) ? data[0] : data;
       void logAudit({ office_id: created?.office_id ?? null, module: "bank_account", action_type: "create", reference_id: created?.id ?? null, new_data: created ?? a });
+      if (created?.id) {
+        void postBankOpening({ bankAccountId: created.id, openingBalance: Number(created.opening_balance || 0), bankLabel: `${a.bank_name} ${a.account_no}`, officeId: created?.office_id ?? null, createdBy: user?.id });
+      }
       toast.success("Account added");
     }
     setOpenA(false); setEditAccId(null); load();
     setA(emptyAccount());
+  }
+
+  // Backfill: post any bank account's opening balance that has no opening journal yet.
+  async function postAllOpenings() {
+    const list = accounts.filter(ac => Number(ac.opening_balance || 0) !== 0);
+    if (list.length === 0) return toast.info("কোন ওপেনিং ব্যালেন্স নেই");
+    let posted = 0, existed = 0;
+    for (const ac of list) {
+      const res = await postBankOpening({ bankAccountId: ac.id, openingBalance: Number(ac.opening_balance || 0), bankLabel: `${ac.bank_name} ${ac.account_no}`, officeId: ac.office_id ?? null, createdBy: user?.id });
+      if (res === "posted") posted++; else if (res === "exists") existed++;
+    }
+    toast.success(`ওপেনিং পোস্ট সম্পন্ন — নতুন: ${posted}, আগে থেকেই ছিল: ${existed}`);
   }
 
   async function confirmDelete() {
@@ -239,6 +259,7 @@ export default function BankAccounts() {
         description={`Total balance: ${money(totalBal)}`}
         actions={
           <>
+            <Button size="sm" variant="outline" onClick={postAllOpenings}><Banknote className="h-4 w-4 mr-1" />ওপেনিং পোস্ট</Button>
             <Dialog open={openA} onOpenChange={(o) => { setOpenA(o); if (!o) setEditAccId(null); }}>
               <DialogTrigger asChild><Button size="sm" variant="outline" onClick={openAddAccount}><Plus className="h-4 w-4 mr-1" />Account</Button></DialogTrigger>
               <DialogContent>
