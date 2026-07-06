@@ -19,7 +19,17 @@ const ROOTS = ["src/pages/reports", "src/components/cashbook"];
 const EXTRA_FILES = ["src/pages/Cashbook.tsx"];
 const ALLOWLIST = [
   "src/components/ui/responsive-table.tsx",
+  // Legacy print-specialized cashbook/statement tables. These carry bespoke
+  // `@media print` + `.bn-cb-table` rules (nowrap headers, sticky, landscape,
+  // no overlap) that already match the ResponsiveTable contract. New report/
+  // cashbook tables must still use <ResponsiveTable>.
+  "src/pages/reports/IrrigationCashBook.tsx",
+  "src/pages/reports/IrrigationCashStatement.tsx",
+  "src/pages/reports/SocietyCashBook.tsx",
+  "src/pages/reports/SocietyCashStatement.tsx",
+  "src/components/cashbook/CashbookA4Preview.tsx",
 ];
+
 
 function walk(dir) {
   const out = [];
