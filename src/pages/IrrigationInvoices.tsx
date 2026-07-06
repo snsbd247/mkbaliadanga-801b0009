@@ -1265,6 +1265,23 @@ function GenerateTab({ seasons, offices, userId, isSuper }: any) {
   const [missingError, setMissingError] = useState(false);
   const [missingDiag, setMissingDiag] = useState<{ seasonId: string; officeId: string | null; landTypeIds: string[] } | null>(null);
   const [missingModalOpen, setMissingModalOpen] = useState(false);
+
+  async function fetchMissingRates(diag: { seasonId: string; officeId: string | null; landTypeIds: string[] }) {
+    setMissingDiag(diag);
+    setMissingLoading(true);
+    setMissingError(false);
+    try {
+      const { data } = await db.functions.invoke("irrigation-missing-rates", {
+        body: { season_id: diag.seasonId, office_id: diag.officeId, land_type_ids: diag.landTypeIds },
+      });
+      setMissingRates(((data as any)?.missing ?? []) as Array<{ land_type_id: string; land_type_name: string }>);
+    } catch {
+      setMissingRates([]);
+      setMissingError(true);
+    } finally {
+      setMissingLoading(false);
+    }
+  }
   const [prevDueWarning, setPrevDueWarning] = useState<{ farmers: number; total: number } | null>(null);
   const [skippedNoRate, setSkippedNoRate] = useState(0);
   const [skipExisting, setSkipExisting] = useState(true);
