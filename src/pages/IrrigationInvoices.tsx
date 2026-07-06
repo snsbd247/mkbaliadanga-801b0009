@@ -168,7 +168,7 @@ function InvoiceListTab({ seasons, offices, isSuper }: any) {
     const buildQuery = () => {
       let q = db
         .from("irrigation_invoices" as any)
-        .select(`*, farmers!irrigation_invoices_farmer_id_fkey(name_en,name_bn,farmer_code,mobile), ${LANDS_EMBED}, seasons(name,year,type), irrigation_invoice_payments(payments(receipt_no))`)
+        .select(`*, farmers!irrigation_invoices_farmer_id_fkey(name_en,name_bn,farmer_code,mobile,village), ${LANDS_EMBED}, seasons(name,year,type), irrigation_invoice_payments(payments(receipt_no))`)
         .is("deleted_at", null)
         .order("generated_at", { ascending: false });
       if (seasonId !== "all") q = q.eq("season_id", seasonId);
