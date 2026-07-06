@@ -246,6 +246,18 @@ export default function SocietyCashBook() {
                 <td className="border border-black p-1 text-right">{formatMoney(jamaTot.misc)}</td>
                 <td className="border border-black p-1 text-right">{formatMoney(jamaTot.total)}</td>
               </tr>
+              <tr className="font-bold">
+                <td colSpan={10} className="border border-black p-1 text-right">{tx("Total income=", "মোট আয়=")}</td>
+                <td className="border border-black p-1 text-right">{formatSigned(jamaTot.total)}</td>
+              </tr>
+              <tr className="font-bold">
+                <td colSpan={10} className="border border-black p-1 text-right">{tx("Carried from previous month=", "গত মাস হতে আগত টাকা=")}</td>
+                <td className="border border-black p-1 text-right">{formatSigned(opening)}</td>
+              </tr>
+              <tr className="font-bold">
+                <td colSpan={10} className="border border-black p-1 text-right">{tx("Grand total income=", "সর্বমোট আয়=")}</td>
+                <td className="border border-black p-1 text-right">{formatSigned(incomeWithOpening)}</td>
+              </tr>
             </tbody>
           </table>
         </section>
