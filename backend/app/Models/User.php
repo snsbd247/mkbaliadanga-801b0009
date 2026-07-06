@@ -7,7 +7,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 use Laravel\Sanctum\HasApiTokens;
 
 class User extends Authenticatable
@@ -55,15 +57,31 @@ class User extends Authenticatable
     public function roleNames(): array
     {
         try {
-            return $this->roles()->pluck('name')->all();
+            if (Schema::hasTable('user_roles') && Schema::hasColumn('user_roles', 'role')) {
+                $roleNames = DB::table('user_roles')
+                    ->where('user_id', $this->id)
+                    ->whereNotNull('role')
+                    ->pluck('role')
+                    ->filter()
+                    ->unique()
+                    ->values()
+                    ->all();
+                if (! empty($roleNames)) {
+                    return $roleNames;
+                }
+            }
+
+            if (Schema::hasTable('user_roles') && Schema::hasColumn('user_roles', 'role_id')) {
+                return $this->roles()->pluck('name')->all();
+            }
         } catch (\Throwable $e) {
             Log::warning('Failed to load user roles: '.$e->getMessage(), [
                 'user_id' => $this->id,
                 'username' => $this->username,
             ]);
-
-            return [];
         }
+
+        return [];
     }
 
     /**
@@ -81,10 +99,19 @@ class User extends Authenticatable
         }
 
         try {
-            return Permission::query()
-                ->join('role_permissions', 'role_permissions.permission_id', '=', 'permissions.id')
-                ->join('user_roles', 'user_roles.role_id', '=', 'role_permissions.role_id')
-                ->where('user_roles.user_id', $this->id)
+            $query = Permission::query()
+                ->join('role_permissions', 'role_permissions.permission_id', '=', 'permissions.id');
+
+            if (Schema::hasColumn('user_roles', 'role_id')) {
+                $query->join('user_roles', 'user_roles.role_id', '=', 'role_permissions.role_id');
+            } elseif (Schema::hasColumn('user_roles', 'role')) {
+                $query->join('roles', 'roles.id', '=', 'role_permissions.role_id')
+                    ->join('user_roles', 'user_roles.role', '=', 'roles.name');
+            } else {
+                return [];
+            }
+
+            return $query->where('user_roles.user_id', $this->id)
                 ->pluck('permissions.key')
                 ->unique()
                 ->values()
