@@ -352,8 +352,22 @@ export default function Farmers() {
     const farmers = data ?? [];
     setList(farmers);
     if (farmers.length) {
-      const ids = farmers.map((f: any) => f.id);
-      const { data: dues } = await db.rpc("farmer_dues_summary" as any);
+      const ids = farmers.map((f: any) => f.id).filter(Boolean);
+      // Fetch dues only for the farmers visible on this page. Calling the all-farmer
+      // summary can be truncated by the backend response limit, which made later
+      // farmers (for example 01167) show ৳0 even when irrigation invoices had dues.
+      let dues: any[] | null = null;
+      let dueError: any = null;
+      const pageSummary = await db.rpc("farmer_dues_summary_for" as any, { _farmer_ids: ids });
+      dues = (pageSummary.data as any[]) ?? null;
+      dueError = pageSummary.error;
+      if (dueError) {
+        console.warn("farmer_dues_summary_for failed; falling back to full summary", dueError);
+        const fullSummary = await db.rpc("farmer_dues_summary" as any);
+        dues = ((fullSummary.data as any[]) ?? []).filter((d: any) => ids.includes(d.farmer_id));
+        dueError = fullSummary.error;
+      }
+      if (dueError) console.error("farmer due summary fetch error:", dueError);
       const map: Record<string, any> = {};
       (dues ?? []).forEach((d: any) => { if (ids.includes(d.farmer_id)) map[d.farmer_id] = d; });
       setDuesMap(map);
