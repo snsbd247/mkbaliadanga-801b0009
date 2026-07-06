@@ -97,11 +97,14 @@ export function buildJamaRows(input: CashBookInput, lang: ReportLang = "bn"): Ja
   }
   for (const o of officeIncomes) {
     const amt = n(o.amount);
-    const isForm = (o.income_type ?? "").toLowerCase().includes("form") || o.income_type === "ফরম";
+    const it = (o.income_type ?? "").toLowerCase();
+    const isForm = it.includes("form") || o.income_type === "ফরম";
+    const isHawlat = ["হাওলাত", "হওলাত", "haowlat", "hawlat", "howlat"].some((w) => (o.income_type ?? "").toLowerCase().includes(w.toLowerCase()));
     rows.push({
       date: o.received_on, receiptNo: o.receipt_no ?? "", name: o.payer_name ?? "",
       share: 0, savings: 0, bankWithdraw: 0, loanPrincipal: 0, loanInterest: 0,
-      form: isForm ? amt : 0, misc: isForm ? 0 : amt, total: amt,
+      form: isForm ? amt : 0, hawlat: isHawlat ? amt : 0,
+      misc: isForm || isHawlat ? 0 : amt, total: amt,
     });
   }
   return rows.sort((a, b) => a.date.localeCompare(b.date));
