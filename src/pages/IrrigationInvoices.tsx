@@ -1651,10 +1651,11 @@ function GenerateTab({ seasons, offices, userId, isSuper }: any) {
           </div>
           {seasonId && (
             <div className="text-xs text-muted-foreground">
-              {Object.keys(rateMap).length > 0
-                ? `${tx("Configured rates:", "কনফিগার্ড রেট:")} ${Object.entries(rateMap).map(([k, v]) => `${k}=${v}`).join(", ")}`
+              {rateMap.length > 0
+                ? `${tx("Configured rates:", "কনফিগার্ড রেট:")} ${rateMap.map((r) => `${r.land_type_name}=${r.rate_per_shotok}`).join(", ")}`
                 : tx("No per-land-type rate for this season — set them on the Seasons page or provide a fallback rate.", "এই সিজনে কোনো জমির ধরনভিত্তিক রেট নেই — Seasons পেজ থেকে রেট সেট করুন বা ফলব্যাক রেট দিন।")}
             </div>
+
           )}
           {skippedNoRate > 0 && (
             <div className="text-xs text-destructive">{skippedNoRate} {tx("lands had no rate — skipped.", "টি জমিতে রেট পাওয়া যায়নি — বাদ দেওয়া হয়েছে।")}</div>
