@@ -35,15 +35,6 @@ function fmtDisplayDate(v: unknown): string {
   return s;
 }
 
-/** Which legacy field a result row matched against the search term. */
-function matchedField(r: LegacyIrrigationRecord, term: string): "code" | "mobile" | "fid" | null {
-  const t = term.trim();
-  if (!t) return null;
-  if ((r.legacy_farmer_code ?? "") === t) return "code";
-  if ((r.owner_fid ?? "") === t) return "fid";
-  if ((r.mobile_no ?? "").includes(t) || (r.owner_mobile_no ?? "").includes(t)) return "mobile";
-  return null;
-}
 
 export default function LegacyIrrigationSearch() {
   const { tx } = useLang();
