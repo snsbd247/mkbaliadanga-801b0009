@@ -1701,113 +1701,212 @@ function GenerateTab({ seasons, offices, userId, isSuper }: any) {
   return (
     <div className="space-y-4">
       <Card>
-        <CardContent className="pt-6 space-y-3">
-          <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
-            <div>
-              <Label>{tx("Season *", "সিজন *")}</Label>
-              <Select value={seasonId} onValueChange={setSeasonId}>
-                <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
-                <SelectContent>
-                  {seasons.map((s: any) => <SelectItem key={s.id} value={s.id}>{s.name ?? s.type} {s.year}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-            {isSuper && (
+        <CardContent className="pt-6 space-y-4">
+          {/* Wizard progress header */}
+          <div className="flex flex-wrap items-center gap-2">
+            {[
+              { n: 1, label: tx("Season", "সিজন") },
+              { n: 2, label: tx("Details", "বিবরণ") },
+              { n: 3, label: tx("Land types", "জমির ধরন") },
+              { n: 4, label: tx("Preview", "প্রিভিউ") },
+            ].map((st, idx) => (
+              <div key={st.n} className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => st.n < step && setStep(st.n)}
+                  className={`flex items-center gap-2 rounded-full px-3 py-1 text-sm ${step === st.n ? "bg-primary text-primary-foreground" : step > st.n ? "bg-primary/15 text-primary" : "bg-muted text-muted-foreground"}`}
+                >
+                  <span className="flex h-5 w-5 items-center justify-center rounded-full border text-xs">{st.n}</span>
+                  {st.label}
+                </button>
+                {idx < 3 && <ChevronRight className="h-4 w-4 text-muted-foreground" />}
+              </div>
+            ))}
+          </div>
+
+          {/* Step 1 — Season */}
+          {step === 1 && (
+            <div className="space-y-3 max-w-md">
               <div>
-                <Label>{tx("Office (optional)", "অফিস (ঐচ্ছিক)")}</Label>
-                <Select value={officeId || "all"} onValueChange={(v) => setOfficeId(v === "all" ? "" : v)}>
+                <Label>{tx("Season *", "সিজন *")}</Label>
+                <Select value={seasonId} onValueChange={(v) => { setSeasonId(v); setErrors((e) => ({ ...e, season: "" })); }}>
+                  <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
+                  <SelectContent>
+                    {seasons.map((s: any) => <SelectItem key={s.id} value={s.id}>{s.name ?? s.type} {s.year}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+                {errors.season && <p className="mt-1 text-xs text-destructive">{errors.season}</p>}
+              </div>
+              {seasonId && (
+                <div className="text-xs text-muted-foreground">
+                  {rateMap.length > 0
+                    ? `${tx("Configured rates:", "কনফিগার্ড রেট:")} ${rateMap.map((r) => `${r.land_type_name}=${r.rate_per_shotok}`).join(", ")}`
+                    : tx("No per-land-type rate for this season — set them on the Seasons page or provide a fallback rate.", "এই সিজনে কোনো জমির ধরনভিত্তিক রেট নেই — Seasons পেজ থেকে রেট সেট করুন বা ফলব্যাক রেট দিন।")}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Step 2 — Details */}
+          {step === 2 && (
+            <div className="grid gap-3 md:grid-cols-2">
+              {isSuper && (
+                <div>
+                  <Label>{tx("Office (optional)", "অফিস (ঐচ্ছিক)")}</Label>
+                  <Select value={officeId || "all"} onValueChange={(v) => setOfficeId(v === "all" ? "" : v)}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">{tx("All offices", "সব অফিস")}</SelectItem>
+                      {offices.map((o: any) => <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+              <div>
+                <Label>{tx("Due *", "মেয়াদ *")}</Label>
+                <Input type="date" value={dueDate} onChange={(e) => { setDueDate(e.target.value); setErrors((er) => ({ ...er, dueDate: "" })); }} aria-invalid={!!errors.dueDate} />
+                {errors.dueDate && <p className="mt-1 text-xs text-destructive">{errors.dueDate}</p>}
+              </div>
+              <div>
+                <Label>{tx("Fallback rate / shotok", "ফলব্যাক রেট/শতক")} <span className="text-xs text-muted-foreground">{tx("(if type rate missing)", "(ধরনের রেট না থাকলে)")}</span></Label>
+                <Input type="number" value={rateOverride} onChange={(e) => setRateOverride(Number(e.target.value))} aria-invalid={!!errors.rateOverride} />
+                {errors.rateOverride && <p className="mt-1 text-xs text-destructive">{errors.rateOverride}</p>}
+              </div>
+              <div>
+                <Label>{tx("Default category (optional)", "ডিফল্ট ক্যাটেগরি (ঐচ্ছিক)")}</Label>
+                <Select value={defaultCategoryId || "none"} onValueChange={(v) => setDefaultCategoryId(v === "none" ? "" : v)}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">{tx("All offices", "সব অফিস")}</SelectItem>
-                    {offices.map((o: any) => <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>)}
+                    <SelectItem value="none">{tx("— None (use land-type rate) —", "— নেই (জমির ধরনের রেট) —")}</SelectItem>
+                    {categories.map((c) => {
+                      const r = categoryRates.find((x) => x.irrigation_category_id === c.id);
+                      return (
+                        <SelectItem key={c.id} value={c.id} disabled={!r || !(r.rate > 0)}>
+                          {c.name_bn || c.name_en} {r && r.rate > 0 ? `— ${r.rate}/${r.rate_type}` : ` (${tx("no rate", "রেট নেই")})`}
+                        </SelectItem>
+                      );
+                    })}
                   </SelectContent>
                 </Select>
               </div>
-            )}
-            <div>
-              <Label>{tx("Fallback rate / shotok", "ফলব্যাক রেট/শতক")} <span className="text-xs text-muted-foreground">{tx("(if type rate missing)", "(ধরনের রেট না থাকলে)")}</span></Label>
-              <Input type="number" value={rateOverride} onChange={(e) => setRateOverride(Number(e.target.value))} />
+              <div className="flex items-center gap-2 md:col-span-2">
+                <Switch checked={skipExisting} onCheckedChange={setSkipExisting} id="skip" />
+                <Label htmlFor="skip">{tx("Skip already-created invoices (prevent duplicates)", "আগে তৈরি হওয়া ইনভয়েস বাদ দিন (ডুপ্লিকেট প্রতিরোধ)")}</Label>
+              </div>
             </div>
-            <div>
-              <Label>{tx("Due *", "মেয়াদ *")}</Label>
-              <Input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
-            </div>
-            <div>
-              <Label>{tx("Default category (optional)", "ডিফল্ট ক্যাটেগরি (ঐচ্ছিক)")}</Label>
-              <Select value={defaultCategoryId || "none"} onValueChange={(v) => setDefaultCategoryId(v === "none" ? "" : v)}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">{tx("— None (use land-type rate) —", "— নেই (জমির ধরনের রেট) —")}</SelectItem>
-                  {categories.map((c) => {
-                    const r = categoryRates.find((x) => x.irrigation_category_id === c.id);
-                    return (
-                      <SelectItem key={c.id} value={c.id} disabled={!r || !(r.rate > 0)}>
-                        {c.name_bn || c.name_en} {r && r.rate > 0 ? `— ${r.rate}/${r.rate_type}` : ` (${tx("no rate", "রেট নেই")})`}
-                      </SelectItem>
-                    );
-                  })}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          {seasonId && (
-            <div className="text-xs text-muted-foreground">
-              {rateMap.length > 0
-                ? `${tx("Configured rates:", "কনফিগার্ড রেট:")} ${rateMap.map((r) => `${r.land_type_name}=${r.rate_per_shotok}`).join(", ")}`
-                : tx("No per-land-type rate for this season — set them on the Seasons page or provide a fallback rate.", "এই সিজনে কোনো জমির ধরনভিত্তিক রেট নেই — Seasons পেজ থেকে রেট সেট করুন বা ফলব্যাক রেট দিন।")}
-            </div>
+          )}
 
-          )}
-          {skippedNoRate > 0 && (
-            <div className="text-xs text-destructive">{skippedNoRate} {tx("lands had no rate — skipped.", "টি জমিতে রেট পাওয়া যায়নি — বাদ দেওয়া হয়েছে।")}</div>
-          )}
-          <div className="flex items-center gap-2">
-            <Switch checked={skipExisting} onCheckedChange={setSkipExisting} id="skip" />
-            <Label htmlFor="skip">{tx("Skip already-created invoices (prevent duplicates)", "আগে তৈরি হওয়া ইনভয়েস বাদ দিন (ডুপ্লিকেট প্রতিরোধ)")}</Label>
-          </div>
-          <div className="space-y-1">
-            <Label>{tx("Land type filter (only selected are invoiced)", "জমির ধরন ফিল্টার (শুধু নির্বাচিতগুলো ইনভয়েস হবে)")}</Label>
-            <div className="flex flex-wrap gap-2">
-              <Button type="button" size="sm" variant="ghost"
-                onClick={() => setFieldTypes(new Set(landTypeList.map((lt) => lt.id)))}>
-                {tx("All", "সব")}
-              </Button>
-              <Button type="button" size="sm" variant="ghost"
-                onClick={() => setFieldTypes(new Set())}>
-                {tx("None", "কোনোটি নয়")}
-              </Button>
-              {landTypeList.map((lt) => (
-                <Button
-                  key={lt.id}
-                  type="button"
-                  size="sm"
-                  variant={fieldTypes.has(lt.id) ? "default" : "outline"}
-                  onClick={() => toggleFieldType(lt.id)}
-                >
-                  {lt.name_bn || lt.name_en || lt.code}
+          {/* Step 3 — Land types */}
+          {step === 3 && (
+            <div className="space-y-1">
+              <Label>{tx("Land type filter (only selected are invoiced)", "জমির ধরন ফিল্টার (শুধু নির্বাচিতগুলো ইনভয়েস হবে)")}</Label>
+              <div className="flex flex-wrap gap-2">
+                <Button type="button" size="sm" variant="ghost"
+                  onClick={() => { setFieldTypes(new Set(landTypeList.map((lt) => lt.id))); setErrors((e) => ({ ...e, landTypes: "" })); }}>
+                  {tx("All", "সব")}
                 </Button>
-              ))}
+                <Button type="button" size="sm" variant="ghost"
+                  onClick={() => setFieldTypes(new Set())}>
+                  {tx("None", "কোনোটি নয়")}
+                </Button>
+                {landTypeList.map((lt) => (
+                  <Button
+                    key={lt.id}
+                    type="button"
+                    size="sm"
+                    variant={fieldTypes.has(lt.id) ? "default" : "outline"}
+                    onClick={() => { toggleFieldType(lt.id); setErrors((e) => ({ ...e, landTypes: "" })); }}
+                  >
+                    {lt.name_bn || lt.name_en || lt.code}
+                  </Button>
+                ))}
+              </div>
+              {errors.landTypes && <p className="text-xs text-destructive">{errors.landTypes}</p>}
             </div>
-            {fieldTypes.size === 0 && (
-              <p className="text-xs text-destructive">
-                {tx("Select at least one land type to preview.", "প্রিভিউ করতে অন্তত একটি জমির ধরন নির্বাচন করুন।")}
-              </p>
-            )}
-          </div>
-          <div className="flex gap-2">
-            <Button onClick={preview} disabled={busy || !seasonId || fieldTypes.size === 0}>
-              <Sparkles className="h-4 w-4 mr-1" /> {tx("Preview", "প্রিভিউ")}
-            </Button>
-            {previewRows && previewRows.length > 0 && (
-              <Button variant="default" onClick={commit} disabled={busy}>
-                {busy ? tx("Processing…", "প্রক্রিয়াকরণ…") : `${tx("Create", "তৈরি করুন")} ${previewRows.length} ${tx("invoices", "টি ইনভয়েস")}`}
-              </Button>
-            )}
-            <Button variant="outline" onClick={() => setManualOpen(true)}><Plus className="h-4 w-4 mr-1" /> {tx("Manual", "ম্যানুয়াল")}</Button>
-            <Button variant="outline" onClick={carryForwardDues} disabled={busy || !seasonId}>{tx("Carry forward dues", "বকেয়া carry-forward")}</Button>
+          )}
+
+          {/* Step 4 — Preview & confirm */}
+          {step === 4 && (
+            <div className="space-y-3">
+              {skippedNoRate > 0 && (
+                <div className="text-xs text-destructive">{skippedNoRate} {tx("lands had no rate — skipped.", "টি জমিতে রেট পাওয়া যায়নি — বাদ দেওয়া হয়েছে।")}</div>
+              )}
+              <div className="flex flex-wrap gap-2">
+                <Button onClick={preview} disabled={busy || !seasonId || fieldTypes.size === 0}>
+                  <Sparkles className="h-4 w-4 mr-1" /> {previewRows ? tx("Re-run preview", "প্রিভিউ পুনরায়") : tx("Preview", "প্রিভিউ")}
+                </Button>
+                {previewRows && previewRows.length > 0 && (
+                  <>
+                    <Button variant="outline" onClick={exportDraftExcel} disabled={busy}>
+                      <FileSpreadsheet className="h-4 w-4 mr-1" /> {tx("Export Excel", "এক্সেল রপ্তানি")}
+                    </Button>
+                    <Button variant="outline" onClick={exportDraftPdf} disabled={busy}>
+                      <FileDown className="h-4 w-4 mr-1" /> {tx("Export PDF", "PDF রপ্তানি")}
+                    </Button>
+                    <Button variant="default" onClick={commit} disabled={busy}>
+                      {busy ? tx("Processing…", "প্রক্রিয়াকরণ…") : `${tx("Create", "তৈরি করুন")} ${previewRows.length} ${tx("invoices", "টি ইনভয়েস")}`}
+                    </Button>
+                  </>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Wizard navigation */}
+          <div className="flex flex-wrap items-center justify-between gap-2 border-t pt-3">
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => setManualOpen(true)}><Plus className="h-4 w-4 mr-1" /> {tx("Manual", "ম্যানুয়াল")}</Button>
+              <Button variant="outline" onClick={carryForwardDues} disabled={busy || !seasonId}>{tx("Carry forward dues", "বকেয়া carry-forward")}</Button>
+            </div>
+            <div className="flex gap-2">
+              {step > 1 && (
+                <Button variant="outline" onClick={goBack}><ChevronLeft className="h-4 w-4 mr-1" /> {tx("Back", "পূর্ববর্তী")}</Button>
+              )}
+              {step < 4 && (
+                <Button onClick={goNext}>{tx("Next", "পরবর্তী")} <ChevronRight className="h-4 w-4 ml-1" /></Button>
+              )}
+            </div>
           </div>
         </CardContent>
       </Card>
+
+      {/* Excluded lands panel */}
+      {step === 4 && excluded.length > 0 && (
+        <Card>
+          <CardContent className="pt-4">
+            <button type="button" className="flex w-full items-center justify-between text-sm font-medium" onClick={() => setShowExcluded((v) => !v)}>
+              <span className="text-destructive">{tx("Excluded lands", "বাদ পড়া জমি")} ({excluded.length})</span>
+              {showExcluded ? <ChevronLeft className="h-4 w-4 rotate-90" /> : <ChevronRight className="h-4 w-4 rotate-90" />}
+            </button>
+            {showExcluded && (
+              <div className="overflow-x-auto mt-3">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>{tx("Mouza", "মৌজা")}</TableHead>
+                      <TableHead>{tx("Dag", "দাগ")}</TableHead>
+                      <TableHead>{tx("Land type", "জমির ধরন")}</TableHead>
+                      <TableHead>{tx("Reason excluded", "বাদ পড়ার কারণ")}</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {excluded.slice(0, 200).map((x, i) => (
+                      <TableRow key={i}>
+                        <TableCell className="text-xs">{x.mouza}</TableCell>
+                        <TableCell className="text-xs">{x.dag}</TableCell>
+                        <TableCell className="text-xs">{x.land_type}</TableCell>
+                        <TableCell className="text-xs text-destructive">{x.reason}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+                {excluded.length > 200 && <p className="text-xs text-muted-foreground mt-2">{tx("Showing first 200 only", "শুধু প্রথম ২০০ টি দেখানো হয়েছে")}</p>}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
 
       {prevDueWarning && previewRows && (
         <Alert variant="destructive">
