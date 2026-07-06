@@ -64,6 +64,17 @@ export default function BankAccounts() {
   const [dTo, setDTo] = useState("");
   const [dAccount, setDAccount] = useState<string>("__all__");
 
+  // Opening-post status + audit + preview
+  const [openingStatus, setOpeningStatus] = useState<{ journalCount: number; ledgerCount: number; lastRun: string | null }>({ journalCount: 0, ledgerCount: 0, lastRun: null });
+  const [openingAudit, setOpeningAudit] = useState<any[]>([]);
+  const [openingPreview, setOpeningPreview] = useState<
+    | { toPost: any[]; existing: any[] }
+    | null
+  >(null);
+  const [posting, setPosting] = useState(false);
+
+
+
   useEffect(() => { document.title = "Bank Accounts — MK Baliadanga"; load(); }, []);
 
   async function load() {
