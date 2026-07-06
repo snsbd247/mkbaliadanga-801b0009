@@ -11,7 +11,8 @@ import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Loader2, Save, RotateCcw } from "lucide-react";
+import { Loader2, Save, RotateCcw, History } from "lucide-react";
+import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import {
   DEFAULT_TEMPLATE,
@@ -55,11 +56,11 @@ export default function ReceiptTemplatePage() {
 
   const serialError = (() => {
     const raw = serialStart.trim();
-    if (raw === "") return "শুরুর ক্রমিক নম্বর দিতে হবে";
-    if (!/^\d+$/.test(raw)) return "শুধু ধনাত্মক পূর্ণসংখ্যা দেওয়া যাবে";
+    if (raw === "") return "শুরুর ক্রমিক নম্বর দিতে হবে / Serial start is required";
+    if (!/^\d+$/.test(raw)) return "শুধু ধনাত্মক পূর্ণসংখ্যা দেওয়া যাবে / Only positive whole numbers allowed";
     const n = Number(raw);
-    if (!Number.isFinite(n) || n < 0) return "ক্রমিক নম্বর ঋণাত্মক হতে পারবে না";
-    if (n > 9000000000) return "ক্রমিক নম্বর অনেক বড়";
+    if (!Number.isFinite(n) || n < 0) return "ক্রমিক নম্বর ঋণাত্মক হতে পারবে না / Serial cannot be negative";
+    if (n > 9000000000) return "ক্রমিক নম্বর অনেক বড় / Serial is too large";
     return null;
   })();
 
@@ -162,6 +163,9 @@ export default function ReceiptTemplatePage() {
         description="Customize the scan-payment PDF receipt and preview before saving."
         actions={
           <div className="flex gap-2">
+            <Button variant="outline" size="sm" asChild>
+              <Link to="/admin/receipt-serial-audit"><History className="h-4 w-4" />সিরিয়াল লগ</Link>
+            </Button>
             <Button variant="outline" size="sm" onClick={reset}><RotateCcw className="h-4 w-4" />Reset</Button>
             <Button size="sm" onClick={save} disabled={saving || !!serialError}>
               {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}Save
@@ -252,9 +256,8 @@ export default function ReceiptTemplatePage() {
             <div>
               <Label className="text-xs">শুরুর ক্রমিক নম্বর</Label>
               <Input
-                type="number"
-                min={0}
-                step={1}
+                type="text"
+                inputMode="numeric"
                 value={serialStart}
                 onChange={(e) => setSerialStart(e.target.value)}
                 placeholder="যেমন 4641"
