@@ -78,7 +78,7 @@ export default function Payments() {
   // In-flight request token to ignore stale responses / prevent concurrent races.
   const dueReqRef = useRef(0);
   // Per-farmer invoice cache to avoid redundant refetches on revisit.
-  const invoiceCacheRef = useRef<Map<string, any[]>>(new Map());
+  const invoiceCacheRef = useRef(createInvoiceCache<any>());
   const [cancelledIrr, setCancelledIrr] = useState<any[]>([]);
   const [invoiceSearch, setInvoiceSearch] = useState("");
   const [invoiceSort, setInvoiceSort] = useState<import("@/lib/irrigationInvoiceQueries").InvoiceSortKey>("due_date");
