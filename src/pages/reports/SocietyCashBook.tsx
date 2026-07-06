@@ -333,9 +333,11 @@ export default function SocietyCashBook() {
         /* Screen: keep headers on one line and let the wide layout scroll horizontally */
         .bn-cb-table th { white-space: nowrap; vertical-align: bottom; }
         .bn-cb-table td { white-space: nowrap; }
-        /* Wide enough that the 12/9 nowrap columns of both tables never overlap
-           in the middle; horizontal scroll handles anything past the viewport. */
-        .bn-cb-cols { min-width: 2200px; }
+        /* Size each column to its own content so the two nowrap tables never
+           overlap into each other; the wrapper handles horizontal scroll. */
+        .bn-cb-cols { grid-template-columns: repeat(2, minmax(max-content, 1fr)); min-width: max-content; }
+        .bn-cb-cols > section { min-width: 0; overflow-x: auto; }
+        .bn-cb-table { width: 100%; min-width: max-content; }
         @media print {
           body * { visibility: hidden; }
           .bn-cashbook, .bn-cashbook * { visibility: visible; }
