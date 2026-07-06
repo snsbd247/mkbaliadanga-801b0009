@@ -382,6 +382,15 @@ export default function Users() {
         </Dialog>
       } />
 
+      {isDeveloper && (
+        <Card className="p-2 mb-3 border-dashed text-xs flex flex-wrap items-center gap-2 bg-muted/40">
+          <span className="font-medium">API base / এপিআই বেস:</span>
+          <span className="rounded bg-primary/10 text-primary px-1.5 py-0.5 font-mono">{BACKEND_LABEL}</span>
+          <span className="text-muted-foreground font-mono break-all">{BACKEND_API_BASE}</span>
+        </Card>
+      )}
+
+
       <Card className="p-3 mb-3">
         <div className="flex flex-wrap gap-2 items-end">
           <div className="flex-1 min-w-[200px]">
