@@ -8,7 +8,7 @@ import { Card } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, DollarSign, History, FileDown } from "lucide-react";
+import { Plus, DollarSign, History, FileDown, Pencil } from "lucide-react";
 import { useLang } from "@/i18n/LanguageProvider";
 import { toast } from "sonner";
 import { useAuth } from "@/auth/AuthProvider";
@@ -29,7 +29,8 @@ export default function Seasons() {
   const [list, setList] = useState<any[]>([]);
   const [types, setTypes] = useState<SeasonType[]>([]);
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState<any>({
+  const [editId, setEditId] = useState<string | null>(null);
+  const emptyForm = {
     year: new Date().getFullYear(),
     season_type_id: "",
     name: "",
@@ -38,7 +39,23 @@ export default function Seasons() {
     end_date: "",
     due_date: "",
     status: "active",
-  });
+  };
+  const [form, setForm] = useState<any>(emptyForm);
+
+  function openEdit(s: any) {
+    setEditId(s.id);
+    setForm({
+      year: s.year ?? new Date().getFullYear(),
+      season_type_id: s.season_type_id ?? "",
+      name: s.name ?? "",
+      fiscal_year: s.fiscal_year ?? "",
+      start_date: s.start_date ?? "",
+      end_date: s.end_date ?? "",
+      due_date: s.due_date ?? "",
+      status: s.status ?? "active",
+    });
+    setOpen(true);
+  }
 
   const [ratesOpen, setRatesOpen] = useState(false);
   const [ratesSeason, setRatesSeason] = useState<any | null>(null);
@@ -82,11 +99,14 @@ export default function Seasons() {
       due_date: form.due_date || null,
       status: form.status,
     };
-    const { error } = await db.from("seasons").insert(payload);
+    const { error } = editId
+      ? await db.from("seasons").update(payload).eq("id", editId)
+      : await db.from("seasons").insert(payload);
     if (error) return toast.error(error.message);
     toast.success(t("saved"));
     setOpen(false);
-    setForm({ year: new Date().getFullYear(), season_type_id: "", name: "", fiscal_year: "", start_date: "", end_date: "", due_date: "", status: "active" });
+    setEditId(null);
+    setForm(emptyForm);
     load();
   }
 
@@ -126,18 +146,18 @@ export default function Seasons() {
         title={t("seasons")}
         actions={
           isAdmin && (
-            <Dialog open={open} onOpenChange={setOpen}>
+            <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) { setEditId(null); setForm(emptyForm); } }}>
               <div className="inline-flex gap-2">
                 <Button variant="outline" onClick={generateNext}>
                   <Plus className="h-4 w-4 mr-1" />{tx("Generate next (6 months)", "নতুন সিজন অটো (৬ মাস)")}
                 </Button>
                 <DialogTrigger asChild>
-                  <Button><Plus className="h-4 w-4 mr-1" />{t("addNew")}</Button>
+                  <Button onClick={() => { setEditId(null); setForm(emptyForm); }}><Plus className="h-4 w-4 mr-1" />{t("addNew")}</Button>
                 </DialogTrigger>
               </div>
               <DialogContent className="max-w-lg">
                 <DialogHeader>
-                  <DialogTitle>{t("addNew")} — {t("seasons")}</DialogTitle>
+                  <DialogTitle>{editId ? tx("Edit", "এডিট") : t("addNew")} — {t("seasons")}</DialogTitle>
                 </DialogHeader>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
@@ -219,6 +239,9 @@ export default function Seasons() {
                   <TableCell className="text-right">
                     {isAdmin && (
                       <div className="inline-flex gap-1 justify-end">
+                        <Button size="sm" variant="outline" onClick={() => openEdit(s)}>
+                          <Pencil className="h-3.5 w-3.5 mr-1" /> {tx("Edit", "এডিট")}
+                        </Button>
                         <Button size="sm" variant="outline" onClick={() => { setCfSeason(s); setCfOpen(true); }}>
                           <History className="h-3.5 w-3.5 mr-1" /> {tx("Carry-forward dues", "বকেয়া carry-forward")}
                         </Button>
