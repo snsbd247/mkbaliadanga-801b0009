@@ -178,7 +178,8 @@ export default function BankAccounts() {
     const linkId = (post_cashbook && (tx.txn_type === "deposit" || tx.txn_type === "withdraw"))
       ? crypto.randomUUID() : null;
     const { error } = await sb.from("bank_transactions").insert({ ...txnRow, created_by: user?.id, link_id: linkId });
-    if (error) return toast.error(error.message);
+    if (error) return toast.error("লেনদেন সংরক্ষণ ব্যর্থ: " + error.message);
+    void logAudit({ office_id: acc?.office_id ?? null, module: "bank_transaction", action_type: "create", reference_id: tx.bank_account_id, new_data: { ...txnRow, link_id: linkId } });
 
     // Auto-link to Cashbook: deposit (cash→bank) = expense; withdraw (bank→cash) = receipt.
     // Routed to the correct cash stream based on the bank account's stream.
