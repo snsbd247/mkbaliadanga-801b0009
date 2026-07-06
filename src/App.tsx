@@ -32,6 +32,7 @@ import Payments from "./pages/Payments";
 import CombinedPayment from "./pages/CombinedPayment";
 import Reports from "./pages/Reports";
 import Users from "./pages/Users";
+import AdminHealthCheck from "./pages/AdminHealthCheck";
 import AuditLogs from "./pages/AuditLogs";
 import Settings from "./pages/Settings";
 import Scan from "./pages/Scan";
@@ -308,6 +309,8 @@ const App = () => (
                 <Route path="/farmers/import" element={<RequirePerm module="farmers" action="can_add"><FarmersImport /></RequirePerm>} />
                 
                 <Route path="/users" element={<RequireRole roles={["super_admin"]}><Users /></RequireRole>} />
+                <Route path="/admin/health" element={<RequireRole roles={["admin","super_admin"]}><AdminHealthCheck /></RequireRole>} />
+
                 <Route path="/settings" element={<RequireRole roles={["super_admin"]}><Settings /></RequireRole>} />
                 <Route path="/scan" element={<RequirePerm module="payments"><Scan /></RequirePerm>} />
                 <Route path="/cashbook" element={<RequirePerm module="cashbook"><Cashbook /></RequirePerm>} />

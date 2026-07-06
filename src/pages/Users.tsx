@@ -20,15 +20,10 @@ import { useAuth } from "@/auth/AuthProvider";
 import { DeleteButton } from "@/components/ui/action-icon-button";
 import { z } from "zod";
 
-// Stronger password policy. Super admins must use a longer, mixed password.
-function passwordPolicyIssues(pw: string, role: string, t: (k: any) => string): string[] {
+// Minimal password policy — length only. Simple numeric passwords (e.g. 123456789) are allowed.
+function passwordPolicyIssues(pw: string, _role: string, t: (k: any) => string): string[] {
   const issues: string[] = [];
-  const minLen = role === "super_admin" ? 12 : 10;
-  if (pw.length < minLen) issues.push(t("pwAtLeastN").replace("{n}", String(minLen)));
-  if (!/[a-z]/.test(pw)) issues.push(t("pwLowercase"));
-  if (!/[A-Z]/.test(pw)) issues.push(t("pwUppercase"));
-  if (!/[0-9]/.test(pw)) issues.push(t("pwDigit"));
-  if (!/[^A-Za-z0-9]/.test(pw)) issues.push(t("pwSymbol"));
+  if (pw.length < 8) issues.push(t("pwAtLeastN").replace("{n}", "8"));
   return issues;
 }
 
@@ -36,7 +31,7 @@ const createSchema = z.object({
   username: z.string().trim().regex(/^[a-zA-Z0-9_.-]{3,30}$/, "3–30 chars; letters, digits, . _ -"),
   email: z.string().trim().email().max(255),
   full_name: z.string().trim().min(1).max(120),
-  password: z.string().min(10, "At least 10 characters").max(72),
+  password: z.string().min(8, "At least 8 characters").max(72),
   role: z.enum(["developer", "super_admin", "admin", "committee", "staff"]),
   office_id: z.string().nullable(),
 });
@@ -103,7 +98,17 @@ export default function Users() {
     const { data, error } = await db.functions.invoke("admin-users", { body: payload });
     setBusy(false);
     if (error || data?.error) {
-      toast.error(data?.error ?? error?.message ?? t("failedGeneric"));
+      const raw = String(data?.error ?? error?.message ?? "");
+      // Detect a temporarily-unavailable / not-deployed edge function and give retry guidance.
+      const unavailable = /not available on this server|Failed to (send|fetch)|Function not found|failed to reach|network|503|504/i.test(raw);
+      if (unavailable) {
+        toast.error(t("adminFnUnavailable"), {
+          description: t("adminFnRetryHint"),
+          action: { label: t("retry"), onClick: () => callAdmin(payload) },
+        });
+      } else {
+        toast.error(raw || t("failedGeneric"));
+      }
       return null;
     }
     return data;
