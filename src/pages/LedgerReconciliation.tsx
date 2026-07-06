@@ -60,6 +60,7 @@ export default function LedgerReconciliation() {
   const [report, setReport] = useState<Report | null>(null);
   const [detail, setDetail] = useState<Detail | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
+  const [bankCross, setBankCross] = useState<{ actual: number; ledger: number; diff: number } | null>(null);
 
   useEffect(() => {
     document.title = t("p5_monthlyReconciliationTitle");
