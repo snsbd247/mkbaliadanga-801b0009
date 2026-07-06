@@ -123,7 +123,7 @@ export function buildIrrJamaRows(input: IrrCashBookInput, lang: ReportLang = "bn
       date: b.txn_date, receiptNo: b.reference_no ?? "",
       name: lang === "bn" ? "ব্যাংক উত্তোলন" : "Bank withdrawal",
       sechCharge: 0, nalaCharge: 0, maintenance: 0, lateFee: 0,
-      bankWithdraw: amt, pond: 0, misc: 0, total: amt,
+      bankWithdraw: amt, pond: 0, hawlat: 0, misc: 0, total: amt,
     });
   }
   return rows.sort((a, b) => a.date.localeCompare(b.date));
