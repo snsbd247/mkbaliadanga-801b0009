@@ -487,6 +487,37 @@ export default function Payments() {
     }
   }
 
+  function invoiceExportRows() {
+    // Export the full filtered/searched/sorted set (not just the current page).
+    return displayInvoices.map((ic) => ({
+      invoice_no: String(ic.invoice_no ?? ""),
+      due_date: fmtDate(ic.due_date),
+      status: invoiceStatusBadge(ic.invoice_status ?? null).label_bn,
+      payable: Number(ic.payable_amount ?? 0),
+      paid: Number(ic.paid_amount ?? 0),
+      due: Number(ic.due_amount ?? 0),
+    }));
+  }
+
+  async function exportInvoicesExcel() {
+    const XLSX = await import("xlsx");
+    const ws = XLSX.utils.json_to_sheet(invoiceExportRows());
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Invoices");
+    XLSX.writeFile(wb, `invoices-${invoiceFilter}-${Date.now()}.xlsx`);
+  }
+
+  async function exportInvoicesPdf() {
+    const { default: jsPDF } = await import("jspdf");
+    const { default: autoTable } = await import("jspdf-autotable");
+    const doc = new jsPDF();
+    autoTable(doc, {
+      head: [["Invoice", "Due date", "Status", "Payable", "Paid", "Due"]],
+      body: invoiceExportRows().map((r) => [r.invoice_no, r.due_date, r.status, r.payable, r.paid, r.due]),
+    });
+    doc.save(`invoices-${invoiceFilter}-${Date.now()}.pdf`);
+  }
+
   async function openInvoiceDetails(inv: any | null | undefined) {
     if (!inv) return;
     setDetailInvoice(inv);
