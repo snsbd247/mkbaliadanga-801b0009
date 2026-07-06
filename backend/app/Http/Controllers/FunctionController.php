@@ -79,16 +79,32 @@ class FunctionController extends Controller
             return response()->json(['ok' => true]);
         }
 
-        return match ($action) {
-            'list' => $this->adminUsersList($request, $isDeveloper, $isSuper),
-            'create' => $this->adminUsersCreate($request, $actor, $isDeveloper),
-            'delete' => $this->adminUsersDelete($request, $actor, $isDeveloper),
-            'reset_password' => $this->adminUsersResetPassword($request),
-            'set_active' => $this->adminUsersSetActive($request, $actor, $isDeveloper),
-            'update_profile' => $this->adminUsersUpdateProfile($request, $isDeveloper),
-            'set_role' => $this->adminUsersSetRole($request, $actor, $isDeveloper),
-            default => response()->json(['error' => 'Unknown action'], 400),
-        };
+        $requestId = (string) Str::uuid();
+        try {
+            return match ($action) {
+                'list' => $this->adminUsersList($request, $isDeveloper, $isSuper),
+                'create' => $this->adminUsersCreate($request, $actor, $isDeveloper),
+                'delete' => $this->adminUsersDelete($request, $actor, $isDeveloper),
+                'reset_password' => $this->adminUsersResetPassword($request),
+                'set_active' => $this->adminUsersSetActive($request, $actor, $isDeveloper),
+                'update_profile' => $this->adminUsersUpdateProfile($request, $isDeveloper),
+                'set_role' => $this->adminUsersSetRole($request, $actor, $isDeveloper),
+                default => response()->json(['error' => 'Unknown action'], 400),
+            };
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('admin-users action failed', [
+                'request_id' => $requestId,
+                'action' => $action,
+                'actor_id' => $actor->id,
+                'target_user_id' => (string) $request->input('user_id', ''),
+                'role' => (string) $request->input('role', ''),
+                'message' => $e->getMessage(),
+            ]);
+            return response()->json([
+                'error' => 'Server error while processing admin-users request.',
+                'request_id' => $requestId,
+            ], 500);
+        }
     }
 
     private function adminUsersList(Request $request, bool $isDeveloper = false, bool $isSuper = false): JsonResponse
