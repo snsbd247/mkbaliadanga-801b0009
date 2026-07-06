@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/auth/AuthProvider";
 import { LanguageProvider } from "@/i18n/LanguageProvider";
 import { AppLayout } from "@/components/layout/AppLayout";
+import BuildVersionWatcher from "@/components/system/BuildVersionWatcher";
 import AuthPage from "./pages/Auth";
 import ResetPassword from "./pages/ResetPassword";
 import FarmerPortalLogin from "./pages/FarmerPortalLogin";
