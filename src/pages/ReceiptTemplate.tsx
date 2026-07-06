@@ -100,6 +100,28 @@ export default function ReceiptTemplatePage() {
     };
   }, [previewUrl]);
 
+  // Live preview of the official সেচ (irrigation) receipt using the current template.
+  const [previewMode, setPreviewMode] = useState<"payment" | "irrigation">("payment");
+  const [irrUrl, setIrrUrl] = useState<string | null>(null);
+  const [irrLoading, setIrrLoading] = useState(false);
+  useEffect(() => {
+    if (previewMode !== "irrigation") return;
+    let cancelled = false;
+    setIrrLoading(true);
+    (async () => {
+      try {
+        const data = { ...buildSampleReceipt("irrigation"), logo_url: brand.logo_url ?? null };
+        const url = await previewBnReceiptPdf(data as any, "farmer", {
+          template: { ...tpl, logo_url: brand.logo_url ?? null },
+        });
+        if (!cancelled) setIrrUrl(url);
+      } finally {
+        if (!cancelled) setIrrLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [previewMode, tpl, brand.logo_url]);
+
   async function save() {
     if (serialError) { toast.error(serialError); return; }
     setSaving(true);
