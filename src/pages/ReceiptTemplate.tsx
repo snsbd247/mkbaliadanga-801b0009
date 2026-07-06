@@ -22,6 +22,8 @@ import {
 } from "@/lib/paymentReceiptPdf";
 import { useBranding } from "@/lib/branding";
 import { notifyReceiptTemplateChange } from "@/lib/receiptTemplate";
+import { checkReceiptSerialRpc, setReceiptSerialStart } from "@/lib/receiptSerial";
+import { logAudit } from "@/lib/audit";
 import { previewBnReceiptPdf } from "@/lib/bnReceipts";
 import { buildSampleReceipt } from "@/lib/sampleReceipts";
 
