@@ -72,6 +72,12 @@ export default function Payments() {
   const [openIrr, setOpenIrr] = useState<any[]>([]);
   const [dueMismatch, setDueMismatch] = useState<import("@/lib/dues").DueMismatchResult | null>(null);
   const [invoiceEmpty, setInvoiceEmpty] = useState(false);
+  const [invoiceLoading, setInvoiceLoading] = useState(false);
+  const [invoiceFilter, setInvoiceFilter] = useState<"open" | "cancelled">("open");
+  // In-flight request token to ignore stale responses / prevent concurrent races.
+  const dueReqRef = useRef(0);
+  // Per-farmer invoice cache to avoid redundant refetches on revisit.
+  const invoiceCacheRef = useRef<Map<string, any[]>>(new Map());
   const [isAdmin, setIsAdmin] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [idemKey, setIdemKey] = useState<string>(newKey());
