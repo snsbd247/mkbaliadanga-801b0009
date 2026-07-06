@@ -88,6 +88,22 @@ export default function Seasons() {
     if (!form.season_type_id) return toast.error(tx("Choose a season type", "সিজন টাইপ বাছাই করুন"));
     const stype = types.find((x) => x.id === form.season_type_id);
     if (!stype) return toast.error(tx("Invalid type", "অবৈধ টাইপ"));
+
+    // Duplicate + overlap validation against existing seasons (skip the row being edited)
+    const others = list.filter((s) => s.id !== editId);
+    if (others.some((s) => s.season_type_id === form.season_type_id && Number(s.year) === Number(form.year))) {
+      return toast.error(tx("A season with this type and year already exists", "এই টাইপ ও বছরের সিজন ইতিমধ্যে আছে"));
+    }
+    if (form.start_date && form.end_date) {
+      if (form.end_date < form.start_date) {
+        return toast.error(tx("End date must be after start date", "শেষের তারিখ শুরুর তারিখের পরে হতে হবে"));
+      }
+      const overlap = others.some((s) => s.start_date && s.end_date && form.start_date <= s.end_date && s.start_date <= form.end_date);
+      if (overlap) {
+        return toast.error(tx("Date range overlaps another season", "তারিখ পরিসর অন্য সিজনের সাথে ওভারল্যাপ করছে"));
+      }
+    }
+
     const payload: any = {
       year: form.year,
       type: toEnum(stype.code),
