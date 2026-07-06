@@ -1,4 +1,5 @@
 import { db } from "@/lib/db";
+import { isLaravelBackend } from "@/lib/backend";
 
 const MISSING_RPC_HINTS = [
   "not available on this server",
@@ -70,6 +71,18 @@ async function setReceiptSerialStartDirect(nextSerial: number): Promise<{ ok: bo
  * "not available / schema cache" error we care about.
  */
 export async function checkReceiptSerialRpc(): Promise<{ available: boolean; message: string }> {
+  if (isLaravelBackend) {
+    try {
+      await getCurrentSerialLast();
+      return { available: true, message: "Receipt serial direct fallback available" };
+    } catch {
+      return {
+        available: false,
+        message: "Receipt serial table gateway পাওয়া যায়নি। VPS backend-এ receipt_counters/receipt_settings API যাচাই করুন।",
+      };
+    }
+  }
+
   const viaFunction = await (db as any).functions.invoke("receipt-serial-admin", { body: { check: true } });
   if (!viaFunction.error) return { available: true, message: "Receipt serial admin endpoint available" };
 
@@ -104,6 +117,10 @@ export async function checkReceiptSerialRpc(): Promise<{ available: boolean; mes
 export async function setReceiptSerialStart(
   nextSerial: number,
 ): Promise<{ ok: boolean; message: string }> {
+  if (isLaravelBackend) {
+    return setReceiptSerialStartDirect(nextSerial);
+  }
+
   const functionAttempt = () => (db as any).functions.invoke("receipt-serial-admin", { body: { p_start: nextSerial } });
   let functionResult = await functionAttempt();
   if (functionResult.error) {
