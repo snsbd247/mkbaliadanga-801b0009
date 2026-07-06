@@ -1674,6 +1674,7 @@ function GenerateTab({ seasons, offices, userId, isSuper }: any) {
             discount_amount: 0,
             discount_reason: null,
             paid_amount: 0,
+            due_amount: calc.payable_amount,
             due_date: dueDate,
             invoice_status: "generated",
             generated_by: userId,
