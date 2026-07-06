@@ -69,7 +69,9 @@ export default function ReceiptTemplatePage() {
       const { data } = await db.from("receipt_settings").select("*").eq("id", 1).maybeSingle();
       if (data) {
         setTpl({ ...DEFAULT_TEMPLATE, ...(data as any) });
-        setSerialStart(String((data as any).receipt_serial_start ?? 0));
+        const s = Number((data as any).receipt_serial_start ?? 0) || 0;
+        setSerialStart(String(s));
+        setSavedSerialStart(s);
       }
       setLoading(false);
     })();
