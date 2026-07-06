@@ -29,7 +29,8 @@ export default function Seasons() {
   const [list, setList] = useState<any[]>([]);
   const [types, setTypes] = useState<SeasonType[]>([]);
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState<any>({
+  const [editId, setEditId] = useState<string | null>(null);
+  const emptyForm = {
     year: new Date().getFullYear(),
     season_type_id: "",
     name: "",
@@ -38,7 +39,23 @@ export default function Seasons() {
     end_date: "",
     due_date: "",
     status: "active",
-  });
+  };
+  const [form, setForm] = useState<any>(emptyForm);
+
+  function openEdit(s: any) {
+    setEditId(s.id);
+    setForm({
+      year: s.year ?? new Date().getFullYear(),
+      season_type_id: s.season_type_id ?? "",
+      name: s.name ?? "",
+      fiscal_year: s.fiscal_year ?? "",
+      start_date: s.start_date ?? "",
+      end_date: s.end_date ?? "",
+      due_date: s.due_date ?? "",
+      status: s.status ?? "active",
+    });
+    setOpen(true);
+  }
 
   const [ratesOpen, setRatesOpen] = useState(false);
   const [ratesSeason, setRatesSeason] = useState<any | null>(null);
