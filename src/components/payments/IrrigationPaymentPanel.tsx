@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { db } from "@/lib/db";
 import { fetchOpenIrrigationInvoices } from "@/lib/irrigationInvoiceQueries";
-import { invoiceStatusBadge } from "@/lib/dues";
 import { InvoiceStatusBadge } from "@/components/payments/InvoiceStatusBadge";
 import { useAuth } from "@/auth/AuthProvider";
 import { useLang } from "@/i18n/LanguageProvider";
