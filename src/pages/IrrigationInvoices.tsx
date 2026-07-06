@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { db } from "@/lib/db";
 import { checkRpcContract } from "@/lib/db";
 import { postIrrigationDiscount, takeLastImbalance, checkRequiredAccounts, formatImbalance } from "@/lib/accountingPosting";
-import { resolveRowMouzaName } from "@/lib/mouzaQuery";
+import { resolveRowMouzaName, LANDS_EMBED } from "@/lib/mouzaQuery";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
