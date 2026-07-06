@@ -33,6 +33,58 @@ class GenericTableController extends Controller
         'failed_jobs', 'migrations', 'sms_provider_secrets',
     ];
 
+    /**
+     * Tables that require an explicit permission for any write (insert/update/
+     * delete) through the generic gateway, plus the audit "module" recorded for
+     * each change. Read access stays office-scoped; writes are guarded here so
+     * an unauthorised user cannot mutate one module's data via another.
+     */
+    private const WRITE_GUARD = [
+        'bank_accounts'     => ['permission' => 'accounting.manage', 'module' => 'bank_account'],
+        'bank_transactions' => ['permission' => 'accounting.manage', 'module' => 'bank_transaction'],
+        'accounts'          => ['permission' => 'accounting.manage', 'module' => 'account'],
+        'journal_entries'   => ['permission' => 'accounting.manage', 'module' => 'journal_entry'],
+        'journal_entry_lines' => ['permission' => 'accounting.manage', 'module' => 'journal_entry_line'],
+    ];
+
+    /**
+     * Enforce per-table write permission. Developers and super admins always
+     * pass (hasPermission returns true for them); everyone else needs the
+     * mapped permission key.
+     */
+    private function authorizeWrite(Request $request, string $table): void
+    {
+        $guard = self::WRITE_GUARD[$table] ?? null;
+        if (! $guard) {
+            return;
+        }
+        $user = $request->user();
+        if (! $user || ! $user->hasPermission($guard['permission'])) {
+            abort(403, 'এই কাজের অনুমতি নেই।');
+        }
+    }
+
+    /** Fire-and-forget audit entry for a guarded-table write. Never breaks the op. */
+    private function recordAudit(Request $request, string $action, string $table, array $ids, array $meta = []): void
+    {
+        if (! isset(self::WRITE_GUARD[$table])) {
+            return;
+        }
+        try {
+            \App\Models\AuditLog::record([
+                'user_id'     => optional($request->user())->id,
+                'office_id'   => $request->attributes->get('scope_office_id'),
+                'action'      => self::WRITE_GUARD[$table]['module'].'.'.$action,
+                'entity_type' => $table,
+                'entity_id'   => $ids[0] ?? null,
+                'meta'        => array_merge(['ids' => array_values($ids)], $meta),
+            ]);
+        } catch (\Throwable $e) {
+            // Auditing must never break the underlying operation.
+        }
+    }
+
+
     private function table(string $table): string
     {
         if (! preg_match('/^[a-z][a-z0-9_]*$/', $table)) {
