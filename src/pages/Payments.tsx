@@ -388,8 +388,7 @@ export default function Payments() {
       const { data: allRows } = await db
         .from("irrigation_invoices")
         .select("due_amount,invoice_status,deleted_at")
-        .eq("farmer_id", farmerId)
-        .is("deleted_at", null);
+        .eq("farmer_id", farmerId);
       const listDue = computeIrrigationDue((allRows as any[]) ?? []);
       const paymentsDue = rows.reduce((s: number, x: any) => s + Math.max(0, Number(x.due_amount || 0)), 0);
       const result = detectDueMismatch(listDue, paymentsDue);
