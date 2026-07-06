@@ -89,7 +89,7 @@ export default function Cashbook() {
   const emptyV = {
     id: "" as string, stream: "irrigation" as Stream, head_id: "", amount: 0,
     payee: "", note: "", expense_date: new Date().toISOString().slice(0, 10),
-    method: "cash" as "cash" | "bank", bank_account_id: "",
+    method: "cash" as "cash" | "bank", bank_account_id: "", attachment_path: "" as string | null,
   };
   const [openV, setOpenV] = useState(false);
   const [v, setV] = useState(emptyV);
