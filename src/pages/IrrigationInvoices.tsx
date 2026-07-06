@@ -1258,6 +1258,8 @@ function GenerateTab({ seasons, offices, userId, isSuper }: any) {
   });
   const [busy, setBusy] = useState(false);
   const [previewRows, setPreviewRows] = useState<any[] | null>(null);
+  const [previewPage, setPreviewPage] = useState(0);
+  const [previewPageSize, setPreviewPageSize] = useState(100);
   const [prevDueWarning, setPrevDueWarning] = useState<{ farmers: number; total: number } | null>(null);
   const [skippedNoRate, setSkippedNoRate] = useState(0);
   const [skipExisting, setSkipExisting] = useState(true);
