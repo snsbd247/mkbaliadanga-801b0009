@@ -200,7 +200,7 @@ export default function Cashbook() {
       id: x.id, stream: (x.stream as Stream) || "savings", head_id: x.head_id || "",
       amount: Number(x.amount), payee: x.payee || "", note: x.note || "",
       expense_date: x.expense_date, method: x.is_bank_deposit ? "bank" : "cash",
-      bank_account_id: x.bank_account_id || "",
+      bank_account_id: x.bank_account_id || "", attachment_path: x.attachment_path || null,
     });
     setFile(null); setOpenV(true);
   }
