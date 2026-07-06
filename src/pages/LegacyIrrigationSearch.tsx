@@ -114,7 +114,7 @@ export default function LegacyIrrigationSearch() {
     <div className="space-y-6">
       <PageHeader
         title={tx("Old Data (Legacy Irrigation)", "পুরনো ডাটা (সেচ)")}
-        description={tx("Look up a farmer's old irrigation collection history by farmer code", "ফার্মার কোড দিয়ে কৃষকের পুরনো সেচ কালেকশন হিস্ট্রি দেখুন")}
+        description={tx("Look up a farmer's old irrigation history by farmer code, mobile number, or farmer ID", "ফার্মার কোড, মোবাইল নাম্বার বা ফার্মার আইডি দিয়ে কৃষকের পুরনো সেচ হিস্ট্রি দেখুন")}
       />
 
       <Card className="p-4">
