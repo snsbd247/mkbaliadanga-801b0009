@@ -47,6 +47,38 @@ function ensureSelectColumns(select: string, columns: string[]): string {
   return missing.length ? `${select},${missing.join(",")}` : select;
 }
 
+export type OpenInvoicesResult<T> = {
+  rows: T[];
+  error: { message: string; code?: string } | null;
+  traceId: string | null;
+};
+
+/**
+ * Result-returning variant. Callers that need to surface errors / empty states
+ * to the user should use this. `traceId` is a per-request id logged alongside
+ * any failure so support can correlate the console log with the UI toast.
+ */
+export async function fetchOpenIrrigationInvoicesResult<T extends DueInvoiceRow = any>(
+  farmerId: string,
+  select: string,
+): Promise<OpenInvoicesResult<T>> {
+  const selectWithGuardColumns = ensureSelectColumns(select, ["deleted_at"]);
+  const { data, error } = await db
+    .from("irrigation_invoices")
+    .select(selectWithGuardColumns)
+    .eq("farmer_id", farmerId)
+    .gt("due_amount", 0)
+    .order("due_date", { ascending: true });
+  if (error) {
+    const traceId = (typeof crypto !== "undefined" && crypto.randomUUID) ? crypto.randomUUID() : `${Date.now()}`;
+    console.error(`[irrigation-invoices][${traceId}] fetch failed for farmer ${farmerId}:`, error);
+    return { rows: [], error: { message: (error as any).message, code: (error as any).code }, traceId };
+  }
+  // Drop cancelled in JS so NULL/empty invoice_status rows are kept.
+  const rows = ((data as any[]) ?? []).filter((r) => isActiveInvoice(r)) as T[];
+  return { rows, error: null, traceId: null };
+}
+
 /**
  * Fetch open (due_amount > 0, not deleted, not cancelled) irrigation invoices
  * for a farmer, ordered by due_date. Pass the exact `select` string each caller
@@ -56,14 +88,7 @@ export async function fetchOpenIrrigationInvoices<T extends DueInvoiceRow = any>
   farmerId: string,
   select: string,
 ): Promise<T[]> {
-  const selectWithGuardColumns = ensureSelectColumns(select, ["deleted_at"]);
-  const { data, error } = await db
-    .from("irrigation_invoices")
-    .select(selectWithGuardColumns)
-    .eq("farmer_id", farmerId)
-    .gt("due_amount", 0)
-    .order("due_date", { ascending: true });
-  if (error) console.warn("fetchOpenIrrigationInvoices error:", error);
-  // Drop cancelled in JS so NULL/empty invoice_status rows are kept.
-  return ((data as any[]) ?? []).filter((r) => isActiveInvoice(r)) as T[];
+  const { rows } = await fetchOpenIrrigationInvoicesResult<T>(farmerId, select);
+  return rows;
 }
+
