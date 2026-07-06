@@ -166,8 +166,8 @@ export function sumIrrJama(rows: IrrJamaRow[]) {
     sechCharge: a.sechCharge + r.sechCharge, nalaCharge: a.nalaCharge + r.nalaCharge,
     maintenance: a.maintenance + r.maintenance, lateFee: a.lateFee + r.lateFee,
     bankWithdraw: a.bankWithdraw + r.bankWithdraw, pond: a.pond + r.pond,
-    misc: a.misc + r.misc, total: a.total + r.total,
-  }), { sechCharge: 0, nalaCharge: 0, maintenance: 0, lateFee: 0, bankWithdraw: 0, pond: 0, misc: 0, total: 0 });
+    hawlat: a.hawlat + r.hawlat, misc: a.misc + r.misc, total: a.total + r.total,
+  }), { sechCharge: 0, nalaCharge: 0, maintenance: 0, lateFee: 0, bankWithdraw: 0, pond: 0, hawlat: 0, misc: 0, total: 0 });
 }
 
 export function sumIrrKharch(rows: IrrKharchRow[]) {
