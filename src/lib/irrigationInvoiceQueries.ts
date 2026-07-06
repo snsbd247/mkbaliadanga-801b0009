@@ -3,14 +3,15 @@
 // Both the Payments page and IrrigationPaymentPanel MUST use this so their
 // invoice filtering stays identical and NULL-status invoices never disappear.
 //
-// Why not server-side `.neq("invoice_status","cancelled")` or
-// `.is("deleted_at", null)`?
+// Why not server-side `.neq("invoice_status","cancelled")`,
+// `.is("deleted_at", null)`, or `.gt("due_amount", 0)`?
 //   PostgREST `.neq` on a column also drops rows where the value is NULL, which
 //   silently hides valid unpaid invoices whose status was never set. Instead we
 //   filter cancelled/deleted in JS via `isActiveInvoice` (keeps NULL = active).
-//   The published Laravel/MySQL adapter also does not support the PostgREST
-//   `is` operator and returns `Unknown column 'is'`; deleted filtering is kept
-//   here in the shared client-side guard so both payment surfaces keep working.
+//   The published Laravel/MySQL adapter has had operator regressions (`is` and
+//   `gt` being interpreted as column names, e.g. `Unknown column 'gt'`). Status,
+//   deleted and positive-due filtering are therefore kept here in the shared
+//   client-side guard so both payment surfaces keep working permanently.
 
 import { db } from "@/lib/db";
 import { isActiveInvoice, type DueInvoiceRow } from "@/lib/dues";
@@ -117,20 +118,21 @@ export async function fetchOpenIrrigationInvoicesResult<T extends DueInvoiceRow 
   farmerId: string,
   select: string,
 ): Promise<OpenInvoicesResult<T>> {
-  const selectWithGuardColumns = ensureSelectColumns(select, ["deleted_at"]);
+  const selectWithGuardColumns = ensureSelectColumns(select, ["due_amount", "deleted_at"]);
   const { data, error } = await db
     .from("irrigation_invoices")
     .select(selectWithGuardColumns)
     .eq("farmer_id", farmerId)
-    .gt("due_amount", 0)
     .order("due_date", { ascending: true });
   if (error) {
     const traceId = (typeof crypto !== "undefined" && crypto.randomUUID) ? crypto.randomUUID() : `${Date.now()}`;
     console.error(`[irrigation-invoices][${traceId}] fetch failed for farmer ${farmerId}:`, error);
     return { rows: [], error: { message: (error as any).message, code: (error as any).code }, traceId };
   }
-  // Drop cancelled in JS so NULL/empty invoice_status rows are kept.
-  const rows = ((data as any[]) ?? []).filter((r) => isActiveInvoice(r)) as T[];
+  // Drop cancelled/deleted and fully-paid/non-due rows in JS so NULL/empty
+  // invoice_status rows are kept and Laravel/MySQL operator bugs cannot hide
+  // valid invoices from Payments.
+  const rows = ((data as any[]) ?? []).filter((r) => isActiveInvoice(r) && Number(r?.due_amount || 0) > 0) as T[];
   return { rows, error: null, traceId: null };
 }
 
