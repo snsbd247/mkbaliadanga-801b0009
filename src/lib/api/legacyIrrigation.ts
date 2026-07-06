@@ -65,7 +65,7 @@ export type ImportResult = {
 };
 
 export const LegacyIrrigationApi = {
-  list: (params: { farmer_code?: string; season?: string; batch?: string }) =>
+  list: (params: { farmer_code?: string; q?: string; season?: string; batch?: string }) =>
     api.get<LegacyIrrigationRecord[]>("/legacy-irrigation", { params }).then((r) => r.data),
   batches: () => api.get<LegacyBatch[]>("/legacy-irrigation/batches").then((r) => r.data),
   batchStatus: (batchId: string) =>
