@@ -213,7 +213,7 @@ export default function SocietyCashBook() {
           <table className="w-full border-collapse text-xs bn-cb-table" aria-label={tx("Income cash book", "জমা ক্যাশ বহি")}>
             <thead>
               <tr>
-                {[tx("Date", "তারিখ"), tx("Receipt no", "রশিদ নং"), tx("Received from", "কাহার নিকট প্রাপ্ত"), tx("Share", "শেয়ার"), tx("Savings deposit", "সঞ্চয়ের আমানত"), tx("Bank withdrawal", "ব্যাংক উত্তোলন"), tx("Loan collection", "কর্জের আদায়"), tx("Loan interest collection", "কর্জের সুদ আদায়"), tx("Form", "ফরম"), tx("Miscellaneous", "বিবিধ"), tx("Total", "মোট")].map((h) => (
+                {[tx("Date", "তারিখ"), tx("Receipt no", "রশিদ নং"), tx("Received from", "কাহার নিকট প্রাপ্ত"), tx("Share", "শেয়ার"), tx("Savings deposit", "সঞ্চয়ের আমানত"), tx("Bank withdrawal", "ব্যাংক উত্তোলন"), tx("Loan collection", "কর্জের আদায়"), tx("Loan interest collection", "কর্জের সুদ আদায়"), tx("Form", "ফরম"), tx("Loan received", "হাওলাত গ্রহণ"), tx("Miscellaneous", "বিবিধ"), tx("Total", "মোট")].map((h) => (
                   <th key={h} className="border border-black p-1">{h}</th>
                 ))}
               </tr>
