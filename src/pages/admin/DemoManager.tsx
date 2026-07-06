@@ -144,8 +144,12 @@ export default function DemoManager() {
       return;
     }
     // Auto safety backup of cash-report tables before seeding/resetting them.
+    // Any reset/both action fully wipes the cash-report tables (FULL_WIPE_ORDER)
+    // regardless of the selected modules, so back them up whenever we wipe —
+    // not only when the cashbook module is explicitly checked.
     let backupStatus: "skipped" | "ok" | "failed" = "skipped";
-    if (selected.includes("cashbook")) {
+    const willWipe = action === "reset" || action === "both";
+    if (willWipe || selected.includes("cashbook")) {
       // Scheduled (daily/weekly) snapshot, independent of the manual toggle.
       const sched = await maybeScheduledBackup();
       if (sched.status === "ok") { backupStatus = "ok"; toast.success(`নির্ধারিত ব্যাকআপ নেওয়া হয়েছে (${sched.rows} সারি)`); }
