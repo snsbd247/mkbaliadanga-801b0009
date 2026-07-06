@@ -3,6 +3,7 @@ import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { db } from "@/lib/db";
 import { fetchOpenIrrigationInvoices } from "@/lib/irrigationInvoiceQueries";
+import { invoiceStatusBadge } from "@/lib/dues";
 import { fetchReceiptAuditLogs } from "@/lib/receiptAudit";
 import { postIrrigationCollection, takeLastImbalance, checkRequiredAccounts, formatImbalance } from "@/lib/accountingPosting";
 import { PageHeader } from "@/components/layout/PageHeader";
