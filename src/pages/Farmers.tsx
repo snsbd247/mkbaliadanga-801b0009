@@ -933,7 +933,7 @@ export default function Farmers() {
                 <TableCell className="text-right">
                   {(() => {
                     const d = duesMap[f.id];
-                    const v = d ? Number(d.net_due) : 0;
+                    const v = d ? Number(d.loan_due || 0) + Number(d.irr_due || 0) : 0;
                     return <span className={v > 0 ? "due-text font-semibold" : "text-muted-foreground"}>{money(v)}</span>;
                   })()}
                 </TableCell>
