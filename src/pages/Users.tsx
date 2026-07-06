@@ -19,7 +19,7 @@ import { ShieldCheck, Plus, Trash2, KeyRound, Pencil } from "lucide-react";
 import { useAuth } from "@/auth/AuthProvider";
 import { DeleteButton } from "@/components/ui/action-icon-button";
 import { z } from "zod";
-import { isLaravelBackend } from "@/lib/backend";
+import { isLaravelBackend, BACKEND_LABEL, BACKEND_API_BASE } from "@/lib/backend";
 
 // Minimal password policy — length only. Simple numeric passwords (e.g. 123456789) are allowed.
 function passwordPolicyIssues(pw: string, _role: string, t: (k: any) => string): string[] {
