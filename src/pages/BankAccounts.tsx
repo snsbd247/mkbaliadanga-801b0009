@@ -78,13 +78,60 @@ export default function BankAccounts() {
 
   const totalBal = useMemo(() => Array.from(balances.values()).reduce((a, b) => a + b, 0), [balances]);
 
+  const emptyAccount = () => ({ bank_name: "", branch: "", account_no: "", account_title: "", account_type: "savings", stream: "other", opening_balance: 0, is_active: true });
+
+  function openAddAccount() { setEditAccId(null); setA(emptyAccount()); setOpenA(true); }
+  function openEditAccount(ac: any) {
+    setEditAccId(ac.id);
+    setA({ bank_name: ac.bank_name ?? "", branch: ac.branch ?? "", account_no: ac.account_no ?? "", account_title: ac.account_title ?? "", account_type: ac.account_type ?? "savings", stream: ac.stream ?? "other", opening_balance: ac.opening_balance ?? 0, is_active: ac.is_active ?? true });
+    setOpenA(true);
+  }
+
   async function saveAccount() {
     if (!a.bank_name || !a.account_no) return toast.error("Bank name and account no required");
-    const { error } = await sb.from("bank_accounts").insert(a);
-    if (error) return toast.error(error.message);
-    toast.success("Account added"); setOpenA(false); load();
-    setA({ bank_name: "", branch: "", account_no: "", account_title: "", account_type: "savings", stream: "other", opening_balance: 0, is_active: true });
+    if (editAccId) {
+      const { error } = await sb.from("bank_accounts").update(a).eq("id", editAccId);
+      if (error) return toast.error(error.message);
+      toast.success("Account updated");
+    } else {
+      const { error } = await sb.from("bank_accounts").insert(a);
+      if (error) return toast.error(error.message);
+      toast.success("Account added");
+    }
+    setOpenA(false); setEditAccId(null); load();
+    setA(emptyAccount());
   }
+
+  async function deleteAccount(ac: any) {
+    if (!confirm(`Delete bank account "${ac.bank_name} — ${ac.account_no}"? This cannot be undone.`)) return;
+    const { error } = await sb.from("bank_accounts").delete().eq("id", ac.id);
+    if (error) return toast.error(error.message);
+    toast.success("Account deleted"); load();
+  }
+
+  async function saveEditTxn() {
+    if (!editTxn) return;
+    if (Number(editTxn.amount) <= 0) return toast.error("Amount required");
+    const { error } = await sb.from("bank_transactions").update({
+      txn_type: editTxn.txn_type, amount: editTxn.amount, txn_date: editTxn.txn_date,
+      reference_no: editTxn.reference_no, note: editTxn.note,
+    }).eq("id", editTxn.id);
+    if (error) return toast.error(error.message);
+    toast.success("Transaction updated"); setEditTxn(null); load();
+  }
+
+  async function deleteTxn(t: any) {
+    if (!confirm("Delete this transaction? Linked cashbook entries will remain unless removed separately.")) return;
+    const { error } = await sb.from("bank_transactions").delete().eq("id", t.id);
+    if (error) return toast.error(error.message);
+    // Remove any mirrored cashbook rows created with the same link_id.
+    if (t.link_id) {
+      await db.from("expenses").delete().eq("link_id", t.link_id);
+      await db.from("receipts").delete().eq("link_id", t.link_id);
+    }
+    toast.success("Transaction deleted"); load();
+  }
+
 
   // Stream-aware lock: only the cash stream the bank account belongs to blocks the txn.
   async function isCashbookLocked(dateStr: string, stream?: CashStream): Promise<boolean> {
