@@ -162,6 +162,9 @@ export default function ReceiptTemplatePage() {
         description="Customize the scan-payment PDF receipt and preview before saving."
         actions={
           <div className="flex gap-2">
+            <Button variant="outline" size="sm" asChild>
+              <Link to="/admin/receipt-serial-audit"><History className="h-4 w-4" />সিরিয়াল লগ</Link>
+            </Button>
             <Button variant="outline" size="sm" onClick={reset}><RotateCcw className="h-4 w-4" />Reset</Button>
             <Button size="sm" onClick={save} disabled={saving || !!serialError}>
               {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}Save
