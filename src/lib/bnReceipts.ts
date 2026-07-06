@@ -177,6 +177,14 @@ function moneyInt(n: number | null | undefined, lang: ReceiptLang, suffix = ""):
   return `${digits(s, lang)}${suffix}`;
 }
 
+/** চার্জ রেট display: শতাংশ থাকলে ২ ডিজিট দশমিক দেখায় (e.g. ৩৩৩৩.৩৩), না থাকলে পূর্ণসংখ্যা. */
+function rateMoney(n: number | null | undefined, lang: ReceiptLang, suffix = ""): string {
+  const v = Number(n ?? 0);
+  const rounded = Math.round(v * 100) / 100;
+  const s = Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(2);
+  return `${digits(s, lang)}${suffix}`;
+}
+
 const cleanBnReceiptText = (s: string) => s
   .replace(/হওলাত/g, "হাওলাত")
   .replace(/গ্রহন/g, "গ্রহণ")
