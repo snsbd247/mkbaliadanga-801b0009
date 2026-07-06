@@ -26,6 +26,48 @@ export function filterInvoicesByStatus<T extends DueInvoiceRow>(rows: T[], filte
   return (rows ?? []).filter((r) => (filter === "open" ? isActiveInvoice(r) : !isActiveInvoice(r)));
 }
 
+export type InvoiceSortKey = "invoice_no" | "due_date" | "due_amount";
+export type SortDir = "asc" | "desc";
+
+type SearchableInvoice = {
+  invoice_no?: string | number | null;
+  due_date?: string | null;
+  due_amount?: number | string | null;
+};
+
+/**
+ * Filter invoices by a free-text query (matches invoice_no or due_date) and
+ * sort by the chosen column. Pure + side-effect free for easy testing.
+ */
+export function searchAndSortInvoices<T extends SearchableInvoice>(
+  rows: T[],
+  query: string,
+  sortKey: InvoiceSortKey,
+  dir: SortDir,
+): T[] {
+  const q = (query ?? "").trim().toLowerCase();
+  const filtered = q
+    ? (rows ?? []).filter((r) =>
+        String(r.invoice_no ?? "").toLowerCase().includes(q) ||
+        String(r.due_date ?? "").toLowerCase().includes(q),
+      )
+    : [...(rows ?? [])];
+  const mult = dir === "asc" ? 1 : -1;
+  return filtered.sort((a, b) => {
+    let av: number | string;
+    let bv: number | string;
+    if (sortKey === "due_amount") {
+      av = Number(a.due_amount ?? 0); bv = Number(b.due_amount ?? 0);
+    } else {
+      av = String(a[sortKey] ?? ""); bv = String(b[sortKey] ?? "");
+    }
+    if (av < bv) return -1 * mult;
+    if (av > bv) return 1 * mult;
+    return 0;
+  });
+}
+
+
 
 
 function splitTopLevelSelect(select: string): string[] {
