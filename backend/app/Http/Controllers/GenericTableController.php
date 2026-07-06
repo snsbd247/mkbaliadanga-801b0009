@@ -548,6 +548,7 @@ class GenericTableController extends Controller
     public function update(Request $request, string $table): JsonResponse
     {
         $table = $this->table($table);
+        $this->authorizeWrite($request, $table);
         $values = $this->normalizeWriteRow($table, (array) $request->input('values', []));
         $filters = $request->input('filters', []);
 
