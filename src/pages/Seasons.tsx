@@ -16,6 +16,7 @@ import { DeleteButton } from "@/components/ui/action-icon-button";
 import { Badge } from "@/components/ui/badge";
 import { money } from "@/lib/format";
 import { exportTablePDF } from "@/lib/exports";
+import { logAudit } from "@/lib/audit";
 
 type SeasonType = { id: string; code: string; name: string; name_bn: string | null };
 type LandType = { id: string; code: string; name: string; name_bn: string | null };
@@ -61,6 +62,19 @@ export default function Seasons() {
   const [ratesSeason, setRatesSeason] = useState<any | null>(null);
   const [cfOpen, setCfOpen] = useState(false);
   const [cfSeason, setCfSeason] = useState<any | null>(null);
+
+  const [auditOpen, setAuditOpen] = useState(false);
+  const [auditRows, setAuditRows] = useState<any[]>([]);
+  async function openAudit() {
+    setAuditOpen(true);
+    const { data } = await db
+      .from("system_audit_logs")
+      .select("*")
+      .eq("module", "season")
+      .order("created_at", { ascending: false })
+      .limit(200);
+    setAuditRows((data as any) ?? []);
+  }
 
   useEffect(() => {
     document.title = `${t("seasons")} — ${t("appName")}`;
@@ -115,10 +129,18 @@ export default function Seasons() {
       due_date: form.due_date || null,
       status: form.status,
     };
-    const { error } = editId
-      ? await db.from("seasons").update(payload).eq("id", editId)
-      : await db.from("seasons").insert(payload);
+    const oldData = editId ? list.find((s) => s.id === editId) : null;
+    const { data: saved, error } = editId
+      ? await db.from("seasons").update(payload).eq("id", editId).select("id").maybeSingle()
+      : await db.from("seasons").insert(payload).select("id").maybeSingle();
     if (error) return toast.error(error.message);
+    void logAudit({
+      module: "season",
+      action_type: editId ? "update" : "create",
+      reference_id: (saved as any)?.id ?? editId ?? null,
+      old_data: oldData ?? null,
+      new_data: payload,
+    });
     toast.success(t("saved"));
     setOpen(false);
     setEditId(null);
@@ -127,8 +149,10 @@ export default function Seasons() {
   }
 
   async function del(id: string) {
+    const oldData = list.find((s) => s.id === id) ?? null;
     const { error } = await db.from("seasons").delete().eq("id", id);
     if (error) return toast.error(error.message);
+    void logAudit({ module: "season", action_type: "delete", reference_id: id, old_data: oldData });
     load();
   }
 
@@ -164,6 +188,9 @@ export default function Seasons() {
           isAdmin && (
             <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) { setEditId(null); setForm(emptyForm); } }}>
               <div className="inline-flex gap-2">
+                <Button variant="outline" onClick={openAudit}>
+                  <History className="h-4 w-4 mr-1" />{tx("Audit log", "অডিট লগ")}
+                </Button>
                 <Button variant="outline" onClick={generateNext}>
                   <Plus className="h-4 w-4 mr-1" />{tx("Generate next (6 months)", "নতুন সিজন অটো (৬ মাস)")}
                 </Button>
@@ -282,6 +309,38 @@ export default function Seasons() {
 
       <SeasonRatesDialog open={ratesOpen} onOpenChange={setRatesOpen} season={ratesSeason} />
       <CarryForwardDialog open={cfOpen} onOpenChange={setCfOpen} season={cfSeason} />
+      <Dialog open={auditOpen} onOpenChange={setAuditOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>{tx("Season audit log", "সিজন অডিট লগ")}</DialogTitle>
+          </DialogHeader>
+          <div className="max-h-[60vh] overflow-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>{tx("When", "সময়")}</TableHead>
+                  <TableHead>{tx("Action", "কাজ")}</TableHead>
+                  <TableHead>{tx("Season", "সিজন")}</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {auditRows.length === 0 ? (
+                  <TableRow><TableCell colSpan={3} className="text-center text-muted-foreground py-6">{tx("No records", "কোন রেকর্ড নেই")}</TableCell></TableRow>
+                ) : auditRows.map((r) => {
+                  const d = (r.new_data ?? r.old_data) ?? {};
+                  return (
+                    <TableRow key={r.id}>
+                      <TableCell className="text-xs whitespace-nowrap">{r.created_at ? new Date(r.created_at).toLocaleString() : "—"}</TableCell>
+                      <TableCell><Badge variant={r.action_type === "delete" ? "destructive" : r.action_type === "create" ? "default" : "secondary"}>{r.action_type}</Badge></TableCell>
+                      <TableCell className="text-xs">{d.name ?? d.type ?? "—"} {d.year ?? ""}</TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </div>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
