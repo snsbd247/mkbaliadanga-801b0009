@@ -123,6 +123,7 @@ export default function IrrigationCashStatement() {
       { section: tx("Fund", "তহবিল"), desc: tx("Cash in hand fund", "হস্তমজুদ তহবিল"), amount: closingFund },
       { section: tx("Grand total", "সর্বমোট"), desc: tx("Grand total (income)", "সর্বমোট (জমা)"), amount: grandIncome },
       { section: tx("Grand total", "সর্বমোট"), desc: tx("Grand total (expense)", "সর্বমোট (খরচ)"), amount: grandExpense },
+      { section: tx("Bank", "ব্যাংক"), desc: tx("Bank balance (as of end date)", "ব্যাংক ব্যালেন্স (তারিখ পর্যন্ত)"), amount: bankBalance },
     ];
     downloadCsv(`${tx("irrigation-cash-statement", "সেচ-জমা-খরচ")}-${from}_${to}`, rows, [
       { header: tx("Section", "বিভাগ"), accessor: (r) => r.section },
