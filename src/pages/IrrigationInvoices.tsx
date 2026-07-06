@@ -232,6 +232,15 @@ function InvoiceListTab({ seasons, offices, isSuper }: any) {
     return base;
   }, [rows, search, mouza, mouzaSort]);
 
+  const [pageSize, setPageSize] = useState(100);
+  const [page, setPage] = useState(1);
+  const pageCount = Math.max(1, Math.ceil(filtered.length / pageSize));
+  useEffect(() => { setPage(1); }, [search, mouza, mouzaSort, seasonId, officeId, status, pageSize, rows.length]);
+  const paged = useMemo(
+    () => filtered.slice((page - 1) * pageSize, page * pageSize),
+    [filtered, page, pageSize],
+  );
+
 
   /** Grand totals for the currently-filtered invoices (footer summary).
    *  carried_forward invoices are excluded — their balance has already been
@@ -676,7 +685,7 @@ function InvoiceListTab({ seasons, offices, isSuper }: any) {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filtered.map((r: any) => (
+              {paged.map((r: any) => (
                 <TableRow key={r.id} data-state={selected.has(r.id) ? "selected" : undefined}>
                   <TableCell><Checkbox checked={selected.has(r.id)} onCheckedChange={(v) => toggleOne(r.id, !!v)} /></TableCell>
                   <TableCell className="font-mono text-xs">{r.invoice_no}</TableCell>
@@ -783,6 +792,36 @@ function InvoiceListTab({ seasons, offices, isSuper }: any) {
             )}
           </Table>
         </div>
+        {filtered.length > 0 && (
+          <div className="flex flex-wrap items-center justify-between gap-3 pt-3">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <span>{tx("Rows per page", "প্রতি পেজে")}</span>
+              <Select value={String(pageSize)} onValueChange={(v) => setPageSize(Number(v))}>
+                <SelectTrigger className="h-8 w-24"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {[100, 200, 500, 1000].map((n) => (
+                    <SelectItem key={n} value={String(n)}>{n}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <span>
+                {tx(
+                  `${(page - 1) * pageSize + 1}–${Math.min(page * pageSize, filtered.length)} of ${filtered.length}`,
+                  `${filtered.length} টির মধ্যে ${(page - 1) * pageSize + 1}–${Math.min(page * pageSize, filtered.length)}`,
+                )}
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button size="sm" variant="outline" disabled={page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))}>
+                {tx("Previous", "পূর্ববর্তী")}
+              </Button>
+              <span className="text-sm">{tx(`Page ${page} of ${pageCount}`, `পেজ ${page} / ${pageCount}`)}</span>
+              <Button size="sm" variant="outline" disabled={page >= pageCount} onClick={() => setPage((p) => Math.min(pageCount, p + 1))}>
+                {tx("Next", "পরবর্তী")}
+              </Button>
+            </div>
+          </div>
+        )}
         <InvoicePreviewDialog
           invoiceId={previewId}
           onClose={() => setPreviewId(null)}
