@@ -22,6 +22,7 @@ import {
   getPaperPreset, computeReceiptFit,
 } from "@/lib/legacyReceiptLayout";
 import { useLang } from "@/i18n/LanguageProvider";
+import { validateFarmerCode, FARMER_CODE_MESSAGES } from "@/lib/legacyFarmerCode";
 
 const MONTH_NAMES = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 function fmtDisplayDate(v: unknown): string {
