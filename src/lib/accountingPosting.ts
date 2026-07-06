@@ -126,6 +126,10 @@ async function createJournal(opts: {
     return;
   }
   try {
+    // Insert the journal UNPOSTED first. The ledger-posting trigger
+    // (post_journal_to_ledger) fires only on UPDATE/DELETE, so we add the
+    // lines while unposted, then flip `posted` to true — that UPDATE is what
+    // generates the ledger_entries rows.
     const { data: je, error } = await db
       .from("journal_entries")
       .insert({
@@ -133,15 +137,22 @@ async function createJournal(opts: {
         reference: opts.reference ?? null,
         description: opts.description ?? null,
         office_id: opts.officeId ?? null,
-        posted: true,
-        posted_at: new Date().toISOString(),
+        posted: false,
         created_by: opts.createdBy ?? null,
       })
       .select("id")
       .single();
     if (error || !je) return;
     const journalId = (je as any).id;
-    await db.from("journal_entry_lines").insert(opts.lines.map((l) => ({ ...l, journal_id: journalId })));
+    const { error: lineErr } = await db
+      .from("journal_entry_lines")
+      .insert(opts.lines.map((l) => ({ ...l, journal_id: journalId })));
+    if (lineErr) return;
+    // Flip to posted → trigger writes the ledger entries.
+    await db
+      .from("journal_entries")
+      .update({ posted: true, posted_at: new Date().toISOString() })
+      .eq("id", journalId);
   } catch {
     /* posting failure must not break the caller */
   }
