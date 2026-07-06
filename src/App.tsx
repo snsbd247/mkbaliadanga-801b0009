@@ -211,6 +211,7 @@ const App = () => (
         <TooltipProvider>
           <Toaster />
           <Sonner />
+          <BuildVersionWatcher />
           <BrowserRouter>
             <Routes>
               <Route path="/" element={<FarmerPortalLogin />} />
