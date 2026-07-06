@@ -331,7 +331,7 @@ function copyHtml(d: IrrigationInvoiceData, brand: CompanyBranding, copyLabel: s
   </div>`;
 }
 
-async function renderCopyToCanvas(d: IrrigationInvoiceData, brand: CompanyBranding, copyLabel: string, settings: InvoicePdfSettings, role: "office" | "farmer"): Promise<HTMLCanvasElement> {
+async function renderCopyToCanvas(d: IrrigationInvoiceData, brand: CompanyBranding, copyLabel: string, settings: InvoicePdfSettings, role: "office" | "farmer", wide = false): Promise<HTMLCanvasElement> {
   // QR points to the public receipt verification page for this invoice.
   let qrDataUrl: string | undefined;
   try {
@@ -339,8 +339,8 @@ async function renderCopyToCanvas(d: IrrigationInvoiceData, brand: CompanyBrandi
     qrDataUrl = await QRCode.toDataURL(verifyUrl, { margin: 0, width: 120 });
   } catch { /* QR is optional; skip on failure */ }
   const wrap = document.createElement("div");
-  wrap.style.cssText = "position:fixed;left:-10000px;top:0;width:780px;background:#fff;";
-  wrap.innerHTML = copyHtml(d, brand, copyLabel, settings, role, qrDataUrl);
+  wrap.style.cssText = `position:fixed;left:-10000px;top:0;width:${wide ? 1040 : 780}px;background:#fff;`;
+  wrap.innerHTML = copyHtml(d, brand, copyLabel, settings, role, qrDataUrl, wide);
   document.body.appendChild(wrap);
   try {
     await new Promise((r) => setTimeout(r, 60));
@@ -350,11 +350,17 @@ async function renderCopyToCanvas(d: IrrigationInvoiceData, brand: CompanyBrandi
   }
 }
 
-function makePdf(settings: InvoicePdfSettings): jsPDF {
+// "both" always prints on an A4 portrait sheet (office copy on top, farmer copy
+// below a cut line). Single copies print on an A5 landscape sheet.
+function makePdf(settings: InvoicePdfSettings, copy: InvoiceCopy): jsPDF {
+  if (copy === "both") {
+    return new jsPDF({ unit: "mm", format: "a4", orientation: "p" });
+  }
   if (settings.paperFormat === "a5-landscape") {
     return new jsPDF({ unit: "mm", format: "a5", orientation: "l" });
   }
-  const fmt = settings.paperFormat === "letter" ? "letter" : settings.paperFormat === "a5" ? "a5" : "a4";
+  if (settings.paperFormat === "a5") return new jsPDF({ unit: "mm", format: "a5", orientation: "p" });
+  const fmt = settings.paperFormat === "letter" ? "letter" : "a4";
   return new jsPDF({ unit: "mm", format: fmt, orientation: "p" });
 }
 
@@ -362,7 +368,9 @@ async function paintInvoiceOnPage(pdf: jsPDF, d: IrrigationInvoiceData, brand: C
   const pageW = pdf.internal.pageSize.getWidth();
   const pageH = pdf.internal.pageSize.getHeight();
   const innerW = pageW - settings.marginLeftMm - settings.marginRightMm;
-  const cutY = Math.min(Math.max(settings.cutLineMm, 60), pageH - 60);
+  // For "both" split an A4 portrait page in half.
+  const cutY = pageH / 2;
+  const wide = copy !== "both";
 
   const placeImage = (canvas: HTMLCanvasElement, yTop: number, yBottom: number) => {
     const slotH = yBottom - yTop;
@@ -376,12 +384,12 @@ async function paintInvoiceOnPage(pdf: jsPDF, d: IrrigationInvoiceData, brand: C
   };
 
   if (copy === "office" || copy === "both") {
-    const c = await renderCopyToCanvas(d, brand, "অফিস কপি", settings, "office");
+    const c = await renderCopyToCanvas(d, brand, "অফিস কপি", settings, "office", wide);
     if (copy === "office") placeImage(c, settings.marginTopMm, pageH - settings.marginBottomMm);
     else placeImage(c, settings.marginTopMm, cutY - 3);
   }
   if (copy === "farmer" || copy === "both") {
-    const c = await renderCopyToCanvas(d, brand, "কৃষকের কপি", settings, "farmer");
+    const c = await renderCopyToCanvas(d, brand, "কৃষকের কপি", settings, "farmer", wide);
     if (copy === "farmer") placeImage(c, settings.marginTopMm, pageH - settings.marginBottomMm);
     else placeImage(c, cutY + 3, pageH - settings.marginBottomMm);
   }
