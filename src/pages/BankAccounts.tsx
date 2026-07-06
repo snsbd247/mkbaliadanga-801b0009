@@ -514,6 +514,27 @@ export default function BankAccounts() {
         </TabsContent>
 
       </Tabs>
+
+      <Dialog open={!!editTxn} onOpenChange={(o) => { if (!o) setEditTxn(null); }}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Edit Transaction</DialogTitle></DialogHeader>
+          {editTxn && (
+            <div className="grid grid-cols-2 gap-3">
+              <div><Label>Type</Label>
+                <Select value={editTxn.txn_type} onValueChange={(v) => setEditTxn({ ...editTxn, txn_type: v })}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>{TXN_TYPES.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+              <div><Label>Amount</Label><Input type="number" value={editTxn.amount} onChange={e => setEditTxn({ ...editTxn, amount: Number(e.target.value) })} /></div>
+              <div><Label>Date</Label><Input type="date" value={(editTxn.txn_date ?? "").slice(0, 10)} onChange={e => setEditTxn({ ...editTxn, txn_date: e.target.value })} /></div>
+              <div><Label>Reference No</Label><Input value={editTxn.reference_no ?? ""} onChange={e => setEditTxn({ ...editTxn, reference_no: e.target.value })} /></div>
+              <div className="col-span-2"><Label>Note</Label><Input value={editTxn.note ?? ""} onChange={e => setEditTxn({ ...editTxn, note: e.target.value })} /></div>
+            </div>
+          )}
+          <DialogFooter><Button variant="outline" onClick={() => setEditTxn(null)}>Cancel</Button><Button onClick={saveEditTxn}>Save</Button></DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
