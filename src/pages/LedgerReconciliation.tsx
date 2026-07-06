@@ -84,7 +84,27 @@ export default function LedgerReconciliation() {
       const j = await res.json();
       if (!res.ok) { toast.error(j?.error || t("p5b_failed")); return; }
       setReport(j);
+      void loadBankCrossCheck(j);
     } finally { setLoading(false); }
+  }
+
+  // Cross-check: actual Bank balance (bank_accounts opening + all transactions)
+  // vs. the ledger's Bank account (code 1020) closing balance. A non-zero diff
+  // means bank activity has not fully flowed into the double-entry ledger.
+  async function loadBankCrossCheck(rep: Report) {
+    try {
+      const [{ data: accs }, { data: txns }] = await Promise.all([
+        db.from("bank_accounts").select("id,opening_balance"),
+        db.from("bank_transactions").select("bank_account_id,txn_type,amount"),
+      ]);
+      let actual = (accs ?? []).reduce((s: number, a: any) => s + Number(a.opening_balance || 0), 0);
+      for (const t of (txns ?? []) as any[]) {
+        const sign = ["deposit", "transfer_in", "interest"].includes(t.txn_type) ? 1 : -1;
+        actual += sign * Number(t.amount || 0);
+      }
+      const ledger = (rep.accounts.find((a) => a.code === "1020")?.closing_balance) ?? 0;
+      setBankCross({ actual, ledger, diff: Math.round((actual - ledger) * 100) / 100 });
+    } catch { setBankCross(null); }
   }
 
   async function openDetail(referenceType: string, referenceId: string) {
