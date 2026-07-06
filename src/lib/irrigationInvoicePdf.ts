@@ -409,7 +409,7 @@ async function paintInvoiceOnPage(pdf: jsPDF, d: IrrigationInvoiceData, brand: C
 
 async function renderPdf(d: IrrigationInvoiceData, copy: InvoiceCopy, settings: InvoicePdfSettings): Promise<jsPDF> {
   const brand = await loadBranding();
-  const pdf = makePdf(settings);
+  const pdf = makePdf(settings, copy);
   await paintInvoiceOnPage(pdf, d, brand, copy, settings);
   return pdf;
 }
