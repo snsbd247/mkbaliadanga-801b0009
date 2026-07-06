@@ -230,6 +230,7 @@ export default function SocietyCashBook() {
                   <td className="border border-black p-1 text-right">{formatMoney(r.loanPrincipal)}</td>
                   <td className="border border-black p-1 text-right">{formatMoney(r.loanInterest)}</td>
                   <td className="border border-black p-1 text-right">{formatMoney(r.form)}</td>
+                  <td className="border border-black p-1 text-right">{formatMoney(r.hawlat)}</td>
                   <td className="border border-black p-1 text-right">{formatMoney(r.misc)}</td>
                   <td className="border border-black p-1 text-right">{formatMoney(r.total)}</td>
                 </tr>
