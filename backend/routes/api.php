@@ -218,6 +218,7 @@ Route::middleware(['auth:sanctum', 'branch.scope'])->group(function () {
     Route::delete('/db/{table}', [GenericTableController::class, 'delete']);
 
     // RPC dispatcher (Supabase Postgres RPC replacement)
+    Route::get('/rpc/_contract', [RpcController::class, 'contract']);
     Route::post('/rpc/{name}', [RpcController::class, 'handle']);
     // Edge-function dispatcher (Supabase Edge Functions replacement)
     Route::post('/fn/{name}', [FunctionController::class, 'handle']);

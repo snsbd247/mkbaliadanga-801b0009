@@ -210,6 +210,27 @@ async function loadBillingContext(land_id: string, as_of: string) {
   return { owner, total, relations };
 }
 
+/**
+ * Fire-and-forget server-side audit whenever an RPC fallback is used, so the
+ * permanent fix can be traced in production (land_id, office, request_id, error).
+ */
+function logRpcFallback(rpc: string, land_id: string, error: unknown) {
+  const request_id =
+    (globalThis.crypto as any)?.randomUUID?.() ?? `req_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+  const detail = {
+    rpc,
+    land_id,
+    request_id,
+    error: error instanceof Error ? error.message : String(error),
+  };
+  try {
+    void db.rpc("log_rpc_fallback" as any, detail);
+  } catch {
+    /* logging must never break the invoice flow */
+  }
+  return request_id;
+}
+
 async function resolveBillingSplitsFallback(land_id: string, as_of: string): Promise<BillingSplit[]> {
   const ctx = await loadBillingContext(land_id, as_of);
   if (!ctx.owner) return [];
@@ -238,6 +259,7 @@ export async function resolveBilledFarmer(land_id: string, as_of: string = new D
     }
   } catch (e) {
     console.warn("get_billed_farmer_for_land unavailable — using table fallback", e);
+    logRpcFallback("get_billed_farmer_for_land", land_id, e);
   }
 
   const splits = await resolveBillingSplitsFallback(land_id, as_of);
@@ -275,6 +297,7 @@ export async function resolveBillingSplits(
     rows = Array.isArray(data) ? data : [];
   } catch (e) {
     console.warn("get_land_billing_split unavailable — using single-farmer fallback", e);
+    logRpcFallback("get_land_billing_split", land_id, e);
     rows = [];
   }
   const splits = rows

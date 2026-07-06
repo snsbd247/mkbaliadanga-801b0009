@@ -21,6 +21,16 @@ use Illuminate\Support\Str;
  */
 class RpcController extends Controller
 {
+    /**
+     * RPCs the frontend depends on. Used by the contract endpoint to report
+     * missing implementations clearly instead of failing at call time.
+     */
+    private const REQUIRED_RPCS = [
+        'get_land_billing_split',
+        'get_billed_farmer_for_land',
+        'generate_invoice_no',
+    ];
+
     public function handle(Request $request, string $name): JsonResponse
     {
         $p = $request->all();
@@ -35,6 +45,37 @@ class RpcController extends Controller
         $result = $this->{$method}($p, $request);
         return response()->json(['result' => $result]);
     }
+
+    /**
+     * RPC contract validation — reports which RPCs are implemented on this
+     * server and returns a clear error (409) when a required RPC is missing.
+     */
+    public function contract(Request $request): JsonResponse
+    {
+        $available = [];
+        foreach (get_class_methods($this) as $m) {
+            if (str_starts_with($m, 'rpc_')) {
+                $available[] = substr($m, 4);
+            }
+        }
+        sort($available);
+
+        $missing = array_values(array_filter(
+            self::REQUIRED_RPCS,
+            fn ($name) => ! method_exists($this, 'rpc_' . $name)
+        ));
+
+        return response()->json([
+            'available'      => $available,
+            'required'       => self::REQUIRED_RPCS,
+            'missing'        => $missing,
+            'ok'             => empty($missing),
+            'message'        => empty($missing)
+                ? 'All required RPCs are available.'
+                : 'Missing required RPCs: ' . implode(', ', $missing),
+        ], empty($missing) ? 200 : 409);
+    }
+
 
     // ── Farmer identifier helpers ─────────────────────────────────────
     private function normalizeIdentifier(?string $value): ?string
@@ -1018,6 +1059,40 @@ class RpcController extends Controller
                 'status'     => ! empty($p['_blocked']) ? 'blocked' : 'ok',
                 'created_at' => now(),
             ]);
+        } catch (\Throwable $e) {
+            // Audit failures must never break the caller.
+        }
+        return null;
+    }
+
+    // ── RPC fallback audit (traces the permanent invoice fix in production) ──
+    protected function rpc_log_rpc_fallback(array $p, Request $request): ?string
+    {
+        try {
+            if (! Schema::hasTable('audit_logs')) {
+                return null;
+            }
+            $user = $request->user();
+            $requestId = $p['request_id'] ?? (string) Str::uuid();
+            $office = $user->office_id ?? $user->office ?? null;
+            $detail = [
+                'rpc'        => $p['rpc'] ?? 'unknown',
+                'land_id'    => $p['land_id'] ?? null,
+                'office'     => $office,
+                'request_id' => $requestId,
+                'error'      => $p['error'] ?? null,
+            ];
+
+            $row = ['action' => 'rpc.fallback_used', 'created_at' => now()];
+            if (Schema::hasColumn('audit_logs', 'id'))        $row['id'] = (string) Str::uuid();
+            if (Schema::hasColumn('audit_logs', 'user_id'))   $row['user_id'] = $user->id ?? null;
+            if (Schema::hasColumn('audit_logs', 'entity'))    $row['entity'] = 'rpc';
+            if (Schema::hasColumn('audit_logs', 'entity_id')) $row['entity_id'] = $detail['land_id'];
+            if (Schema::hasColumn('audit_logs', 'office_id')) $row['office_id'] = $office;
+            if (Schema::hasColumn('audit_logs', 'meta'))      $row['meta'] = json_encode($detail);
+
+            DB::table('audit_logs')->insert($row);
+            return $requestId;
         } catch (\Throwable $e) {
             // Audit failures must never break the caller.
         }
