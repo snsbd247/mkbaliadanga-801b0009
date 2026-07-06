@@ -115,10 +115,18 @@ export default function Seasons() {
       due_date: form.due_date || null,
       status: form.status,
     };
-    const { error } = editId
-      ? await db.from("seasons").update(payload).eq("id", editId)
-      : await db.from("seasons").insert(payload);
+    const oldData = editId ? list.find((s) => s.id === editId) : null;
+    const { data: saved, error } = editId
+      ? await db.from("seasons").update(payload).eq("id", editId).select("id").maybeSingle()
+      : await db.from("seasons").insert(payload).select("id").maybeSingle();
     if (error) return toast.error(error.message);
+    void logAudit({
+      module: "season",
+      action_type: editId ? "update" : "create",
+      reference_id: (saved as any)?.id ?? editId ?? null,
+      old_data: oldData ?? null,
+      new_data: payload,
+    });
     toast.success(t("saved"));
     setOpen(false);
     setEditId(null);
@@ -127,8 +135,10 @@ export default function Seasons() {
   }
 
   async function del(id: string) {
+    const oldData = list.find((s) => s.id === id) ?? null;
     const { error } = await db.from("seasons").delete().eq("id", id);
     if (error) return toast.error(error.message);
+    void logAudit({ module: "season", action_type: "delete", reference_id: id, old_data: oldData });
     load();
   }
 
