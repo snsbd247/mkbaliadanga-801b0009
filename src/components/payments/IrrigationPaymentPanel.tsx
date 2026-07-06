@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { db } from "@/lib/db";
+import { fetchOpenIrrigationInvoices } from "@/lib/irrigationInvoiceQueries";
+import { invoiceStatusBadge } from "@/lib/dues";
 import { useAuth } from "@/auth/AuthProvider";
 import { useLang } from "@/i18n/LanguageProvider";
 import { Card } from "@/components/ui/card";
@@ -24,6 +26,11 @@ import { safeWithRetry } from "@/lib/retryQueue";
 import { logAudit } from "@/lib/audit";
 import { autoReceiptNo } from "@/lib/receiptNo";
 import { nextMonthlyReceiptNo, nextUnifiedReceiptNo } from "@/lib/monthlyReceiptNo";
+
+// Shared select for open irrigation invoices (used by both initial load and reload).
+const OPEN_INVOICE_SELECT =
+  "id,invoice_no,season_id,office_id,land_id,owner_farmer_id,is_borga,due_date,due_amount,paid_amount,payable_amount,irrigation_amount,delay_fee,maintenance_amount,canal_amount,other_charge,season_rate,land_type_name,irrigation_category_name,invoice_status,seasons(name,year,status),lands(mouza,land_size,dag_no,field_type,notes,patwaris(name,name_bn,mobile)),owner:farmers!irrigation_invoices_owner_farmer_id_fkey(name_bn,name_en,member_no,farmer_code)";
+
 
 type Invoice = {
   id: string;
@@ -146,18 +153,13 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
     if (!farmerId) { setInvoices([]); return; }
     setLoading(true);
     (async () => {
-      const [{ data: act }, { data: invs }] = await Promise.all([
+      const [{ data: act }, invs] = await Promise.all([
         db.from("seasons").select("id").eq("status", "active").order("year", { ascending: false }).limit(1).maybeSingle(),
-        db.from("irrigation_invoices")
-          .select("id,invoice_no,season_id,office_id,land_id,owner_farmer_id,is_borga,due_date,due_amount,paid_amount,payable_amount,irrigation_amount,delay_fee,maintenance_amount,canal_amount,other_charge,season_rate,land_type_name,irrigation_category_name,invoice_status,seasons(name,year,status),lands(mouza,land_size,dag_no,field_type,notes,patwaris(name,name_bn,mobile)),owner:farmers!irrigation_invoices_owner_farmer_id_fkey(name_bn,name_en,member_no,farmer_code)")
-          .eq("farmer_id", farmerId)
-          .is("deleted_at", null)
-          .gt("due_amount", 0)
-          .order("due_date", { ascending: true }),
+        fetchOpenIrrigationInvoices(farmerId, OPEN_INVOICE_SELECT),
       ]);
       setActiveSeasonId(act?.id ?? null);
-      // Filter cancelled in JS — server-side .neq drops NULL invoice_status rows.
-      setInvoices(((invs ?? []) as any[]).filter((r) => r.invoice_status !== "cancelled") as any);
+      setInvoices((invs ?? []) as any);
+
       setSelectedIds(new Set());
       setDelayFee({});
       setDelayFeeReason({});
@@ -623,12 +625,9 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
       setPromiseRemarks("");
       setNote("");
       onPaid?.();
-      // re-trigger load
-      const { data: invs } = await db.from("irrigation_invoices")
-        .select("id,invoice_no,season_id,office_id,land_id,owner_farmer_id,is_borga,due_date,due_amount,paid_amount,payable_amount,irrigation_amount,delay_fee,maintenance_amount,canal_amount,other_charge,season_rate,land_type_name,irrigation_category_name,invoice_status,seasons(name,year,status),lands(mouza,land_size,dag_no,notes,patwaris(name,name_bn,mobile)),owner:farmers!irrigation_invoices_owner_farmer_id_fkey(name_bn,name_en,member_no,farmer_code)")
-        .eq("farmer_id", farmerId).is("deleted_at", null).gt("due_amount", 0)
-        .order("due_date", { ascending: true });
-      setInvoices(((invs ?? []) as any[]).filter((r) => r.invoice_status !== "cancelled") as any);
+      // re-trigger load (shared util keeps filtering identical)
+      const invs = await fetchOpenIrrigationInvoices(farmerId, OPEN_INVOICE_SELECT);
+      setInvoices((invs ?? []) as any);
     } catch (e: any) {
       toast.error(e?.message ?? "Failed");
     } finally {
@@ -680,7 +679,14 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
                   <>
                     <TableRow key={inv.id} className={checked ? "bg-muted/30" : ""}>
                       <TableCell><input type="checkbox" checked={checked} onChange={() => toggleInvoice(inv.id)} /></TableCell>
-                      <TableCell className="font-mono text-xs">{inv.invoice_no}</TableCell>
+                      <TableCell className="font-mono text-xs">
+                        {inv.invoice_no}
+                        {!(inv as any).invoice_status && (
+                          <Badge variant="outline" className="ml-1 text-[9px] px-1 py-0 border-amber-400 text-amber-600">
+                            {tx(invoiceStatusBadge(null).label_en, invoiceStatusBadge(null).label_bn)}
+                          </Badge>
+                        )}
+                      </TableCell>
                       <TableCell className="text-xs">
                         {(inv.owner?.name_bn || inv.owner?.name_en || "—")}
                         {inv.is_borga && <Badge variant="outline" className="ml-1 text-[9px] px-1 py-0">{tx("Borga", "বর্গা")}</Badge>}

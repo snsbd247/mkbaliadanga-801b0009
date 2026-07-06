@@ -70,3 +70,31 @@ export function assertNoLegacyDueSource(source: string, context = "due calculati
   }
   return true;
 }
+
+// ---------------------------------------------------------------------------
+// UI status label helper. When invoice_status is NULL/empty we surface a
+// "Pending" badge instead of hiding the fact that the status is unset — this
+// makes it obvious no invoice is silently dropped from the list.
+// ---------------------------------------------------------------------------
+
+export type InvoiceStatusBadge = {
+  label_en: string;
+  label_bn: string;
+  variant: "default" | "secondary" | "outline" | "destructive";
+};
+
+export function invoiceStatusBadge(status: string | null | undefined): InvoiceStatusBadge {
+  switch (status) {
+    case "paid":
+      return { label_en: "Paid", label_bn: "পরিশোধিত", variant: "default" };
+    case "partial_paid":
+      return { label_en: "Partial", label_bn: "আংশিক", variant: "secondary" };
+    case "cancelled":
+      return { label_en: "Cancelled", label_bn: "বাতিল", variant: "destructive" };
+    case "generated":
+      return { label_en: "Generated", label_bn: "তৈরি", variant: "outline" };
+    default:
+      // NULL / empty / unknown
+      return { label_en: "Pending", label_bn: "অনির্ধারিত", variant: "outline" };
+  }
+}
