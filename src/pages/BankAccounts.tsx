@@ -211,10 +211,10 @@ export default function BankAccounts() {
         description={`Total balance: ${money(totalBal)}`}
         actions={
           <>
-            <Dialog open={openA} onOpenChange={setOpenA}>
-              <DialogTrigger asChild><Button size="sm" variant="outline"><Plus className="h-4 w-4 mr-1" />Account</Button></DialogTrigger>
+            <Dialog open={openA} onOpenChange={(o) => { setOpenA(o); if (!o) setEditAccId(null); }}>
+              <DialogTrigger asChild><Button size="sm" variant="outline" onClick={openAddAccount}><Plus className="h-4 w-4 mr-1" />Account</Button></DialogTrigger>
               <DialogContent>
-                <DialogHeader><DialogTitle>Add Bank Account</DialogTitle></DialogHeader>
+                <DialogHeader><DialogTitle>{editAccId ? "Edit Bank Account" : "Add Bank Account"}</DialogTitle></DialogHeader>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="col-span-2"><Label>Bank Name</Label><Input value={a.bank_name} onChange={e => setA({ ...a, bank_name: e.target.value })} placeholder="Sonali Bank" /></div>
                   <div><Label>Branch</Label><Input value={a.branch} onChange={e => setA({ ...a, branch: e.target.value })} /></div>
