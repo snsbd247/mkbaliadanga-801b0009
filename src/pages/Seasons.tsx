@@ -63,6 +63,19 @@ export default function Seasons() {
   const [cfOpen, setCfOpen] = useState(false);
   const [cfSeason, setCfSeason] = useState<any | null>(null);
 
+  const [auditOpen, setAuditOpen] = useState(false);
+  const [auditRows, setAuditRows] = useState<any[]>([]);
+  async function openAudit() {
+    setAuditOpen(true);
+    const { data } = await db
+      .from("system_audit_logs")
+      .select("*")
+      .eq("module", "season")
+      .order("created_at", { ascending: false })
+      .limit(200);
+    setAuditRows((data as any) ?? []);
+  }
+
   useEffect(() => {
     document.title = `${t("seasons")} — ${t("appName")}`;
     load();
