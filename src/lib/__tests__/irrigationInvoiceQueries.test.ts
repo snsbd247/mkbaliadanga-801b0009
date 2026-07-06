@@ -169,3 +169,32 @@ describe("searchAndSortInvoices (Payments list search + sort)", () => {
     expect(rows.map((r) => r.invoice_no)).toEqual(before);
   });
 });
+
+describe("positive-due filter + deleted_at + Open/Cancelled combined rules", () => {
+  it("drops fully-paid (due=0) and negative-due rows but keeps active positive-due", async () => {
+    orderMock.mockResolvedValue({
+      data: [
+        { id: "due-null", due_amount: 100, invoice_status: null, deleted_at: null },
+        { id: "paid", due_amount: 0, invoice_status: "generated", deleted_at: null },
+        { id: "neg", due_amount: -50, invoice_status: null, deleted_at: null },
+        { id: "due-deleted", due_amount: 100, invoice_status: "generated", deleted_at: "2026-01-01" },
+        { id: "due-cancelled", due_amount: 100, invoice_status: "cancelled", deleted_at: null },
+      ],
+      error: null,
+    });
+    const res = await fetchOpenIrrigationInvoicesResult("farmer-1", "id,due_amount,invoice_status,deleted_at");
+    expect(res.rows.map((r) => r.id)).toEqual(["due-null"]);
+    expect(res.rows.every((r: any) => Number(r.due_amount) > 0)).toBe(true);
+  });
+
+  it("Cancelled filter keeps deleted_at rows regardless of due_amount", () => {
+    const rows = [
+      { id: "a", due_amount: 100, invoice_status: null, deleted_at: null },
+      { id: "b", due_amount: 0, invoice_status: "cancelled", deleted_at: null },
+      { id: "c", due_amount: 100, invoice_status: "generated", deleted_at: "2026-01-01" },
+      { id: "d", due_amount: 0, invoice_status: "generated", deleted_at: "2026-02-01" },
+    ] as any[];
+    expect(filterInvoicesByStatus(rows, "cancelled").map((r) => r.id)).toEqual(["b", "c", "d"]);
+    expect(filterInvoicesByStatus(rows, "open").map((r) => r.id)).toEqual(["a"]);
+  });
+});
