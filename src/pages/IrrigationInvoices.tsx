@@ -564,7 +564,12 @@ function InvoiceListTab({ seasons, offices, isSuper }: any) {
           </div>
         </div>
         <div className="flex items-center justify-between gap-2 flex-wrap">
-          <p className="text-sm text-muted-foreground">{filtered.length} {tx("invoices", "টি ইনভয়েস")} {loading && tx("(loading…)", "(লোড হচ্ছে…)")}</p>
+          <p className="text-sm text-muted-foreground">
+            {filtered.length !== rows.length
+              ? tx(`${filtered.length} of ${rows.length} invoices`, `${rows.length} টির মধ্যে ${filtered.length} টি ইনভয়েস`)
+              : tx(`${rows.length} invoices`, `${rows.length} টি ইনভয়েস`)}
+            {loading && " " + tx("(loading…)", "(লোড হচ্ছে…)")}
+          </p>
           <div className="flex gap-2 flex-wrap">
             <Button size="sm" variant={showFarmerSummary ? "default" : "outline"} onClick={() => setShowFarmerSummary(v => !v)}>
               {showFarmerSummary ? tx("Hide farmer summary", "ফার্মার সারাংশ লুকান") : tx("Farmer-wise summary", "ফার্মার-ভিত্তিক সারাংশ")}
