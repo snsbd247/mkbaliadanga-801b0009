@@ -237,6 +237,7 @@ export function AppSidebar() {
         { url: "/offices", icon: Building2, label: t("offices"), permKey: "offices" },
         { url: "/locations", icon: MapPin, label: t("locations"), permKey: "locations" },
         { url: "/users", icon: ShieldCheck, label: t("users"), superOnly: true },
+        { url: "/admin/health", icon: Activity, label: t("edgeHealthTitle" as any), adminOnly: true },
         { url: "/admin/role-matrix", icon: Shield, label: t("roleMatrix"), developerOnly: true },
         { url: "/admin/my-permissions", icon: Shield, label: t("myPermissions" as any) },
       ],
