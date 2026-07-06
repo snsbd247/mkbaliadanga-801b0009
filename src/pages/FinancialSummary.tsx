@@ -61,7 +61,7 @@ export default function FinancialSummary() {
     <div className="space-y-6">
       <PageHeader
         title={bn ? "আর্থিক সারসংক্ষেপ" : "Financial Summary"}
-        subtitle={bn ? "সরাসরি সোর্স ডেটা থেকে গণনাকৃত প্রকৃত হিসাব" : "Actual figures computed directly from source data"}
+        description={bn ? "সরাসরি সোর্স ডেটা থেকে গণনাকৃত প্রকৃত হিসাব" : "Actual figures computed directly from source data"}
       />
 
       {loading && <p className="text-muted-foreground">{bn ? "লোড হচ্ছে…" : "Loading…"}</p>}
