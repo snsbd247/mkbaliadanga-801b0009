@@ -251,6 +251,13 @@ export default function Users() {
     toast.success(t("saved")); load();
   }
   async function setOffice(uid: string, office_id: string) {
+    if (isLaravelBackend) {
+      const ok = await callAdmin({ action: "update_profile", user_id: uid, office_id: office_id || null });
+      if (!ok) return;
+      await logAudit("update_office", uid, { office_id: office_id || null });
+      load();
+      return;
+    }
     const { error } = await db.from("profiles").update({ office_id: office_id || null }).eq("id", uid);
     if (error) return toast.error(error.message);
     await logAudit("update_office", uid, { office_id: office_id || null });
