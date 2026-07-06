@@ -68,7 +68,7 @@ export default function LegacyIrrigationSearch() {
       return;
     }
     if (!/^[0-9]+$/.test(q)) {
-      setInputError(tx("Only digits are allowed (farmer code, mobile, or farmer ID)", "শুধু সংখ্যা লিখুন (ফার্মার কোড, মোবাইল বা ফার্মার আইডি)"));
+      setInputError(tx("Only digits are allowed (farmer code)", "শুধু সংখ্যা লিখুন (ফার্মার কোড)"));
       return;
     }
     if (q.length < 3) {
@@ -83,8 +83,8 @@ export default function LegacyIrrigationSearch() {
     setSearching(true);
     setSelected(new Set());
     try {
-      // Search by legacy code, mobile number, or farmer ID.
-      const rows = await LegacyIrrigationApi.list({ q });
+      // Search by farmer code only (original behaviour).
+      const rows = await LegacyIrrigationApi.list({ farmer_code: q });
       setRecords(rows);
       setTerm(q);
       if (!rows.length) toast.info(tx("No records found", "কোনো রেকর্ড পাওয়া যায়নি"));
@@ -157,7 +157,7 @@ export default function LegacyIrrigationSearch() {
               value={code}
               onChange={(e) => { setCode(e.target.value); if (inputError) setInputError(null); }}
               onKeyDown={(e) => e.key === "Enter" && doSearch()}
-              placeholder={tx("Farmer code (e.g. 2473), mobile (01700000000) or farmer ID", "ফার্মার কোড (যেমন 2473), মোবাইল (01700000000) বা ফার্মার আইডি")}
+              placeholder={tx("Farmer code (e.g. 2473)", "ফার্মার কোড (যেমন 2473)")}
               className="mt-2"
               aria-invalid={!!inputError}
               inputMode="numeric"
@@ -167,8 +167,8 @@ export default function LegacyIrrigationSearch() {
             ) : (
               <p className="mt-1 text-xs text-muted-foreground">
                 {tx(
-                  "Search by farmer code, mobile number, or farmer ID (digits only, min 3).",
-                  "ফার্মার কোড, মোবাইল নম্বর বা ফার্মার আইডি দিয়ে খুঁজুন (শুধু সংখ্যা, কমপক্ষে ৩)।",
+                  "Search by farmer code only (digits only, min 3).",
+                  "শুধু ফার্মার কোড দিয়ে খুঁজুন (শুধু সংখ্যা, কমপক্ষে ৩)।",
                 )}
               </p>
             )}
