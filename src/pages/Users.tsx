@@ -98,7 +98,17 @@ export default function Users() {
     const { data, error } = await db.functions.invoke("admin-users", { body: payload });
     setBusy(false);
     if (error || data?.error) {
-      toast.error(data?.error ?? error?.message ?? t("failedGeneric"));
+      const raw = String(data?.error ?? error?.message ?? "");
+      // Detect a temporarily-unavailable / not-deployed edge function and give retry guidance.
+      const unavailable = /not available on this server|Failed to (send|fetch)|Function not found|failed to reach|network|503|504/i.test(raw);
+      if (unavailable) {
+        toast.error(t("adminFnUnavailable"), {
+          description: t("adminFnRetryHint"),
+          action: { label: t("retry"), onClick: () => callAdmin(payload) },
+        });
+      } else {
+        toast.error(raw || t("failedGeneric"));
+      }
       return null;
     }
     return data;
