@@ -396,10 +396,8 @@ class GenericTableController extends Controller
                 if (str_contains($name, '!')) {
                     [$name, $fkHint] = array_map('trim', explode('!', $name, 2));
                 }
-                if ($alias === $embedRawAlias = $alias) {
-                    // keep alias without the "!hint" so the JSON key matches the client's expectation
-                    $alias = explode('!', $alias, 2)[0];
-                }
+                // The JSON key the client reads must not include the "!hint".
+                $alias = explode('!', $alias, 2)[0];
                 $embeds[] = ['alias' => $alias, 'table' => $name, 'columns' => array_map('trim', explode(',', $inner)), 'fk_hint' => $fkHint];
             } else {
                 $columns[] = $tok;
