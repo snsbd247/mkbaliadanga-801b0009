@@ -6496,6 +6496,16 @@ export type Database = {
           savings_bal: number
         }[]
       }
+      farmer_dues_summary_for: {
+        Args: { _farmer_ids: string[] }
+        Returns: {
+          farmer_id: string
+          irr_due: number
+          loan_due: number
+          net_due: number
+          savings_bal: number
+        }[]
+      }
       farmer_identifier_exists: {
         Args: { _candidate: string; _exclude_id?: string }
         Returns: boolean
