@@ -99,11 +99,14 @@ export default function Seasons() {
       due_date: form.due_date || null,
       status: form.status,
     };
-    const { error } = await db.from("seasons").insert(payload);
+    const { error } = editId
+      ? await db.from("seasons").update(payload).eq("id", editId)
+      : await db.from("seasons").insert(payload);
     if (error) return toast.error(error.message);
     toast.success(t("saved"));
     setOpen(false);
-    setForm({ year: new Date().getFullYear(), season_type_id: "", name: "", fiscal_year: "", start_date: "", end_date: "", due_date: "", status: "active" });
+    setEditId(null);
+    setForm(emptyForm);
     load();
   }
 
