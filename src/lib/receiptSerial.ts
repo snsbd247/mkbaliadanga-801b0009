@@ -5,16 +5,62 @@ const MISSING_RPC_HINTS = [
   "could not find the function",
   "schema cache",
   "pgrst202",
+  "not implemented",
+  "501",
+  "function not found",
 ];
+
+function errorMessage(err: unknown): string {
+  const anyErr = err as { message?: string; code?: string; status?: number; data?: unknown };
+  const parts = [anyErr?.message, anyErr?.code, anyErr?.status != null ? String(anyErr.status) : undefined];
+  try {
+    if (anyErr?.data) parts.push(JSON.stringify(anyErr.data));
+  } catch {
+    // ignore non-serializable error details
+  }
+  return parts.filter(Boolean).join(" ");
+}
 
 /** Detect the "RPC missing / schema-cache stale" class of error. */
 export function isRpcUnavailable(err: unknown): boolean {
   if (!err) return false;
   const anyErr = err as { message?: string; code?: string };
   const code = (anyErr.code ?? "").toUpperCase();
-  if (code === "PGRST202" || code === "404") return true;
-  const msg = (anyErr.message ?? "").toLowerCase();
+  if (code === "PGRST202" || code === "404" || code === "501") return true;
+  const msg = errorMessage(err).toLowerCase();
   return MISSING_RPC_HINTS.some((h) => msg.includes(h));
+}
+
+async function getCurrentSerialLast(): Promise<number> {
+  const { data, error } = await db
+    .from("receipt_counters")
+    .select("last_no")
+    .eq("kind", "SERIAL")
+    .eq("year", 0)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  return Number((data as any)?.last_no ?? 0) || 0;
+}
+
+async function setReceiptSerialStartDirect(nextSerial: number): Promise<{ ok: boolean; message: string }> {
+  try {
+    const currentLast = await getCurrentSerialLast();
+    if (nextSerial < currentLast) {
+      return {
+        ok: false,
+        message: `এই নম্বর (${nextSerial}) বর্তমান সর্বশেষ রিসিপ্ট নম্বরের (${currentLast}) চেয়ে ছোট — ডুপ্লিকেট এড়াতে বাতিল করা হলো`,
+      };
+    }
+
+    const { error } = await db
+      .from("receipt_settings")
+      .update({ receipt_serial_start: nextSerial, updated_at: new Date().toISOString() } as any)
+      .eq("id", 1);
+    if (error) return { ok: false, message: error.message };
+    return { ok: true, message: "Serial start updated" };
+  } catch (e) {
+    return { ok: false, message: errorMessage(e) || "Serial start update failed" };
+  }
 }
 
 /**
@@ -30,6 +76,15 @@ export async function checkReceiptSerialRpc(): Promise<{ available: boolean; mes
   const { error } = await (db as any).rpc("admin_set_receipt_serial_start", { p_start: -1 });
   if (!error) return { available: true, message: "RPC available" };
   if (isRpcUnavailable(error)) {
+    // Self-hosted/VPS installs may not implement /api/fn or /api/rpc. In that
+    // case the app can still safely update receipt_settings through the normal
+    // table gateway after checking the SERIAL counter below.
+    try {
+      await getCurrentSerialLast();
+      return { available: true, message: "Receipt serial direct fallback available" };
+    } catch {
+      // continue to the clear unavailable message
+    }
     return {
       available: false,
       message:
@@ -56,6 +111,7 @@ export async function setReceiptSerialStart(
     functionResult = await functionAttempt();
   }
   if (!functionResult.error) return { ok: true, message: "Serial start updated" };
+  const functionUnavailable = isRpcUnavailable(functionResult.error);
 
   const attempt = () => (db as any).rpc("admin_set_receipt_serial_start", { p_start: nextSerial });
 
@@ -68,13 +124,13 @@ export async function setReceiptSerialStart(
 
   if (error) {
     if (isRpcUnavailable(error)) {
-      return {
-        ok: false,
-        message:
-          "সিরিয়াল সেট করা যায়নি: backend endpoint/RPC এখনও লোড হয়নি। অ্যাপটি publish/deploy করে আবার চেষ্টা করুন।",
-      };
+      return setReceiptSerialStartDirect(nextSerial);
     }
     return { ok: false, message: error.message };
+  }
+  if (functionUnavailable) {
+    // Kept for completeness if an RPC succeeds after the edge endpoint is absent.
+    return { ok: true, message: "Serial start updated" };
   }
   return { ok: true, message: "Serial start updated" };
 }
