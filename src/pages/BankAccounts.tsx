@@ -10,12 +10,14 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Plus, ArrowRightLeft, Banknote, FileDown, FileSpreadsheet, Pencil, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { money, fmtDate } from "@/lib/format";
 import { useAuth } from "@/auth/AuthProvider";
 import { exportTablePDF, exportExcel } from "@/lib/exports";
 import { useLang } from "@/i18n/LanguageProvider";
+import { logAudit } from "@/lib/audit";
 
 
 const sb = db as any;
@@ -46,6 +48,12 @@ export default function BankAccounts() {
   const [openX, setOpenX] = useState(false); // transfer
   const [editAccId, setEditAccId] = useState<string | null>(null);
   const [editTxn, setEditTxn] = useState<any | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<
+    | { kind: "account"; item: any }
+    | { kind: "txn"; item: any }
+    | null
+  >(null);
+  const [deleting, setDeleting] = useState(false);
 
   const [a, setA] = useState<any>({ bank_name: "", branch: "", account_no: "", account_title: "", account_type: "savings", stream: "other", opening_balance: 0, is_active: true });
   const [tx, setTx] = useState<any>({ bank_account_id: "", txn_type: "deposit", amount: 0, txn_date: new Date().toISOString().slice(0, 10), reference_no: "", note: "", post_cashbook: true });
@@ -90,47 +98,64 @@ export default function BankAccounts() {
   async function saveAccount() {
     if (!a.bank_name || !a.account_no) return toast.error("Bank name and account no required");
     if (editAccId) {
+      const prev = accounts.find(x => x.id === editAccId) ?? null;
       const { error } = await sb.from("bank_accounts").update(a).eq("id", editAccId);
-      if (error) return toast.error(error.message);
+      if (error) return toast.error("আপডেট ব্যর্থ: " + error.message);
+      void logAudit({ office_id: (prev as any)?.office_id ?? null, module: "bank_account", action_type: "update", reference_id: editAccId, old_data: prev, new_data: a });
       toast.success("Account updated");
     } else {
-      const { error } = await sb.from("bank_accounts").insert(a);
-      if (error) return toast.error(error.message);
+      const { data, error } = await sb.from("bank_accounts").insert(a).select();
+      if (error) return toast.error("যোগ ব্যর্থ: " + error.message);
+      const created = Array.isArray(data) ? data[0] : data;
+      void logAudit({ office_id: created?.office_id ?? null, module: "bank_account", action_type: "create", reference_id: created?.id ?? null, new_data: created ?? a });
       toast.success("Account added");
     }
     setOpenA(false); setEditAccId(null); load();
     setA(emptyAccount());
   }
 
-  async function deleteAccount(ac: any) {
-    if (!confirm(`Delete bank account "${ac.bank_name} — ${ac.account_no}"? This cannot be undone.`)) return;
-    const { error } = await sb.from("bank_accounts").delete().eq("id", ac.id);
-    if (error) return toast.error(error.message);
-    toast.success("Account deleted"); load();
+  async function confirmDelete() {
+    if (!pendingDelete) return;
+    setDeleting(true);
+    try {
+      if (pendingDelete.kind === "account") {
+        const ac = pendingDelete.item;
+        const { error } = await sb.from("bank_accounts").delete().eq("id", ac.id);
+        if (error) { toast.error("অ্যাকাউন্ট ডিলিট ব্যর্থ: " + error.message); return; }
+        void logAudit({ office_id: ac.office_id ?? null, module: "bank_account", action_type: "delete", reference_id: ac.id, old_data: ac });
+        toast.success("Account deleted");
+      } else {
+        const t = pendingDelete.item;
+        const { error } = await sb.from("bank_transactions").delete().eq("id", t.id);
+        if (error) { toast.error("লেনদেন ডিলিট ব্যর্থ: " + error.message); return; }
+        // Remove any mirrored cashbook rows created with the same link_id.
+        if (t.link_id) {
+          await db.from("expenses").delete().eq("link_id", t.link_id);
+          await db.from("receipts").delete().eq("link_id", t.link_id);
+        }
+        void logAudit({ office_id: t.office_id ?? null, module: "bank_transaction", action_type: "delete", reference_id: t.id, old_data: t });
+        toast.success("Transaction deleted");
+      }
+      setPendingDelete(null); load();
+    } finally {
+      setDeleting(false);
+    }
   }
+
+  function deleteAccount(ac: any) { setPendingDelete({ kind: "account", item: ac }); }
+  function deleteTxn(t: any) { setPendingDelete({ kind: "txn", item: t }); }
 
   async function saveEditTxn() {
     if (!editTxn) return;
     if (Number(editTxn.amount) <= 0) return toast.error("Amount required");
-    const { error } = await sb.from("bank_transactions").update({
-      txn_type: editTxn.txn_type, amount: editTxn.amount, txn_date: editTxn.txn_date,
-      reference_no: editTxn.reference_no, note: editTxn.note,
-    }).eq("id", editTxn.id);
-    if (error) return toast.error(error.message);
+    const prev = txns.find(x => x.id === editTxn.id) ?? null;
+    const changes = { txn_type: editTxn.txn_type, amount: editTxn.amount, txn_date: editTxn.txn_date, reference_no: editTxn.reference_no, note: editTxn.note };
+    const { error } = await sb.from("bank_transactions").update(changes).eq("id", editTxn.id);
+    if (error) return toast.error("লেনদেন আপডেট ব্যর্থ: " + error.message);
+    void logAudit({ office_id: (prev as any)?.office_id ?? null, module: "bank_transaction", action_type: "update", reference_id: editTxn.id, old_data: prev, new_data: changes });
     toast.success("Transaction updated"); setEditTxn(null); load();
   }
 
-  async function deleteTxn(t: any) {
-    if (!confirm("Delete this transaction? Linked cashbook entries will remain unless removed separately.")) return;
-    const { error } = await sb.from("bank_transactions").delete().eq("id", t.id);
-    if (error) return toast.error(error.message);
-    // Remove any mirrored cashbook rows created with the same link_id.
-    if (t.link_id) {
-      await db.from("expenses").delete().eq("link_id", t.link_id);
-      await db.from("receipts").delete().eq("link_id", t.link_id);
-    }
-    toast.success("Transaction deleted"); load();
-  }
 
 
   // Stream-aware lock: only the cash stream the bank account belongs to blocks the txn.
@@ -153,7 +178,8 @@ export default function BankAccounts() {
     const linkId = (post_cashbook && (tx.txn_type === "deposit" || tx.txn_type === "withdraw"))
       ? crypto.randomUUID() : null;
     const { error } = await sb.from("bank_transactions").insert({ ...txnRow, created_by: user?.id, link_id: linkId });
-    if (error) return toast.error(error.message);
+    if (error) return toast.error("লেনদেন সংরক্ষণ ব্যর্থ: " + error.message);
+    void logAudit({ office_id: acc?.office_id ?? null, module: "bank_transaction", action_type: "create", reference_id: tx.bank_account_id, new_data: { ...txnRow, link_id: linkId } });
 
     // Auto-link to Cashbook: deposit (cash→bank) = expense; withdraw (bank→cash) = receipt.
     // Routed to the correct cash stream based on the bank account's stream.
@@ -199,7 +225,8 @@ export default function BankAccounts() {
       { ...common, bank_account_id: xf.from_id, txn_type: "transfer_out", counterparty_account_id: xf.to_id },
       { ...common, bank_account_id: xf.to_id, txn_type: "transfer_in", counterparty_account_id: xf.from_id },
     ]);
-    if (error) return toast.error(error.message);
+    if (error) return toast.error("ট্রান্সফার ব্যর্থ: " + error.message);
+    void logAudit({ office_id: fromAcc?.office_id ?? null, module: "bank_transaction", action_type: "create", reference_id: group, new_data: { transfer_group: group, from_id: xf.from_id, to_id: xf.to_id, amount: xf.amount, txn_date: xf.txn_date } });
     toast.success("Transfer recorded"); setOpenX(false); load();
     setXf({ from_id: "", to_id: "", amount: 0, txn_date: new Date().toISOString().slice(0, 10), note: "" });
   }
@@ -535,6 +562,48 @@ export default function BankAccounts() {
           <DialogFooter><Button variant="outline" onClick={() => setEditTxn(null)}>Cancel</Button><Button onClick={saveEditTxn}>Save</Button></DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={!!pendingDelete} onOpenChange={(o) => { if (!o && !deleting) setPendingDelete(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {pendingDelete?.kind === "account" ? "ব্যাংক অ্যাকাউন্ট ডিলিট করবেন?" : "লেনদেন ডিলিট করবেন?"}
+            </AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-2 text-sm">
+                {pendingDelete?.kind === "account" ? (
+                  <>
+                    <p>নিচের অ্যাকাউন্টটি স্থায়ীভাবে মুছে যাবে। এটি ফিরিয়ে আনা যাবে না।</p>
+                    <div className="rounded-md border p-2 bg-muted/40">
+                      <div><span className="text-muted-foreground">ব্যাংক:</span> {pendingDelete.item.bank_name} — {pendingDelete.item.account_no}</div>
+                      <div><span className="text-muted-foreground">স্ট্রিম:</span> {streamLabel(pendingDelete.item.stream)}</div>
+                      <div><span className="text-muted-foreground">বর্তমান ব্যালেন্স:</span> {money(balances.get(pendingDelete.item.id) ?? 0)}</div>
+                    </div>
+                    <p className="text-destructive">সতর্কতা: অ্যাকাউন্ট মুছলে এর লেনদেনগুলো অনাথ (orphan) হয়ে যেতে পারে।</p>
+                  </>
+                ) : pendingDelete ? (
+                  <>
+                    <p>নিচের লেনদেনটি মুছে যাবে। এটি ফিরিয়ে আনা যাবে না।</p>
+                    <div className="rounded-md border p-2 bg-muted/40">
+                      <div><span className="text-muted-foreground">তারিখ:</span> {fmtDate(pendingDelete.item.txn_date)}</div>
+                      <div><span className="text-muted-foreground">ধরন:</span> {pendingDelete.item.txn_type}</div>
+                      <div><span className="text-muted-foreground">পরিমাণ:</span> {money(pendingDelete.item.amount)}</div>
+                      {pendingDelete.item.note && <div><span className="text-muted-foreground">নোট:</span> {pendingDelete.item.note}</div>}
+                    </div>
+                    {pendingDelete.item.link_id && <p className="text-destructive">সংযুক্ত ক্যাশবুক এন্ট্রিও (জমা/উত্তোলন) একসাথে মুছে ফেলা হবে।</p>}
+                  </>
+                ) : null}
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>বাতিল</AlertDialogCancel>
+            <AlertDialogAction onClick={(e) => { e.preventDefault(); confirmDelete(); }} disabled={deleting} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              {deleting ? "ডিলিট হচ্ছে…" : "ডিলিট করুন"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }

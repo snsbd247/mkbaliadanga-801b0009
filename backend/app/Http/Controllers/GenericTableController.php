@@ -33,6 +33,58 @@ class GenericTableController extends Controller
         'failed_jobs', 'migrations', 'sms_provider_secrets',
     ];
 
+    /**
+     * Tables that require an explicit permission for any write (insert/update/
+     * delete) through the generic gateway, plus the audit "module" recorded for
+     * each change. Read access stays office-scoped; writes are guarded here so
+     * an unauthorised user cannot mutate one module's data via another.
+     */
+    private const WRITE_GUARD = [
+        'bank_accounts'     => ['permission' => 'accounting.manage', 'module' => 'bank_account'],
+        'bank_transactions' => ['permission' => 'accounting.manage', 'module' => 'bank_transaction'],
+        'accounts'          => ['permission' => 'accounting.manage', 'module' => 'account'],
+        'journal_entries'   => ['permission' => 'accounting.manage', 'module' => 'journal_entry'],
+        'journal_entry_lines' => ['permission' => 'accounting.manage', 'module' => 'journal_entry_line'],
+    ];
+
+    /**
+     * Enforce per-table write permission. Developers and super admins always
+     * pass (hasPermission returns true for them); everyone else needs the
+     * mapped permission key.
+     */
+    private function authorizeWrite(Request $request, string $table): void
+    {
+        $guard = self::WRITE_GUARD[$table] ?? null;
+        if (! $guard) {
+            return;
+        }
+        $user = $request->user();
+        if (! $user || ! $user->hasPermission($guard['permission'])) {
+            abort(403, 'এই কাজের অনুমতি নেই।');
+        }
+    }
+
+    /** Fire-and-forget audit entry for a guarded-table write. Never breaks the op. */
+    private function recordAudit(Request $request, string $action, string $table, array $ids, array $meta = []): void
+    {
+        if (! isset(self::WRITE_GUARD[$table])) {
+            return;
+        }
+        try {
+            \App\Models\AuditLog::record([
+                'user_id'     => optional($request->user())->id,
+                'office_id'   => $request->attributes->get('scope_office_id'),
+                'action'      => self::WRITE_GUARD[$table]['module'].'.'.$action,
+                'entity_type' => $table,
+                'entity_id'   => $ids[0] ?? null,
+                'meta'        => array_merge(['ids' => array_values($ids)], $meta),
+            ]);
+        } catch (\Throwable $e) {
+            // Auditing must never break the underlying operation.
+        }
+    }
+
+
     private function table(string $table): string
     {
         if (! preg_match('/^[a-z][a-z0-9_]*$/', $table)) {
@@ -430,6 +482,7 @@ class GenericTableController extends Controller
     public function insert(Request $request, string $table): JsonResponse
     {
         $table = $this->table($table);
+        $this->authorizeWrite($request, $table);
         $payload = $request->all();
         $rows = array_is_list($payload) ? $payload : [$payload];
         $now = now();
@@ -487,12 +540,15 @@ class GenericTableController extends Controller
             ? array_map(fn ($r) => (array) $r, DB::table($table)->whereIn('id', $ids)->get()->all())
             : $prepared;
 
+        $this->recordAudit($request, 'create', $table, $ids, ['count' => count($prepared)]);
+
         return response()->json($inserted, 201);
     }
 
     public function update(Request $request, string $table): JsonResponse
     {
         $table = $this->table($table);
+        $this->authorizeWrite($request, $table);
         $values = $this->normalizeWriteRow($table, (array) $request->input('values', []));
         $filters = $request->input('filters', []);
 
@@ -520,6 +576,15 @@ class GenericTableController extends Controller
             unset($values['office_id']);
         }
 
+        // Capture the before-state of guarded rows for the audit trail.
+        $before = [];
+        if (isset(self::WRITE_GUARD[$table])) {
+            $pre = DB::table($table);
+            $this->scope($request, $pre, $table);
+            $this->applyFilters($pre, $table, $filters);
+            $before = array_map(fn ($r) => (array) $r, $pre->get()->all());
+        }
+
         $query = DB::table($table);
         $this->scope($request, $query, $table);
         $this->applyFilters($query, $table, $filters);
@@ -530,20 +595,48 @@ class GenericTableController extends Controller
         $this->applyFilters($read, $table, $filters);
         $rows = array_map(fn ($r) => (array) $r, $read->get()->all());
 
+        $this->recordAudit(
+            $request,
+            'update',
+            $table,
+            array_filter(array_map(fn ($r) => $r['id'] ?? null, $rows)),
+            ['old_data' => $before, 'new_data' => $values],
+        );
+
         return response()->json($rows);
     }
 
     public function delete(Request $request, string $table): JsonResponse
     {
         $table = $this->table($table);
+        $this->authorizeWrite($request, $table);
         $filters = $request->input('filters', []);
         if (empty($filters)) {
             abort(400, 'ফিল্টার ছাড়া ডিলিট করা যাবে না।');
         }
+
+        // Snapshot guarded rows before deletion for the audit trail.
+        $before = [];
+        if (isset(self::WRITE_GUARD[$table])) {
+            $pre = DB::table($table);
+            $this->scope($request, $pre, $table);
+            $this->applyFilters($pre, $table, $filters);
+            $before = array_map(fn ($r) => (array) $r, $pre->get()->all());
+        }
+
         $query = DB::table($table);
         $this->scope($request, $query, $table);
         $this->applyFilters($query, $table, $filters);
         $count = $query->delete();
+
+        $this->recordAudit(
+            $request,
+            'delete',
+            $table,
+            array_filter(array_map(fn ($r) => $r['id'] ?? null, $before)),
+            ['deleted' => $count, 'old_data' => $before],
+        );
+
         return response()->json(['deleted' => $count]);
     }
 }
