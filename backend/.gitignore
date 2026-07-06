@@ -1,5 +1,7 @@
 /vendor
 /node_modules
+/bootstrap/cache/*.php
+/composer.lock
 /public/build
 /public/hot
 /public/storage
