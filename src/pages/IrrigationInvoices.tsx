@@ -168,7 +168,7 @@ function InvoiceListTab({ seasons, offices, isSuper }: any) {
     const buildQuery = () => {
       let q = db
         .from("irrigation_invoices" as any)
-        .select(`*, farmers!irrigation_invoices_farmer_id_fkey(name_en,name_bn,farmer_code,mobile), ${LANDS_EMBED}, seasons(name,year,type), irrigation_invoice_payments(payments(receipt_no))`)
+        .select(`*, farmers!irrigation_invoices_farmer_id_fkey(name_en,name_bn,farmer_code,mobile,village), ${LANDS_EMBED}, seasons(name,year,type), irrigation_invoice_payments(payments(receipt_no))`)
         .is("deleted_at", null)
         .order("generated_at", { ascending: false });
       if (seasonId !== "all") q = q.eq("season_id", seasonId);
@@ -315,7 +315,7 @@ function InvoiceListTab({ seasons, offices, isSuper }: any) {
   function buildInvoicePdfPayload(inv: any) {
     return {
       invoice_no: inv.invoice_no,
-      generated_at: inv.generated_at,
+      generated_at: inv.generated_at ?? inv.created_at ?? inv.issue_date ?? null,
       due_date: inv.due_date,
       is_borga: inv.is_borga,
       note: inv.note,
@@ -337,11 +337,11 @@ function InvoiceListTab({ seasons, offices, isSuper }: any) {
         name: inv.farmers?.name_bn ?? inv.farmers?.name_en,
         farmer_code: inv.farmers?.farmer_code,
         mobile: inv.farmers?.mobile,
-        village: inv.farmers?.village ?? null,
+        village: inv.farmers?.village ?? inv.farmer?.village ?? null,
       },
       land: {
         mouza: mouzaName(inv),
-        dag_no: inv.lands?.dag_no,
+        dag_no: inv.lands?.dag_no ?? inv.land?.dag_no ?? inv.dag_no ?? null,
         // Use the land area frozen on the invoice at generation time, NOT the
         // farmer's current (possibly edited) land — past seasons must keep their
         // original area even after the land is later increased.

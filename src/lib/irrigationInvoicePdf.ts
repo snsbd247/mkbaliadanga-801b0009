@@ -31,7 +31,7 @@ export interface InvoicePdfSettings {
 }
 
 export const DEFAULT_INVOICE_SETTINGS: InvoicePdfSettings = {
-  paperFormat: "a4",
+  paperFormat: "a5-landscape",
   marginTopMm: 8,
   marginBottomMm: 8,
   marginLeftMm: 8,
@@ -185,13 +185,13 @@ function statusBn(s?: string | null) {
   }
 }
 
-function copyHtml(d: IrrigationInvoiceData, brand: CompanyBranding, copyLabel: string, settings: InvoicePdfSettings, role: "office" | "farmer", qrDataUrl?: string): string {
+function copyHtml(d: IrrigationInvoiceData, brand: CompanyBranding, copyLabel: string, settings: InvoicePdfSettings, role: "office" | "farmer", qrDataUrl?: string, wide = false): string {
   const farmer = d.farmer ?? {};
   const land = d.land ?? {};
   const seasonLabel = [d.season?.name ?? d.season?.type, d.season?.year].filter(Boolean).join(" ");
 
   const logoBlock = brand.logo_url
-    ? `<img src="${brand.logo_url}" crossorigin="anonymous" style="height:42px;display:block;margin:0 auto 2px;" />`
+    ? `<img src="${brand.logo_url}" crossorigin="anonymous" style="height:${wide ? 34 : 42}px;display:block;margin:0 auto 2px;" />`
     : "";
 
   const orgName = brand.company_name_bn ?? brand.company_name ?? "";
@@ -237,46 +237,28 @@ function copyHtml(d: IrrigationInvoiceData, brand: CompanyBranding, copyLabel: s
   }
 
   const farmerSig = `
-    <div style="text-align:center;min-width:160px;">
+    <div style="text-align:center;min-width:150px;">
       <div style="border-top:1px solid #111;padding-top:2px;">${settings.farmerSignTitle || "কৃষকের স্বাক্ষর"}</div>
       ${settings.farmerSignName ? `<div style="font-weight:600;font-size:11px;">${settings.farmerSignName}</div>` : (farmer.name ? `<div style="font-size:11px;color:#444;">${farmer.name}</div>` : "")}
     </div>`;
 
   const collectorSig = `
-    <div style="text-align:center;min-width:160px;">
+    <div style="text-align:center;min-width:150px;">
       <div style="border-top:1px solid #111;padding-top:2px;">${settings.collectorSignTitle || "আদায়কারীর স্বাক্ষর"}</div>
       ${settings.collectorSignName ? `<div style="font-weight:600;font-size:11px;">${settings.collectorSignName}</div>` : ""}
     </div>`;
 
-  return `
-  <div style="font-family:'Noto Sans Bengali','Hind Siliguri','SolaimanLipi',sans-serif;color:#111;padding:10px 14px;" data-invoice-copy="${role}">
-    <div style="text-align:center;">
-      ${logoBlock}
-      <div style="font-size:15px;font-weight:700;">${orgName}</div>
-      ${orgLine2 ? `<div style="font-size:10px;color:#333;">${orgLine2}</div>` : ""}
-      ${regLine ? `<div style="font-size:10px;color:#333;">${regLine}</div>` : ""}
-      <div style="font-size:15px;font-weight:700;margin-top:3px;">সেচ ইনভয়েস</div>
-      <div style="display:inline-block;border:1px solid #111;padding:1px 12px;margin-top:3px;font-size:11px;">${copyLabel}</div>
-      <div style="display:inline-block;border:1px solid ${srcColor};color:${srcColor};padding:1px 8px;margin-top:3px;margin-left:4px;font-size:10px;font-weight:600;border-radius:3px;">${srcBn}</div>
-    </div>
-
-    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-top:6px;font-size:11px;">
-      <div>
-        <div>রসিদ নং: <b>${d.invoice_no}</b></div>
-        <div>তারিখ: ${fmtDate(d.generated_at)}</div>
-      </div>
-      ${qrDataUrl ? `<img src="${qrDataUrl}" style="width:58px;height:58px;display:block;" alt="QR" />` : ""}
-    </div>
-
-    <table style="width:100%;border:1px solid #111;border-collapse:collapse;margin-top:5px;font-size:11px;">
+  const infoTable = `
+    <table style="width:100%;border:1px solid #111;border-collapse:collapse;font-size:11px;">
       ${rows.map(([k, v]) => `
         <tr>
-          <td style="padding:2px 6px;vertical-align:top;width:38%;border-bottom:1px solid #ddd;">${k}</td>
+          <td style="padding:2px 6px;vertical-align:top;width:40%;border-bottom:1px solid #ddd;">${k}</td>
           <td style="padding:2px 6px;vertical-align:top;border-bottom:1px solid #ddd;">${v}</td>
         </tr>`).join("")}
-    </table>
+    </table>`;
 
-    <table style="width:100%;border:1px solid #111;border-collapse:collapse;margin-top:5px;font-size:11px;">
+  const chargeTable = `
+    <table style="width:100%;border:1px solid #111;border-collapse:collapse;font-size:11px;">
       <thead>
         <tr style="background:#f4f4f4;">
           <th style="text-align:left;padding:3px 6px;border-bottom:1px solid #111;">বিবরণ</th>
@@ -302,19 +284,54 @@ function copyHtml(d: IrrigationInvoiceData, brand: CompanyBranding, copyLabel: s
           <td style="padding:3px 6px;text-align:right;font-weight:700;background:#fff5f5;color:#b91c1c;">${fmt2(d.due_amount)}</td>
         </tr>
       </tbody>
-    </table>
+    </table>`;
 
+  const wordsBlock = `
     <div style="font-size:10px;margin-top:3px;">কথায়: ${amountWords} টাকা মাত্র।</div>
-    ${d.note ? `<div style="font-size:10px;margin-top:1px;"><b>মন্তব্য:</b> ${d.note}</div>` : ""}
+    ${d.note ? `<div style="font-size:10px;margin-top:1px;"><b>মন্তব্য:</b> ${d.note}</div>` : ""}`;
 
-    <div style="display:flex;justify-content:space-between;margin-top:18px;font-size:10px;gap:12px;">
+  const header = `
+    <div style="text-align:center;">
+      ${logoBlock}
+      <div style="font-size:15px;font-weight:700;">${orgName}</div>
+      ${orgLine2 ? `<div style="font-size:10px;color:#333;">${orgLine2}</div>` : ""}
+      ${regLine ? `<div style="font-size:10px;color:#333;">${regLine}</div>` : ""}
+      <div style="font-size:15px;font-weight:700;margin-top:3px;">সেচ ইনভয়েস</div>
+      <div style="display:inline-block;border:1px solid #111;padding:1px 12px;margin-top:3px;font-size:11px;">${copyLabel}</div>
+      <div style="display:inline-block;border:1px solid ${srcColor};color:${srcColor};padding:1px 8px;margin-top:3px;margin-left:4px;font-size:10px;font-weight:600;border-radius:3px;">${srcBn}</div>
+    </div>
+
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-top:6px;font-size:11px;">
+      <div>
+        <div>রসিদ নং: <b>${d.invoice_no}</b></div>
+        <div>তারিখ: ${fmtDate(d.generated_at)}</div>
+      </div>
+      ${qrDataUrl ? `<img src="${qrDataUrl}" style="width:58px;height:58px;display:block;" alt="QR" />` : ""}
+    </div>`;
+
+  const body = wide
+    ? `
+      <div style="display:flex;gap:12px;margin-top:5px;align-items:flex-start;">
+        <div style="flex:1;">${infoTable}</div>
+        <div style="flex:1;">${chargeTable}${wordsBlock}</div>
+      </div>`
+    : `
+      <div style="margin-top:5px;">${infoTable}</div>
+      <div style="margin-top:5px;">${chargeTable}</div>
+      ${wordsBlock}`;
+
+  return `
+  <div style="font-family:'Noto Sans Bengali','Hind Siliguri','SolaimanLipi',sans-serif;color:#111;padding:10px 14px;" data-invoice-copy="${role}">
+    ${header}
+    ${body}
+    <div style="display:flex;justify-content:space-between;margin-top:${wide ? 14 : 18}px;font-size:10px;gap:12px;">
       ${farmerSig}
       ${collectorSig}
     </div>
   </div>`;
 }
 
-async function renderCopyToCanvas(d: IrrigationInvoiceData, brand: CompanyBranding, copyLabel: string, settings: InvoicePdfSettings, role: "office" | "farmer"): Promise<HTMLCanvasElement> {
+async function renderCopyToCanvas(d: IrrigationInvoiceData, brand: CompanyBranding, copyLabel: string, settings: InvoicePdfSettings, role: "office" | "farmer", wide = false): Promise<HTMLCanvasElement> {
   // QR points to the public receipt verification page for this invoice.
   let qrDataUrl: string | undefined;
   try {
@@ -322,8 +339,8 @@ async function renderCopyToCanvas(d: IrrigationInvoiceData, brand: CompanyBrandi
     qrDataUrl = await QRCode.toDataURL(verifyUrl, { margin: 0, width: 120 });
   } catch { /* QR is optional; skip on failure */ }
   const wrap = document.createElement("div");
-  wrap.style.cssText = "position:fixed;left:-10000px;top:0;width:780px;background:#fff;";
-  wrap.innerHTML = copyHtml(d, brand, copyLabel, settings, role, qrDataUrl);
+  wrap.style.cssText = `position:fixed;left:-10000px;top:0;width:${wide ? 1040 : 780}px;background:#fff;`;
+  wrap.innerHTML = copyHtml(d, brand, copyLabel, settings, role, qrDataUrl, wide);
   document.body.appendChild(wrap);
   try {
     await new Promise((r) => setTimeout(r, 60));
@@ -333,11 +350,17 @@ async function renderCopyToCanvas(d: IrrigationInvoiceData, brand: CompanyBrandi
   }
 }
 
-function makePdf(settings: InvoicePdfSettings): jsPDF {
+// "both" always prints on an A4 portrait sheet (office copy on top, farmer copy
+// below a cut line). Single copies print on an A5 landscape sheet.
+function makePdf(settings: InvoicePdfSettings, copy: InvoiceCopy): jsPDF {
+  if (copy === "both") {
+    return new jsPDF({ unit: "mm", format: "a4", orientation: "p" });
+  }
   if (settings.paperFormat === "a5-landscape") {
     return new jsPDF({ unit: "mm", format: "a5", orientation: "l" });
   }
-  const fmt = settings.paperFormat === "letter" ? "letter" : settings.paperFormat === "a5" ? "a5" : "a4";
+  if (settings.paperFormat === "a5") return new jsPDF({ unit: "mm", format: "a5", orientation: "p" });
+  const fmt = settings.paperFormat === "letter" ? "letter" : "a4";
   return new jsPDF({ unit: "mm", format: fmt, orientation: "p" });
 }
 
@@ -345,7 +368,9 @@ async function paintInvoiceOnPage(pdf: jsPDF, d: IrrigationInvoiceData, brand: C
   const pageW = pdf.internal.pageSize.getWidth();
   const pageH = pdf.internal.pageSize.getHeight();
   const innerW = pageW - settings.marginLeftMm - settings.marginRightMm;
-  const cutY = Math.min(Math.max(settings.cutLineMm, 60), pageH - 60);
+  // For "both" split an A4 portrait page in half.
+  const cutY = pageH / 2;
+  const wide = copy !== "both";
 
   const placeImage = (canvas: HTMLCanvasElement, yTop: number, yBottom: number) => {
     const slotH = yBottom - yTop;
@@ -359,12 +384,12 @@ async function paintInvoiceOnPage(pdf: jsPDF, d: IrrigationInvoiceData, brand: C
   };
 
   if (copy === "office" || copy === "both") {
-    const c = await renderCopyToCanvas(d, brand, "অফিস কপি", settings, "office");
+    const c = await renderCopyToCanvas(d, brand, "অফিস কপি", settings, "office", wide);
     if (copy === "office") placeImage(c, settings.marginTopMm, pageH - settings.marginBottomMm);
     else placeImage(c, settings.marginTopMm, cutY - 3);
   }
   if (copy === "farmer" || copy === "both") {
-    const c = await renderCopyToCanvas(d, brand, "কৃষকের কপি", settings, "farmer");
+    const c = await renderCopyToCanvas(d, brand, "কৃষকের কপি", settings, "farmer", wide);
     if (copy === "farmer") placeImage(c, settings.marginTopMm, pageH - settings.marginBottomMm);
     else placeImage(c, cutY + 3, pageH - settings.marginBottomMm);
   }
@@ -384,14 +409,14 @@ async function paintInvoiceOnPage(pdf: jsPDF, d: IrrigationInvoiceData, brand: C
 
 async function renderPdf(d: IrrigationInvoiceData, copy: InvoiceCopy, settings: InvoicePdfSettings): Promise<jsPDF> {
   const brand = await loadBranding();
-  const pdf = makePdf(settings);
+  const pdf = makePdf(settings, copy);
   await paintInvoiceOnPage(pdf, d, brand, copy, settings);
   return pdf;
 }
 
 async function renderBulkPdf(items: IrrigationInvoiceData[], copy: InvoiceCopy, settings: InvoicePdfSettings): Promise<jsPDF> {
   const brand = await loadBranding();
-  const pdf = makePdf(settings);
+  const pdf = makePdf(settings, copy);
   for (let i = 0; i < items.length; i++) {
     if (i > 0) pdf.addPage();
     await paintInvoiceOnPage(pdf, items[i], brand, copy, settings);
