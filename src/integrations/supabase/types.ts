@@ -5254,6 +5254,36 @@ export type Database = {
         }
         Relationships: []
       }
+      receipt_no_legacy_map: {
+        Row: {
+          created_at: string
+          id: string
+          legacy_receipt_no: string
+          numeric_alias: number
+          office_id: string | null
+          source_id: string
+          source_table: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          legacy_receipt_no: string
+          numeric_alias: number
+          office_id?: string | null
+          source_id: string
+          source_table: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          legacy_receipt_no?: string
+          numeric_alias?: number
+          office_id?: string | null
+          source_id?: string
+          source_table?: string
+        }
+        Relationships: []
+      }
       receipt_no_pool: {
         Row: {
           created_at: string
@@ -6446,6 +6476,10 @@ export type Database = {
       _sms_render: { Args: { _tpl: string; _vars: Json }; Returns: string }
       _sms_savings_balance: { Args: { _farmer: string }; Returns: number }
       activate_sms_token: { Args: { _id: string }; Returns: undefined }
+      admin_set_receipt_serial_start: {
+        Args: { p_start: number }
+        Returns: number
+      }
       apply_loan_installment_penalties: { Args: never; Returns: Json }
       backfill_irrigation_invoice_office: { Args: never; Returns: number }
       cancel_voter_membership: {
