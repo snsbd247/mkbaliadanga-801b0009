@@ -19,6 +19,7 @@ import { exportTablePDF, exportExcel } from "@/lib/exports";
 import { useLang } from "@/i18n/LanguageProvider";
 import { logAudit } from "@/lib/audit";
 import { postBankOpening } from "@/lib/accountingPosting";
+import { partitionOpenings, summarizeBackfill } from "@/lib/bankOpening";
 
 
 const sb = db as any;
