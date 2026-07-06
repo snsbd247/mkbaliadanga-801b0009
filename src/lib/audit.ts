@@ -10,6 +10,7 @@ export type AuditModule =
   | "receipt"
   | "permission"
   | "retry_job"
+  | "season"
   | "other";
 
 export type AuditAction =
