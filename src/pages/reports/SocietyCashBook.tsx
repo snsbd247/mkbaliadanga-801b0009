@@ -55,6 +55,7 @@ export default function SocietyCashBook() {
   const [from, setFrom] = useState(`${fyStartYear}-07-01`);
   const [to, setTo] = useState(`${fyStartYear + 1}-06-30`);
   const [input, setInput] = useState<any>(null);
+  const [opening, setOpening] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
