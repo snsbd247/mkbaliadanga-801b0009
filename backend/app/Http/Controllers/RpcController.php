@@ -1073,23 +1073,26 @@ class RpcController extends Controller
                 return null;
             }
             $user = $request->user();
+            $requestId = $p['request_id'] ?? (string) Str::uuid();
+            $office = $user->office_id ?? $user->office ?? null;
             $detail = [
                 'rpc'        => $p['rpc'] ?? 'unknown',
                 'land_id'    => $p['land_id'] ?? null,
-                'office'     => $user->office_id ?? $user->office ?? null,
-                'request_id' => $p['request_id'] ?? (string) Str::uuid(),
+                'office'     => $office,
+                'request_id' => $requestId,
                 'error'      => $p['error'] ?? null,
             ];
-            DB::table('audit_logs')->insert([
-                'id'          => (string) Str::uuid(),
-                'user_id'     => $user->id ?? null,
-                'action'      => 'rpc.fallback_used',
-                'entity_type' => 'rpc',
-                'entity_id'   => $detail['land_id'],
-                'details'     => json_encode($detail),
-                'created_at'  => now(),
-            ]);
-            return $detail['request_id'];
+
+            $row = ['action' => 'rpc.fallback_used', 'created_at' => now()];
+            if (Schema::hasColumn('audit_logs', 'id'))        $row['id'] = (string) Str::uuid();
+            if (Schema::hasColumn('audit_logs', 'user_id'))   $row['user_id'] = $user->id ?? null;
+            if (Schema::hasColumn('audit_logs', 'entity'))    $row['entity'] = 'rpc';
+            if (Schema::hasColumn('audit_logs', 'entity_id')) $row['entity_id'] = $detail['land_id'];
+            if (Schema::hasColumn('audit_logs', 'office_id')) $row['office_id'] = $office;
+            if (Schema::hasColumn('audit_logs', 'meta'))      $row['meta'] = json_encode($detail);
+
+            DB::table('audit_logs')->insert($row);
+            return $requestId;
         } catch (\Throwable $e) {
             // Audit failures must never break the caller.
         }
