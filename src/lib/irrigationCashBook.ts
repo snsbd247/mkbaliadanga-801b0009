@@ -106,12 +106,13 @@ export function buildIrrJamaRows(input: IrrCashBookInput, lang: ReportLang = "bn
     const row: IrrJamaRow = {
       date: o.received_on, receiptNo: o.receipt_no ?? "", name: o.payer_name ?? "",
       sechCharge: 0, nalaCharge: 0, maintenance: 0, lateFee: 0,
-      bankWithdraw: 0, pond: 0, misc: 0, total: amt,
+      bankWithdraw: 0, pond: 0, hawlat: 0, misc: 0, total: amt,
     };
     if (has(t, NALA)) row.nalaCharge = amt;
     else if (has(t, LATE)) row.lateFee = amt;
     else if (has(t, MAINT_IN)) row.maintenance = amt;
     else if (has(t, POND)) row.pond = amt;
+    else if (has(t, HAWLAT)) row.hawlat = amt;
     else row.misc = amt;
     rows.push(row);
   }
