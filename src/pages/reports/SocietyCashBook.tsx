@@ -235,7 +235,7 @@ export default function SocietyCashBook() {
                   <td className="border border-black p-1 text-right">{formatMoney(r.total)}</td>
                 </tr>
               ))}
-              {jamaRows.length === 0 && <tr><td colSpan={11} className="border border-black p-3 text-center">{tx("No data", "তথ্য নেই")}</td></tr>}
+              {jamaRows.length === 0 && <tr><td colSpan={12} className="border border-black p-3 text-center">{tx("No data", "তথ্য নেই")}</td></tr>}
               <tr className="font-bold">
                 <td colSpan={3} className="border border-black p-1 text-right">{tx("Grand total=", "সর্বমোট=")}</td>
                 <td className="border border-black p-1 text-right">{formatMoney(jamaTot.share)}</td>
@@ -244,19 +244,20 @@ export default function SocietyCashBook() {
                 <td className="border border-black p-1 text-right">{formatMoney(jamaTot.loanPrincipal)}</td>
                 <td className="border border-black p-1 text-right">{formatMoney(jamaTot.loanInterest)}</td>
                 <td className="border border-black p-1 text-right">{formatMoney(jamaTot.form)}</td>
+                <td className="border border-black p-1 text-right">{formatMoney(jamaTot.hawlat)}</td>
                 <td className="border border-black p-1 text-right">{formatMoney(jamaTot.misc)}</td>
                 <td className="border border-black p-1 text-right">{formatMoney(jamaTot.total)}</td>
               </tr>
               <tr className="font-bold">
-                <td colSpan={10} className="border border-black p-1 text-right">{tx("Total income=", "মোট আয়=")}</td>
+                <td colSpan={11} className="border border-black p-1 text-right">{tx("Total income=", "মোট আয়=")}</td>
                 <td className="border border-black p-1 text-right">{formatSigned(jamaTot.total)}</td>
               </tr>
               <tr className="font-bold">
-                <td colSpan={10} className="border border-black p-1 text-right">{tx("Carried from previous month=", "গত মাস হতে আগত টাকা=")}</td>
+                <td colSpan={11} className="border border-black p-1 text-right">{tx("Carried from previous month=", "গত মাস হতে আগত টাকা=")}</td>
                 <td className="border border-black p-1 text-right">{formatSigned(opening)}</td>
               </tr>
               <tr className="font-bold">
-                <td colSpan={10} className="border border-black p-1 text-right">{tx("Grand total income=", "সর্বমোট আয়=")}</td>
+                <td colSpan={11} className="border border-black p-1 text-right">{tx("Grand total income=", "সর্বমোট আয়=")}</td>
                 <td className="border border-black p-1 text-right">{formatSigned(incomeWithOpening)}</td>
               </tr>
             </tbody>
