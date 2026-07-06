@@ -702,7 +702,7 @@ function InvoiceListTab({ seasons, offices, isSuper }: any) {
                     )}
                   </TableCell>
                   <TableCell className="text-xs">{mouzaName(r) || "—"}</TableCell>
-                  <TableCell className="text-xs">
+                  <TableCell className="text-xs max-w-[160px] whitespace-normal break-words">
                     Dag {formatDagNumbers(r.lands?.dag_no) || "—"}<br />
                     {formatLandSize(invoiceLandSize(r), "short")}
                   </TableCell>
