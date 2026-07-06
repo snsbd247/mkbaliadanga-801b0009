@@ -166,7 +166,7 @@ export default function BankAccounts() {
     const eligible = accounts.filter(ac => Number(ac.opening_balance || 0) !== 0);
     if (eligible.length === 0) return toast.info("কোন ওপেনিং ব্যালেন্স নেই");
     const { data: journals } = await sb.from("journal_entries").select("reference").like("reference", "OPENING-BANK-%").is("deleted_at", null);
-    const postedRefs = new Set((journals ?? []).map((j: any) => String(j.reference)));
+    const postedRefs = new Set<string>((journals ?? []).map((j: any) => String(j.reference)));
     setOpeningPreview(partitionOpenings(accounts, postedRefs));
   }
 
