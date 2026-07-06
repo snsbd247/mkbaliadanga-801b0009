@@ -84,7 +84,7 @@ export function buildJamaRows(input: CashBookInput, lang: ReportLang = "bn"): Ja
     rows.push({
       date: l.paid_on, receiptNo: l.receipt_no ?? "", name: farmerNames[fid] ?? "",
       share: 0, savings: 0, bankWithdraw: 0, loanPrincipal: principal, loanInterest: interest,
-      form: 0, misc: 0, total,
+      form: 0, hawlat: 0, misc: 0, total,
     });
   }
   for (const b of bankTx) {
