@@ -2,7 +2,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { db } from "@/lib/db";
-import { fetchOpenIrrigationInvoicesResult, filterInvoicesByStatus } from "@/lib/irrigationInvoiceQueries";
+import { fetchOpenIrrigationInvoicesResult, filterInvoicesByStatus, searchAndSortInvoices } from "@/lib/irrigationInvoiceQueries";
+import { createInvoiceCache } from "@/lib/invoiceCache";
 import { invoiceStatusBadge, computeIrrigationDue, detectDueMismatch } from "@/lib/dues";
 import { logAudit } from "@/lib/audit";
 import { fetchReceiptAuditLogs } from "@/lib/receiptAudit";
@@ -78,9 +79,17 @@ export default function Payments() {
   // In-flight request token to ignore stale responses / prevent concurrent races.
   const dueReqRef = useRef(0);
   // Per-farmer invoice cache to avoid redundant refetches on revisit.
-  const invoiceCacheRef = useRef<Map<string, any[]>>(new Map());
+  const invoiceCacheRef = useRef(createInvoiceCache<any>());
   const [cancelledIrr, setCancelledIrr] = useState<any[]>([]);
-  const displayInvoices = invoiceFilter === "open" ? openIrr : cancelledIrr;
+  const [invoiceSearch, setInvoiceSearch] = useState("");
+  const [invoiceSort, setInvoiceSort] = useState<import("@/lib/irrigationInvoiceQueries").InvoiceSortKey>("due_date");
+  const [invoiceSortDir, setInvoiceSortDir] = useState<import("@/lib/irrigationInvoiceQueries").SortDir>("asc");
+  const [detailInvoice, setDetailInvoice] = useState<any | null>(null);
+  const [detailTxns, setDetailTxns] = useState<any[]>([]);
+  const displayInvoices = useMemo(
+    () => searchAndSortInvoices(invoiceFilter === "open" ? openIrr : cancelledIrr, invoiceSearch, invoiceSort, invoiceSortDir),
+    [invoiceFilter, openIrr, cancelledIrr, invoiceSearch, invoiceSort, invoiceSortDir],
+  );
   const [isAdmin, setIsAdmin] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [idemKey, setIdemKey] = useState<string>(newKey());
@@ -467,6 +476,18 @@ export default function Payments() {
         toast.success(`${matched.length} ${tx("invoices preloaded", "টি ইনভয়েস প্রিলোড হয়েছে")}`);
       }
     }
+  }
+
+  async function openInvoiceDetails(inv: any | null | undefined) {
+    if (!inv) return;
+    setDetailInvoice(inv);
+    setDetailTxns([]);
+    const { data } = await db
+      .from("irrigation_invoice_payments")
+      .select("id,collected_amount,created_at,payment_id")
+      .eq("invoice_id", inv.id)
+      .order("created_at", { ascending: false });
+    setDetailTxns((data as any[]) ?? []);
   }
 
   const totalAmount = useMemo(() => allocs.reduce((s, a) => s + Number(a.amount || 0), 0), [allocs]);
@@ -875,9 +896,27 @@ export default function Payments() {
                       </div>
                     ) : (
                     <div className="space-y-2">
-                      <div className="flex gap-1">
+                      <div className="flex flex-wrap items-center gap-1">
                         <Button type="button" size="sm" variant={invoiceFilter === "open" ? "default" : "outline"} onClick={() => setInvoiceFilter("open")}>{tx("Open", "খোলা")}</Button>
                         <Button type="button" size="sm" variant={invoiceFilter === "cancelled" ? "default" : "outline"} onClick={() => setInvoiceFilter("cancelled")}>{tx("Cancelled", "বাতিল")}</Button>
+                        <Input
+                          className="h-8 w-40"
+                          placeholder={tx("Search no./date", "নম্বর/তারিখ খুঁজুন")}
+                          value={invoiceSearch}
+                          onChange={(e) => setInvoiceSearch(e.target.value)}
+                          data-testid="invoice-search"
+                        />
+                        <Select value={invoiceSort} onValueChange={(v: any) => setInvoiceSort(v)}>
+                          <SelectTrigger className="h-8 w-32"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="due_date">{tx("Due date", "তারিখ")}</SelectItem>
+                            <SelectItem value="invoice_no">{tx("Invoice no.", "নম্বর")}</SelectItem>
+                            <SelectItem value="due_amount">{tx("Due amount", "পরিমাণ")}</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <Button type="button" size="sm" variant="outline" onClick={() => setInvoiceSortDir(invoiceSortDir === "asc" ? "desc" : "asc")}>
+                          {invoiceSortDir === "asc" ? "↑" : "↓"}
+                        </Button>
                       </div>
                       <Select value={a.reference_id} onValueChange={(v) => updateAlloc(i, { reference_id: v })} disabled={invoiceFilter === "cancelled"}>
                         <SelectTrigger><SelectValue placeholder={displayInvoices.length ? "Pick invoice" : (invoiceFilter === "cancelled" ? "No cancelled invoices" : "No open invoices")} /></SelectTrigger>
@@ -887,7 +926,13 @@ export default function Payments() {
                           </SelectItem>
                         ))}</SelectContent>
                       </Select>
+                      {a.reference_id && (
+                        <Button type="button" size="sm" variant="link" className="h-6 px-0" onClick={() => openInvoiceDetails(displayInvoices.find((x) => x.id === a.reference_id))}>
+                          {tx("View details", "বিস্তারিত দেখুন")}
+                        </Button>
+                      )}
                     </div>
+
                     )
                   )}
                   <Input type="number" placeholder={t("amountPh")} value={a.amount || ""} onChange={(e) => updateAlloc(i, { amount: +e.target.value })} />
@@ -1252,6 +1297,37 @@ export default function Payments() {
         data={preview?.data ?? null}
         copy={preview?.copy ?? "both"}
       />
+
+      <Dialog open={!!detailInvoice} onOpenChange={(o) => { if (!o) setDetailInvoice(null); }}>
+        <DialogContent data-testid="invoice-details-modal">
+          <DialogHeader>
+            <DialogTitle>{tx("Invoice", "ইনভয়েস")} {detailInvoice?.invoice_no}</DialogTitle>
+          </DialogHeader>
+          {detailInvoice && (
+            <div className="space-y-3 text-sm">
+              <div className="flex justify-between"><span className="text-muted-foreground">{tx("Status", "স্ট্যাটাস")}</span><span>{invoiceStatusBadge(detailInvoice.invoice_status ?? null).label_bn}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">{tx("Payable", "প্রদেয়")}</span><span className="font-mono">{money(detailInvoice.payable_amount ?? 0)}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">{tx("Paid", "পরিশোধিত")}</span><span className="font-mono">{money(detailInvoice.paid_amount ?? 0)}</span></div>
+              <div className="flex justify-between font-semibold"><span>{tx("Due", "বকেয়া")}</span><span className="font-mono">{money(detailInvoice.due_amount ?? 0)}</span></div>
+              <div>
+                <p className="mb-1 font-medium">{tx("Transaction history", "লেনদেন হিস্ট্রি")}</p>
+                {detailTxns.length === 0 ? (
+                  <p className="text-muted-foreground">{tx("No transactions", "কোনো লেনদেন নেই")}</p>
+                ) : (
+                  <ul className="space-y-1">
+                    {detailTxns.map((tItem) => (
+                      <li key={tItem.id} className="flex justify-between">
+                        <span>{fmtDate(tItem.created_at)}</span>
+                        <span className="font-mono">{money(tItem.collected_amount ?? 0)}</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
