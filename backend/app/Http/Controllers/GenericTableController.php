@@ -576,6 +576,15 @@ class GenericTableController extends Controller
             unset($values['office_id']);
         }
 
+        // Capture the before-state of guarded rows for the audit trail.
+        $before = [];
+        if (isset(self::WRITE_GUARD[$table])) {
+            $pre = DB::table($table);
+            $this->scope($request, $pre, $table);
+            $this->applyFilters($pre, $table, $filters);
+            $before = array_map(fn ($r) => (array) $r, $pre->get()->all());
+        }
+
         $query = DB::table($table);
         $this->scope($request, $query, $table);
         $this->applyFilters($query, $table, $filters);
@@ -585,6 +594,14 @@ class GenericTableController extends Controller
         $this->scope($request, $read, $table);
         $this->applyFilters($read, $table, $filters);
         $rows = array_map(fn ($r) => (array) $r, $read->get()->all());
+
+        $this->recordAudit(
+            $request,
+            'update',
+            $table,
+            array_filter(array_map(fn ($r) => $r['id'] ?? null, $rows)),
+            ['old_data' => $before, 'new_data' => $values],
+        );
 
         return response()->json($rows);
     }
