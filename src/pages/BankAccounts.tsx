@@ -158,17 +158,43 @@ export default function BankAccounts() {
     setA(emptyAccount());
   }
 
-  // Backfill: post any bank account's opening balance that has no opening journal yet.
-  async function postAllOpenings() {
+  // Step 1 — build a preview of what the backfill will change (which accounts
+  // will get a new opening journal vs. which already have one). Shown in a
+  // confirmation dialog before anything is written.
+  async function previewOpenings() {
     const list = accounts.filter(ac => Number(ac.opening_balance || 0) !== 0);
     if (list.length === 0) return toast.info("কোন ওপেনিং ব্যালেন্স নেই");
-    let posted = 0, existed = 0;
+    const { data: journals } = await sb.from("journal_entries").select("reference").like("reference", "OPENING-BANK-%").is("deleted_at", null);
+    const posted = new Set((journals ?? []).map((j: any) => String(j.reference)));
+    const toPost: any[] = [];
+    const existing: any[] = [];
     for (const ac of list) {
-      const res = await postBankOpening({ bankAccountId: ac.id, openingBalance: Number(ac.opening_balance || 0), bankLabel: `${ac.bank_name} ${ac.account_no}`, officeId: ac.office_id ?? null, createdBy: user?.id });
-      if (res === "posted") posted++; else if (res === "exists") existed++;
+      (posted.has(`OPENING-BANK-${ac.id}`) ? existing : toPost).push(ac);
     }
-    toast.success(`ওপেনিং পোস্ট সম্পন্ন — নতুন: ${posted}, আগে থেকেই ছিল: ${existed}`);
+    setOpeningPreview({ toPost, existing });
   }
+
+  // Step 2 — run the backfill after the user confirms, then record an audit log.
+  async function runOpenings() {
+    if (!openingPreview) return;
+    setPosting(true);
+    let posted = 0, existed = 0;
+    const details: any[] = [];
+    try {
+      for (const ac of [...openingPreview.toPost, ...openingPreview.existing]) {
+        const res = await postBankOpening({ bankAccountId: ac.id, openingBalance: Number(ac.opening_balance || 0), bankLabel: `${ac.bank_name} ${ac.account_no}`, officeId: ac.office_id ?? null, createdBy: user?.id });
+        if (res === "posted") { posted++; details.push({ bank_account_id: ac.id, bank: `${ac.bank_name} ${ac.account_no}`, opening_balance: Number(ac.opening_balance || 0), result: res }); }
+        else if (res === "exists") existed++;
+      }
+      void logAudit({ module: "bank_opening", action_type: "backfill", new_data: { total: openingPreview.toPost.length + openingPreview.existing.length, posted, already_existed: existed, accounts: details } });
+      toast.success(`ওপেনিং পোস্ট সম্পন্ন — নতুন: ${posted}, আগে থেকেই ছিল: ${existed}`);
+    } finally {
+      setPosting(false);
+      setOpeningPreview(null);
+      load();
+    }
+  }
+
 
   async function confirmDelete() {
     if (!pendingDelete) return;
