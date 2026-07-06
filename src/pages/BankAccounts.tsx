@@ -429,6 +429,7 @@ export default function BankAccounts() {
                     <TableHead>Date</TableHead><TableHead>Bank</TableHead><TableHead>Type</TableHead>
                     <TableHead className="text-right">জমা</TableHead><TableHead className="text-right">উত্তোলন</TableHead>
                     <TableHead className="text-right">Balance</TableHead><TableHead>Note</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
                   </TableRow></TableHeader>
                   <TableBody>
                     <TableRow className="bg-muted/40">
