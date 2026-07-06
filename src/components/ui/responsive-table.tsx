@@ -52,7 +52,7 @@ export const ResponsiveTable = React.forwardRef<HTMLDivElement, ResponsiveTableP
       >
         <table
           className={cn("rt-table w-full caption-bottom text-sm", sticky && "rt-sticky", tableClassName)}
-          style={{ minWidth }}
+          style={{ minWidth: resolvedMinWidth }}
         >
           {children}
         </table>
