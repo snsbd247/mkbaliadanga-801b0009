@@ -192,4 +192,36 @@ class AdminUsersFunctionTest extends TestCase
         $this->assertSame(200, $delete['status']);
         $this->assertDatabaseMissing('users', ['id' => $target->id]);
     }
+
+    public function test_non_developer_non_super_is_forbidden_from_all_admin_actions(): void
+    {
+        $officeId = (string) Str::uuid();
+        DB::table('offices')->insert(['id' => $officeId, 'name' => 'শাখা কার্যালয়']);
+        $staff = $this->userWithRole('staffuser', 'staff', $officeId);
+
+        foreach (['list', 'delete', 'reset_password', 'set_role', 'update_profile', 'create'] as $action) {
+            $res = $this->call($staff, ['action' => $action, 'user_id' => $staff->id]);
+            $this->assertSame(403, $res['status'], "Action {$action} should be forbidden for staff");
+        }
+    }
+
+    public function test_developer_list_bypasses_office_scope_and_returns_all_users(): void
+    {
+        $officeA = (string) Str::uuid();
+        $officeB = (string) Str::uuid();
+        DB::table('offices')->insert([
+            ['id' => $officeA, 'name' => 'কার্যালয় ক'],
+            ['id' => $officeB, 'name' => 'কার্যালয় খ'],
+        ]);
+        $developer = $this->userWithRole('dev', 'developer');
+        $userA = $this->userWithRole('usera', 'staff', $officeA);
+        $userB = $this->userWithRole('userb', 'staff', $officeB);
+
+        // Even with a restrictive office scope, a developer must see every user.
+        $list = $this->call($developer, ['action' => 'list'], $officeA);
+        $this->assertSame(200, $list['status']);
+        $ids = array_column($list['json']['users'], 'id');
+        $this->assertContains($userA->id, $ids);
+        $this->assertContains($userB->id, $ids);
+    }
 }

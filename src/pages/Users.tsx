@@ -19,7 +19,7 @@ import { ShieldCheck, Plus, Trash2, KeyRound, Pencil } from "lucide-react";
 import { useAuth } from "@/auth/AuthProvider";
 import { DeleteButton } from "@/components/ui/action-icon-button";
 import { z } from "zod";
-import { isLaravelBackend } from "@/lib/backend";
+import { isLaravelBackend, BACKEND_LABEL, BACKEND_API_BASE } from "@/lib/backend";
 
 // Minimal password policy — length only. Simple numeric passwords (e.g. 123456789) are allowed.
 function passwordPolicyIssues(pw: string, _role: string, t: (k: any) => string): string[] {
@@ -381,6 +381,15 @@ export default function Users() {
           </DialogContent>
         </Dialog>
       } />
+
+      {isDeveloper && (
+        <Card className="p-2 mb-3 border-dashed text-xs flex flex-wrap items-center gap-2 bg-muted/40">
+          <span className="font-medium">API base / এপিআই বেস:</span>
+          <span className="rounded bg-primary/10 text-primary px-1.5 py-0.5 font-mono">{BACKEND_LABEL}</span>
+          <span className="text-muted-foreground font-mono break-all">{BACKEND_API_BASE}</span>
+        </Card>
+      )}
+
 
       <Card className="p-3 mb-3">
         <div className="flex flex-wrap gap-2 items-end">

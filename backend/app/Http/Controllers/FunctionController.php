@@ -80,7 +80,7 @@ class FunctionController extends Controller
         }
 
         return match ($action) {
-            'list' => $this->adminUsersList($request),
+            'list' => $this->adminUsersList($request, $isDeveloper, $isSuper),
             'create' => $this->adminUsersCreate($request, $actor, $isDeveloper),
             'delete' => $this->adminUsersDelete($request, $actor, $isDeveloper),
             'reset_password' => $this->adminUsersResetPassword($request),
@@ -91,9 +91,10 @@ class FunctionController extends Controller
         };
     }
 
-    private function adminUsersList(Request $request): JsonResponse
+    private function adminUsersList(Request $request, bool $isDeveloper = false, bool $isSuper = false): JsonResponse
     {
-        $scopeOffice = $request->attributes->get('scope_office_id');
+        // Developers and super admins bypass all office/role scoping and see every user.
+        $scopeOffice = ($isDeveloper || $isSuper) ? null : $request->attributes->get('scope_office_id');
         $users = User::query()
             ->when($scopeOffice, fn ($query) => $query->where('office_id', $scopeOffice))
             ->orderBy('name')
