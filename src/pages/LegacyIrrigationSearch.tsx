@@ -152,6 +152,8 @@ export default function LegacyIrrigationSearch() {
               className="mt-2"
               aria-invalid={!!inputError}
               inputMode="numeric"
+              autoComplete="off"
+              name="legacy-farmer-code"
             />
             {inputError ? (
               <p className="mt-1 text-xs text-destructive">{inputError}</p>
