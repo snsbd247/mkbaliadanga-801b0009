@@ -26,6 +26,11 @@ import { logAudit } from "@/lib/audit";
 import { autoReceiptNo } from "@/lib/receiptNo";
 import { nextMonthlyReceiptNo, nextUnifiedReceiptNo } from "@/lib/monthlyReceiptNo";
 
+// Shared select for open irrigation invoices (used by both initial load and reload).
+const OPEN_INVOICE_SELECT =
+  "id,invoice_no,season_id,office_id,land_id,owner_farmer_id,is_borga,due_date,due_amount,paid_amount,payable_amount,irrigation_amount,delay_fee,maintenance_amount,canal_amount,other_charge,season_rate,land_type_name,irrigation_category_name,invoice_status,seasons(name,year,status),lands(mouza,land_size,dag_no,field_type,notes,patwaris(name,name_bn,mobile)),owner:farmers!irrigation_invoices_owner_farmer_id_fkey(name_bn,name_en,member_no,farmer_code)";
+
+
 type Invoice = {
   id: string;
   invoice_no: string;
