@@ -4,11 +4,12 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 // behaviour without a live backend. Both Payments and IrrigationPaymentPanel
 // route through fetchOpenIrrigationInvoices, so this covers both surfaces.
 const orderMock = vi.fn();
+const isMock = vi.fn();
 vi.mock("@/lib/db", () => {
   const builder: any = {
     select: vi.fn(() => builder),
     eq: vi.fn(() => builder),
-    is: vi.fn(() => builder),
+    is: (...args: any[]) => isMock(...args),
     gt: vi.fn(() => builder),
     order: (...args: any[]) => orderMock(...args),
   };
@@ -19,6 +20,7 @@ import { fetchOpenIrrigationInvoices } from "../irrigationInvoiceQueries";
 
 beforeEach(() => {
   orderMock.mockReset();
+  isMock.mockReset();
 });
 
 describe("fetchOpenIrrigationInvoices (shared by Payments & IrrigationPaymentPanel)", () => {
@@ -33,6 +35,7 @@ describe("fetchOpenIrrigationInvoices (shared by Payments & IrrigationPaymentPan
     const rows = await fetchOpenIrrigationInvoices("farmer-1", "id,due_amount,invoice_status");
     expect(rows.map((r) => r.id)).toEqual(["1", "2"]);
     expect(rows.reduce((s, r) => s + Number(r.due_amount), 0)).toBe(16833);
+    expect(isMock).not.toHaveBeenCalled();
   });
 
   it("keeps empty-string status but drops cancelled and soft-deleted", async () => {
