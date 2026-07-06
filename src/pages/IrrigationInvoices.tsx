@@ -1976,7 +1976,8 @@ function GenerateTab({ seasons, offices, userId, isSuper }: any) {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {previewRows.slice(0, 100).map((r: any, i: number) => {
+                  {previewRows.slice(previewPage * previewPageSize, previewPage * previewPageSize + previewPageSize).map((r: any, localIdx: number) => {
+                    const i = previewPage * previewPageSize + localIdx;
                     const cat = categories.find((c) => c.id === defaultCategoryId);
                     const allowManual = !cat || cat.allow_manual_negotiation || r.resolved?.isNegotiable !== false;
                     const src = r.resolved?.source ?? "STANDARD";
