@@ -214,6 +214,38 @@ export default function LedgerReconciliation() {
     doc.save(`reconciliation-${year}-${String(month).padStart(2, "0")}.pdf`);
   }
 
+  function exportXlsx() {
+    if (!report) return;
+    const period = `${year}-${String(month).padStart(2, "0")}`;
+    const accountRows = report.accounts.map((a) => ({
+      Code: a.code,
+      Account: a.name_bn ? `${a.name} / ${a.name_bn}` : a.name,
+      Type: a.type,
+      Opening: a.opening_balance,
+      Debit: a.period_debit,
+      Credit: a.period_credit,
+      Closing: a.closing_balance,
+    }));
+    const mismatchRows = report.mismatches.length
+      ? report.mismatches.map((m) => ({
+          Kind: m.kind,
+          "Reference Type": m.reference_type,
+          "Reference ID": m.reference_id,
+          Debit: m.debit ?? "",
+          Credit: m.credit ?? "",
+          Diff: m.diff ?? "",
+          Entries: m.entry_count ?? "",
+        }))
+      : [{ Kind: "None", "Reference Type": "ledger is consistent", "Reference ID": "", Debit: "", Credit: "", Diff: "", Entries: "" }];
+    // Two sheets in one file: Accounts (with a totals + bank cross-check row) and Mismatches.
+    accountRows.push({ Code: "", Account: "— TOTALS —", Type: "", Opening: 0, Debit: report.summary.total_debit, Credit: report.summary.total_credit, Closing: report.summary.diff });
+    if (bankCross) {
+      accountRows.push({ Code: "", Account: "— BANK CROSS-CHECK (actual vs ledger) —", Type: "", Opening: bankCross.actual, Debit: bankCross.ledger, Credit: 0, Closing: bankCross.diff });
+    }
+    exportExcel(`reconciliation-${period}.xlsx`, `Recon ${period}`, [...accountRows, {} as any, ...mismatchRows]);
+  }
+
+
   if (!isSuper) {
     return (
       <>
