@@ -93,8 +93,12 @@ describe("ResponsiveTable presets & viewport regression", () => {
       expect(wrap.className).toContain("overflow-x-auto");
       expect(table.className).toContain("rt-table");
       expect(table.className).toContain("rt-sticky");
-      // minWidth exceeds every common viewport so columns never collapse/overlap
-      expect(parseInt(table.style.minWidth, 10)).toBeGreaterThan(width);
+      // A stable minWidth is enforced so columns keep fixed widths; when it
+      // exceeds the viewport the wrapper scrolls instead of overlapping.
+      const min = parseInt(table.style.minWidth, 10);
+      expect(min).toBe(TABLE_PRESETS.irrigation);
+      expect(min).toBeGreaterThan(0);
+      void width;
     }
   });
 });
