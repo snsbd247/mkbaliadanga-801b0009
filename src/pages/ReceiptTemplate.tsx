@@ -48,6 +48,7 @@ export default function ReceiptTemplatePage() {
   const { isSuper } = useAuth();
   const brand = useBranding();
   const [tpl, setTpl] = useState<ReceiptTemplate>(DEFAULT_TEMPLATE);
+  const [serialStart, setSerialStart] = useState<string>("0");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -55,7 +56,10 @@ export default function ReceiptTemplatePage() {
     document.title = "Receipt Template";
     (async () => {
       const { data } = await db.from("receipt_settings").select("*").eq("id", 1).maybeSingle();
-      if (data) setTpl({ ...DEFAULT_TEMPLATE, ...(data as any) });
+      if (data) {
+        setTpl({ ...DEFAULT_TEMPLATE, ...(data as any) });
+        setSerialStart(String((data as any).receipt_serial_start ?? 0));
+      }
       setLoading(false);
     })();
   }, []);
