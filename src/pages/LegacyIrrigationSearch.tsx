@@ -68,7 +68,7 @@ export default function LegacyIrrigationSearch() {
       return;
     }
     if (!/^[0-9]+$/.test(q)) {
-      setInputError(tx("Only digits are allowed (farmer code, mobile, or farmer ID)", "শুধু সংখ্যা লিখুন (ফার্মার কোড, মোবাইল বা ফার্মার আইডি)"));
+      setInputError(tx("Only digits are allowed (farmer code)", "শুধু সংখ্যা লিখুন (ফার্মার কোড)"));
       return;
     }
     if (q.length < 3) {
@@ -83,8 +83,8 @@ export default function LegacyIrrigationSearch() {
     setSearching(true);
     setSelected(new Set());
     try {
-      // Search by legacy code, mobile number, or farmer ID.
-      const rows = await LegacyIrrigationApi.list({ q });
+      // Search by farmer code only (original behaviour).
+      const rows = await LegacyIrrigationApi.list({ farmer_code: q });
       setRecords(rows);
       setTerm(q);
       if (!rows.length) toast.info(tx("No records found", "কোনো রেকর্ড পাওয়া যায়নি"));
