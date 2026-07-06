@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { db } from "@/lib/db";
-import { fetchOpenIrrigationInvoices } from "@/lib/irrigationInvoiceQueries";
+import { fetchOpenIrrigationInvoicesResult } from "@/lib/irrigationInvoiceQueries";
 import { invoiceStatusBadge, computeIrrigationDue, detectDueMismatch } from "@/lib/dues";
 import { logAudit } from "@/lib/audit";
 import { fetchReceiptAuditLogs } from "@/lib/receiptAudit";
@@ -71,6 +71,7 @@ export default function Payments() {
   
   const [openIrr, setOpenIrr] = useState<any[]>([]);
   const [dueMismatch, setDueMismatch] = useState<import("@/lib/dues").DueMismatchResult | null>(null);
+  const [invoiceEmpty, setInvoiceEmpty] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [idemKey, setIdemKey] = useState<string>(newKey());
@@ -375,11 +376,18 @@ export default function Payments() {
   async function loadDues() {
     // Shared query util keeps filtering identical to IrrigationPaymentPanel and
     // keeps NULL invoice_status invoices visible (see irrigationInvoiceQueries).
-    const rows = await fetchOpenIrrigationInvoices(
+    const { rows, error, traceId } = await fetchOpenIrrigationInvoicesResult(
       farmerId,
       "id,invoice_no,payable_amount,paid_amount,due_amount,due_date,generated_at,office_id,is_borga,delay_fee,maintenance_amount,canal_amount,irrigation_amount,other_charge,invoice_status",
     );
+    if (error) {
+      toast.error(tx(`Failed to load invoices (trace: ${traceId}): ${error.message}`, `ইনভয়েস লোড ব্যর্থ (ট্রেস: ${traceId}): ${error.message}`));
+    }
     setOpenIrr(rows);
+    // Diagnose missing invoices: flag when a farmer is selected but nothing came back.
+    const isEmpty = !error && !!farmerId && rows.length === 0;
+    setInvoiceEmpty(isEmpty);
+    if (isEmpty) console.warn("[payments] no open irrigation invoices returned for farmer", farmerId);
 
     // Cross-check: the Farmer List irrigation-due total (canonical) must equal
     // the sum of open invoices we render here. If they diverge, an invoice is
@@ -782,6 +790,18 @@ export default function Payments() {
                 {tx(
                   `Due mismatch: Farmer list shows ৳${money(dueMismatch.listDue)} but open invoices total ৳${money(dueMismatch.paymentsDue)} (diff ৳${money(dueMismatch.diff)}). An invoice may be hidden — this has been logged.`,
                   `বকেয়া অমিল: farmer list এ ৳${money(dueMismatch.listDue)} কিন্তু খোলা ইনভয়েসের যোগফল ৳${money(dueMismatch.paymentsDue)} (পার্থক্য ৳${money(dueMismatch.diff)})। কোনো ইনভয়েস লুকানো থাকতে পারে — লগ করা হয়েছে।`,
+                )}
+              </div>
+            )}
+            {invoiceEmpty && (
+              <div
+                role="alert"
+                data-testid="no-invoices-alert"
+                className="rounded-md border border-amber-500/50 bg-amber-500/10 p-2 text-xs text-amber-700 dark:text-amber-400"
+              >
+                {tx(
+                  "No open irrigation invoices found for this farmer. If you expected some, an invoice may be filtered out — check the console log for details.",
+                  "এই কৃষকের কোনো খোলা সেচ ইনভয়েস পাওয়া যায়নি। থাকার কথা থাকলে কোনো ইনভয়েস ফিল্টার হয়ে থাকতে পারে — বিস্তারিত কনসোল লগে দেখুন।",
                 )}
               </div>
             )}

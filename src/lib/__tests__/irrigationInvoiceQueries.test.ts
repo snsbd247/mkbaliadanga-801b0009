@@ -16,7 +16,7 @@ vi.mock("@/lib/db", () => {
   return { db: { from: vi.fn(() => builder) } };
 });
 
-import { fetchOpenIrrigationInvoices } from "../irrigationInvoiceQueries";
+import { fetchOpenIrrigationInvoices, fetchOpenIrrigationInvoicesResult } from "../irrigationInvoiceQueries";
 
 beforeEach(() => {
   orderMock.mockReset();
@@ -54,5 +54,50 @@ describe("fetchOpenIrrigationInvoices (shared by Payments & IrrigationPaymentPan
   it("returns [] on empty result", async () => {
     orderMock.mockResolvedValue({ data: [], error: null });
     expect(await fetchOpenIrrigationInvoices("x", "id")).toEqual([]);
+  });
+
+  // Regression: deleted_at filtering happens in JS, never via a server-side
+  // `.is`/`.neq` operator that would also drop NULL-status valid invoices.
+  it("never calls a server-side deleted_at filter (both adapters safe)", async () => {
+    orderMock.mockResolvedValue({
+      data: [{ id: "1", due_amount: 100, invoice_status: null, deleted_at: null }],
+      error: null,
+    });
+    const rows = await fetchOpenIrrigationInvoices("farmer-1", "id,due_amount");
+    expect(rows.map((r) => r.id)).toEqual(["1"]);
+    expect(isMock).not.toHaveBeenCalled();
+  });
+
+  it("keeps invoices where deleted_at is undefined (column not selected)", async () => {
+    orderMock.mockResolvedValue({
+      data: [
+        { id: "1", due_amount: 100, invoice_status: "generated" },
+        { id: "2", due_amount: 200, invoice_status: null },
+      ],
+      error: null,
+    });
+    const rows = await fetchOpenIrrigationInvoices("farmer-1", "id,due_amount,invoice_status");
+    expect(rows.map((r) => r.id)).toEqual(["1", "2"]);
+  });
+});
+
+describe("fetchOpenIrrigationInvoicesResult (error surfacing)", () => {
+  it("returns rows with no error on success", async () => {
+    orderMock.mockResolvedValue({
+      data: [{ id: "1", due_amount: 100, invoice_status: null }],
+      error: null,
+    });
+    const res = await fetchOpenIrrigationInvoicesResult("farmer-1", "id,due_amount");
+    expect(res.rows.map((r) => r.id)).toEqual(["1"]);
+    expect(res.error).toBeNull();
+    expect(res.traceId).toBeNull();
+  });
+
+  it("returns a trace id and error message when the query fails", async () => {
+    orderMock.mockResolvedValue({ data: null, error: { message: "boom", code: "42P01" } });
+    const res = await fetchOpenIrrigationInvoicesResult("farmer-1", "id,due_amount");
+    expect(res.rows).toEqual([]);
+    expect(res.error?.message).toBe("boom");
+    expect(res.traceId).toBeTruthy();
   });
 });
