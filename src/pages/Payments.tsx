@@ -182,6 +182,13 @@ export default function Payments() {
   async function saveEditReceipt() {
     if (!editPayment) return;
     if (!editForm.reason.trim()) return toast.error(tx("Reason is required", "কারণ আবশ্যক"));
+    // Front-end guards: block negative amounts and over-payment beyond payable.
+    const amt = Math.round(Number(editForm.amount) || 0);
+    if (amt < 0 || Number.isNaN(amt)) return toast.error(tx("Enter a valid amount", "সঠিক অঙ্ক দিন"));
+    if (editBaseline && amt > editBaseline.payable + (Math.round(Number(editForm.delay_fee) || 0) - editBaseline.delay_fee)) {
+      return toast.error(tx("Amount exceeds payable", "অঙ্ক প্রদেয়র চেয়ে বেশি"));
+    }
+    if (editInvoiceId && !editForm.owner_farmer_id) return toast.error(tx("Select a farmer", "কৃষক নির্বাচন করুন"));
     // Save-time consistency check: recalculated due/paid must agree across
     // invoice, allocation and payment records before we persist anything.
     if (editBaseline && editPreview) {
