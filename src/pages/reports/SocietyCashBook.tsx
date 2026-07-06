@@ -173,6 +173,7 @@ export default function SocietyCashBook() {
       { header: tx("Loan collection", "কর্জ আদায়"), accessor: (r) => r.loanPrincipal || "" },
       { header: tx("Loan interest", "কর্জ সুদ"), accessor: (r) => r.loanInterest || "" },
       { header: tx("Form", "ফরম"), accessor: (r) => r.form || "" },
+      { header: tx("Loan received", "হাওলাত গ্রহণ"), accessor: (r) => r.hawlat || "" },
       { header: tx("Miscellaneous", "বিবিধ"), accessor: (r) => r.misc || "" },
       { header: tx("Total", "মোট"), accessor: (r) => r.total },
     ]);
