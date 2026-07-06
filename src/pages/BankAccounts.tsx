@@ -662,7 +662,36 @@ export default function BankAccounts() {
           })()}
         </TabsContent>
 
+        <TabsContent value="acc_audit">
+          <Card className="overflow-x-auto"><Table>
+            <TableHeader><TableRow>
+              <TableHead>তারিখ</TableHead><TableHead>অ্যাকশন</TableHead>
+              <TableHead className="text-right">মোট</TableHead><TableHead className="text-right">নতুন পোস্ট</TableHead>
+              <TableHead className="text-right">আগে থেকেই</TableHead><TableHead>বিস্তারিত</TableHead>
+            </TableRow></TableHeader>
+            <TableBody>
+              {openingAudit.length === 0 && <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">কোন অডিট রেকর্ড নেই</TableCell></TableRow>}
+              {openingAudit.map((row) => {
+                const d = row.new_data ?? {};
+                return (
+                  <TableRow key={row.id}>
+                    <TableCell className="whitespace-nowrap">{fmtDate(row.created_at)} {new Date(row.created_at).toLocaleTimeString()}</TableCell>
+                    <TableCell><Badge variant="outline">{row.action_type}</Badge></TableCell>
+                    <TableCell className="text-right">{d.total ?? "—"}</TableCell>
+                    <TableCell className="text-right font-medium">{d.posted ?? "—"}</TableCell>
+                    <TableCell className="text-right">{d.already_existed ?? "—"}</TableCell>
+                    <TableCell className="text-xs text-muted-foreground max-w-[280px] truncate">
+                      {Array.isArray(d.accounts) ? d.accounts.map((a: any) => a.bank).join(", ") : ""}
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table></Card>
+        </TabsContent>
+
       </Tabs>
+
 
       <Dialog open={!!editTxn} onOpenChange={(o) => { if (!o) setEditTxn(null); }}>
         <DialogContent>
