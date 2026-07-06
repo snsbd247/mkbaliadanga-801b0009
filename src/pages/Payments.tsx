@@ -71,6 +71,7 @@ export default function Payments() {
   
   const [openIrr, setOpenIrr] = useState<any[]>([]);
   const [dueMismatch, setDueMismatch] = useState<import("@/lib/dues").DueMismatchResult | null>(null);
+  const [invoiceEmpty, setInvoiceEmpty] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [idemKey, setIdemKey] = useState<string>(newKey());
