@@ -376,11 +376,18 @@ export default function Payments() {
   async function loadDues() {
     // Shared query util keeps filtering identical to IrrigationPaymentPanel and
     // keeps NULL invoice_status invoices visible (see irrigationInvoiceQueries).
-    const rows = await fetchOpenIrrigationInvoices(
+    const { rows, error, traceId } = await fetchOpenIrrigationInvoicesResult(
       farmerId,
       "id,invoice_no,payable_amount,paid_amount,due_amount,due_date,generated_at,office_id,is_borga,delay_fee,maintenance_amount,canal_amount,irrigation_amount,other_charge,invoice_status",
     );
+    if (error) {
+      toast.error(tx(`Failed to load invoices (trace: ${traceId}): ${error.message}`, `ইনভয়েস লোড ব্যর্থ (ট্রেস: ${traceId}): ${error.message}`));
+    }
     setOpenIrr(rows);
+    // Diagnose missing invoices: flag when a farmer is selected but nothing came back.
+    const isEmpty = !error && !!farmerId && rows.length === 0;
+    setInvoiceEmpty(isEmpty);
+    if (isEmpty) console.warn("[payments] no open irrigation invoices returned for farmer", farmerId);
 
     // Cross-check: the Farmer List irrigation-due total (canonical) must equal
     // the sum of open invoices we render here. If they diverge, an invoice is
