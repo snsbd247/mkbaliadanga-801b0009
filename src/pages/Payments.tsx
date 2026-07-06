@@ -86,10 +86,19 @@ export default function Payments() {
   const [invoiceSortDir, setInvoiceSortDir] = useState<import("@/lib/irrigationInvoiceQueries").SortDir>("asc");
   const [detailInvoice, setDetailInvoice] = useState<any | null>(null);
   const [detailTxns, setDetailTxns] = useState<any[]>([]);
+  const [invoicePage, setInvoicePage] = useState(0);
+  const INVOICE_PAGE_SIZE = 10;
   const displayInvoices = useMemo(
     () => searchAndSortInvoices(invoiceFilter === "open" ? openIrr : cancelledIrr, invoiceSearch, invoiceSort, invoiceSortDir),
     [invoiceFilter, openIrr, cancelledIrr, invoiceSearch, invoiceSort, invoiceSortDir],
   );
+  const invoicePageCount = Math.max(1, Math.ceil(displayInvoices.length / INVOICE_PAGE_SIZE));
+  const pagedInvoices = useMemo(
+    () => displayInvoices.slice(invoicePage * INVOICE_PAGE_SIZE, invoicePage * INVOICE_PAGE_SIZE + INVOICE_PAGE_SIZE),
+    [displayInvoices, invoicePage],
+  );
+  // Reset to first page whenever the filtered set changes.
+  useEffect(() => { setInvoicePage(0); }, [invoiceFilter, invoiceSearch, invoiceSort, invoiceSortDir, openIrr, cancelledIrr]);
   const [isAdmin, setIsAdmin] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [idemKey, setIdemKey] = useState<string>(newKey());
@@ -476,6 +485,37 @@ export default function Payments() {
         toast.success(`${matched.length} ${tx("invoices preloaded", "টি ইনভয়েস প্রিলোড হয়েছে")}`);
       }
     }
+  }
+
+  function invoiceExportRows() {
+    // Export the full filtered/searched/sorted set (not just the current page).
+    return displayInvoices.map((ic) => ({
+      invoice_no: String(ic.invoice_no ?? ""),
+      due_date: fmtDate(ic.due_date),
+      status: invoiceStatusBadge(ic.invoice_status ?? null).label_bn,
+      payable: Number(ic.payable_amount ?? 0),
+      paid: Number(ic.paid_amount ?? 0),
+      due: Number(ic.due_amount ?? 0),
+    }));
+  }
+
+  async function exportInvoicesExcel() {
+    const XLSX = await import("xlsx");
+    const ws = XLSX.utils.json_to_sheet(invoiceExportRows());
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Invoices");
+    XLSX.writeFile(wb, `invoices-${invoiceFilter}-${Date.now()}.xlsx`);
+  }
+
+  async function exportInvoicesPdf() {
+    const { default: jsPDF } = await import("jspdf");
+    const { default: autoTable } = await import("jspdf-autotable");
+    const doc = new jsPDF();
+    autoTable(doc, {
+      head: [["Invoice", "Due date", "Status", "Payable", "Paid", "Due"]],
+      body: invoiceExportRows().map((r) => [r.invoice_no, r.due_date, r.status, r.payable, r.paid, r.due]),
+    });
+    doc.save(`invoices-${invoiceFilter}-${Date.now()}.pdf`);
   }
 
   async function openInvoiceDetails(inv: any | null | undefined) {
@@ -918,20 +958,32 @@ export default function Payments() {
                           {invoiceSortDir === "asc" ? "↑" : "↓"}
                         </Button>
                       </div>
+                      <div className="flex flex-wrap items-center gap-1">
+                        <Button type="button" size="sm" variant="outline" onClick={exportInvoicesExcel} disabled={!displayInvoices.length}>Excel</Button>
+                        <Button type="button" size="sm" variant="outline" onClick={exportInvoicesPdf} disabled={!displayInvoices.length}>PDF</Button>
+                      </div>
                       <Select value={a.reference_id} onValueChange={(v) => updateAlloc(i, { reference_id: v })} disabled={invoiceFilter === "cancelled"}>
                         <SelectTrigger><SelectValue placeholder={displayInvoices.length ? "Pick invoice" : (invoiceFilter === "cancelled" ? "No cancelled invoices" : "No open invoices")} /></SelectTrigger>
-                        <SelectContent>{displayInvoices.map(ic => (
+                        <SelectContent>{pagedInvoices.map(ic => (
                           <SelectItem key={ic.id} value={ic.id}>
                             {ic.invoice_no}{!ic.invoice_status ? ` (${invoiceStatusBadge(null).label_bn})` : ""} — {fmtDate(ic.due_date)} — Due {money(ic.due_amount)}
                           </SelectItem>
                         ))}</SelectContent>
                       </Select>
+                      {displayInvoices.length > INVOICE_PAGE_SIZE && (
+                        <div className="flex items-center gap-2 text-xs" data-testid="invoice-pagination">
+                          <Button type="button" size="sm" variant="outline" disabled={invoicePage === 0} onClick={() => setInvoicePage((p) => Math.max(0, p - 1))}>{tx("Prev", "পূর্ব")}</Button>
+                          <span>{invoicePage + 1} / {invoicePageCount}</span>
+                          <Button type="button" size="sm" variant="outline" disabled={invoicePage >= invoicePageCount - 1} onClick={() => setInvoicePage((p) => Math.min(invoicePageCount - 1, p + 1))}>{tx("Next", "পরবর্তী")}</Button>
+                        </div>
+                      )}
                       {a.reference_id && (
                         <Button type="button" size="sm" variant="link" className="h-6 px-0" onClick={() => openInvoiceDetails(displayInvoices.find((x) => x.id === a.reference_id))}>
                           {tx("View details", "বিস্তারিত দেখুন")}
                         </Button>
                       )}
                     </div>
+
 
                     )
                   )}
@@ -1312,7 +1364,14 @@ export default function Payments() {
               <div>
                 <p className="mb-1 font-medium">{tx("Transaction history", "লেনদেন হিস্ট্রি")}</p>
                 {detailTxns.length === 0 ? (
-                  <p className="text-muted-foreground">{tx("No transactions", "কোনো লেনদেন নেই")}</p>
+                  <div
+                    data-testid="invoice-no-transactions"
+                    role="status"
+                    className="rounded-md border border-dashed p-3 text-center text-muted-foreground"
+                  >
+                    <p className="font-medium">{tx("No transactions yet", "এখনো কোনো লেনদেন নেই")}</p>
+                    <p className="text-xs">{tx("This invoice has no payment records. It is shown as read-only.", "এই ইনভয়েসে কোনো পেমেন্ট রেকর্ড নেই। এটি কেবল-পঠন হিসেবে দেখানো হচ্ছে।")}</p>
+                  </div>
                 ) : (
                   <ul className="space-y-1">
                     {detailTxns.map((tItem) => (
