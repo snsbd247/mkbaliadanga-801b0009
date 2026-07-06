@@ -64,6 +64,17 @@ export default function BankAccounts() {
   const [dTo, setDTo] = useState("");
   const [dAccount, setDAccount] = useState<string>("__all__");
 
+  // Opening-post status + audit + preview
+  const [openingStatus, setOpeningStatus] = useState<{ journalCount: number; ledgerCount: number; lastRun: string | null }>({ journalCount: 0, ledgerCount: 0, lastRun: null });
+  const [openingAudit, setOpeningAudit] = useState<any[]>([]);
+  const [openingPreview, setOpeningPreview] = useState<
+    | { toPost: any[]; existing: any[] }
+    | null
+  >(null);
+  const [posting, setPosting] = useState(false);
+
+
+
   useEffect(() => { document.title = "Bank Accounts — MK Baliadanga"; load(); }, []);
 
   async function load() {
@@ -72,7 +83,32 @@ export default function BankAccounts() {
       sb.from("bank_transactions").select("*, account:bank_accounts!bank_transactions_bank_account_id_fkey(bank_name,account_no)").order("txn_date", { ascending: false }).limit(500),
     ]);
     setAccounts(acc ?? []); setTxns(trx ?? []);
+    void loadOpeningStatus();
   }
+
+  // Load opening-post ledger status (journal + ledger entry counts, last run)
+  // and the bank-opening audit trail.
+  async function loadOpeningStatus() {
+    try {
+      const [{ data: journals }, { data: audit }] = await Promise.all([
+        sb.from("journal_entries").select("id,posted_at,created_at").like("reference", "OPENING-BANK-%").is("deleted_at", null),
+        sb.from("system_audit_logs").select("*").eq("module", "bank_opening").order("created_at", { ascending: false }).limit(50),
+      ]);
+      const jids = (journals ?? []).map((j: any) => j.id);
+      let ledgerCount = 0;
+      if (jids.length) {
+        const { count } = await sb.from("ledger_entries").select("id", { count: "exact", head: true }).eq("reference_type", "journal").in("reference_id", jids);
+        ledgerCount = count ?? 0;
+      }
+      const lastRun = (journals ?? []).reduce((mx: string | null, j: any) => {
+        const t = j.posted_at || j.created_at;
+        return !mx || (t && t > mx) ? t : mx;
+      }, null as string | null);
+      setOpeningStatus({ journalCount: jids.length, ledgerCount, lastRun });
+      setOpeningAudit(audit ?? []);
+    } catch { /* status is best-effort */ }
+  }
+
 
   const balances = useMemo(() => {
     const map = new Map<string, number>();
@@ -122,17 +158,43 @@ export default function BankAccounts() {
     setA(emptyAccount());
   }
 
-  // Backfill: post any bank account's opening balance that has no opening journal yet.
-  async function postAllOpenings() {
+  // Step 1 — build a preview of what the backfill will change (which accounts
+  // will get a new opening journal vs. which already have one). Shown in a
+  // confirmation dialog before anything is written.
+  async function previewOpenings() {
     const list = accounts.filter(ac => Number(ac.opening_balance || 0) !== 0);
     if (list.length === 0) return toast.info("কোন ওপেনিং ব্যালেন্স নেই");
-    let posted = 0, existed = 0;
+    const { data: journals } = await sb.from("journal_entries").select("reference").like("reference", "OPENING-BANK-%").is("deleted_at", null);
+    const posted = new Set((journals ?? []).map((j: any) => String(j.reference)));
+    const toPost: any[] = [];
+    const existing: any[] = [];
     for (const ac of list) {
-      const res = await postBankOpening({ bankAccountId: ac.id, openingBalance: Number(ac.opening_balance || 0), bankLabel: `${ac.bank_name} ${ac.account_no}`, officeId: ac.office_id ?? null, createdBy: user?.id });
-      if (res === "posted") posted++; else if (res === "exists") existed++;
+      (posted.has(`OPENING-BANK-${ac.id}`) ? existing : toPost).push(ac);
     }
-    toast.success(`ওপেনিং পোস্ট সম্পন্ন — নতুন: ${posted}, আগে থেকেই ছিল: ${existed}`);
+    setOpeningPreview({ toPost, existing });
   }
+
+  // Step 2 — run the backfill after the user confirms, then record an audit log.
+  async function runOpenings() {
+    if (!openingPreview) return;
+    setPosting(true);
+    let posted = 0, existed = 0;
+    const details: any[] = [];
+    try {
+      for (const ac of [...openingPreview.toPost, ...openingPreview.existing]) {
+        const res = await postBankOpening({ bankAccountId: ac.id, openingBalance: Number(ac.opening_balance || 0), bankLabel: `${ac.bank_name} ${ac.account_no}`, officeId: ac.office_id ?? null, createdBy: user?.id });
+        if (res === "posted") { posted++; details.push({ bank_account_id: ac.id, bank: `${ac.bank_name} ${ac.account_no}`, opening_balance: Number(ac.opening_balance || 0), result: res }); }
+        else if (res === "exists") existed++;
+      }
+      void logAudit({ module: "bank_opening", action_type: "backfill", new_data: { total: openingPreview.toPost.length + openingPreview.existing.length, posted, already_existed: existed, accounts: details } });
+      toast.success(`ওপেনিং পোস্ট সম্পন্ন — নতুন: ${posted}, আগে থেকেই ছিল: ${existed}`);
+    } finally {
+      setPosting(false);
+      setOpeningPreview(null);
+      load();
+    }
+  }
+
 
   async function confirmDelete() {
     if (!pendingDelete) return;
@@ -259,7 +321,7 @@ export default function BankAccounts() {
         description={`Total balance: ${money(totalBal)}`}
         actions={
           <>
-            <Button size="sm" variant="outline" onClick={postAllOpenings}><Banknote className="h-4 w-4 mr-1" />ওপেনিং পোস্ট</Button>
+            <Button size="sm" variant="outline" onClick={previewOpenings}><Banknote className="h-4 w-4 mr-1" />ওপেনিং পোস্ট</Button>
             <Dialog open={openA} onOpenChange={(o) => { setOpenA(o); if (!o) setEditAccId(null); }}>
               <DialogTrigger asChild><Button size="sm" variant="outline" onClick={openAddAccount}><Plus className="h-4 w-4 mr-1" />Account</Button></DialogTrigger>
               <DialogContent>
@@ -351,12 +413,50 @@ export default function BankAccounts() {
         }
       />
 
+      {/* Opening-post ledger status */}
+      <Card className="p-3 mb-3 flex flex-wrap gap-x-6 gap-y-1 text-sm items-center">
+        <span className="font-medium">ওপেনিং লেজার স্ট্যাটাস:</span>
+        <span>জার্নাল এন্ট্রি: <b>{openingStatus.journalCount}</b></span>
+        <span>লেজার এন্ট্রি: <b>{openingStatus.ledgerCount}</b></span>
+        <span>শেষ রান: <b>{openingStatus.lastRun ? fmtDate(openingStatus.lastRun) + " " + new Date(openingStatus.lastRun).toLocaleTimeString() : "—"}</b></span>
+      </Card>
+
+      {/* Opening-post preview / confirmation */}
+      <AlertDialog open={!!openingPreview} onOpenChange={(o) => { if (!o) setOpeningPreview(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>ওপেনিং পোস্ট নিশ্চিত করুন</AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-2 text-sm">
+                <div>নতুন পোস্ট হবে: <b>{openingPreview?.toPost.length ?? 0}</b> টি অ্যাকাউন্ট</div>
+                <div>আগে থেকেই আছে (পরিবর্তন হবে না): <b>{openingPreview?.existing.length ?? 0}</b> টি</div>
+                {(openingPreview?.toPost.length ?? 0) > 0 && (
+                  <ul className="list-disc pl-5 max-h-40 overflow-auto">
+                    {openingPreview!.toPost.map((ac) => (
+                      <li key={ac.id}>{ac.bank_name} {ac.account_no} — {money(ac.opening_balance)}</li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={posting}>বাতিল</AlertDialogCancel>
+            <AlertDialogAction onClick={(e) => { e.preventDefault(); runOpenings(); }} disabled={posting || (openingPreview?.toPost.length ?? 0) === 0}>
+              {posting ? "পোস্ট হচ্ছে..." : "নিশ্চিত করুন"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <Tabs defaultValue="accounts">
+
         <TabsList>
           <TabsTrigger value="accounts">Accounts</TabsTrigger>
           <TabsTrigger value="ledger">Ledger</TabsTrigger>
           <TabsTrigger value="deposits">Statement (জমা/উত্তোলন)</TabsTrigger>
           <TabsTrigger value="streams">৪ একাউন্ট (স্ট্রিম)</TabsTrigger>
+          <TabsTrigger value="acc_audit">Accounting Audit</TabsTrigger>
         </TabsList>
         <TabsContent value="accounts">
           <Card className="overflow-x-auto"><Table>
@@ -562,7 +662,36 @@ export default function BankAccounts() {
           })()}
         </TabsContent>
 
+        <TabsContent value="acc_audit">
+          <Card className="overflow-x-auto"><Table>
+            <TableHeader><TableRow>
+              <TableHead>তারিখ</TableHead><TableHead>অ্যাকশন</TableHead>
+              <TableHead className="text-right">মোট</TableHead><TableHead className="text-right">নতুন পোস্ট</TableHead>
+              <TableHead className="text-right">আগে থেকেই</TableHead><TableHead>বিস্তারিত</TableHead>
+            </TableRow></TableHeader>
+            <TableBody>
+              {openingAudit.length === 0 && <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">কোন অডিট রেকর্ড নেই</TableCell></TableRow>}
+              {openingAudit.map((row) => {
+                const d = row.new_data ?? {};
+                return (
+                  <TableRow key={row.id}>
+                    <TableCell className="whitespace-nowrap">{fmtDate(row.created_at)} {new Date(row.created_at).toLocaleTimeString()}</TableCell>
+                    <TableCell><Badge variant="outline">{row.action_type}</Badge></TableCell>
+                    <TableCell className="text-right">{d.total ?? "—"}</TableCell>
+                    <TableCell className="text-right font-medium">{d.posted ?? "—"}</TableCell>
+                    <TableCell className="text-right">{d.already_existed ?? "—"}</TableCell>
+                    <TableCell className="text-xs text-muted-foreground max-w-[280px] truncate">
+                      {Array.isArray(d.accounts) ? d.accounts.map((a: any) => a.bank).join(", ") : ""}
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table></Card>
+        </TabsContent>
+
       </Tabs>
+
 
       <Dialog open={!!editTxn} onOpenChange={(o) => { if (!o) setEditTxn(null); }}>
         <DialogContent>
