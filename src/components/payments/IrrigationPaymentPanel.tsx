@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { db } from "@/lib/db";
-import { fetchOpenIrrigationInvoices } from "@/lib/irrigationInvoiceQueries";
+import { fetchOpenIrrigationInvoicesResult } from "@/lib/irrigationInvoiceQueries";
 import { InvoiceStatusBadge } from "@/components/payments/InvoiceStatusBadge";
 import { useAuth } from "@/auth/AuthProvider";
 import { useLang } from "@/i18n/LanguageProvider";
@@ -29,7 +29,7 @@ import { nextMonthlyReceiptNo, nextUnifiedReceiptNo } from "@/lib/monthlyReceipt
 
 // Shared select for open irrigation invoices (used by both initial load and reload).
 const OPEN_INVOICE_SELECT =
-  "id,invoice_no,season_id,office_id,land_id,owner_farmer_id,is_borga,due_date,due_amount,paid_amount,payable_amount,irrigation_amount,delay_fee,maintenance_amount,canal_amount,other_charge,season_rate,land_type_name,irrigation_category_name,invoice_status,deleted_at,seasons(name,year,status),lands(mouza,land_size,dag_no,field_type,notes,patwaris(name,name_bn,mobile)),owner:farmers!irrigation_invoices_owner_farmer_id_fkey(name_bn,name_en,member_no,farmer_code)";
+  "id,invoice_no,season_id,office_id,land_id,owner_farmer_id,is_borga,due_date,due_amount,paid_amount,payable_amount,irrigation_amount,delay_fee,maintenance_amount,canal_amount,other_charge,season_rate,land_type_name,irrigation_category_name,invoice_status,deleted_at,seasons(name,year,status),lands(mouza,land_size,dag_no,field_type,notes,patwari_id),owner:farmers!irrigation_invoices_owner_farmer_id_fkey(name_bn,name_en,member_no,farmer_code)";
 
 
 type Invoice = {
@@ -61,6 +61,7 @@ type Invoice = {
     dag_no: string | null;
     field_type?: string | null;
     notes?: string | null;
+    patwari_id?: string | null;
     patwaris?: { name: string | null; name_bn: string | null; mobile: string | null } | null;
   } | null;
   owner?: { name_bn: string | null; name_en: string | null; member_no?: string | null; farmer_code?: string | null } | null;
@@ -75,6 +76,8 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
   const [farmerId, setFarmerId] = useState(initialFarmerId ?? "");
   const [loading, setLoading] = useState(false);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
+  const [invoiceLoadError, setInvoiceLoadError] = useState<{ message: string; traceId: string | null } | null>(null);
+  const [invoiceReloadTick, setInvoiceReloadTick] = useState(0);
   const [activeSeasonId, setActiveSeasonId] = useState<string | null>(null);
 
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -105,6 +108,22 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
   const [dueDialogRows, setDueDialogRows] = useState<{ label: string; missing: number }[]>([]);
 
   const canDoPartial = isSuper || roles.some(r => allowedRoles.includes(r));
+
+  async function hydrateLandPatwaris(rows: Invoice[]): Promise<Invoice[]> {
+    const ids = Array.from(new Set(
+      rows.map((inv) => inv.lands?.patwari_id).filter(Boolean) as string[],
+    ));
+    if (!ids.length) return rows;
+    const { data } = await db.from("patwaris").select("id,name,name_bn,mobile").in("id", ids);
+    const byId = new Map(((data as any[]) ?? []).map((p) => [p.id, p]));
+    return rows.map((inv) => {
+      const pid = inv.lands?.patwari_id;
+      if (!pid || !byId.has(pid) || !inv.lands) return inv;
+      return { ...inv, lands: { ...inv.lands, patwaris: byId.get(pid) } };
+    });
+  }
+
+  const retryInvoiceLoad = () => setInvoiceReloadTick((v) => v + 1);
 
   useEffect(() => {
     (async () => {
@@ -153,14 +172,41 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
 
   useEffect(() => {
     if (!farmerId) { setInvoices([]); return; }
+    let alive = true;
     setLoading(true);
+    setInvoiceLoadError(null);
     (async () => {
-      const [{ data: act }, invs] = await Promise.all([
-        db.from("seasons").select("id").eq("status", "active").order("year", { ascending: false }).limit(1).maybeSingle(),
-        fetchOpenIrrigationInvoices(farmerId, OPEN_INVOICE_SELECT),
-      ]);
-      setActiveSeasonId(act?.id ?? null);
-      setInvoices((invs ?? []) as any);
+      try {
+        const [{ data: act }, result] = await Promise.all([
+          db.from("seasons").select("id").eq("status", "active").order("year", { ascending: false }).limit(1).maybeSingle(),
+          fetchOpenIrrigationInvoicesResult<Invoice>(farmerId, OPEN_INVOICE_SELECT),
+        ]);
+        if (!alive) return;
+        setActiveSeasonId(act?.id ?? null);
+        if (result.error) {
+          setInvoices([]);
+          setInvoiceLoadError({ message: result.error.message, traceId: result.traceId });
+          toast.error(
+            tx(`Failed to load invoices (trace: ${result.traceId})`, `ইনভয়েস লোড ব্যর্থ (ট্রেস: ${result.traceId})`),
+            { description: result.error.message, action: { label: tx("Retry", "আবার চেষ্টা"), onClick: retryInvoiceLoad } },
+          );
+        } else {
+          const hydrated = await hydrateLandPatwaris((result.rows ?? []) as Invoice[]);
+          if (!alive) return;
+          setInvoices(hydrated);
+        }
+      } catch (e: any) {
+        if (!alive) return;
+        const traceId = (typeof crypto !== "undefined" && crypto.randomUUID) ? crypto.randomUUID() : `${Date.now()}`;
+        const message = e?.message ?? "Failed to load invoices";
+        console.error(`[irrigation-invoices][${traceId}] panel fetch failed for farmer ${farmerId}:`, e);
+        setInvoices([]);
+        setInvoiceLoadError({ message, traceId });
+        toast.error(
+          tx(`Failed to load invoices (trace: ${traceId})`, `ইনভয়েস লোড ব্যর্থ (ট্রেস: ${traceId})`),
+          { description: message, action: { label: tx("Retry", "আবার চেষ্টা"), onClick: retryInvoiceLoad } },
+        );
+      }
 
       setSelectedIds(new Set());
       setDelayFee({});
@@ -172,7 +218,8 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
       setPromiseRemarks("");
       setLoading(false);
     })();
-  }, [farmerId]);
+    return () => { alive = false; };
+  }, [farmerId, invoiceReloadTick]);
 
   const currentInvoices = useMemo(
     () => invoices.filter(i => activeSeasonId && i.season_id === activeSeasonId),
@@ -628,8 +675,13 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
       setNote("");
       onPaid?.();
       // re-trigger load (shared util keeps filtering identical)
-      const invs = await fetchOpenIrrigationInvoices(farmerId, OPEN_INVOICE_SELECT);
-      setInvoices((invs ?? []) as any);
+      const refreshed = await fetchOpenIrrigationInvoicesResult<Invoice>(farmerId, OPEN_INVOICE_SELECT);
+      if (refreshed.error) {
+        setInvoiceLoadError({ message: refreshed.error.message, traceId: refreshed.traceId });
+      } else {
+        setInvoiceLoadError(null);
+        setInvoices(await hydrateLandPatwaris((refreshed.rows ?? []) as Invoice[]));
+      }
     } catch (e: any) {
       toast.error(e?.message ?? "Failed");
     } finally {
@@ -648,7 +700,22 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
         <div className="text-center py-6 text-muted-foreground"><Loader2 className="h-5 w-5 animate-spin inline mr-2" /> {tx("Loading…", "লোড হচ্ছে…")}</div>
       )}
 
-      {farmerId && !loading && invoices.length === 0 && (
+      {farmerId && !loading && invoiceLoadError && (
+        <Alert variant="destructive">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertDescription className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <span>
+              {tx("Could not load irrigation invoices.", "সেচ ইনভয়েস লোড করা যায়নি।")}
+              {invoiceLoadError.traceId ? ` Trace: ${invoiceLoadError.traceId}` : ""}
+              <br />
+              <span className="text-xs">{invoiceLoadError.message}</span>
+            </span>
+            <Button type="button" size="sm" variant="outline" onClick={retryInvoiceLoad}>{tx("Retry", "আবার চেষ্টা")}</Button>
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {farmerId && !loading && !invoiceLoadError && invoices.length === 0 && (
         <Alert><AlertDescription>{tx("No outstanding irrigation invoices for this farmer.", "এই ফার্মারের কোনো বকেয়া সেচ ইনভয়েস নেই।")}</AlertDescription></Alert>
       )}
 

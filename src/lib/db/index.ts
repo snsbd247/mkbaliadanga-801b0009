@@ -24,7 +24,7 @@ type Result<T = any> = { data: T; error: { message: string } | null; count: numb
 
 /**
  * The Laravel/MySQL gateway does not support every PostgREST-style embed. Some
- * nested embeds — like `mouzas(name)` inside `lands(...)` — are forwarded
+ * nested embeds — like `mouzas(name)` or `patwaris(name,...)` inside `lands(...)` — are forwarded
  * verbatim to MySQL and blow up with `Unknown column 'mouzas(name)'`.
  *
  * This sanitizer strips embeds whose relation name is in the unsupported set,
@@ -34,7 +34,7 @@ type Result<T = any> = { data: T; error: { message: string } | null; count: numb
  * Rows still resolve those names through text-column fallbacks (e.g.
  * `resolveMouzaName` uses `lands.mouza`), so no data is lost.
  */
-const UNSUPPORTED_LARAVEL_EMBEDS = new Set(["mouzas"]);
+const UNSUPPORTED_LARAVEL_EMBEDS = new Set(["mouzas", "patwaris"]);
 
 export function sanitizeEmbedSelect(select: string): string {
   if (!select || select === "*" || !select.includes("(")) return select;
