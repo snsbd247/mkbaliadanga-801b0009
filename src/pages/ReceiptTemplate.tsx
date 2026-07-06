@@ -184,7 +184,7 @@ export default function ReceiptTemplatePage() {
     <>
       <PageHeader
         title="Receipt Template"
-        description="Customize the scan-payment PDF receipt and preview before saving."
+        description="পেমেন্ট ও সেচ রশিদ কাস্টমাইজ করুন — ডান পাশে দুটোই প্রিভিউ করে সেভ করুন।"
         actions={
           <div className="flex gap-2">
             <Button variant="outline" size="sm" asChild>
