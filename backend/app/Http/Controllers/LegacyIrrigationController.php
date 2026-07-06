@@ -17,7 +17,7 @@ use Illuminate\Support\Str;
  */
 class LegacyIrrigationController extends Controller
 {
-    /** List / search records. Filter by ?farmer_code=, ?season=, ?batch=. */
+    /** List / search records. Filter by ?farmer_code=, ?season=, ?batch=, ?q= (mobile / farmer id / code). */
     public function index(Request $request): JsonResponse
     {
         $scopeOffice = $request->attributes->get('scope_office_id');
@@ -25,6 +25,15 @@ class LegacyIrrigationController extends Controller
         $q = LegacyIrrigationRecord::query()
             ->when($scopeOffice, fn ($qq) => $qq->where('office_id', $scopeOffice))
             ->when($request->query('farmer_code'), fn ($qq, $c) => $qq->where('legacy_farmer_code', trim((string) $c)))
+            ->when($request->query('q'), function ($qq, $term) {
+                $t = trim((string) $term);
+                $qq->where(function ($w) use ($t) {
+                    $w->where('legacy_farmer_code', $t)
+                        ->orWhere('owner_fid', $t)
+                        ->orWhere('mobile_no', 'like', "%{$t}%")
+                        ->orWhere('owner_mobile_no', 'like', "%{$t}%");
+                });
+            })
             ->when($request->query('season'), fn ($qq, $s) => $qq->where('season_year', $s))
             ->when($request->query('batch'), fn ($qq, $b) => $qq->where('import_batch_id', $b))
             ->orderByDesc('collection_date')
