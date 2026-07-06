@@ -440,7 +440,20 @@ class GenericTableController extends Controller
                 foreach ($related as $rel) $map[$rel->id] = (array) $rel;
             }
             foreach ($rows as &$row) {
-                $row[$embed['alias']] = $map[$row[$fk] ?? null] ?? null;
+                $fkVal = $row[$fk] ?? null;
+                $resolved = $fkVal !== null ? ($map[$fkVal] ?? null) : null;
+                // Data-integrity signal: a foreign key is set but the related
+                // record could not be found (e.g. invoice.farmer_id → missing farmer).
+                if ($fkVal !== null && $resolved === null) {
+                    \Illuminate\Support\Facades\Log::warning('embed_fk_unresolved', [
+                        'base_table' => $baseTable,
+                        'relation' => $relTable,
+                        'fk_column' => $fk,
+                        'fk_value' => $fkVal,
+                        'row_id' => $row['id'] ?? null,
+                    ]);
+                }
+                $row[$embed['alias']] = $resolved;
             }
             unset($row);
         }
