@@ -31,6 +31,13 @@ export default function BuildVersionWatcher() {
             onClick: () => window.location.reload(),
           },
         });
+        // One-time automatic refresh, but only with the user's confirmation so
+        // unsaved work is never lost silently.
+        setTimeout(() => {
+          if (window.confirm("নতুন সংস্করণ পাওয়া গেছে। এখনই রিফ্রেশ করবেন? (অসংরক্ষিত কাজ থাকলে বাতিল করুন)")) {
+            window.location.reload();
+          }
+        }, 1200);
       }
     };
 

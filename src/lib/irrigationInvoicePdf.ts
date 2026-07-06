@@ -236,6 +236,23 @@ function copyHtml(d: IrrigationInvoiceData, brand: CompanyBranding, copyLabel: s
     chargeRows.push([`ডিসকাউন্ট (Discount)${d.discount_reason ? " — " + d.discount_reason : ""}`, -Number(d.discount_amount)]);
   }
 
+  // Adaptive typography: shrink font / tighten line-height when there is a lot
+  // of content (long farmer names, big addresses, many charge rows) so nothing
+  // overflows or collides with borders. Header rows (মোট প্রদেয়/বকেয়া) stay legible.
+  const maxValueLen = Math.max(
+    orgName.length,
+    orgLine2.length,
+    ...rows.map(([, v]) => v.length),
+    ...chargeRows.map(([k]) => k.length),
+    0,
+  );
+  const totalRows = rows.length + chargeRows.length;
+  const dense = maxValueLen > 46 || totalRows > 18 || (orgLine2?.length ?? 0) > 60;
+  const veryDense = maxValueLen > 64 || totalRows > 22;
+  const cellFont = veryDense ? 9.5 : dense ? 10 : 11;
+  const cellPadV = veryDense ? 4 : dense ? 5 : 6;
+  const cellLh = veryDense ? 1.35 : dense ? 1.45 : 1.55;
+
   const farmerSig = `
     <div style="text-align:center;min-width:150px;">
       <div style="border-top:1px solid #111;padding-top:2px;">${settings.farmerSignTitle || "কৃষকের স্বাক্ষর"}</div>
@@ -249,42 +266,43 @@ function copyHtml(d: IrrigationInvoiceData, brand: CompanyBranding, copyLabel: s
     </div>`;
 
   const infoTable = `
-    <table style="width:100%;border-collapse:collapse;font-size:11px;line-height:1.55;">
+    <table style="width:100%;border-collapse:collapse;font-size:${cellFont}px;line-height:${cellLh};table-layout:fixed;">
       ${rows.map(([k, v], i) => `
         <tr>
-          <td style="padding:6px 12px 6px 4px;vertical-align:top;width:42%;color:#374151;border-bottom:1px dotted #cbcbcb;">${k}</td>
-          <td style="padding:6px 4px 6px 8px;vertical-align:top;font-weight:600;border-bottom:1px dotted #cbcbcb;">${v}</td>
+          <td style="padding:${cellPadV}px 12px ${cellPadV}px 4px;vertical-align:top;width:42%;color:#374151;border-bottom:1px dotted #cbcbcb;word-break:break-word;">${k}</td>
+          <td style="padding:${cellPadV}px 4px ${cellPadV}px 8px;vertical-align:top;font-weight:600;border-bottom:1px dotted #cbcbcb;word-break:break-word;">${v}</td>
         </tr>`).join("")}
     </table>`;
 
   const chargeTable = `
-    <table style="width:100%;border-collapse:collapse;font-size:11px;line-height:1.55;">
+    <table style="width:100%;border-collapse:collapse;font-size:${cellFont}px;line-height:${cellLh};table-layout:fixed;">
       <thead>
         <tr>
-          <th style="text-align:left;padding:6px 8px 6px 4px;border-bottom:1.5px solid #333;font-weight:700;">বিবরণ</th>
-          <th style="text-align:right;padding:6px 4px 6px 8px;border-bottom:1.5px solid #333;font-weight:700;">টাকা</th>
+          <th style="text-align:left;padding:${cellPadV}px 8px ${cellPadV}px 4px;border-bottom:1.5px solid #333;font-weight:700;">বিবরণ</th>
+          <th style="text-align:right;padding:${cellPadV}px 4px ${cellPadV}px 8px;border-bottom:1.5px solid #333;font-weight:700;width:34%;">টাকা</th>
         </tr>
       </thead>
       <tbody>
         ${chargeRows.map(([k, v]) => `
           <tr>
-            <td style="padding:6px 8px 6px 4px;border-bottom:1px dotted #cbcbcb;color:#374151;">${k}</td>
-            <td style="padding:6px 4px 6px 8px;text-align:right;border-bottom:1px dotted #cbcbcb;">${fmt2(v as number)}</td>
+            <td style="padding:${cellPadV}px 8px ${cellPadV}px 4px;border-bottom:1px dotted #cbcbcb;color:#374151;word-break:break-word;">${k}</td>
+            <td style="padding:${cellPadV}px 4px ${cellPadV}px 8px;text-align:right;border-bottom:1px dotted #cbcbcb;white-space:nowrap;">${fmt2(v as number)}</td>
           </tr>`).join("")}
         <tr>
-          <td style="padding:7px 8px 7px 4px;font-weight:700;border-top:1.5px solid #333;border-bottom:1px dotted #cbcbcb;">মোট প্রদেয়</td>
-          <td style="padding:7px 4px 7px 8px;text-align:right;font-weight:700;border-top:1.5px solid #333;border-bottom:1px dotted #cbcbcb;">${fmt2(d.payable_amount)}</td>
+          <td style="padding:${cellPadV + 1}px 8px ${cellPadV + 1}px 4px;font-weight:700;border-top:1.5px solid #333;border-bottom:1px dotted #cbcbcb;">মোট প্রদেয়</td>
+          <td style="padding:${cellPadV + 1}px 4px ${cellPadV + 1}px 8px;text-align:right;font-weight:700;border-top:1.5px solid #333;border-bottom:1px dotted #cbcbcb;white-space:nowrap;">${fmt2(d.payable_amount)}</td>
         </tr>
         <tr>
-          <td style="padding:6px 8px 6px 4px;color:#374151;border-bottom:1px dotted #cbcbcb;">পরিশোধিত</td>
-          <td style="padding:6px 4px 6px 8px;text-align:right;border-bottom:1px dotted #cbcbcb;">${fmt2(d.paid_amount)}</td>
+          <td style="padding:${cellPadV}px 8px ${cellPadV}px 4px;color:#374151;border-bottom:1px dotted #cbcbcb;">পরিশোধিত</td>
+          <td style="padding:${cellPadV}px 4px ${cellPadV}px 8px;text-align:right;border-bottom:1px dotted #cbcbcb;white-space:nowrap;">${fmt2(d.paid_amount)}</td>
         </tr>
         <tr>
-          <td style="padding:7px 8px 7px 4px;font-weight:700;color:#b91c1c;border-bottom:1.5px solid #b91c1c;">বকেয়া</td>
-          <td style="padding:7px 4px 7px 8px;text-align:right;font-weight:700;color:#b91c1c;border-bottom:1.5px solid #b91c1c;">${fmt2(d.due_amount)}</td>
+          <td style="padding:${cellPadV + 1}px 8px ${cellPadV + 1}px 4px;font-weight:700;color:#b91c1c;border-bottom:1.5px solid #b91c1c;">বকেয়া</td>
+          <td style="padding:${cellPadV + 1}px 4px ${cellPadV + 1}px 8px;text-align:right;font-weight:700;color:#b91c1c;border-bottom:1.5px solid #b91c1c;white-space:nowrap;">${fmt2(d.due_amount)}</td>
         </tr>
       </tbody>
     </table>`;
+
 
 
   const wordsBlock = `

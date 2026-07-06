@@ -118,46 +118,52 @@ export async function checkReceiptSerialRpc(): Promise<{ available: boolean; mes
 export async function setReceiptSerialStart(
   nextSerial: number,
 ): Promise<{ ok: boolean; message: string }> {
+  const t = (start: number) => Math.round(performance.now() - start);
+
   if (isLaravelBackend) {
-    logDiagnostic("/api/db receipt_settings (direct)", "info", "VPS backend — /api/fn ও /api/rpc বাইপাস করা হলো");
+    const s = performance.now();
     const res = await setReceiptSerialStartDirect(nextSerial);
-    logDiagnostic("/api/db receipt_settings (direct)", res.ok ? "ok" : "error", res.message);
+    logDiagnostic("/api/db receipt_settings (direct)", res.ok ? "ok" : "error", res.message, { durationMs: t(s), usedFallback: true });
     return res;
   }
 
   const functionAttempt = () => (db as any).functions.invoke("receipt-serial-admin", { body: { p_start: nextSerial } });
+  let fs = performance.now();
   let functionResult = await functionAttempt();
   if (functionResult.error) {
-    logDiagnostic("/api/fn/receipt-serial-admin", "error", errorMessage(functionResult.error));
+    logDiagnostic("/api/fn/receipt-serial-admin", "error", errorMessage(functionResult.error), { durationMs: t(fs) });
     await new Promise((r) => setTimeout(r, 800));
+    fs = performance.now();
     functionResult = await functionAttempt();
   }
   if (!functionResult.error) {
-    logDiagnostic("/api/fn/receipt-serial-admin", "ok", "Serial start updated");
+    logDiagnostic("/api/fn/receipt-serial-admin", "ok", "Serial start updated", { durationMs: t(fs) });
     return { ok: true, message: "Serial start updated" };
   }
   const functionUnavailable = isRpcUnavailable(functionResult.error);
 
   const attempt = () => (db as any).rpc("admin_set_receipt_serial_start", { p_start: nextSerial });
 
+  let rs = performance.now();
   let { error } = await attempt();
   if (error && isRpcUnavailable(error)) {
-    logDiagnostic("/api/rpc/admin_set_receipt_serial_start", "error", errorMessage(error));
+    logDiagnostic("/api/rpc/admin_set_receipt_serial_start", "error", errorMessage(error), { durationMs: t(rs) });
     // brief backoff, then a single automatic retry
     await new Promise((r) => setTimeout(r, 1500));
+    rs = performance.now();
     ({ error } = await attempt());
   }
 
   if (error) {
     if (isRpcUnavailable(error)) {
-      logDiagnostic("/api/db receipt_settings (fallback)", "fallback", "RPC/endpoint unavailable — direct table fallback ব্যবহার করা হলো");
+      const s = performance.now();
       const res = await setReceiptSerialStartDirect(nextSerial);
-      logDiagnostic("/api/db receipt_settings (fallback)", res.ok ? "ok" : "error", res.message);
+      logDiagnostic("/api/db receipt_settings (fallback)", res.ok ? "fallback" : "error", res.ok ? "RPC/endpoint unavailable — direct table fallback ব্যবহার করা হলো" : res.message, { durationMs: t(s), usedFallback: true });
       return res;
     }
-    logDiagnostic("/api/rpc/admin_set_receipt_serial_start", "error", error.message);
+    logDiagnostic("/api/rpc/admin_set_receipt_serial_start", "error", error.message, { durationMs: t(rs) });
     return { ok: false, message: error.message };
   }
-  logDiagnostic("/api/rpc/admin_set_receipt_serial_start", "ok", functionUnavailable ? "RPC fallback succeeded" : "Serial start updated");
+  logDiagnostic("/api/rpc/admin_set_receipt_serial_start", "ok", functionUnavailable ? "RPC fallback succeeded" : "Serial start updated", { durationMs: t(rs) });
   return { ok: true, message: "Serial start updated" };
 }
