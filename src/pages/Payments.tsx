@@ -69,6 +69,7 @@ export default function Payments() {
   const [preview, setPreview] = useState<{ data: BnReceiptData; copy: ReceiptCopy } | null>(null);
   
   const [openIrr, setOpenIrr] = useState<any[]>([]);
+  const [dueMismatch, setDueMismatch] = useState<import("@/lib/dues").DueMismatchResult | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [idemKey, setIdemKey] = useState<string>(newKey());
