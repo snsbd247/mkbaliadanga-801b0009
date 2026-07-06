@@ -308,6 +308,18 @@ export default function SocietyCashBook() {
                 <td className="border border-black p-1 text-right">{formatMoney(kharchTot.misc)}</td>
                 <td className="border border-black p-1 text-right">{formatMoney(kharchTot.total)}</td>
               </tr>
+              <tr className="font-bold">
+                <td colSpan={8} className="border border-black p-1 text-right">{tx("Total income (with opening)=", "মোট আয় (জেরসহ)=")}</td>
+                <td className="border border-black p-1 text-right">{formatSigned(incomeWithOpening)}</td>
+              </tr>
+              <tr className="font-bold">
+                <td colSpan={8} className="border border-black p-1 text-right">{tx("Total expense=", "মোট ব্যয়=")}</td>
+                <td className="border border-black p-1 text-right">{formatSigned(kharchTot.total)}</td>
+              </tr>
+              <tr className="font-bold">
+                <td colSpan={8} className="border border-black p-1 text-right">{tx("Cash in hand=", "হস্ত মজুদ তহবিল=")}</td>
+                <td className={`border border-black p-1 text-right ${closingBalance < 0 ? "text-red-600" : ""}`}>{formatSigned(closingBalance)}</td>
+              </tr>
             </tbody>
           </table>
         </section>
