@@ -185,7 +185,7 @@ export function sumIrrKharch(rows: IrrKharchRow[]) {
 
 // ── Ordered column keys (single source of truth for rendering + export) ──────
 export const JAMA_COL_KEYS = [
-  "sechCharge", "nalaCharge", "maintenance", "lateFee", "bankWithdraw", "pond", "misc",
+  "sechCharge", "nalaCharge", "maintenance", "lateFee", "bankWithdraw", "pond", "hawlat", "misc",
 ] as const;
 export const KHARCH_COL_KEYS = [
   "labor", "partsBuy", "partsRepair", "transport", "hospitality", "publicity", "salary",
