@@ -1532,6 +1532,24 @@ function GenerateTab({ seasons, offices, userId, isSuper }: any) {
           setPrevDueWarning(uniq.size ? { farmers: uniq.size, total } : null);
         } else setPrevDueWarning(null);
       } catch { setPrevDueWarning(null); }
+      if (previewArr.length === 0) {
+        const hasRates = rateMap.some((r) => r.rate_per_shotok > 0) || rateOverride > 0;
+        const msg = !hasRates
+          ? tx(
+              "No rate configured for this season. Set per-land-type rates on the Seasons page or provide a fallback rate before generating invoices.",
+              "এই সিজনে কোনো রেট কনফিগার নেই। ইনভয়েস তৈরির আগে Seasons পেজে জমির ধরনভিত্তিক রেট সেট করুন বা ফলব্যাক রেট দিন।",
+            )
+          : noRate > 0
+            ? `${noRate} ${tx(
+                "selected land(s) have no configured rate for their land type — nothing to invoice.",
+                "টি নির্বাচিত জমির ধরনে রেট কনফিগার নেই — ইনভয়েস করার মতো কিছু নেই।",
+              )}`
+            : tx("No eligible lands to invoice for this selection.", "এই নির্বাচনে ইনভয়েস করার মতো যোগ্য জমি নেই।");
+        setErrors((prev) => ({ ...prev, noRate: msg }));
+        toast.error(msg);
+        return;
+      }
+      setErrors((prev) => { const { noRate: _omit, ...rest } = prev; return rest; });
       toast.success(`${previewArr.length} ${tx("preview", "টি প্রিভিউ")}${noRate ? ` • ${noRate} ${tx("lands have no rate", "টি জমিতে রেট নেই")}` : ""}`);
     } catch (e: any) {
       toast.error(e.message);
