@@ -234,8 +234,9 @@ export default function Cashbook() {
     for (const e of toSerialize) {
       const { data: no, error: rpcErr } = await sb.rpc("next_cashbook_voucher_no", { _office: officeId ?? null, _stream: stream });
       if (rpcErr) return toast.error(rpcErr.message);
-      const prefix = stream === "irrigation" ? "IRR-V" : "SAV-V";
-      const voucher_no = `${prefix}-${String(no).padStart(5, "0")}`;
+      // Format: mm-serial (month of the voucher + lifetime running serial), e.g. 01-4682.
+      const mm = (e.expense_date || "").slice(5, 7);
+      const voucher_no = `${mm}-${no}`;
       const { error: upErr } = await sb.from("expenses").update({ voucher_no }).eq("id", e.id);
       if (upErr) return toast.error(upErr.message);
     }
