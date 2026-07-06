@@ -281,6 +281,58 @@
 }
 
 
+/* ============================================================
+   Reusable ResponsiveTable (.rt-table) — shared across reports
+   ============================================================ */
+
+/* Smooth horizontal scrolling for the wrapper */
+.rt-scroll {
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+}
+
+/* Screen: single-line headers/cells, consistent column widths */
+.rt-table th,
+.rt-table td {
+  white-space: nowrap;
+  padding: 0.5rem 0.75rem;
+  vertical-align: middle;
+}
+.rt-table thead th {
+  text-align: left;
+  font-weight: 600;
+  background-color: hsl(var(--muted));
+}
+
+/* Sticky header row keeps labels visible while scrolling */
+.rt-sticky thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  box-shadow: inset 0 -1px 0 hsl(var(--border));
+}
+
+@media print {
+  /* All reusable + cashbook tables print landscape, columns stay put */
+  .rt-table { page: rtland; table-layout: fixed; width: 100% !important; min-width: 0 !important; }
+  @page rtland { size: legal landscape; margin: 8mm; }
+
+  .rt-table th,
+  .rt-table td {
+    white-space: nowrap !important;
+    overflow-wrap: normal !important;
+    word-break: normal !important;
+    font-size: 9px;
+    padding: 2px 3px;
+  }
+  /* Sticky headers must not float over content in print */
+  .rt-sticky thead th { position: static !important; box-shadow: none !important; }
+  /* Repeat header row on every printed page */
+  .rt-table thead { display: table-header-group; }
+}
+
+
 
 @media (prefers-reduced-motion: reduce) {
   *,
