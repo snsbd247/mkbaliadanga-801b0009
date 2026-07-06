@@ -413,7 +413,44 @@ export default function BankAccounts() {
         }
       />
 
+      {/* Opening-post ledger status */}
+      <Card className="p-3 mb-3 flex flex-wrap gap-x-6 gap-y-1 text-sm items-center">
+        <span className="font-medium">ওপেনিং লেজার স্ট্যাটাস:</span>
+        <span>জার্নাল এন্ট্রি: <b>{openingStatus.journalCount}</b></span>
+        <span>লেজার এন্ট্রি: <b>{openingStatus.ledgerCount}</b></span>
+        <span>শেষ রান: <b>{openingStatus.lastRun ? fmtDate(openingStatus.lastRun) + " " + new Date(openingStatus.lastRun).toLocaleTimeString() : "—"}</b></span>
+      </Card>
+
+      {/* Opening-post preview / confirmation */}
+      <AlertDialog open={!!openingPreview} onOpenChange={(o) => { if (!o) setOpeningPreview(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>ওপেনিং পোস্ট নিশ্চিত করুন</AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-2 text-sm">
+                <div>নতুন পোস্ট হবে: <b>{openingPreview?.toPost.length ?? 0}</b> টি অ্যাকাউন্ট</div>
+                <div>আগে থেকেই আছে (পরিবর্তন হবে না): <b>{openingPreview?.existing.length ?? 0}</b> টি</div>
+                {(openingPreview?.toPost.length ?? 0) > 0 && (
+                  <ul className="list-disc pl-5 max-h-40 overflow-auto">
+                    {openingPreview!.toPost.map((ac) => (
+                      <li key={ac.id}>{ac.bank_name} {ac.account_no} — {money(ac.opening_balance)}</li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={posting}>বাতিল</AlertDialogCancel>
+            <AlertDialogAction onClick={(e) => { e.preventDefault(); runOpenings(); }} disabled={posting || (openingPreview?.toPost.length ?? 0) === 0}>
+              {posting ? "পোস্ট হচ্ছে..." : "নিশ্চিত করুন"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <Tabs defaultValue="accounts">
+
         <TabsList>
           <TabsTrigger value="accounts">Accounts</TabsTrigger>
           <TabsTrigger value="ledger">Ledger</TabsTrigger>
