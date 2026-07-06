@@ -98,6 +98,7 @@ export default function ReceiptTemplatePage() {
   }, [previewUrl]);
 
   async function save() {
+    if (serialError) { toast.error(serialError); return; }
     setSaving(true);
     try {
       const { error } = await db
@@ -113,7 +114,6 @@ export default function ReceiptTemplatePage() {
           header_alignment: tpl.header_alignment,
           footer_note: tpl.footer_note,
           footer_note_bn: tpl.footer_note_bn,
-          receipt_serial_start: Math.max(0, Math.floor(Number(serialStart) || 0)),
           show_watermark: tpl.show_watermark,
           watermark_text: tpl.watermark_text,
           show_penalty_row: tpl.show_penalty_row,
@@ -123,8 +123,18 @@ export default function ReceiptTemplatePage() {
         })
         .eq("id", 1);
       if (error) { toast.error(error.message); return; }
+
+      // Serial start goes through a server-validated + audited RPC.
+      const nextSerial = Math.floor(Number(serialStart) || 0);
+      if (nextSerial !== savedSerialStart) {
+        const { error: rpcErr } = await (db as any).rpc("admin_set_receipt_serial_start", { p_start: nextSerial });
+        if (rpcErr) { toast.error(rpcErr.message); return; }
+        setSavedSerialStart(nextSerial);
+      }
+
       notifyReceiptTemplateChange();
       toast.success("Receipt template saved");
+
     } finally { setSaving(false); }
   }
 
