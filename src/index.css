@@ -258,6 +258,29 @@
   .cb-a4-page { width: auto; min-height: auto; padding: 0; }
 }
 
+/* Cash book columns should stay on a single line (no wrapping) */
+.bn-cb-table th,
+.bn-cb-table td {
+  white-space: nowrap;
+}
+
+@media print {
+  /* Print the society cash book on Legal landscape so every column fits */
+  .bn-cashbook { page: cashbook; }
+  @page cashbook { size: legal landscape; margin: 8mm; }
+
+  /* Keep cells single-line even though the global rule wraps long strings */
+  .bn-cb-table th,
+  .bn-cb-table td {
+    white-space: nowrap !important;
+    overflow-wrap: normal !important;
+    word-break: normal !important;
+    font-size: 9px;
+    padding: 2px 3px;
+  }
+}
+
+
 
 @media (prefers-reduced-motion: reduce) {
   *,
