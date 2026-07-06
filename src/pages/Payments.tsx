@@ -1296,6 +1296,37 @@ export default function Payments() {
         data={preview?.data ?? null}
         copy={preview?.copy ?? "both"}
       />
+
+      <Dialog open={!!detailInvoice} onOpenChange={(o) => { if (!o) setDetailInvoice(null); }}>
+        <DialogContent data-testid="invoice-details-modal">
+          <DialogHeader>
+            <DialogTitle>{tx("Invoice", "ইনভয়েস")} {detailInvoice?.invoice_no}</DialogTitle>
+          </DialogHeader>
+          {detailInvoice && (
+            <div className="space-y-3 text-sm">
+              <div className="flex justify-between"><span className="text-muted-foreground">{tx("Status", "স্ট্যাটাস")}</span><span>{invoiceStatusBadge(detailInvoice.invoice_status ?? null).label_bn}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">{tx("Payable", "প্রদেয়")}</span><span className="font-mono">{money(detailInvoice.payable_amount ?? 0)}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">{tx("Paid", "পরিশোধিত")}</span><span className="font-mono">{money(detailInvoice.paid_amount ?? 0)}</span></div>
+              <div className="flex justify-between font-semibold"><span>{tx("Due", "বকেয়া")}</span><span className="font-mono">{money(detailInvoice.due_amount ?? 0)}</span></div>
+              <div>
+                <p className="mb-1 font-medium">{tx("Transaction history", "লেনদেন হিস্ট্রি")}</p>
+                {detailTxns.length === 0 ? (
+                  <p className="text-muted-foreground">{tx("No transactions", "কোনো লেনদেন নেই")}</p>
+                ) : (
+                  <ul className="space-y-1">
+                    {detailTxns.map((tItem) => (
+                      <li key={tItem.id} className="flex justify-between">
+                        <span>{fmtDate(tItem.created_at)}</span>
+                        <span className="font-mono">{money(tItem.collected_amount ?? 0)}</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
