@@ -153,6 +153,14 @@ export default function SocietyCashBook() {
   const formatMoney = lang === "bn" ? bnMoney : enMoney;
   const formatDate = lang === "bn" ? bnDate : enDate;
   const formatText = (s: string) => lang === "bn" ? bnText(s) : s;
+  // Signed money that still shows zeros (used for summary/closing rows).
+  const formatSigned = (nv: number) => {
+    const abs = lang === "bn" ? (bnMoney(Math.abs(nv)) || (lang === "bn" ? "০" : "0")) : (enMoney(Math.abs(nv)) || "0");
+    return nv < 0 ? `-${abs}` : abs;
+  };
+  const incomeWithOpening = jamaTot.total + opening;    // মোট আয় (গত মাসের জেরসহ)
+  const closingBalance = incomeWithOpening - kharchTot.total; // হস্ত মজুদ তহবিল
+
 
   const exportCsv = () => {
     downloadCsv(`${tx("society-cashbook-income", "সমিতি-ক্যাশবহি-জমা")}-${from}_${to}`, jamaRows, [
