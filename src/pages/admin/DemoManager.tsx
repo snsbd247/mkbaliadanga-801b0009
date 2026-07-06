@@ -448,11 +448,12 @@ export default function DemoManager() {
                     nid: o["nid"] ?? "",
                   };
                 }).filter((r) => r.en);
-                if (!rows.length) { toast.error(tx("name_en column not found", "name_en কলাম পাওয়া যায়নি")); return; }
+                if (!rows.length) { setCustomNames(null); setCsvFileName(""); e.target.value = ""; toast.error(tx("name_en column not found", "name_en কলাম পাওয়া যায়নি")); return; }
                 setCustomNames(rows);
                 setCsvFileName(f.name);
                 toast.success(`${rows.length} ${tx("farmer names loaded", "জন farmer নাম লোড হয়েছে")}`);
               } catch (err: any) {
+                setCustomNames(null); setCsvFileName(""); e.target.value = "";
                 toast.error(tx("Could not read file: ", "ফাইল পড়া যায়নি: ") + (err?.message ?? "unknown"));
               }
             }} />
