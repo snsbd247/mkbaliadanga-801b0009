@@ -1,75 +1,48 @@
-## লক্ষ্য
+# সেচ ইনভয়েস — Wizard, Preview, Validation, Exports & Pay flow
 
-আগের সফটওয়্যারের সেচ কালেকশন হিস্ট্রি (`irrigation_summary_report_excel`) একদম **আলাদা, স্বয়ংসম্পূর্ণ (self-contained) টেবিলে** ইমপোর্ট করা হবে। এটি বর্তমান কোনো মডিউল (farmers, lands, irrigation_invoices ইত্যাদি) এর সাথে যুক্ত হবে না — কোনো foreign key নেই, কোনো লজিক শেয়ার নেই। শুধু **ফার্মার কোড** (নামের ভেতরের `(2473)`) দিয়ে সেই কৃষকের পুরনো রেকর্ড খুঁজে দেখা যাবে।
+All work stays in the existing `src/pages/IrrigationInvoices.tsx` (the `GenerateTab` and `InvoiceListTab`) plus small helpers. No schema/backend changes needed — the payment prefill route (`/payments?farmer=…&irr=…`) already exists.
 
-এভাবে কোনো বিদ্যমান মডিউলে সমস্যা হওয়ার ঝুঁকি একদম শূন্য।
+## 1. Step-by-step invoice creation wizard
+Convert `GenerateTab`'s flat form into a 4-step wizard (local `step` state, no new deps):
+- **Step 1 — Season** (required)
+- **Step 2 — Office** (optional) + Due date (required) + fallback rate + default category
+- **Step 3 — Land types** (the existing land-type filter chips)
+- **Step 4 — Preview & confirm** (existing preview table + create button)
 
-## নতুন যা যা তৈরি হবে
+A progress header shows the 4 steps; Back/Next buttons gate progress. Next is disabled until the current step's required fields validate. Existing preview/create logic is reused unchanged — only the layout is reorganized into steps.
 
-### ১. নতুন MySQL টেবিল (একটাই, আলাদা)
-`legacy_irrigation_records` — Excel এর প্রতিটি সারি ঠিক যেমন আছে তেমন করে রাখা হবে:
+## 2. Clearer "excluded lands" reporting in preview
+Today the preview only shows a count (`X lands had no rate — skipped`). Change the preview collection loop to also collect an `excluded` list with `{ dag, mouza, land_type_name, reason }` where reason is one of:
+- জমির ধরনে রেট কনফিগ করা নেই (no season rate + no fallback)
+- জমির ধরন নির্বাচিত ফিল্টারে নেই
+- ইতিমধ্যে ইনভয়েস আছে (skip-existing)
 
+Render an expandable "বাদ পড়া জমি (N)" panel listing each excluded land with its reason, so it's obvious what to fix.
+
+## 3. Inline field validation
+Add per-field error state in the wizard. Show inline red messages when:
+- Season not selected
+- Due date empty or in the past
+- (Step 3) no land type selected
+
+Block Next/Create while errors exist, with a top-of-step error summary (reusing the pattern of `FormErrorSummary`).
+
+## 4. Preview PDF + Excel export before confirming
+Add two buttons in the Step-4 preview toolbar:
+- **Export Excel** — reuse `exportInvoicesXLSX` from `@/lib/irrigationExports`, mapping the preview rows to the same column shape.
+- **Export PDF** — a printable draft (marked "খসড়া / DRAFT") built from the preview rows, reusing the existing invoice PDF/print helpers used by `InvoiceListTab`.
+
+These run on preview data before any invoice is created.
+
+## 5. Direct "Pay" action from each generated invoice
+In `InvoiceListTab`'s row actions, add a **Pay** button (money icon) shown when the invoice has due > 0 and is not cancelled. It navigates to:
 ```text
-id (uuid)              legacy_farmer_code   farmer_name
-father_name            village              mobile_no
-mouza_name             season_year          land_shatak
-dag_no                 rate                 owner_id_name
-due_amount             paid_amount          owner_type_name
-owner_father_name      owner_village        owner_mobile_no
-owner_fid              receipt_no           collection_date
-import_batch_id        created_at / updated_at
+/payments?farmer=<farmer_id>&irr=<invoice_id>
 ```
-- `legacy_farmer_code` কলামে ইনডেক্স — দ্রুত সার্চের জন্য।
-- `import_batch_id` — কোন ফাইল থেকে এসেছে বোঝার জন্য (ভুল হলে পুরো ব্যাচ মুছে ফেলা যাবে)।
-- কোনো FK নেই → বিদ্যমান টেবিলে কোনো প্রভাব নেই।
+The Payments page already reads `farmer` and `irr` params and preloads the allocation with the correct due amount — so the amount is prefilled automatically.
 
-### ২. Laravel ব্যাকএন্ড
-- **Migration:** উপরের টেবিল তৈরি।
-- **Model:** `LegacyIrrigationRecord`।
-- **Controller + Routes:**
-  - `POST /legacy-irrigation/import` — সারিগুলো bulk insert (batch সহ)।
-  - `GET /legacy-irrigation?farmer_code=2473` — কোড দিয়ে রেকর্ড দেখা।
-  - `DELETE /legacy-irrigation/batch/{id}` — ভুল ইমপোর্ট রোলব্যাক।
-- অন্য কোনো Laravel ফাইল/মডেল ছোঁয়া হবে না।
-
-### ৩. নতুন ফ্রন্টএন্ড পেজ
-- নতুন রুট: `/legacy-import` (নতুন `LegacyIrrigationImport.tsx`)।
-- ফাইল আপলোড → নামের ভেতর থেকে কোড অটো-বের করা → **প্রিভিউ টেবিল + ভ্যালিডেশন** (কত সারি, কোন সারিতে সমস্যা) → নিশ্চিত করলে সেভ।
-- নতুন ভিউ পেজ: ফার্মার কোড লিখে সেই কৃষকের পুরনো সেচ রেকর্ড দেখা।
-- বিদ্যমান ইমপোর্ট পেজগুলো (FarmersImport, IrrigationInvoiceImport ইত্যাদি) অপরিবর্তিত থাকবে।
-
-## কলাম ম্যাপিং
-
-```text
-Excel কলাম        →  টেবিল কলাম
-FARMER_NAME       →  farmer_name (+ কোড আলাদা করে legacy_farmer_code)
-FATHER_NM         →  father_name
-VILLAGE           →  village
-MOBILE_NO         →  mobile_no
-MOUZA_NAME        →  mouza_name
-SESSON_YEAR       →  season_year        (যেমন "আমন-2025")
-LAND              →  land_shatak
-DAG_NO            →  dag_no
-RATE              →  rate
-OWNER_ID_NM       →  owner_id_name
-DUE_AMOUNT        →  due_amount
-PAID_AMOUNT       →  paid_amount
-OWNER_TP_NAME     →  owner_type_name    (মালিক / বর্গাদার - নাম)
-OWNER_FATHER_NM   →  owner_father_name
-OWNER_VILLAGE     →  owner_village
-OWNER_MOBILE_NO   →  owner_mobile_no
-OWNER_FID         →  owner_fid
-RECEIPT_NO        →  receipt_no
-COLLECTION_DATE   →  collection_date    (03-JUL-2025 → date)
-```
-
-১,৯৫২ সারি এভাবেই বসে যাবে, কোনো তথ্য হারাবে না।
-
-## গুরুত্বপূর্ণ নিশ্চয়তা
-- বিদ্যমান কোনো টেবিল/মডিউল পরিবর্তন হবে না — সব একদম আলাদা।
-- ভুল হলে পুরো ব্যাচ এক ক্লিকে মুছে আবার করা যাবে।
-- অফিস অনুযায়ী স্কোপ রাখা হবে (আপনার লগইন অফিসেই সীমাবদ্ধ)।
-
-## টেকনিক্যাল নোট
-- ব্যাকএন্ড: `backend/` (Laravel/MySQL)। নতুন migration `backend/database/migrations/`-এ, Model `backend/app/Models/`-এ, Controller `backend/app/Http/Controllers/`-এ, রুট `backend/routes/api.php`-এ।
-- ফ্রন্টএন্ড: `xlsx` লাইব্রেরি দিয়ে পার্স (বিদ্যমান import পেজের মতোই), `src/lib/api/` তে নতুন `legacyIrrigation.ts` API র‍্যাপার।
+## Technical notes
+- No new packages; wizard is local state.
+- Reuse `loadSeasonRateMap`, `resolveRateForLand`, `exportInvoicesXLSX`, and existing PDF preview builder.
+- The earlier `[object Object]` rates line is already fixed.
+- The `get_land_billing_split` RPC toast is a separate pre-existing backend gap; I'll confirm whether it blocks preview and, if so, guard it so the wizard still works (surface as a soft warning, not a hard failure).

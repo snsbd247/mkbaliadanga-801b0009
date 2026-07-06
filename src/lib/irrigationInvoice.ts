@@ -208,9 +208,18 @@ export async function resolveBillingSplits(
   land_id: string,
   as_of: string = new Date().toISOString().slice(0, 10),
 ): Promise<BillingSplit[]> {
-  const { data, error } = await db.rpc("get_land_billing_split" as any, { _land_id: land_id, _as_of: as_of });
-  if (error) throw error;
-  const rows = (Array.isArray(data) ? data : []) as any[];
+  // The DB function may not be deployed on every server. When it is missing (or
+  // errors), fall back to the single billed-farmer resolution instead of aborting
+  // the whole invoice preview/generation flow.
+  let rows: any[] = [];
+  try {
+    const { data, error } = await db.rpc("get_land_billing_split" as any, { _land_id: land_id, _as_of: as_of });
+    if (error) throw error;
+    rows = Array.isArray(data) ? data : [];
+  } catch (e) {
+    console.warn("get_land_billing_split unavailable — using single-farmer fallback", e);
+    rows = [];
+  }
   const splits = rows
     .map((r) => ({
       billed_farmer_id: r.farmer_id as string,
