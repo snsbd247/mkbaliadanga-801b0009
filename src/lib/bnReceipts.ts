@@ -572,6 +572,7 @@ function copyHtml(d: BnReceiptData, copyLabel: string, signatureUrl: string | nu
        </div>` : "";
 
   if (officialIrrigationReceipt) {
+    const accent = (tpl.accent_color || "").trim() || "#111";
     const red = "#111";
     const blue = "#111";
     const padCfg = getIrrigationReceiptPadding();
