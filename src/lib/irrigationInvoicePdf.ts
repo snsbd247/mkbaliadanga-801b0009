@@ -316,20 +316,20 @@ function copyHtml(d: IrrigationInvoiceData, brand: CompanyBranding, copyLabel: s
 
   const body = wide
     ? `
-      <div style="display:flex;gap:12px;margin-top:5px;align-items:flex-start;">
+      <div style="display:flex;gap:28px;margin-top:12px;align-items:flex-start;">
         <div style="flex:1;">${infoTable}</div>
         <div style="flex:1;">${chargeTable}${wordsBlock}</div>
       </div>`
     : `
-      <div style="margin-top:5px;">${infoTable}</div>
-      <div style="margin-top:5px;">${chargeTable}</div>
+      <div style="margin-top:10px;">${infoTable}</div>
+      <div style="margin-top:10px;">${chargeTable}</div>
       ${wordsBlock}`;
 
   return `
-  <div style="font-family:'Noto Sans Bengali','Hind Siliguri','SolaimanLipi',sans-serif;color:#111;padding:10px 14px;" data-invoice-copy="${role}">
+  <div style="font-family:'Noto Sans Bengali','Hind Siliguri','SolaimanLipi',sans-serif;color:#111;padding:14px 20px;" data-invoice-copy="${role}">
     ${header}
     ${body}
-    <div style="display:flex;justify-content:space-between;margin-top:${wide ? 14 : 18}px;font-size:10px;gap:12px;">
+    <div style="display:flex;justify-content:space-between;margin-top:${wide ? 34 : 26}px;font-size:10px;gap:12px;">
       ${farmerSig}
       ${collectorSig}
     </div>
