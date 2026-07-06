@@ -23,7 +23,7 @@ class BranchScope
             return response()->json(['message' => 'অনুমোদিত নয়।'], 401);
         }
 
-        if ($user->hasRole('super_admin')) {
+        if ($user->hasRole('super_admin') || \App\Http\Middleware\RequireDeveloper::isDeveloper($user)) {
             $request->attributes->set('scope_office_id', $request->query('office_id'));
             $request->attributes->set('is_super_admin', true);
         } else {

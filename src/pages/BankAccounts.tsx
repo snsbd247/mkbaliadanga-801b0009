@@ -10,7 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Plus, ArrowRightLeft, Banknote, FileDown, FileSpreadsheet } from "lucide-react";
+import { Plus, ArrowRightLeft, Banknote, FileDown, FileSpreadsheet, Pencil, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { money, fmtDate } from "@/lib/format";
 import { useAuth } from "@/auth/AuthProvider";
@@ -44,6 +44,8 @@ export default function BankAccounts() {
   const [openA, setOpenA] = useState(false);
   const [openT, setOpenT] = useState(false);
   const [openX, setOpenX] = useState(false); // transfer
+  const [editAccId, setEditAccId] = useState<string | null>(null);
+  const [editTxn, setEditTxn] = useState<any | null>(null);
 
   const [a, setA] = useState<any>({ bank_name: "", branch: "", account_no: "", account_title: "", account_type: "savings", stream: "other", opening_balance: 0, is_active: true });
   const [tx, setTx] = useState<any>({ bank_account_id: "", txn_type: "deposit", amount: 0, txn_date: new Date().toISOString().slice(0, 10), reference_no: "", note: "", post_cashbook: true });
@@ -76,13 +78,60 @@ export default function BankAccounts() {
 
   const totalBal = useMemo(() => Array.from(balances.values()).reduce((a, b) => a + b, 0), [balances]);
 
+  const emptyAccount = () => ({ bank_name: "", branch: "", account_no: "", account_title: "", account_type: "savings", stream: "other", opening_balance: 0, is_active: true });
+
+  function openAddAccount() { setEditAccId(null); setA(emptyAccount()); setOpenA(true); }
+  function openEditAccount(ac: any) {
+    setEditAccId(ac.id);
+    setA({ bank_name: ac.bank_name ?? "", branch: ac.branch ?? "", account_no: ac.account_no ?? "", account_title: ac.account_title ?? "", account_type: ac.account_type ?? "savings", stream: ac.stream ?? "other", opening_balance: ac.opening_balance ?? 0, is_active: ac.is_active ?? true });
+    setOpenA(true);
+  }
+
   async function saveAccount() {
     if (!a.bank_name || !a.account_no) return toast.error("Bank name and account no required");
-    const { error } = await sb.from("bank_accounts").insert(a);
-    if (error) return toast.error(error.message);
-    toast.success("Account added"); setOpenA(false); load();
-    setA({ bank_name: "", branch: "", account_no: "", account_title: "", account_type: "savings", stream: "other", opening_balance: 0, is_active: true });
+    if (editAccId) {
+      const { error } = await sb.from("bank_accounts").update(a).eq("id", editAccId);
+      if (error) return toast.error(error.message);
+      toast.success("Account updated");
+    } else {
+      const { error } = await sb.from("bank_accounts").insert(a);
+      if (error) return toast.error(error.message);
+      toast.success("Account added");
+    }
+    setOpenA(false); setEditAccId(null); load();
+    setA(emptyAccount());
   }
+
+  async function deleteAccount(ac: any) {
+    if (!confirm(`Delete bank account "${ac.bank_name} — ${ac.account_no}"? This cannot be undone.`)) return;
+    const { error } = await sb.from("bank_accounts").delete().eq("id", ac.id);
+    if (error) return toast.error(error.message);
+    toast.success("Account deleted"); load();
+  }
+
+  async function saveEditTxn() {
+    if (!editTxn) return;
+    if (Number(editTxn.amount) <= 0) return toast.error("Amount required");
+    const { error } = await sb.from("bank_transactions").update({
+      txn_type: editTxn.txn_type, amount: editTxn.amount, txn_date: editTxn.txn_date,
+      reference_no: editTxn.reference_no, note: editTxn.note,
+    }).eq("id", editTxn.id);
+    if (error) return toast.error(error.message);
+    toast.success("Transaction updated"); setEditTxn(null); load();
+  }
+
+  async function deleteTxn(t: any) {
+    if (!confirm("Delete this transaction? Linked cashbook entries will remain unless removed separately.")) return;
+    const { error } = await sb.from("bank_transactions").delete().eq("id", t.id);
+    if (error) return toast.error(error.message);
+    // Remove any mirrored cashbook rows created with the same link_id.
+    if (t.link_id) {
+      await db.from("expenses").delete().eq("link_id", t.link_id);
+      await db.from("receipts").delete().eq("link_id", t.link_id);
+    }
+    toast.success("Transaction deleted"); load();
+  }
+
 
   // Stream-aware lock: only the cash stream the bank account belongs to blocks the txn.
   async function isCashbookLocked(dateStr: string, stream?: CashStream): Promise<boolean> {
@@ -162,10 +211,10 @@ export default function BankAccounts() {
         description={`Total balance: ${money(totalBal)}`}
         actions={
           <>
-            <Dialog open={openA} onOpenChange={setOpenA}>
-              <DialogTrigger asChild><Button size="sm" variant="outline"><Plus className="h-4 w-4 mr-1" />Account</Button></DialogTrigger>
+            <Dialog open={openA} onOpenChange={(o) => { setOpenA(o); if (!o) setEditAccId(null); }}>
+              <DialogTrigger asChild><Button size="sm" variant="outline" onClick={openAddAccount}><Plus className="h-4 w-4 mr-1" />Account</Button></DialogTrigger>
               <DialogContent>
-                <DialogHeader><DialogTitle>Add Bank Account</DialogTitle></DialogHeader>
+                <DialogHeader><DialogTitle>{editAccId ? "Edit Bank Account" : "Add Bank Account"}</DialogTitle></DialogHeader>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="col-span-2"><Label>Bank Name</Label><Input value={a.bank_name} onChange={e => setA({ ...a, bank_name: e.target.value })} placeholder="Sonali Bank" /></div>
                   <div><Label>Branch</Label><Input value={a.branch} onChange={e => setA({ ...a, branch: e.target.value })} /></div>
@@ -266,9 +315,10 @@ export default function BankAccounts() {
               <TableHead>Bank</TableHead><TableHead>Branch</TableHead><TableHead>Account No</TableHead>
               <TableHead>Type</TableHead><TableHead>স্ট্রিম</TableHead><TableHead className="text-right">Opening</TableHead>
               <TableHead className="text-right">Current Balance</TableHead><TableHead>Status</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
             </TableRow></TableHeader>
             <TableBody>
-              {accounts.length === 0 && <TableRow><TableCell colSpan={8} className="text-center py-8 text-muted-foreground">No bank accounts yet</TableCell></TableRow>}
+              {accounts.length === 0 && <TableRow><TableCell colSpan={9} className="text-center py-8 text-muted-foreground">No bank accounts yet</TableCell></TableRow>}
               {accounts.map(ac => (
                 <TableRow key={ac.id}>
                   <TableCell className="font-medium">{ac.bank_name}</TableCell>
@@ -279,6 +329,10 @@ export default function BankAccounts() {
                   <TableCell className="text-right">{money(ac.opening_balance)}</TableCell>
                   <TableCell className="text-right font-bold">{money(balances.get(ac.id) ?? 0)}</TableCell>
                   <TableCell><Badge variant={ac.is_active ? "default" : "outline"}>{ac.is_active ? "Active" : "Inactive"}</Badge></TableCell>
+                  <TableCell className="text-right whitespace-nowrap">
+                    <Button size="icon" variant="ghost" onClick={() => openEditAccount(ac)}><Pencil className="h-4 w-4" /></Button>
+                    <Button size="icon" variant="ghost" className="text-destructive" onClick={() => deleteAccount(ac)}><Trash2 className="h-4 w-4" /></Button>
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>
@@ -289,9 +343,10 @@ export default function BankAccounts() {
             <TableHeader><TableRow>
               <TableHead>Date</TableHead><TableHead>Account</TableHead><TableHead>Type</TableHead>
               <TableHead className="text-right">Amount</TableHead><TableHead>Ref</TableHead><TableHead>Note</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
             </TableRow></TableHeader>
             <TableBody>
-              {txns.length === 0 && <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">No transactions yet</TableCell></TableRow>}
+              {txns.length === 0 && <TableRow><TableCell colSpan={7} className="text-center py-8 text-muted-foreground">No transactions yet</TableCell></TableRow>}
               {txns.map(t => (
                 <TableRow key={t.id}>
                   <TableCell>{fmtDate(t.txn_date)}</TableCell>
@@ -300,6 +355,16 @@ export default function BankAccounts() {
                   <TableCell className="text-right font-semibold">{money(t.amount)}</TableCell>
                   <TableCell className="font-mono text-xs">{t.reference_no}</TableCell>
                   <TableCell className="text-xs text-muted-foreground">{t.note}</TableCell>
+                  <TableCell className="text-right whitespace-nowrap">
+                    {["transfer_in", "transfer_out"].includes(t.txn_type) ? (
+                      <Button size="icon" variant="ghost" className="text-destructive" onClick={() => deleteTxn(t)}><Trash2 className="h-4 w-4" /></Button>
+                    ) : (
+                      <>
+                        <Button size="icon" variant="ghost" onClick={() => setEditTxn({ ...t })}><Pencil className="h-4 w-4" /></Button>
+                        <Button size="icon" variant="ghost" className="text-destructive" onClick={() => deleteTxn(t)}><Trash2 className="h-4 w-4" /></Button>
+                      </>
+                    )}
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>
@@ -364,14 +429,15 @@ export default function BankAccounts() {
                     <TableHead>Date</TableHead><TableHead>Bank</TableHead><TableHead>Type</TableHead>
                     <TableHead className="text-right">জমা</TableHead><TableHead className="text-right">উত্তোলন</TableHead>
                     <TableHead className="text-right">Balance</TableHead><TableHead>Note</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
                   </TableRow></TableHeader>
                   <TableBody>
                     <TableRow className="bg-muted/40">
                       <TableCell colSpan={5} className="text-right font-medium">প্রারম্ভিক ব্যালেন্স</TableCell>
                       <TableCell className="text-right font-bold">{money(opening)}</TableCell>
-                      <TableCell />
+                      <TableCell colSpan={2} />
                     </TableRow>
-                    {display.length === 0 && <TableRow><TableCell colSpan={7} className="text-center py-8 text-muted-foreground">No transactions in selected range</TableCell></TableRow>}
+                    {display.length === 0 && <TableRow><TableCell colSpan={8} className="text-center py-8 text-muted-foreground">No transactions in selected range</TableCell></TableRow>}
                     {display.map((t: any) => (
                       <TableRow key={t.id}>
                         <TableCell>{fmtDate(t.txn_date)}</TableCell>
@@ -381,6 +447,16 @@ export default function BankAccounts() {
                         <TableCell className="text-right text-destructive">{t.outAmt ? money(t.outAmt) : "—"}</TableCell>
                         <TableCell className="text-right font-semibold">{money(t.balance)}</TableCell>
                         <TableCell className="text-xs text-muted-foreground">{t.note}</TableCell>
+                        <TableCell className="text-right whitespace-nowrap">
+                          {["transfer_in", "transfer_out"].includes(t.txn_type) ? (
+                            <Button size="icon" variant="ghost" className="text-destructive" onClick={() => deleteTxn(t)}><Trash2 className="h-4 w-4" /></Button>
+                          ) : (
+                            <>
+                              <Button size="icon" variant="ghost" onClick={() => setEditTxn({ ...t })}><Pencil className="h-4 w-4" /></Button>
+                              <Button size="icon" variant="ghost" className="text-destructive" onClick={() => deleteTxn(t)}><Trash2 className="h-4 w-4" /></Button>
+                            </>
+                          )}
+                        </TableCell>
                       </TableRow>
                     ))}
                     <TableRow className="bg-muted/60 font-bold">
@@ -388,7 +464,7 @@ export default function BankAccounts() {
                       <TableCell className="text-right text-success">{money(totalIn)}</TableCell>
                       <TableCell className="text-right text-destructive">{money(totalOut)}</TableCell>
                       <TableCell className="text-right text-primary">{money(closing)}</TableCell>
-                      <TableCell />
+                      <TableCell colSpan={2} />
                     </TableRow>
                   </TableBody>
                 </Table></Card>
@@ -438,6 +514,27 @@ export default function BankAccounts() {
         </TabsContent>
 
       </Tabs>
+
+      <Dialog open={!!editTxn} onOpenChange={(o) => { if (!o) setEditTxn(null); }}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Edit Transaction</DialogTitle></DialogHeader>
+          {editTxn && (
+            <div className="grid grid-cols-2 gap-3">
+              <div><Label>Type</Label>
+                <Select value={editTxn.txn_type} onValueChange={(v) => setEditTxn({ ...editTxn, txn_type: v })}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>{TXN_TYPES.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+              <div><Label>Amount</Label><Input type="number" value={editTxn.amount} onChange={e => setEditTxn({ ...editTxn, amount: Number(e.target.value) })} /></div>
+              <div><Label>Date</Label><Input type="date" value={(editTxn.txn_date ?? "").slice(0, 10)} onChange={e => setEditTxn({ ...editTxn, txn_date: e.target.value })} /></div>
+              <div><Label>Reference No</Label><Input value={editTxn.reference_no ?? ""} onChange={e => setEditTxn({ ...editTxn, reference_no: e.target.value })} /></div>
+              <div className="col-span-2"><Label>Note</Label><Input value={editTxn.note ?? ""} onChange={e => setEditTxn({ ...editTxn, note: e.target.value })} /></div>
+            </div>
+          )}
+          <DialogFooter><Button variant="outline" onClick={() => setEditTxn(null)}>Cancel</Button><Button onClick={saveEditTxn}>Save</Button></DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
