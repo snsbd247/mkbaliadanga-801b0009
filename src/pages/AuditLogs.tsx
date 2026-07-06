@@ -121,7 +121,8 @@ export default function AuditLogs() {
     const s = search.toLowerCase();
     return list.filter((l) => {
       const u = profiles[l.user_id];
-      const hay = `${l.entity ?? ""} ${l.action ?? ""} ${u?.full_name ?? ""} ${u?.username ?? ""} ${l.entity_id ?? ""}`.toLowerCase();
+      const receiptNo = l.meta?.receipt_no ?? "";
+      const hay = `${l.entity ?? ""} ${l.action ?? ""} ${u?.full_name ?? ""} ${u?.username ?? ""} ${l.entity_id ?? ""} ${receiptNo}`.toLowerCase();
       return hay.includes(s);
     });
   }, [list, search, profiles]);
