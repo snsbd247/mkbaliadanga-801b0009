@@ -44,7 +44,7 @@ export default function AdminHealthCheck() {
 
   return (
     <div className="space-y-4">
-      <PageHeader title={t("edgeHealthTitle")} subtitle={t("edgeHealthSubtitle")} />
+      <PageHeader title={t("edgeHealthTitle")} description={t("edgeHealthSubtitle")} />
       <div className="flex justify-end">
         <Button variant="outline" size="sm" onClick={runChecks} disabled={running}>
           <RefreshCw className={`h-4 w-4 mr-1 ${running ? "animate-spin" : ""}`} /> {t("edgeHealthRecheck")}
