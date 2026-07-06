@@ -1389,26 +1389,25 @@ function GenerateTab({ seasons, offices, userId, isSuper }: any) {
   function exportDraftPdf() {
     const rows = previewToExportRows();
     if (!rows.length) return toast.error(tx("Nothing to export", "রপ্তানির কিছু নেই"));
-    exportTablePDF({
-      title: tx("Invoice Draft (unofficial)", "ইনভয়েস খসড়া (অনানুষ্ঠানিক)"),
-      columns: [
-        { header: tx("Mouza", "মৌজা"), key: "mouza" },
-        { header: tx("Dag", "দাগ"), key: "dag" },
-        { header: tx("Land size", "জমির পরিমাণ"), key: "land" },
-        { header: tx("Land type", "জমির ধরন"), key: "lt" },
-        { header: tx("Rate", "রেট"), key: "rate" },
-        { header: tx("Payable", "প্রদেয়"), key: "payable" },
+    exportTablePDF(
+      tx("Invoice Draft (unofficial)", "ইনভয়েস খসড়া (অনানুষ্ঠানিক)"),
+      [
+        tx("Mouza", "মৌজা"),
+        tx("Dag", "দাগ"),
+        tx("Land size", "জমির পরিমাণ"),
+        tx("Land type", "জমির ধরন"),
+        tx("Rate", "রেট"),
+        tx("Payable", "প্রদেয়"),
       ],
-      rows: rows.map((r: any) => ({
-        mouza: r.lands?.mouza || "—",
-        dag: formatDagNumbers(r.lands?.dag_no) || "—",
-        land: formatLandSize(r.lands?.land_size, "short"),
-        lt: r.land_type_name || "—",
-        rate: money(r.season_rate),
-        payable: money(r.payable_amount),
-      })),
-      fileName: "invoice-draft.pdf",
-    });
+      rows.map((r: any) => [
+        r.lands?.mouza || "—",
+        formatDagNumbers(r.lands?.dag_no) || "—",
+        formatLandSize(r.lands?.land_size, "short"),
+        r.land_type_name || "—",
+        money(r.season_rate),
+        money(r.payable_amount),
+      ]),
+    );
   }
 
   async function preview() {
