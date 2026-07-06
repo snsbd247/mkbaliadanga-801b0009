@@ -77,6 +77,7 @@ import ShareCapitalReconciliation from "./pages/ShareCapitalReconciliation";
 import QrRotation from "./pages/QrRotation";
 import BulkCards from "./pages/BulkCards";
 import ReceiptTemplate from "./pages/ReceiptTemplate";
+import ReceiptSerialAudit from "./pages/ReceiptSerialAudit";
 import CardDesigner from "./pages/CardDesigner";
 import RoleMatrix from "./pages/admin/RoleMatrix";
 import UserRoles from "./pages/admin/UserRoles";
