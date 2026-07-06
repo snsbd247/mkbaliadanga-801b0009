@@ -101,4 +101,26 @@ describe("ResponsiveTable presets & viewport regression", () => {
       void width;
     }
   });
+
+  it("keeps headers non-overlapping at mobile/tablet widths via horizontal scroll", () => {
+    const SMALL_VIEWPORTS = [375, 768];
+    for (const width of SMALL_VIEWPORTS) {
+      Object.defineProperty(window, "innerWidth", { writable: true, value: width });
+      const { container } = render(
+        <ResponsiveTable preset="cashbook" sticky>
+          <thead><tr><th>তারিখ</th><th>বিবরণ</th><th>জমা</th><th>খরচ</th></tr></thead>
+          <tbody><tr><td>2026-07-06</td><td>হাওলাত</td><td>1000</td><td>0</td></tr></tbody>
+        </ResponsiveTable>,
+      );
+      const wrap = container.querySelector("[data-table-wrap]") as HTMLElement;
+      const table = container.querySelector("table") as HTMLTableElement;
+      // On small screens the wrapper must scroll instead of squashing/overlapping columns.
+      expect(wrap.className).toContain("overflow-x-auto");
+      const min = parseInt(table.style.minWidth, 10);
+      expect(min).toBe(TABLE_PRESETS.cashbook);
+      // minWidth must exceed the viewport so columns keep fixed widths.
+      expect(min).toBeGreaterThan(width);
+    }
+  });
 });
+

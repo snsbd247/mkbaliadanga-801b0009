@@ -27,6 +27,10 @@ jobs:
           name: i18n-unused-report
           path: docs/i18n-unused-report.md
 
+      # ResponsiveTable governance (no raw <table> in cashbook/report pages)
+      - name: ResponsiveTable guard
+        run: npm run table:guard
+
       # Lint
       - name: ESLint
         run: npm run lint
