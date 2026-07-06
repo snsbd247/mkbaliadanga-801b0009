@@ -110,6 +110,38 @@ export default function SocietyCashBook() {
     })();
   }, [from, to, officeId, lang]);
 
+  // Opening balance = cumulative cash-in-hand carried from all months before `from`.
+  useEffect(() => {
+    (async () => {
+      try {
+        const before = from;
+        let savQ = sb.from("savings_transactions").select("type,amount,txn_date,farmer_id,office_id,deleted_at").is("deleted_at", null).lt("txn_date", before);
+        let lpQ = sb.from("loan_payments").select("amount,principal_amount,interest_amount,paid_on,loan_id,office_id,status").lt("paid_on", before);
+        let btQ = sb.from("bank_transactions").select("txn_type,amount,txn_date,office_id").lt("txn_date", before);
+        let oiQ = sb.from("office_incomes").select("income_type,amount,received_on,office_id,stream").eq("stream", "saving").lt("received_on", before);
+        let exQ = sb.from("expenses").select("head,amount,expense_date,is_bank_deposit,office_id,stream,deleted_at").is("deleted_at", null).eq("stream", "savings").lt("expense_date", before);
+        let lnQ = sb.from("loans").select("principal,issued_on,farmer_id,office_id,status,deleted_at").is("deleted_at", null).lt("issued_on", before);
+        if (officeId) {
+          savQ = savQ.eq("office_id", officeId); lpQ = lpQ.eq("office_id", officeId); btQ = btQ.eq("office_id", officeId);
+          oiQ = oiQ.eq("office_id", officeId); exQ = exQ.eq("office_id", officeId); lnQ = lnQ.eq("office_id", officeId);
+        }
+        const [sav, lp, bt, oi, ex, ln] = await Promise.all([savQ, lpQ, btQ, oiQ, exQ, lnQ]);
+        const priorInput = {
+          savings: sav.data ?? [],
+          loanPayments: (lp.data ?? []).filter((r: any) => r.status === "approved"),
+          bankTx: bt.data ?? [], officeIncomes: oi.data ?? [], expenses: ex.data ?? [],
+          loansIssued: (ln.data ?? []).filter((r: any) => r.status !== "rejected"),
+          farmerNames: {}, loanFarmers: {},
+        };
+        const jt = sumJama(buildJamaRows(priorInput, lang));
+        const kt = sumKharch(buildKharchRows(priorInput, lang));
+        setOpening(jt.total - kt.total);
+      } catch {
+        setOpening(0);
+      }
+    })();
+  }, [from, officeId]);
+
   const jamaRows = useMemo<JamaRow[]>(() => (input ? buildJamaRows(input, lang) : []), [input, lang]);
   const kharchRows = useMemo<KharchRow[]>(() => (input ? buildKharchRows(input, lang) : []), [input, lang]);
   const jamaTot = useMemo(() => sumJama(jamaRows), [jamaRows]);
