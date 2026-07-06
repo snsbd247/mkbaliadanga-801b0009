@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useLang } from "@/i18n/LanguageProvider";
 import { CheckCircle2, XCircle, Loader2, RefreshCw } from "lucide-react";
+import { InvoiceStatusCheckCard } from "@/components/admin/InvoiceStatusCheckCard";
 
 type Status = "checking" | "ok" | "down";
 
