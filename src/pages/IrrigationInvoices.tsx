@@ -1258,6 +1258,9 @@ function GenerateTab({ seasons, offices, userId, isSuper }: any) {
   });
   const [busy, setBusy] = useState(false);
   const [previewRows, setPreviewRows] = useState<any[] | null>(null);
+  const [previewPage, setPreviewPage] = useState(0);
+  const [previewPageSize, setPreviewPageSize] = useState(100);
+  const [missingRates, setMissingRates] = useState<Array<{ land_type_id: string; land_type_name: string }>>([]);
   const [prevDueWarning, setPrevDueWarning] = useState<{ farmers: number; total: number } | null>(null);
   const [skippedNoRate, setSkippedNoRate] = useState(0);
   const [skipExisting, setSkipExisting] = useState(true);
@@ -1509,6 +1512,7 @@ function GenerateTab({ seasons, offices, userId, isSuper }: any) {
       }
 
       setPreviewRows(previewArr.map((r) => ({ ...r, manualRate: "", manualReason: "" })));
+      setPreviewPage(0);
       setSkippedNoRate(noRate);
       setExcluded(excludedArr);
       // Fetch previous outstanding for the farmers in this preview
@@ -1547,8 +1551,16 @@ function GenerateTab({ seasons, offices, userId, isSuper }: any) {
             : tx("No eligible lands to invoice for this selection.", "এই নির্বাচনে ইনভয়েস করার মতো যোগ্য জমি নেই।");
         setErrors((prev) => ({ ...prev, noRate: msg }));
         toast.error(msg);
+        // Fetch the precise list of missing season/land-type rates for a diagnostic report.
+        try {
+          const { data: diag } = await db.functions.invoke("irrigation-missing-rates", {
+            body: { season_id: seasonId, office_id: officeId || null, land_type_ids: Array.from(fieldTypes) },
+          });
+          setMissingRates(((diag as any)?.missing ?? []) as Array<{ land_type_id: string; land_type_name: string }>);
+        } catch { setMissingRates([]); }
         return;
       }
+      setMissingRates([]);
       setErrors((prev) => { const { noRate: _omit, ...rest } = prev; return rest; });
       toast.success(`${previewArr.length} ${tx("preview", "টি প্রিভিউ")}${noRate ? ` • ${noRate} ${tx("lands have no rate", "টি জমিতে রেট নেই")}` : ""}`);
     } catch (e: any) {
@@ -1848,7 +1860,22 @@ function GenerateTab({ seasons, offices, userId, isSuper }: any) {
             <div className="space-y-3">
               {errors.noRate && (
                 <div className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
-                  {errors.noRate}
+                  <p>{errors.noRate}</p>
+                  {missingRates.length > 0 && (
+                    <div className="mt-2">
+                      <p className="text-xs font-medium">{tx("Land types missing a rate:", "রেট নেই এমন জমির ধরন:")}</p>
+                      <ul className="mt-1 list-disc pl-5 text-xs">
+                        {missingRates.map((m) => <li key={m.land_type_id}>{m.land_type_name}</li>)}
+                      </ul>
+                    </div>
+                  )}
+                  <Link
+                    to="/seasons"
+                    className="mt-2 inline-flex items-center gap-1 font-medium underline underline-offset-2 hover:opacity-80"
+                  >
+                    <SettingsIcon className="h-3.5 w-3.5" />
+                    {tx("Configure season rates", "সিজন রেট কনফিগার করুন")}
+                  </Link>
                 </div>
               )}
               {skippedNoRate > 0 && (
@@ -1966,7 +1993,8 @@ function GenerateTab({ seasons, offices, userId, isSuper }: any) {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {previewRows.slice(0, 100).map((r: any, i: number) => {
+                  {previewRows.slice(previewPage * previewPageSize, previewPage * previewPageSize + previewPageSize).map((r: any, localIdx: number) => {
+                    const i = previewPage * previewPageSize + localIdx;
                     const cat = categories.find((c) => c.id === defaultCategoryId);
                     const allowManual = !cat || cat.allow_manual_negotiation || r.resolved?.isNegotiable !== false;
                     const src = r.resolved?.source ?? "STANDARD";
@@ -2023,7 +2051,35 @@ function GenerateTab({ seasons, offices, userId, isSuper }: any) {
                   })}
                 </TableBody>
               </Table>
-              {previewRows.length > 100 && <p className="text-xs text-muted-foreground mt-2">{tx("Showing first 100 only", "শুধু প্রথম ১০০ টি দেখানো হয়েছে")}</p>}
+              <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <span>{tx("Rows per page", "প্রতি পৃষ্ঠায় সারি")}</span>
+                  <Select value={String(previewPageSize)} onValueChange={(v) => { setPreviewPageSize(Number(v)); setPreviewPage(0); }}>
+                    <SelectTrigger className="h-7 w-[80px] text-xs"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {[25, 50, 100, 200].map((n) => <SelectItem key={n} value={String(n)}>{n}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                {(() => {
+                  const pageCount = Math.max(1, Math.ceil(previewRows.length / previewPageSize));
+                  const page = Math.min(previewPage, pageCount - 1);
+                  const from = previewRows.length === 0 ? 0 : page * previewPageSize + 1;
+                  const to = Math.min(previewRows.length, (page + 1) * previewPageSize);
+                  return (
+                    <div className="flex items-center gap-2 text-xs">
+                      <span className="text-muted-foreground">{from}–{to} / {previewRows.length}</span>
+                      <Button variant="outline" size="sm" className="h-7" disabled={page <= 0} onClick={() => setPreviewPage((p) => Math.max(0, p - 1))}>
+                        <ChevronLeft className="h-4 w-4" /> {tx("Prev", "পূর্ববর্তী")}
+                      </Button>
+                      <span className="text-muted-foreground">{tx("Page", "পৃষ্ঠা")} {page + 1}/{pageCount}</span>
+                      <Button variant="outline" size="sm" className="h-7" disabled={page >= pageCount - 1} onClick={() => setPreviewPage((p) => Math.min(pageCount - 1, p + 1))}>
+                        {tx("Next", "পরবর্তী")} <ChevronRight className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  );
+                })()}
+              </div>
             </div>
           </CardContent>
         </Card>
