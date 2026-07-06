@@ -1339,9 +1339,10 @@ function GenerateTab({ seasons, offices, userId, isSuper }: any) {
   }
 
   async function preview() {
-    if (!seasonId) return toast.error(tx("Select a season", "সিজন বাছাই করুন"));
+    if (!validateAll()) return;
     setBusy(true);
     setSkippedNoRate(0);
+    setExcluded([]);
     try {
       let lq = db.from("lands").select("id, farmer_id, owner_farmer_id, land_size, office_id, dag_no, mouza, field_type, land_type_id, notes").is("deleted_at", null);
       if (officeId) lq = lq.eq("office_id", officeId);
@@ -1379,12 +1380,26 @@ function GenerateTab({ seasons, offices, userId, isSuper }: any) {
         // Legacy land without land_type_id → match by elevation enum.
         return !l.field_type || selectedFieldTypeFallback.size === 0 || selectedFieldTypeFallback.has(l.field_type);
       };
-      const eligible = (lands ?? []).filter(
-        (l: any) =>
-          Number(l.land_size) > 0 &&
-          !skip.has(l.id) &&
-          matchesLandTypeFilter(l),
-      );
+
+      // Land-type name lookup for excluded-land reporting.
+      const ltNameById = new Map(landTypeList.map((lt) => [lt.id, lt.name_bn || lt.name_en || lt.code || ""]));
+      const landTypeLabel = (l: any) =>
+        (l.land_type_id && ltNameById.get(l.land_type_id)) || l.field_type || "—";
+      const excludedArr: Array<{ dag: string; mouza: string; land_type: string; reason: string }> = [];
+      const addExcluded = (l: any, reason: string) =>
+        excludedArr.push({
+          dag: formatDagNumbers(l.dag_no) || "—",
+          mouza: l.mouza || "—",
+          land_type: landTypeLabel(l),
+          reason,
+        });
+
+      const eligible = (lands ?? []).filter((l: any) => {
+        if (!(Number(l.land_size) > 0)) { addExcluded(l, tx("Land size is zero", "জমির পরিমাণ শূন্য")); return false; }
+        if (skip.has(l.id)) { addExcluded(l, tx("Invoice already exists", "ইতিমধ্যে ইনভয়েস আছে")); return false; }
+        if (!matchesLandTypeFilter(l)) { addExcluded(l, tx("Land type not in selected filter", "জমির ধরন নির্বাচিত ফিল্টারে নেই")); return false; }
+        return true;
+      });
 
 
       const previewArr: any[] = [];
@@ -1399,7 +1414,7 @@ function GenerateTab({ seasons, offices, userId, isSuper }: any) {
           landTypeRate: landTypeRate ?? undefined,
           categoryRate: categoryInput ?? undefined,
         });
-        if (!(resolved.rate > 0)) { noRate++; continue; }
+        if (!(resolved.rate > 0)) { noRate++; addExcluded(l, tx("No configured rate for this land type", "জমির ধরনে রেট কনফিগার নেই")); continue; }
         // Phase 4: split billable area between owner and active sharecroppers
         const splits = await resolveBillingSplits(l.id, dueDate);
         for (const split of splits) {
