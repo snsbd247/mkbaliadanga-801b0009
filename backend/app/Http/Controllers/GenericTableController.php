@@ -540,6 +540,8 @@ class GenericTableController extends Controller
             ? array_map(fn ($r) => (array) $r, DB::table($table)->whereIn('id', $ids)->get()->all())
             : $prepared;
 
+        $this->recordAudit($request, 'create', $table, $ids, ['count' => count($prepared)]);
+
         return response()->json($inserted, 201);
     }
 
