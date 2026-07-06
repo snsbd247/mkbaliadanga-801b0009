@@ -120,7 +120,10 @@ export default function Users() {
           action: { label: t("retry"), onClick: () => callAdmin(payload) },
         });
       } else {
-        toast.error(raw || t("failedGeneric"));
+        const reqId = data?.request_id ? ` (ref: ${data.request_id})` : "";
+        toast.error((raw || t("failedGeneric")) + reqId, {
+          action: { label: t("retry"), onClick: () => callAdmin(payload) },
+        });
       }
       return null;
     }
