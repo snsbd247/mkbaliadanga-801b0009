@@ -1438,6 +1438,7 @@ function GenerateTab({ seasons, offices, userId, isSuper }: any) {
 
       setPreviewRows(previewArr.map((r) => ({ ...r, manualRate: "", manualReason: "" })));
       setSkippedNoRate(noRate);
+      setExcluded(excludedArr);
       // Fetch previous outstanding for the farmers in this preview
       try {
         const farmerIds = Array.from(new Set(previewArr.map((r) => r.billed.billed_farmer_id).filter(Boolean)));
