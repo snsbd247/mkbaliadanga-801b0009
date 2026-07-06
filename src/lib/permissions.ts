@@ -35,7 +35,7 @@ const HARDCODED_STAFF: Record<string, Perm> = {
   cashbook: VIEW_ONLY,
   approvals: VIEW_ONLY,
   offices: NONE, users: NONE, audit: NONE, settings: NONE,
-  accounting: NONE, sms: NONE, locations: NONE,
+  accounting: VIEW_ONLY, sms: NONE, locations: VIEW_ONLY,
   assets: { can_view: true, can_add: true, can_edit: false, can_delete: false },
 };
 
