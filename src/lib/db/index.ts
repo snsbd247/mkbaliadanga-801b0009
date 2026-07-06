@@ -63,6 +63,39 @@ export function sanitizeEmbedSelect(select: string): string {
   return kept.join(",");
 }
 
+function topLevelSelectParts(select: string): string[] {
+  if (!select || select === "*") return [select || "*"];
+  const parts: string[] = [];
+  let buf = "";
+  let paren = 0;
+  for (const ch of select) {
+    if (ch === "(") paren += 1;
+    else if (ch === ")") paren -= 1;
+    if (ch === "," && paren === 0) {
+      const t = buf.trim();
+      if (t) parts.push(t);
+      buf = "";
+      continue;
+    }
+    buf += ch;
+  }
+  const t = buf.trim();
+  if (t) parts.push(t);
+  return parts;
+}
+
+function appendScalarSelectColumns(select: string, columns: string[]): string {
+  if (!select || select === "*" || !columns.length) return select || "*";
+  const parts = topLevelSelectParts(select);
+  const present = new Set(
+    parts
+      .filter((p) => !p.includes("("))
+      .map((p) => p.split(":").pop()!.split("!")[0].trim()),
+  );
+  const missing = columns.filter((c) => !present.has(c));
+  return missing.length ? `${select},${missing.join(",")}` : select;
+}
+
 
 
 
@@ -193,8 +226,11 @@ class LaravelQueryBuilder<T = any> implements PromiseLike<Result<T>> {
         return { data: null as any, error: null, count: null };
       }
       // select
+      const selectCols = this.clientFilters.length
+        ? appendScalarSelectColumns(this.selectCols, this.clientFilters.map((f) => f.column))
+        : this.selectCols;
       const body = {
-        select: this.selectCols,
+        select: selectCols,
         filters: this.filters,
         order: this.orders,
         limit: this.clientFilters.length ? undefined : this._limit,
