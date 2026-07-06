@@ -477,6 +477,18 @@ export default function Payments() {
     }
   }
 
+  async function openInvoiceDetails(inv: any | null | undefined) {
+    if (!inv) return;
+    setDetailInvoice(inv);
+    setDetailTxns([]);
+    const { data } = await db
+      .from("irrigation_invoice_payments")
+      .select("id,collected_amount,created_at,payment_id")
+      .eq("invoice_id", inv.id)
+      .order("created_at", { ascending: false });
+    setDetailTxns((data as any[]) ?? []);
+  }
+
   const totalAmount = useMemo(() => allocs.reduce((s, a) => s + Number(a.amount || 0), 0), [allocs]);
 
   async function uploadReceipt(paymentId: string): Promise<string | null> {
