@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { db } from "@/lib/db";
 import { checkRpcContract } from "@/lib/db";
 import { postIrrigationDiscount, takeLastImbalance, checkRequiredAccounts, formatImbalance } from "@/lib/accountingPosting";
-import { resolveRowMouzaName } from "@/lib/mouzaQuery";
+import { resolveRowMouzaName, LANDS_EMBED } from "@/lib/mouzaQuery";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -164,7 +164,7 @@ function InvoiceListTab({ seasons, offices, isSuper }: any) {
     setLoading(true);
     let q = db
       .from("irrigation_invoices" as any)
-      .select("*, farmers!irrigation_invoices_farmer_id_fkey(name_en,name_bn,farmer_code,mobile), lands(dag_no,land_size,mouza,mouzas(name)), seasons(name,year,type), irrigation_invoice_payments(payments(receipt_no))")
+      .select(`*, farmers!irrigation_invoices_farmer_id_fkey(name_en,name_bn,farmer_code,mobile), ${LANDS_EMBED}, seasons(name,year,type), irrigation_invoice_payments(payments(receipt_no))`)
       .is("deleted_at", null)
       .order("generated_at", { ascending: false })
       .limit(500);
