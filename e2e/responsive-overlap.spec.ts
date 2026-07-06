@@ -22,6 +22,10 @@ const VIEWPORTS = [
   { name: "mobile",  width: 375,  height: 812 },
   { name: "tablet",  width: 768,  height: 1024 },
   { name: "desktop", width: 1440, height: 900 },
+  // Common desktop widths — guard report/cashbook headers against overlap
+  { name: "hd-1280",  width: 1280, height: 900 },
+  { name: "hd-1440",  width: 1440, height: 900 },
+  { name: "fhd-1920", width: 1920, height: 1080 },
 ] as const;
 
 // Public pages always testable

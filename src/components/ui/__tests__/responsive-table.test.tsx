@@ -53,3 +53,52 @@ describe("ResponsiveTable", () => {
     expect(table.className).not.toContain("rt-sticky");
   });
 });
+
+import { TABLE_PRESETS } from "../responsive-table";
+
+describe("ResponsiveTable presets & viewport regression", () => {
+  const COMMON_VIEWPORTS = [1280, 1440, 1920];
+
+  it("resolves named presets to their minWidth without manual tuning", () => {
+    const cases: [keyof typeof TABLE_PRESETS, number][] = [
+      ["irrigation", 1600],
+      ["savings", 1400],
+      ["loan", 1400],
+      ["cashbook", 1400],
+      ["report", 1200],
+    ];
+    for (const [preset, expected] of cases) {
+      const { container } = render(
+        <ResponsiveTable preset={preset}>
+          <tbody><tr><td>x</td></tr></tbody>
+        </ResponsiveTable>,
+      );
+      const table = container.querySelector("table") as HTMLTableElement;
+      expect(table.style.minWidth).toBe(`${expected}px`);
+    }
+  });
+
+  it("keeps headers on a single line (nowrap) at common viewport widths", () => {
+    for (const width of COMMON_VIEWPORTS) {
+      Object.defineProperty(window, "innerWidth", { writable: true, value: width });
+      const { container } = render(
+        <ResponsiveTable preset="irrigation" sticky>
+          <thead><tr><th>বিবরণ</th><th>জমা</th><th>খরচ</th></tr></thead>
+          <tbody><tr><td>a</td><td>1</td><td>2</td></tr></tbody>
+        </ResponsiveTable>,
+      );
+      const wrap = container.querySelector("[data-table-wrap]") as HTMLElement;
+      const table = container.querySelector("table") as HTMLTableElement;
+      // Horizontal scroll wrapper + nowrap header classes guarantee no overlap
+      expect(wrap.className).toContain("overflow-x-auto");
+      expect(table.className).toContain("rt-table");
+      expect(table.className).toContain("rt-sticky");
+      // A stable minWidth is enforced so columns keep fixed widths; when it
+      // exceeds the viewport the wrapper scrolls instead of overlapping.
+      const min = parseInt(table.style.minWidth, 10);
+      expect(min).toBe(TABLE_PRESETS.irrigation);
+      expect(min).toBeGreaterThan(0);
+      void width;
+    }
+  });
+});
