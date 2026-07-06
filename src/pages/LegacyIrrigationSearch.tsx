@@ -77,7 +77,7 @@ export default function LegacyIrrigationSearch() {
       // Search by farmer code only (original behaviour).
       const rows = await LegacyIrrigationApi.list({ farmer_code: q });
       setRecords(rows);
-      setTerm(q);
+      
       if (!rows.length) toast.info(tx("No records found", "কোনো রেকর্ড পাওয়া যায়নি"));
     } catch (e) {
       toast.error(e instanceof ApiError ? e.message : tx("Search failed", "সার্চ ব্যর্থ হয়েছে"));
