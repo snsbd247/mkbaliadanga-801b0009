@@ -91,9 +91,10 @@ class FunctionController extends Controller
         };
     }
 
-    private function adminUsersList(Request $request): JsonResponse
+    private function adminUsersList(Request $request, bool $isDeveloper = false, bool $isSuper = false): JsonResponse
     {
-        $scopeOffice = $request->attributes->get('scope_office_id');
+        // Developers and super admins bypass all office/role scoping and see every user.
+        $scopeOffice = ($isDeveloper || $isSuper) ? null : $request->attributes->get('scope_office_id');
         $users = User::query()
             ->when($scopeOffice, fn ($query) => $query->where('office_id', $scopeOffice))
             ->orderBy('name')
