@@ -456,6 +456,7 @@ export default function BankAccounts() {
           <TabsTrigger value="ledger">Ledger</TabsTrigger>
           <TabsTrigger value="deposits">Statement (জমা/উত্তোলন)</TabsTrigger>
           <TabsTrigger value="streams">৪ একাউন্ট (স্ট্রিম)</TabsTrigger>
+          <TabsTrigger value="acc_audit">Accounting Audit</TabsTrigger>
         </TabsList>
         <TabsContent value="accounts">
           <Card className="overflow-x-auto"><Table>
