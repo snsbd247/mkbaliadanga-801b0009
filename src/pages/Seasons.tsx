@@ -309,6 +309,38 @@ export default function Seasons() {
 
       <SeasonRatesDialog open={ratesOpen} onOpenChange={setRatesOpen} season={ratesSeason} />
       <CarryForwardDialog open={cfOpen} onOpenChange={setCfOpen} season={cfSeason} />
+      <Dialog open={auditOpen} onOpenChange={setAuditOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>{tx("Season audit log", "সিজন অডিট লগ")}</DialogTitle>
+          </DialogHeader>
+          <div className="max-h-[60vh] overflow-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>{tx("When", "সময়")}</TableHead>
+                  <TableHead>{tx("Action", "কাজ")}</TableHead>
+                  <TableHead>{tx("Season", "সিজন")}</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {auditRows.length === 0 ? (
+                  <TableRow><TableCell colSpan={3} className="text-center text-muted-foreground py-6">{tx("No records", "কোন রেকর্ড নেই")}</TableCell></TableRow>
+                ) : auditRows.map((r) => {
+                  const d = (r.new_data ?? r.old_data) ?? {};
+                  return (
+                    <TableRow key={r.id}>
+                      <TableCell className="text-xs whitespace-nowrap">{r.created_at ? new Date(r.created_at).toLocaleString() : "—"}</TableCell>
+                      <TableCell><Badge variant={r.action_type === "delete" ? "destructive" : r.action_type === "create" ? "default" : "secondary"}>{r.action_type}</Badge></TableCell>
+                      <TableCell className="text-xs">{d.name ?? d.type ?? "—"} {d.year ?? ""}</TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </div>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
