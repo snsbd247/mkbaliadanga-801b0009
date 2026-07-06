@@ -791,6 +791,9 @@ export const translations = {
     entriesWord: "entries",
     // Phase 3 (EN)
     pwAtLeastN: "At least {n} characters",
+    adminFnUnavailable: "User service is temporarily unavailable",
+    adminFnRetryHint: "The admin function may still be deploying or the network dropped. Please wait a moment and retry.",
+    retry: "Retry",
     pwPolicyPrefix: "Password policy",
     pwSuperHint: "At least 8 characters. Simple passwords (e.g. 123456789) are allowed.",
     pwStaffHint: "At least 8 characters. Simple passwords (e.g. 123456789) are allowed.",
@@ -2438,6 +2441,9 @@ export const translations = {
     entriesWord: "এন্ট্রি",
     // Phase 3 (BN)
     pwAtLeastN: "কমপক্ষে {n} অক্ষর",
+    adminFnUnavailable: "ইউজার সার্ভিস সাময়িকভাবে অনুপলব্ধ",
+    adminFnRetryHint: "অ্যাডমিন ফাংশন এখনও ডিপ্লয় হচ্ছে বা নেটওয়ার্ক বিচ্ছিন্ন হয়েছে। একটু অপেক্ষা করে আবার চেষ্টা করুন।",
+    retry: "পুনরায় চেষ্টা",
     pwPolicyPrefix: "পাসওয়ার্ড নীতি",
     pwSuperHint: "কমপক্ষে ৮ অক্ষর। সাধারণ পাসওয়ার্ড (যেমন 123456789) ব্যবহার করা যাবে।",
     pwStaffHint: "কমপক্ষে ৮ অক্ষর। সাধারণ পাসওয়ার্ড (যেমন 123456789) ব্যবহার করা যাবে।",
