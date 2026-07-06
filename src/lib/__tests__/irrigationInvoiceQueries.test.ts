@@ -5,12 +5,13 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 // route through fetchOpenIrrigationInvoices, so this covers both surfaces.
 const orderMock = vi.fn();
 const isMock = vi.fn();
+const gtMock = vi.fn();
 vi.mock("@/lib/db", () => {
   const builder: any = {
     select: vi.fn(() => builder),
     eq: vi.fn(() => builder),
     is: (...args: any[]) => isMock(...args),
-    gt: vi.fn(() => builder),
+    gt: (...args: any[]) => gtMock(...args),
     order: (...args: any[]) => orderMock(...args),
   };
   return { db: { from: vi.fn(() => builder) } };
@@ -21,6 +22,7 @@ import { fetchOpenIrrigationInvoices, fetchOpenIrrigationInvoicesResult } from "
 beforeEach(() => {
   orderMock.mockReset();
   isMock.mockReset();
+  gtMock.mockReset();
 });
 
 describe("fetchOpenIrrigationInvoices (shared by Payments & IrrigationPaymentPanel)", () => {
@@ -66,6 +68,20 @@ describe("fetchOpenIrrigationInvoices (shared by Payments & IrrigationPaymentPan
     const rows = await fetchOpenIrrigationInvoices("farmer-1", "id,due_amount");
     expect(rows.map((r) => r.id)).toEqual(["1"]);
     expect(isMock).not.toHaveBeenCalled();
+  });
+
+  it("never calls a server-side due_amount gt filter and drops non-due rows in JS", async () => {
+    orderMock.mockResolvedValue({
+      data: [
+        { id: "due", due_amount: 100, invoice_status: null, deleted_at: null },
+        { id: "paid", due_amount: 0, invoice_status: "paid", deleted_at: null },
+        { id: "negative", due_amount: -5, invoice_status: "generated", deleted_at: null },
+      ],
+      error: null,
+    });
+    const rows = await fetchOpenIrrigationInvoices("farmer-1", "id,due_amount,invoice_status");
+    expect(rows.map((r) => r.id)).toEqual(["due"]);
+    expect(gtMock).not.toHaveBeenCalled();
   });
 
   it("keeps invoices where deleted_at is undefined (column not selected)", async () => {
