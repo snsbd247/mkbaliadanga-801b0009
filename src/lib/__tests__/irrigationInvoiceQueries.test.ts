@@ -124,3 +124,32 @@ describe("filterInvoicesByStatus (Open/Cancelled UI filter)", () => {
     expect(filterInvoicesByStatus(null as any, "open")).toEqual([]);
   });
 });
+
+import { searchAndSortInvoices } from "../irrigationInvoiceQueries";
+
+describe("searchAndSortInvoices (Payments list search + sort)", () => {
+  const rows = [
+    { invoice_no: "INV-003", due_date: "2026-03-01", due_amount: 300 },
+    { invoice_no: "INV-001", due_date: "2026-01-15", due_amount: 100 },
+    { invoice_no: "INV-002", due_date: "2026-02-10", due_amount: 200 },
+  ] as any[];
+
+  it("searches by invoice number", () => {
+    expect(searchAndSortInvoices(rows, "inv-002", "invoice_no", "asc").map((r) => r.invoice_no)).toEqual(["INV-002"]);
+  });
+
+  it("searches by date substring", () => {
+    expect(searchAndSortInvoices(rows, "2026-03", "invoice_no", "asc").map((r) => r.due_amount)).toEqual([300]);
+  });
+
+  it("sorts by due_amount ascending and descending", () => {
+    expect(searchAndSortInvoices(rows, "", "due_amount", "asc").map((r) => r.due_amount)).toEqual([100, 200, 300]);
+    expect(searchAndSortInvoices(rows, "", "due_amount", "desc").map((r) => r.due_amount)).toEqual([300, 200, 100]);
+  });
+
+  it("sorts by invoice_no and does not mutate input", () => {
+    const before = rows.map((r) => r.invoice_no);
+    expect(searchAndSortInvoices(rows, "", "invoice_no", "asc").map((r) => r.invoice_no)).toEqual(["INV-001", "INV-002", "INV-003"]);
+    expect(rows.map((r) => r.invoice_no)).toEqual(before);
+  });
+});
