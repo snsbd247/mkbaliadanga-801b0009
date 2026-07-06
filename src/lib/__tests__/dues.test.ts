@@ -4,6 +4,7 @@ import {
   computeIrrigationDueByFarmer,
   isActiveInvoice,
   assertNoLegacyDueSource,
+  detectDueMismatch,
   type DueInvoiceRow,
 } from "../dues";
 
@@ -96,3 +97,26 @@ describe("assertNoLegacyDueSource", () => {
     spy.mockRestore();
   });
 });
+
+describe("detectDueMismatch", () => {
+  it("returns no mismatch when totals are equal", () => {
+    const r = detectDueMismatch(16833, 16833);
+    expect(r.mismatch).toBe(false);
+    expect(r.diff).toBe(0);
+  });
+
+  it("flags a mismatch when Payments drops an invoice", () => {
+    // Farmer list shows 16,833 but Payments only surfaces part of it.
+    const r = detectDueMismatch(16833, 0);
+    expect(r.mismatch).toBe(true);
+    expect(r.listDue).toBe(16833);
+    expect(r.paymentsDue).toBe(0);
+    expect(r.diff).toBe(16833);
+  });
+
+  it("tolerates sub-cent rounding noise", () => {
+    expect(detectDueMismatch(100.0, 100.4).mismatch).toBe(false);
+    expect(detectDueMismatch(100.0, 101).mismatch).toBe(true);
+  });
+});
+

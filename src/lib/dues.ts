@@ -47,6 +47,35 @@ export function computeIrrigationDueByFarmer(
 }
 
 // ---------------------------------------------------------------------------
+// Due mismatch detector.
+//
+// The Farmer List irrigation-due total and the sum of open invoices shown on
+// the Payments page MUST agree. If they diverge, an invoice is being dropped
+// somewhere (e.g. a filter regression) and dues would silently show wrong.
+// This helper compares both totals (with a tiny rounding tolerance) and returns
+// a structured result so callers can both surface a UI alert and log server-side.
+// ---------------------------------------------------------------------------
+
+export interface DueMismatchResult {
+  mismatch: boolean;
+  listDue: number;
+  paymentsDue: number;
+  diff: number;
+}
+
+export function detectDueMismatch(
+  listDue: number,
+  paymentsDue: number,
+  tolerance = 0.5,
+): DueMismatchResult {
+  const a = Number(listDue || 0);
+  const b = Number(paymentsDue || 0);
+  const diff = Math.round((a - b) * 100) / 100;
+  return { mismatch: Math.abs(diff) > tolerance, listDue: a, paymentsDue: b, diff };
+}
+
+
+// ---------------------------------------------------------------------------
 // Legacy-source guard.
 //
 // Any due calculation (client query or RPC/SQL) must read from

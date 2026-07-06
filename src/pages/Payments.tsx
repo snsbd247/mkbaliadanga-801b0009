@@ -3,7 +3,8 @@ import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { db } from "@/lib/db";
 import { fetchOpenIrrigationInvoices } from "@/lib/irrigationInvoiceQueries";
-import { invoiceStatusBadge } from "@/lib/dues";
+import { invoiceStatusBadge, computeIrrigationDue, detectDueMismatch } from "@/lib/dues";
+import { logAudit } from "@/lib/audit";
 import { fetchReceiptAuditLogs } from "@/lib/receiptAudit";
 import { postIrrigationCollection, takeLastImbalance, checkRequiredAccounts, formatImbalance } from "@/lib/accountingPosting";
 import { PageHeader } from "@/components/layout/PageHeader";
@@ -69,6 +70,7 @@ export default function Payments() {
   const [preview, setPreview] = useState<{ data: BnReceiptData; copy: ReceiptCopy } | null>(null);
   
   const [openIrr, setOpenIrr] = useState<any[]>([]);
+  const [dueMismatch, setDueMismatch] = useState<import("@/lib/dues").DueMismatchResult | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [idemKey, setIdemKey] = useState<string>(newKey());
@@ -378,6 +380,33 @@ export default function Payments() {
       "id,invoice_no,payable_amount,paid_amount,due_amount,due_date,generated_at,office_id,is_borga,delay_fee,maintenance_amount,canal_amount,irrigation_amount,other_charge,invoice_status",
     );
     setOpenIrr(rows);
+
+    // Cross-check: the Farmer List irrigation-due total (canonical) must equal
+    // the sum of open invoices we render here. If they diverge, an invoice is
+    // being dropped — surface a UI alert and log server-side so it can't hide.
+    try {
+      const { data: allRows } = await db
+        .from("irrigation_invoices")
+        .select("due_amount,invoice_status,deleted_at")
+        .eq("farmer_id", farmerId)
+        .is("deleted_at", null);
+      const listDue = computeIrrigationDue((allRows as any[]) ?? []);
+      const paymentsDue = rows.reduce((s: number, x: any) => s + Math.max(0, Number(x.due_amount || 0)), 0);
+      const result = detectDueMismatch(listDue, paymentsDue);
+      setDueMismatch(result.mismatch ? result : null);
+      if (result.mismatch) {
+        console.error("[due-mismatch]", { farmerId, ...result });
+        logAudit({
+          module: "payments",
+          action_type: "due_mismatch",
+          reference_id: farmerId,
+          new_data: { list_due: result.listDue, payments_due: result.paymentsDue, diff: result.diff },
+        }).catch(() => {});
+      }
+    } catch (e) {
+      console.warn("due mismatch check failed", e);
+    }
+
 
 
 
@@ -745,7 +774,20 @@ export default function Payments() {
               </div>
             )}
 
+            {dueMismatch && (
+              <div
+                role="alert"
+                data-testid="due-mismatch-alert"
+                className="rounded-md border border-destructive/50 bg-destructive/10 p-2 text-xs text-destructive"
+              >
+                {tx(
+                  `Due mismatch: Farmer list shows ৳${money(dueMismatch.listDue)} but open invoices total ৳${money(dueMismatch.paymentsDue)} (diff ৳${money(dueMismatch.diff)}). An invoice may be hidden — this has been logged.`,
+                  `বকেয়া অমিল: farmer list এ ৳${money(dueMismatch.listDue)} কিন্তু খোলা ইনভয়েসের যোগফল ৳${money(dueMismatch.paymentsDue)} (পার্থক্য ৳${money(dueMismatch.diff)})। কোনো ইনভয়েস লুকানো থাকতে পারে — লগ করা হয়েছে।`,
+                )}
+              </div>
+            )}
             <div className="space-y-2">
+
               <div className="flex items-center justify-between">
                 <Label>{t("allocations")}</Label>
                 <Button type="button" size="sm" variant="ghost" onClick={() => setAllocs([...allocs, { kind: "irrigation", reference_id: "", amount: 0 }])}>
