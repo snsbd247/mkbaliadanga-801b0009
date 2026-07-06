@@ -416,7 +416,7 @@ async function renderPdf(d: IrrigationInvoiceData, copy: InvoiceCopy, settings: 
 
 async function renderBulkPdf(items: IrrigationInvoiceData[], copy: InvoiceCopy, settings: InvoicePdfSettings): Promise<jsPDF> {
   const brand = await loadBranding();
-  const pdf = makePdf(settings);
+  const pdf = makePdf(settings, copy);
   for (let i = 0; i < items.length; i++) {
     if (i > 0) pdf.addPage();
     await paintInvoiceOnPage(pdf, items[i], brand, copy, settings);
