@@ -429,7 +429,10 @@ function copyHtml(d: BnReceiptData, copyLabel: string, signatureUrl: string | nu
     // 1. কৃষকের নাম ও আইডি / মালিকের নাম ও আইডি
     //    মালিক নিজে হলে শুধু মালিকের নাম; বর্গাদার হলে "বর্গাদার নাম / মালিকের নাম"।
     const idPart = `${d.farmer.name}${d.farmer.member_no ? "-" + digits(String(d.farmer.member_no), lang) : ""}`;
-    if (d.owner_self) {
+    if (d.cultivator_label && d.cultivator_label.trim()) {
+      // বর্গা রশিদ: "বর্গাদার - নাম/ মালিকের নাম-আইডি"
+      rows.push([t.farmerLine, `${d.cultivator_label.trim()}/ ${idPart}`]);
+    } else if (d.owner_self) {
       rows.push([t.farmerLine, idPart]);
     } else {
       const ownerPart = (d.land_owner_label && d.land_owner_label.trim())
