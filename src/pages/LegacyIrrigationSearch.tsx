@@ -157,7 +157,7 @@ export default function LegacyIrrigationSearch() {
               value={code}
               onChange={(e) => { setCode(e.target.value); if (inputError) setInputError(null); }}
               onKeyDown={(e) => e.key === "Enter" && doSearch()}
-              placeholder={tx("Farmer code (e.g. 2473), mobile (01700000000) or farmer ID", "ফার্মার কোড (যেমন 2473), মোবাইল (01700000000) বা ফার্মার আইডি")}
+              placeholder={tx("Farmer code (e.g. 2473)", "ফার্মার কোড (যেমন 2473)")}
               className="mt-2"
               aria-invalid={!!inputError}
               inputMode="numeric"
