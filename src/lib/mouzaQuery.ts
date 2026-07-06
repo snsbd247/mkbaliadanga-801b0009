@@ -1,5 +1,4 @@
 import { db } from "@/lib/db";
-import { isLaravelBackend } from "@/lib/backend";
 /**
  * Shared Mouza relation helpers.
  *
@@ -11,14 +10,13 @@ import { isLaravelBackend } from "@/lib/backend";
  * resolves through PostgREST when that FK exists. `resolveMouzaName` keeps a
  * text fallback (`lands.mouza`) so legacy rows without `mouza_id` still render.
  *
- * The Laravel/MySQL gateway (VPS) does not support PostgREST embed syntax, so
- * we drop the `mouzas(name)` embed there and rely on the `mouza` text column.
+ * The Laravel/MySQL gateway does not support the `mouzas(name)` embed, but the
+ * `db` adapter strips unsupported embeds automatically (see sanitizeEmbedSelect),
+ * so callers can use one embed string for both backends with no conditional logic.
  */
 
 /** Embed fragment for selecting a land row together with its mouza name. */
-export const LAND_MOUZA_FIELDS = isLaravelBackend
-  ? "dag_no,land_size,mouza"
-  : "dag_no,land_size,mouza,mouzas(name)";
+export const LAND_MOUZA_FIELDS = "dag_no,land_size,mouza,mouzas(name)";
 
 /** Full `lands(...)` embed for invoice/payment queries. */
 export const LANDS_EMBED = `lands(${LAND_MOUZA_FIELDS})`;

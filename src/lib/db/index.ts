@@ -22,6 +22,51 @@ type Order = { column: string; ascending: boolean };
 
 type Result<T = any> = { data: T; error: { message: string } | null; count: number | null };
 
+/**
+ * The Laravel/MySQL gateway does not support every PostgREST-style embed. Some
+ * nested embeds — like `mouzas(name)` inside `lands(...)` — are forwarded
+ * verbatim to MySQL and blow up with `Unknown column 'mouzas(name)'`.
+ *
+ * This sanitizer strips embeds whose relation name is in the unsupported set,
+ * at any nesting level, before the query runs. Scalar columns and supported
+ * embeds are preserved. It is a no-op for plain column lists and `*`.
+ *
+ * Rows still resolve those names through text-column fallbacks (e.g.
+ * `resolveMouzaName` uses `lands.mouza`), so no data is lost.
+ */
+const UNSUPPORTED_LARAVEL_EMBEDS = new Set(["mouzas"]);
+
+export function sanitizeEmbedSelect(select: string): string {
+  if (!select || select === "*" || !select.includes("(")) return select;
+  const parts: string[] = [];
+  let buf = "";
+  let paren = 0;
+  const flush = () => { const t = buf.trim(); if (t) parts.push(t); buf = ""; };
+  for (const ch of select) {
+    if (ch === "(") paren++;
+    else if (ch === ")") paren--;
+    if (ch === "," && paren === 0) { flush(); continue; }
+    buf += ch;
+  }
+  flush();
+
+  const kept: string[] = [];
+  for (const part of parts) {
+    const m = part.match(/^([^(]+)\((.*)\)$/s);
+    if (!m) { kept.push(part); continue; } // scalar column
+    const [, rawName, inner] = m;
+    // Strip an embed alias/hint (e.g. "owner:farmers!fk") down to the relation.
+    const relation = rawName.trim().split(":").pop()!.split("!")[0].trim();
+    if (UNSUPPORTED_LARAVEL_EMBEDS.has(relation)) continue;
+    kept.push(`${rawName.trim()}(${sanitizeEmbedSelect(inner)})`);
+  }
+  return kept.join(",");
+}
+
+
+
+
+
 class LaravelQueryBuilder<T = any> implements PromiseLike<Result<T>> {
   private table: string;
   private op: "select" | "insert" | "update" | "delete" = "select";
@@ -42,7 +87,7 @@ class LaravelQueryBuilder<T = any> implements PromiseLike<Result<T>> {
 
   // ── terminal/projection ──
   select(cols = "*", opts?: { count?: "exact" | "planned" | "estimated"; head?: boolean }) {
-    this.selectCols = cols || "*";
+    this.selectCols = sanitizeEmbedSelect(cols || "*");
     if (opts?.count) this._count = true;
     if (this.op === "insert" || this.op === "update" || this.op === "delete") {
       this._returnRows = true;
