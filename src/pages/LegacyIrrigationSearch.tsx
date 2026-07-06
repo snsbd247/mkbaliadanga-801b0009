@@ -53,9 +53,10 @@ export default function LegacyIrrigationSearch() {
     setSearching(true);
     setSelected(new Set());
     try {
-      const rows = await LegacyIrrigationApi.list({ farmer_code: code.trim() });
+      // Search by legacy code, mobile number, or farmer ID.
+      const rows = await LegacyIrrigationApi.list({ q: code.trim() });
       setRecords(rows);
-      if (!rows.length) toast.info(tx("No records found for this code", "এই কোডে কোনো রেকর্ড পাওয়া যায়নি"));
+      if (!rows.length) toast.info(tx("No records found", "কোনো রেকর্ড পাওয়া যায়নি"));
     } catch (e) {
       toast.error(e instanceof ApiError ? e.message : tx("Search failed", "সার্চ ব্যর্থ হয়েছে"));
     } finally {
@@ -113,18 +114,18 @@ export default function LegacyIrrigationSearch() {
     <div className="space-y-6">
       <PageHeader
         title={tx("Old Data (Legacy Irrigation)", "পুরনো ডাটা (সেচ)")}
-        description={tx("Look up a farmer's old irrigation collection history by farmer code", "ফার্মার কোড দিয়ে কৃষকের পুরনো সেচ কালেকশন হিস্ট্রি দেখুন")}
+        description={tx("Look up a farmer's old irrigation history by farmer code, mobile number, or farmer ID", "ফার্মার কোড, মোবাইল নাম্বার বা ফার্মার আইডি দিয়ে কৃষকের পুরনো সেচ হিস্ট্রি দেখুন")}
       />
 
       <Card className="p-4">
         <div className="flex items-end gap-2">
           <div className="flex-1 max-w-xs">
-            <Label>{tx("Farmer Code", "ফার্মার কোড")}</Label>
+            <Label>{tx("Farmer Code / Mobile / Farmer ID", "ফার্মার কোড / মোবাইল / ফার্মার আইডি")}</Label>
             <Input
               value={code}
               onChange={(e) => setCode(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && doSearch()}
-              placeholder={tx("e.g. 2473", "যেমন 2473")}
+              placeholder={tx("e.g. 2473 or 01700000000", "যেমন 2473 বা 01700000000")}
               className="mt-2"
             />
           </div>
