@@ -396,8 +396,11 @@ export default function Payments() {
       setDueMismatch(result.mismatch ? result : null);
       if (result.mismatch) {
         console.error("[due-mismatch]", { farmerId, ...result });
-        logAudit("due_mismatch", "irrigation_invoices", farmerId, {
-          list_due: result.listDue, payments_due: result.paymentsDue, diff: result.diff,
+        logAudit({
+          module: "payments",
+          action_type: "due_mismatch",
+          reference_id: farmerId,
+          new_data: { list_due: result.listDue, payments_due: result.paymentsDue, diff: result.diff },
         }).catch(() => {});
       }
     } catch (e) {
