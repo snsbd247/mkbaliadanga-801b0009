@@ -83,7 +83,32 @@ export default function BankAccounts() {
       sb.from("bank_transactions").select("*, account:bank_accounts!bank_transactions_bank_account_id_fkey(bank_name,account_no)").order("txn_date", { ascending: false }).limit(500),
     ]);
     setAccounts(acc ?? []); setTxns(trx ?? []);
+    void loadOpeningStatus();
   }
+
+  // Load opening-post ledger status (journal + ledger entry counts, last run)
+  // and the bank-opening audit trail.
+  async function loadOpeningStatus() {
+    try {
+      const [{ data: journals }, { data: audit }] = await Promise.all([
+        sb.from("journal_entries").select("id,posted_at,created_at").like("reference", "OPENING-BANK-%").is("deleted_at", null),
+        sb.from("system_audit_logs").select("*").eq("module", "bank_opening").order("created_at", { ascending: false }).limit(50),
+      ]);
+      const jids = (journals ?? []).map((j: any) => j.id);
+      let ledgerCount = 0;
+      if (jids.length) {
+        const { count } = await sb.from("ledger_entries").select("id", { count: "exact", head: true }).eq("reference_type", "journal").in("reference_id", jids);
+        ledgerCount = count ?? 0;
+      }
+      const lastRun = (journals ?? []).reduce((mx: string | null, j: any) => {
+        const t = j.posted_at || j.created_at;
+        return !mx || (t && t > mx) ? t : mx;
+      }, null as string | null);
+      setOpeningStatus({ journalCount: jids.length, ledgerCount, lastRun });
+      setOpeningAudit(audit ?? []);
+    } catch { /* status is best-effort */ }
+  }
+
 
   const balances = useMemo(() => {
     const map = new Map<string, number>();
