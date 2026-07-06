@@ -115,6 +115,11 @@ export default function BankAccounts() {
       void logAudit({ office_id: created?.office_id ?? null, module: "bank_account", action_type: "create", reference_id: created?.id ?? null, new_data: created ?? a });
       if (created?.id) {
         void postBankOpening({ bankAccountId: created.id, openingBalance: Number(created.opening_balance || 0), bankLabel: `${a.bank_name} ${a.account_no}`, officeId: created?.office_id ?? null, createdBy: user?.id });
+      }
+      toast.success("Account added");
+    }
+    setOpenA(false); setEditAccId(null); load();
+    setA(emptyAccount());
   }
 
   // Backfill: post any bank account's opening balance that has no opening journal yet.
@@ -127,11 +132,6 @@ export default function BankAccounts() {
       if (res === "posted") posted++; else if (res === "exists") existed++;
     }
     toast.success(`ওপেনিং পোস্ট সম্পন্ন — নতুন: ${posted}, আগে থেকেই ছিল: ${existed}`);
-  }
-      toast.success("Account added");
-    }
-    setOpenA(false); setEditAccId(null); load();
-    setA(emptyAccount());
   }
 
   async function confirmDelete() {
