@@ -1,5 +1,6 @@
 import { db } from "@/lib/db";
 import { isLaravelBackend } from "@/lib/backend";
+import { logDiagnostic } from "@/lib/diagnostics";
 
 const MISSING_RPC_HINTS = [
   "not available on this server",
