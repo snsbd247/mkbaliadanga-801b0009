@@ -80,7 +80,15 @@ export default function Payments() {
   // Per-farmer invoice cache to avoid redundant refetches on revisit.
   const invoiceCacheRef = useRef<Map<string, any[]>>(new Map());
   const [cancelledIrr, setCancelledIrr] = useState<any[]>([]);
-  const displayInvoices = invoiceFilter === "open" ? openIrr : cancelledIrr;
+  const [invoiceSearch, setInvoiceSearch] = useState("");
+  const [invoiceSort, setInvoiceSort] = useState<import("@/lib/irrigationInvoiceQueries").InvoiceSortKey>("due_date");
+  const [invoiceSortDir, setInvoiceSortDir] = useState<import("@/lib/irrigationInvoiceQueries").SortDir>("asc");
+  const [detailInvoice, setDetailInvoice] = useState<any | null>(null);
+  const [detailTxns, setDetailTxns] = useState<any[]>([]);
+  const displayInvoices = useMemo(
+    () => searchAndSortInvoices(invoiceFilter === "open" ? openIrr : cancelledIrr, invoiceSearch, invoiceSort, invoiceSortDir),
+    [invoiceFilter, openIrr, cancelledIrr, invoiceSearch, invoiceSort, invoiceSortDir],
+  );
   const [isAdmin, setIsAdmin] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [idemKey, setIdemKey] = useState<string>(newKey());
