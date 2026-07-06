@@ -163,7 +163,7 @@ export default function ReceiptTemplatePage() {
         actions={
           <div className="flex gap-2">
             <Button variant="outline" size="sm" onClick={reset}><RotateCcw className="h-4 w-4" />Reset</Button>
-            <Button size="sm" onClick={save} disabled={saving}>
+            <Button size="sm" onClick={save} disabled={saving || !!serialError}>
               {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}Save
             </Button>
           </div>
