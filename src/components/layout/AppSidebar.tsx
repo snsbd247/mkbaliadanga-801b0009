@@ -156,7 +156,7 @@ export function AppSidebar() {
     {
       key: "accounting", icon: Calculator, label: t("accounting"),
       children: [
-        { url: "/financial-summary", icon: PieChart, label: t("bn") === "bn" ? "আর্থিক সারসংক্ষেপ" : "Financial Summary", permKey: "accounting" },
+        { url: "/financial-summary", icon: PieChart, label: lang === "bn" ? "আর্থিক সারসংক্ষেপ" : "Financial Summary", permKey: "accounting" },
         { url: "/finance-summary", icon: PieChart, label: t("financeSummary"), permKey: "accounting" },
         { url: "/accounts", icon: BookText, label: t("chartOfAccounts"), permKey: "accounting" },
         { url: "/ledger", icon: Calculator, label: t("generalLedger"), permKey: "accounting" },
