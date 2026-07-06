@@ -1756,7 +1756,7 @@ function GenerateTab({ seasons, offices, userId, isSuper }: any) {
 
       const totals = new Map<string, number>();
       const oldByFarmer = new Map<string, string[]>();
-      for (const r of ((old as any[]) ?? [])) {
+      for (const r of ((old as any[]) ?? []).filter((r: any) => r.invoice_status !== "carried_forward")) {
         // Carry only principal dues — exclude the late fee (জরিমানা) so it doesn't roll into the new season.
         const carryAmt = Math.max(0, Number(r.due_amount || 0) - Number(r.delay_fee || 0));
         if (carryAmt <= 0) continue;
