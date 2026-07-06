@@ -42,7 +42,7 @@ export function InvoiceStatusCheckCard() {
   const ok = nullCount === 0;
 
   return (
-    <Card>
+    <Card data-testid="invoice-status-check-card">
       <CardHeader className="flex flex-row items-center justify-between pb-2">
         <CardTitle className="text-sm">{tx("Invoice status backfill", "ইনভয়েস স্ট্যাটাস ব্যাকফিল")}</CardTitle>
         <Button variant="outline" size="sm" onClick={check} disabled={loading} aria-label={tx("Re-check", "পুনরায় যাচাই")}>
