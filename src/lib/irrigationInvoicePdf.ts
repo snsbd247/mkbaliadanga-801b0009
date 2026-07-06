@@ -191,7 +191,7 @@ function copyHtml(d: IrrigationInvoiceData, brand: CompanyBranding, copyLabel: s
   const seasonLabel = [d.season?.name ?? d.season?.type, d.season?.year].filter(Boolean).join(" ");
 
   const logoBlock = brand.logo_url
-    ? `<img src="${brand.logo_url}" crossorigin="anonymous" style="height:${wide ? 34 : 42}px;display:block;margin:0 auto 2px;" />`
+    ? `<img src="${brand.logo_url}" crossorigin="anonymous" style="height:${wide ? 40 : 46}px;display:block;" />`
     : "";
 
   const orgName = brand.company_name_bn ?? brand.company_name ?? "";
