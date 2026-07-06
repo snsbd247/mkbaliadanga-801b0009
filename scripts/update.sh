@@ -279,6 +279,11 @@ chmod -R 775 "${APP_DIR}/backend/storage" "${APP_DIR}/backend/bootstrap/cache"
 log "Rebuilding frontend…"
 cd "${APP_DIR}"
 npm install
+# Fix known npm vulnerabilities before building (non-fatal if nothing to fix).
+log "  → running: npm audit fix"
+npm audit fix || warn "  ✗ npm audit fix reported problems — continuing"
+log "  → running: npm audit fix --force"
+npm audit fix --force || warn "  ✗ npm audit fix --force reported problems — continuing"
 npm run build
 
 # ──────────────────────────────────────────────────────────────────────────
