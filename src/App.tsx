@@ -360,6 +360,7 @@ const App = () => (
                 <Route path="/admin/qr-rotation" element={<RequireRole roles={["super_admin"]}><QrRotation /></RequireRole>} />
                 <Route path="/admin/bulk-cards" element={<RequirePerm module="farmers"><BulkCards /></RequirePerm>} />
                 <Route path="/admin/receipt-template" element={<RequireRole roles={["super_admin"]}><ReceiptTemplate /></RequireRole>} />
+                <Route path="/admin/receipt-serial-audit" element={<RequireRole roles={["super_admin"]}><ReceiptSerialAudit /></RequireRole>} />>
                 <Route path="/admin/card-designer" element={<RequireRole roles={["super_admin"]}><CardDesigner /></RequireRole>} />
                 <Route path="/admin/role-matrix" element={<RequireDeveloper><RoleMatrix /></RequireDeveloper>} />
                 <Route path="/admin/user-roles" element={<RequireRole roles={["super_admin"]}><UserRoles /></RequireRole>} />
