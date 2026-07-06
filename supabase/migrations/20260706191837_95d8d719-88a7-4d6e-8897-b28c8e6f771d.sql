@@ -100,3 +100,5 @@ $function$;
 
 REVOKE ALL ON FUNCTION public.admin_set_receipt_serial_start(bigint) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.admin_set_receipt_serial_start(bigint) TO authenticated;
+
+NOTIFY pgrst, 'reload schema';
