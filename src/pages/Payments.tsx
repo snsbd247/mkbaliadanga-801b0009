@@ -379,21 +379,39 @@ export default function Payments() {
     if (error) return toast.error(error.message);
     toast.success(t("restored")); load();
   }
-  async function loadDues() {
+  async function loadDues(opts?: { force?: boolean }) {
+    const fid = farmerId;
+    // Serve from cache on revisit unless a forced refresh is requested.
+    if (!opts?.force && invoiceCacheRef.current.has(fid)) {
+      const cached = invoiceCacheRef.current.get(fid)!;
+      setOpenIrr(cached);
+      setInvoiceEmpty(!!fid && cached.length === 0);
+      return;
+    }
+    // Concurrency guard: only the latest request may commit its result.
+    const reqId = ++dueReqRef.current;
+    setInvoiceLoading(true);
     // Shared query util keeps filtering identical to IrrigationPaymentPanel and
     // keeps NULL invoice_status invoices visible (see irrigationInvoiceQueries).
     const { rows, error, traceId } = await fetchOpenIrrigationInvoicesResult(
-      farmerId,
+      fid,
       "id,invoice_no,payable_amount,paid_amount,due_amount,due_date,generated_at,office_id,is_borga,delay_fee,maintenance_amount,canal_amount,irrigation_amount,other_charge,invoice_status",
     );
+    // Ignore stale responses (a newer farmer selection has superseded this one).
+    if (reqId !== dueReqRef.current) return;
+    setInvoiceLoading(false);
     if (error) {
-      toast.error(tx(`Failed to load invoices (trace: ${traceId}): ${error.message}`, `ইনভয়েস লোড ব্যর্থ (ট্রেস: ${traceId}): ${error.message}`));
+      toast.error(
+        tx(`Failed to load invoices (trace: ${traceId})`, `ইনভয়েস লোড ব্যর্থ (ট্রেস: ${traceId})`),
+        { description: error.message, action: { label: tx("Retry", "আবার চেষ্টা"), onClick: () => loadDues({ force: true }) } },
+      );
     }
+    if (!error) invoiceCacheRef.current.set(fid, rows);
     setOpenIrr(rows);
     // Diagnose missing invoices: flag when a farmer is selected but nothing came back.
-    const isEmpty = !error && !!farmerId && rows.length === 0;
+    const isEmpty = !error && !!fid && rows.length === 0;
     setInvoiceEmpty(isEmpty);
-    if (isEmpty) console.warn("[payments] no open irrigation invoices returned for farmer", farmerId);
+    if (isEmpty) console.warn("[payments] no open irrigation invoices returned for farmer", fid);
 
     // Cross-check: the Farmer List irrigation-due total (canonical) must equal
     // the sum of open invoices we render here. If they diverge, an invoice is
