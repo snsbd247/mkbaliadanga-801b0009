@@ -146,18 +146,18 @@ export default function Seasons() {
         title={t("seasons")}
         actions={
           isAdmin && (
-            <Dialog open={open} onOpenChange={setOpen}>
+            <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) { setEditId(null); setForm(emptyForm); } }}>
               <div className="inline-flex gap-2">
                 <Button variant="outline" onClick={generateNext}>
                   <Plus className="h-4 w-4 mr-1" />{tx("Generate next (6 months)", "নতুন সিজন অটো (৬ মাস)")}
                 </Button>
                 <DialogTrigger asChild>
-                  <Button><Plus className="h-4 w-4 mr-1" />{t("addNew")}</Button>
+                  <Button onClick={() => { setEditId(null); setForm(emptyForm); }}><Plus className="h-4 w-4 mr-1" />{t("addNew")}</Button>
                 </DialogTrigger>
               </div>
               <DialogContent className="max-w-lg">
                 <DialogHeader>
-                  <DialogTitle>{t("addNew")} — {t("seasons")}</DialogTitle>
+                  <DialogTitle>{editId ? tx("Edit", "এডিট") : t("addNew")} — {t("seasons")}</DialogTitle>
                 </DialogHeader>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
