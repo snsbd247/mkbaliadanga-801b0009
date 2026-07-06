@@ -12,8 +12,10 @@ import { db } from "@/lib/db";
 
 const ACC = {
   cash: { code: "1010", name: "Cash", name_bn: "নগদ", type: "asset" },
+  bank: { code: "1020", name: "Bank", name_bn: "ব্যাংক", type: "asset" },
   irrigationIncome: { code: "4010", name: "Irrigation Income", name_bn: "সেচ আয়", type: "income" },
   discountExpense: { code: "5050", name: "Discount Expense", name_bn: "ডিসকাউন্ট খরচ", type: "expense" },
+  openingEquity: { code: "3000", name: "Opening Balance Equity", name_bn: "প্রারম্ভিক জের (মূলধন)", type: "equity" },
 } as const;
 
 const cache = new Map<string, string>();
