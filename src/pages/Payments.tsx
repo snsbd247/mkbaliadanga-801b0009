@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { db } from "@/lib/db";
-import { fetchOpenIrrigationInvoices } from "@/lib/irrigationInvoiceQueries";
+import { fetchOpenIrrigationInvoices, fetchOpenIrrigationInvoicesResult } from "@/lib/irrigationInvoiceQueries";
 import { invoiceStatusBadge, computeIrrigationDue, detectDueMismatch } from "@/lib/dues";
 import { logAudit } from "@/lib/audit";
 import { fetchReceiptAuditLogs } from "@/lib/receiptAudit";
