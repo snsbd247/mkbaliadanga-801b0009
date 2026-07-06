@@ -72,6 +72,7 @@ class LaravelQueryBuilder<T = any> implements PromiseLike<Result<T>> {
   private op: "select" | "insert" | "update" | "delete" = "select";
   private selectCols = "*";
   private filters: Filter[] = [];
+  private clientFilters: Filter[] = [];
   private orders: Order[] = [];
   private _limit?: number;
   private _offset?: number;
@@ -125,6 +126,10 @@ class LaravelQueryBuilder<T = any> implements PromiseLike<Result<T>> {
     this.filters.push({ column, op, value });
     return this;
   }
+  private addClientFilter(column: string, op: string, value: unknown) {
+    this.clientFilters.push({ column, op, value });
+    return this;
+  }
   eq(c: string, v: unknown) { return this.addFilter(c, "eq", v); }
   neq(c: string, v: unknown) { return this.addFilter(c, "neq", v); }
   gt(c: string, v: unknown) { return this.addFilter(c, "gt", v); }
@@ -134,8 +139,17 @@ class LaravelQueryBuilder<T = any> implements PromiseLike<Result<T>> {
   like(c: string, v: unknown) { return this.addFilter(c, "like", v); }
   ilike(c: string, v: unknown) { return this.addFilter(c, "ilike", v); }
   in(c: string, v: unknown[]) { return this.addFilter(c, "in", v); }
-  is(c: string, v: unknown) { return this.addFilter(c, "is", v); }
-  not(c: string, op: string, v: unknown) { return this.addFilter(c, `not.${op}`, v); }
+  is(c: string, v: unknown) {
+    // The Laravel/MySQL generic gateway does not understand PostgREST's `is`
+    // operator and produces SQL like `Unknown column 'is'`. Keep it as a
+    // client-side select filter so screens do not break when they ask for
+    // `deleted_at IS NULL` rows.
+    return this.addClientFilter(c, "is", v);
+  }
+  not(c: string, op: string, v: unknown) {
+    if (op === "is") return this.addClientFilter(c, "not.is", v);
+    return this.addFilter(c, `not.${op}`, v);
+  }
   or(expr: string) { return this.addFilter("__or", "or", expr); }
   match(obj: Record<string, unknown>) {
     Object.entries(obj).forEach(([c, v]) => this.addFilter(c, "eq", v));
@@ -159,6 +173,9 @@ class LaravelQueryBuilder<T = any> implements PromiseLike<Result<T>> {
   // ── execution ──
   private async run(): Promise<Result<T>> {
     try {
+      if (this.op !== "select" && this.clientFilters.length) {
+        return { data: null as any, error: { message: "Unsupported null filter for mutation" }, count: null };
+      }
       if (this.op === "insert") {
         const { data } = await api.post(`/db/${this.table}`, this.payload);
         const rows = Array.isArray(data) ? data : [data];
@@ -180,17 +197,24 @@ class LaravelQueryBuilder<T = any> implements PromiseLike<Result<T>> {
         select: this.selectCols,
         filters: this.filters,
         order: this.orders,
-        limit: this._limit,
-        offset: this._offset,
+        limit: this.clientFilters.length ? undefined : this._limit,
+        offset: this.clientFilters.length ? undefined : this._offset,
         single: false,
         count: this._count && !this._returnRowsForCount(),
       };
       if (this._count) {
+        if (this.clientFilters.length) {
+          const { data } = await api.post(`/db/${this.table}/query`, { ...body, count: false });
+          const rawRows = Array.isArray(data) ? data : data == null ? [] : [data];
+          const rows = this.applyLocalWindow(this.applyClientFilters(rawRows));
+          return { data: [] as any, error: null, count: rows.length };
+        }
         const { data } = await api.post(`/db/${this.table}/query`, { ...body, count: true });
         return { data: [] as any, error: null, count: data?.count ?? 0 };
       }
       const { data } = await api.post(`/db/${this.table}/query`, body);
-      const rows = Array.isArray(data) ? data : data == null ? [] : [data];
+      const rawRows = Array.isArray(data) ? data : data == null ? [] : [data];
+      const rows = this.applyLocalWindow(this.applyClientFilters(rawRows));
       return this.shape(rows);
     } catch (e: any) {
       return { data: null as any, error: { message: e?.message || "Request failed" }, count: null };
@@ -198,6 +222,23 @@ class LaravelQueryBuilder<T = any> implements PromiseLike<Result<T>> {
   }
 
   private _returnRowsForCount() { return false; }
+
+  private applyClientFilters(rows: any[]) {
+    if (!this.clientFilters.length) return rows;
+    return rows.filter((row) => this.clientFilters.every((f) => {
+      const value = row?.[f.column];
+      if (f.op === "is") return f.value === null ? value == null : value === f.value;
+      if (f.op === "not.is") return f.value === null ? value != null : value !== f.value;
+      return true;
+    }));
+  }
+
+  private applyLocalWindow(rows: any[]) {
+    if (!this.clientFilters.length) return rows;
+    const offset = this._offset ?? 0;
+    const end = this._limit == null ? undefined : offset + this._limit;
+    return rows.slice(offset, end);
+  }
 
   private shape(rows: any[]): Result<T> {
     if (this._single || this._maybeSingle) {
