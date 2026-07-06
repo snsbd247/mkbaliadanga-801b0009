@@ -254,14 +254,21 @@ export default function ReceiptTemplatePage() {
               <Input
                 type="number"
                 min={0}
+                step={1}
                 value={serialStart}
                 onChange={(e) => setSerialStart(e.target.value)}
                 placeholder="যেমন 4641"
+                aria-invalid={!!serialError}
+                data-testid="serial-start-input"
               />
-              <p className="text-xs text-muted-foreground mt-1">
-                এই নম্বরের ঠিক পরের নম্বর থেকে রিসিপ্ট তৈরি শুরু হবে। যেমন 4641 দিলে প্রথম রিসিপ্ট হবে 4642।
-                নিরাপত্তার জন্য বর্তমান নম্বরের চেয়ে ছোট মান দিলে নম্বর পিছাবে না (ডুপ্লিকেট এড়াতে)।
-              </p>
+              {serialError ? (
+                <p className="text-xs text-destructive mt-1" data-testid="serial-start-error">{serialError}</p>
+              ) : (
+                <p className="text-xs text-muted-foreground mt-1">
+                  এই নম্বরের ঠিক পরের নম্বর থেকে রিসিপ্ট তৈরি শুরু হবে। যেমন 4641 দিলে প্রথম রিসিপ্ট হবে 4642।
+                  নিরাপত্তার জন্য বর্তমান নম্বরের চেয়ে ছোট মান দিলে নম্বর পিছাবে না (ডুপ্লিকেট এড়াতে)।
+                </p>
+              )}
             </div>
           </div>
 
