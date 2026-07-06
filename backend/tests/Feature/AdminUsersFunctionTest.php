@@ -109,7 +109,7 @@ class AdminUsersFunctionTest extends TestCase
         return $user->refresh();
     }
 
-    private function call(User $actor, array $payload, ?string $scopeOfficeId = null): array
+    private function callAction(User $actor, array $payload, ?string $scopeOfficeId = null): array
     {
         $request = Request::create('/api/fn/admin-users', 'POST', [], [], [], [], json_encode($payload));
         $request->headers->set('Content-Type', 'application/json');
@@ -133,7 +133,7 @@ class AdminUsersFunctionTest extends TestCase
         DB::table('offices')->insert(['id' => $officeId, 'name' => 'প্রধান কার্যালয়']);
         $developer = $this->userWithRole('dev', 'developer');
 
-        $res = $this->call($developer, [
+        $res = $this->callAction($developer, [
             'action' => 'create',
             'username' => 'rahmot123',
             'email' => 'rahmot123@example.test',
@@ -165,11 +165,11 @@ class AdminUsersFunctionTest extends TestCase
         $developer = $this->userWithRole('dev', 'developer');
         $target = $this->userWithRole('target', 'staff', $officeId);
 
-        $list = $this->call($developer, ['action' => 'list']);
+        $list = $this->callAction($developer, ['action' => 'list']);
         $this->assertSame(200, $list['status']);
         $this->assertContains($target->id, array_column($list['json']['users'], 'id'));
 
-        $edit = $this->call($developer, [
+        $edit = $this->callAction($developer, [
             'action' => 'update_profile',
             'user_id' => $target->id,
             'username' => 'target2',
@@ -180,15 +180,15 @@ class AdminUsersFunctionTest extends TestCase
         $this->assertSame(200, $edit['status']);
         $this->assertSame('target2', $target->refresh()->username);
 
-        $role = $this->call($developer, ['action' => 'set_role', 'user_id' => $target->id, 'role' => 'admin']);
+        $role = $this->callAction($developer, ['action' => 'set_role', 'user_id' => $target->id, 'role' => 'admin']);
         $this->assertSame(200, $role['status']);
         $this->assertSame(['admin'], $target->refresh()->roleNames());
 
-        $reset = $this->call($developer, ['action' => 'reset_password', 'user_id' => $target->id, 'password' => 'newpass123']);
+        $reset = $this->callAction($developer, ['action' => 'reset_password', 'user_id' => $target->id, 'password' => 'newpass123']);
         $this->assertSame(200, $reset['status']);
         $this->assertTrue(Hash::check('newpass123', $target->refresh()->password));
 
-        $delete = $this->call($developer, ['action' => 'delete', 'user_id' => $target->id]);
+        $delete = $this->callAction($developer, ['action' => 'delete', 'user_id' => $target->id]);
         $this->assertSame(200, $delete['status']);
         $this->assertDatabaseMissing('users', ['id' => $target->id]);
     }
@@ -200,7 +200,7 @@ class AdminUsersFunctionTest extends TestCase
         $staff = $this->userWithRole('staffuser', 'staff', $officeId);
 
         foreach (['list', 'delete', 'reset_password', 'set_role', 'update_profile', 'create'] as $action) {
-            $res = $this->call($staff, ['action' => $action, 'user_id' => $staff->id]);
+            $res = $this->callAction($staff, ['action' => $action, 'user_id' => $staff->id]);
             $this->assertSame(403, $res['status'], "Action {$action} should be forbidden for staff");
         }
     }
@@ -218,7 +218,7 @@ class AdminUsersFunctionTest extends TestCase
         $userB = $this->userWithRole('userb', 'staff', $officeB);
 
         // Even with a restrictive office scope, a developer must see every user.
-        $list = $this->call($developer, ['action' => 'list'], $officeA);
+        $list = $this->callAction($developer, ['action' => 'list'], $officeA);
         $this->assertSame(200, $list['status']);
         $ids = array_column($list['json']['users'], 'id');
         $this->assertContains($userA->id, $ids);
@@ -231,7 +231,7 @@ class AdminUsersFunctionTest extends TestCase
         DB::table('offices')->insert(['id' => $officeId, 'name' => 'কার্যালয়']);
         $superAdmin = $this->userWithRole('super', 'super_admin');
 
-        $res = $this->call($superAdmin, [
+        $res = $this->callAction($superAdmin, [
             'action' => 'create',
             'username' => 'staffbysuper',
             'email' => 'staffbysuper@example.test',
@@ -243,17 +243,17 @@ class AdminUsersFunctionTest extends TestCase
         $this->assertSame(201, $res['status']);
         $userId = $res['json']['user_id'];
 
-        $update = $this->call($superAdmin, ['action' => 'set_role', 'user_id' => $userId, 'role' => 'committee']);
+        $update = $this->callAction($superAdmin, ['action' => 'set_role', 'user_id' => $userId, 'role' => 'committee']);
         $this->assertSame(200, $update['status']);
 
-        $del = $this->call($superAdmin, ['action' => 'delete', 'user_id' => $userId]);
+        $del = $this->callAction($superAdmin, ['action' => 'delete', 'user_id' => $userId]);
         $this->assertSame(200, $del['status']);
     }
 
     public function test_super_admin_cannot_create_developer_or_super_admin(): void
     {
         $superAdmin = $this->userWithRole('super', 'super_admin');
-        $res = $this->call($superAdmin, [
+        $res = $this->callAction($superAdmin, [
             'action' => 'create',
             'username' => 'wannabedev',
             'email' => 'wannabedev@example.test',
@@ -268,7 +268,7 @@ class AdminUsersFunctionTest extends TestCase
     public function test_create_validation_errors_return_422(): void
     {
         $developer = $this->userWithRole('dev', 'developer');
-        $res = $this->call($developer, [
+        $res = $this->callAction($developer, [
             'action' => 'create',
             'username' => 'ab', // too short
             'email' => 'not-an-email',
