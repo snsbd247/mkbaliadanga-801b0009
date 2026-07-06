@@ -457,7 +457,7 @@ function copyHtml(d: BnReceiptData, copyLabel: string, signatureUrl: string | nu
       ? Number(d.rate_per_bigha)
       : ratePerBighaFromAcre(ratePerAcre);
     const unit = lang === "bn" ? "টাকা" : "";
-    const rateText = ratePerAcre != null ? `${moneyInt(ratePerAcre, lang, unit)}/${moneyInt(ratePerBigha ?? 0, lang, unit)}` : "";
+    const rateText = ratePerAcre != null ? `${rateMoney(ratePerAcre, lang, unit)}/${rateMoney(ratePerBigha ?? 0, lang, unit)}` : "";
     rows.push([t.landKind, [normalizeLandTypeText(d.farmer.field_type_bn, d.bill_info), rateText].filter(Boolean).join("/ ") || "—"]);
     // 7. দাগ নং (একাধিক হতে পারে) — ডেমো অনুযায়ী ডট-সেপারেটেড
     const dagTokens = parseDagNumbers(d.farmer.dag_no);
