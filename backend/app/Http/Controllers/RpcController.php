@@ -1064,4 +1064,35 @@ class RpcController extends Controller
         }
         return null;
     }
+
+    // ── RPC fallback audit (traces the permanent invoice fix in production) ──
+    protected function rpc_log_rpc_fallback(array $p, Request $request): ?string
+    {
+        try {
+            if (! Schema::hasTable('audit_logs')) {
+                return null;
+            }
+            $user = $request->user();
+            $detail = [
+                'rpc'        => $p['rpc'] ?? 'unknown',
+                'land_id'    => $p['land_id'] ?? null,
+                'office'     => $user->office_id ?? $user->office ?? null,
+                'request_id' => $p['request_id'] ?? (string) Str::uuid(),
+                'error'      => $p['error'] ?? null,
+            ];
+            DB::table('audit_logs')->insert([
+                'id'          => (string) Str::uuid(),
+                'user_id'     => $user->id ?? null,
+                'action'      => 'rpc.fallback_used',
+                'entity_type' => 'rpc',
+                'entity_id'   => $detail['land_id'],
+                'details'     => json_encode($detail),
+                'created_at'  => now(),
+            ]);
+            return $detail['request_id'];
+        } catch (\Throwable $e) {
+            // Audit failures must never break the caller.
+        }
+        return null;
+    }
 }
