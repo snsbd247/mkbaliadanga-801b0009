@@ -1,0 +1,55 @@
+import { describe, it, expect } from "vitest";
+import { render } from "@testing-library/react";
+import { ResponsiveTable } from "../responsive-table";
+
+describe("ResponsiveTable", () => {
+  it("applies min-width and sticky header classes for scroll + visible labels", () => {
+    const { container } = render(
+      <ResponsiveTable minWidth={1400} sticky>
+        <thead>
+          <tr>
+            <th>তারিখ</th>
+            <th>বিবরণ</th>
+            <th>জমা</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>2026-07-06</td>
+            <td>হাওলাত গ্রহণ</td>
+            <td>1000</td>
+          </tr>
+        </tbody>
+      </ResponsiveTable>,
+    );
+
+    const wrap = container.querySelector("[data-table-wrap]") as HTMLElement;
+    const table = container.querySelector("table") as HTMLTableElement;
+
+    // Horizontal scroll wrapper present
+    expect(wrap.className).toContain("overflow-x-auto");
+    expect(wrap.className).toContain("rt-scroll");
+
+    // Consistent min column layout enforced
+    expect(table.style.minWidth).toBe("1400px");
+
+    // Reusable + sticky header styling applied
+    expect(table.className).toContain("rt-table");
+    expect(table.className).toContain("rt-sticky");
+  });
+
+  it("omits sticky class when sticky is disabled", () => {
+    const { container } = render(
+      <ResponsiveTable sticky={false}>
+        <tbody>
+          <tr>
+            <td>x</td>
+          </tr>
+        </tbody>
+      </ResponsiveTable>,
+    );
+    const table = container.querySelector("table") as HTMLTableElement;
+    expect(table.className).toContain("rt-table");
+    expect(table.className).not.toContain("rt-sticky");
+  });
+});
