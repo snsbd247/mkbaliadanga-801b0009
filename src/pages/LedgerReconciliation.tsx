@@ -334,6 +334,25 @@ export default function LedgerReconciliation() {
             </div>
           </Card>
 
+          {bankCross && (
+            <Card className="p-4 mb-4">
+              <div className="text-sm font-semibold mb-2">Cash/Bank ক্রস-চেক (Bank statement বনাম লেজার)</div>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
+                <div><div className="text-xs text-muted-foreground">প্রকৃত ব্যাংক ব্যালেন্স (স্টেটমেন্ট)</div><div className="font-mono font-semibold">{fmt(bankCross.actual)}</div></div>
+                <div><div className="text-xs text-muted-foreground">লেজার ব্যাংক (1020) সমাপনী</div><div className="font-mono font-semibold">{fmt(bankCross.ledger)}</div></div>
+                <div>
+                  <div className="text-xs text-muted-foreground">পার্থক্য</div>
+                  <div className={`font-mono font-semibold ${Math.abs(bankCross.diff) > 0.01 ? "text-destructive" : "text-success"}`}>{fmt(bankCross.diff)}</div>
+                </div>
+              </div>
+              {Math.abs(bankCross.diff) > 0.01 && (
+                <div className="text-xs text-destructive mt-2 flex items-center gap-1"><AlertTriangle className="h-3 w-3" /> ব্যাংক লেনদেন সম্পূর্ণভাবে লেজারে পোস্ট হয়নি — "ওপেনিং পোস্ট" চালান বা জার্নাল যাচাই করুন।</div>
+              )}
+            </Card>
+          )}
+
+
+
           <Card className="mb-4">
             <Table>
               <TableHeader>
