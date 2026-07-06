@@ -278,6 +278,32 @@ class GenericTableController extends Controller
 
 
 
+        // Irrigation invoices must always satisfy
+        // due_amount = payable_amount - paid_amount. Older frontend code omitted
+        // due_amount from the insert payload, which left it at 0 on MySQL even
+        // when nothing was paid. Auto-correct it whenever the components are
+        // present so no invoice is written with a wrong/zero due.
+        if ($table === 'irrigation_invoices'
+            && array_key_exists('payable_amount', $row)) {
+            $payable = (float) ($row['payable_amount'] ?? 0);
+            $paid = (float) ($row['paid_amount'] ?? 0);
+            $expected = max($payable - $paid, 0);
+            $due = array_key_exists('due_amount', $row) ? (float) $row['due_amount'] : null;
+            if ($due === null || abs($due - $expected) > 0.001) {
+                if ($due !== null && abs($due - $expected) > 0.001) {
+                    \Log::warning('irrigation_invoice.due_autocorrected', [
+                        'office_id' => $row['office_id'] ?? null,
+                        'farmer_id' => $row['farmer_id'] ?? null,
+                        'land_id' => $row['land_id'] ?? null,
+                        'invoice_no' => $row['invoice_no'] ?? null,
+                        'submitted_due' => $due,
+                        'expected_due' => $expected,
+                    ]);
+                }
+                $row['due_amount'] = $expected;
+            }
+        }
+
         // land_relations.valid_from is NOT NULL with no default on older
         // schemas. Backfill it so barga imports never fail on this column.
         if ($table === 'land_relations') {
