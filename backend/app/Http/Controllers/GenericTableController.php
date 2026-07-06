@@ -482,6 +482,7 @@ class GenericTableController extends Controller
     public function insert(Request $request, string $table): JsonResponse
     {
         $table = $this->table($table);
+        $this->authorizeWrite($request, $table);
         $payload = $request->all();
         $rows = array_is_list($payload) ? $payload : [$payload];
         $now = now();
