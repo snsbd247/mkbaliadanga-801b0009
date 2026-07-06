@@ -386,7 +386,7 @@ export default function Payments() {
     const irrParam = params.get("irr");
     if (irrParam) {
       const ids = irrParam.split(",").map(s => s.trim()).filter(Boolean);
-      const matched = (i.data ?? []).filter((x: any) => ids.includes(x.id) && Number(x.due_amount || 0) > 0);
+      const matched = rows.filter((x: any) => ids.includes(x.id) && Number(x.due_amount || 0) > 0);
       if (matched.length) {
         setAllocs(matched.map((x: any) => ({ kind: "irrigation" as const, reference_id: x.id, amount: Number(x.due_amount) })));
         toast.success(`${matched.length} ${tx("invoices preloaded", "টি ইনভয়েস প্রিলোড হয়েছে")}`);
