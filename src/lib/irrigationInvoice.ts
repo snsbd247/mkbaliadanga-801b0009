@@ -259,6 +259,7 @@ export async function resolveBilledFarmer(land_id: string, as_of: string = new D
     }
   } catch (e) {
     console.warn("get_billed_farmer_for_land unavailable — using table fallback", e);
+    logRpcFallback("get_billed_farmer_for_land", land_id, e);
   }
 
   const splits = await resolveBillingSplitsFallback(land_id, as_of);
@@ -296,6 +297,7 @@ export async function resolveBillingSplits(
     rows = Array.isArray(data) ? data : [];
   } catch (e) {
     console.warn("get_land_billing_split unavailable — using single-farmer fallback", e);
+    logRpcFallback("get_land_billing_split", land_id, e);
     rows = [];
   }
   const splits = rows
