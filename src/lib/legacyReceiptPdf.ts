@@ -33,6 +33,12 @@ export function mapLegacyToReceiptData(
   const hal = r.rate ?? 0;
   const due = r.due_amount ?? 0;
   const paid = r.paid_amount ?? 0;
+  // Legacy `rate` is stored per বিঘা. Official receipt shows per একর / per বিঘা,
+  // where একর রেট = বিঘা রেট × ১০০ / ৩৩ (1 bigha = 33 shotok, 1 acre = 100 shotok).
+  const bighaRate = r.rate ?? null;
+  const acreRate = bighaRate != null ? (bighaRate * 100) / 33 : null;
+  // বর্গা রেকর্ড হলে কৃষক লাইনে "বর্গাদার - নাম" আগে, তারপর মালিকের নাম/আইডি দেখাবে।
+  const isBorga = /বর্গা/.test(r.owner_type_name ?? "");
   return {
     kind: "irrigation",
     receipt_no: String(r.receipt_no ?? ""),
