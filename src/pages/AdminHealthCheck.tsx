@@ -72,6 +72,7 @@ export default function AdminHealthCheck() {
           <p className="text-xs text-muted-foreground">{t("edgeHealthHint")}</p>
         </CardContent>
       </Card>
+      <InvoiceStatusCheckCard />
     </div>
   );
 }
