@@ -685,7 +685,7 @@ function InvoiceListTab({ seasons, offices, isSuper }: any) {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filtered.map((r: any) => (
+              {paged.map((r: any) => (
                 <TableRow key={r.id} data-state={selected.has(r.id) ? "selected" : undefined}>
                   <TableCell><Checkbox checked={selected.has(r.id)} onCheckedChange={(v) => toggleOne(r.id, !!v)} /></TableCell>
                   <TableCell className="font-mono text-xs">{r.invoice_no}</TableCell>
