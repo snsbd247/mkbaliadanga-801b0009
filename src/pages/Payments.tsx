@@ -927,20 +927,32 @@ export default function Payments() {
                           {invoiceSortDir === "asc" ? "↑" : "↓"}
                         </Button>
                       </div>
+                      <div className="flex flex-wrap items-center gap-1">
+                        <Button type="button" size="sm" variant="outline" onClick={exportInvoicesExcel} disabled={!displayInvoices.length}>Excel</Button>
+                        <Button type="button" size="sm" variant="outline" onClick={exportInvoicesPdf} disabled={!displayInvoices.length}>PDF</Button>
+                      </div>
                       <Select value={a.reference_id} onValueChange={(v) => updateAlloc(i, { reference_id: v })} disabled={invoiceFilter === "cancelled"}>
                         <SelectTrigger><SelectValue placeholder={displayInvoices.length ? "Pick invoice" : (invoiceFilter === "cancelled" ? "No cancelled invoices" : "No open invoices")} /></SelectTrigger>
-                        <SelectContent>{displayInvoices.map(ic => (
+                        <SelectContent>{pagedInvoices.map(ic => (
                           <SelectItem key={ic.id} value={ic.id}>
                             {ic.invoice_no}{!ic.invoice_status ? ` (${invoiceStatusBadge(null).label_bn})` : ""} — {fmtDate(ic.due_date)} — Due {money(ic.due_amount)}
                           </SelectItem>
                         ))}</SelectContent>
                       </Select>
+                      {displayInvoices.length > INVOICE_PAGE_SIZE && (
+                        <div className="flex items-center gap-2 text-xs" data-testid="invoice-pagination">
+                          <Button type="button" size="sm" variant="outline" disabled={invoicePage === 0} onClick={() => setInvoicePage((p) => Math.max(0, p - 1))}>{tx("Prev", "পূর্ব")}</Button>
+                          <span>{invoicePage + 1} / {invoicePageCount}</span>
+                          <Button type="button" size="sm" variant="outline" disabled={invoicePage >= invoicePageCount - 1} onClick={() => setInvoicePage((p) => Math.min(invoicePageCount - 1, p + 1))}>{tx("Next", "পরবর্তী")}</Button>
+                        </div>
+                      )}
                       {a.reference_id && (
                         <Button type="button" size="sm" variant="link" className="h-6 px-0" onClick={() => openInvoiceDetails(displayInvoices.find((x) => x.id === a.reference_id))}>
                           {tx("View details", "বিস্তারিত দেখুন")}
                         </Button>
                       )}
                     </div>
+
 
                     )
                   )}
