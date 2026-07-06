@@ -29,7 +29,7 @@ import {
 } from "@/lib/irrigationInvoice";
 import { loadSeasonRateMap, resolveRateForLand, type RateRow } from "@/lib/seasonRates";
 import { resolveIrrigationRate, type CategoryRateInput } from "@/lib/irrigationRateResolver";
-import { Sparkles, Plus, Eye, Ban, RefreshCw, ShieldCheck, AlertTriangle, FileSpreadsheet, FileDown, Pencil, Trash2, Printer, Settings as SettingsIcon, Share2, MessageCircle, Mail, Files, ChevronsUpDown, Check, ArrowUpDown, ArrowUp, ArrowDown, Wallet, ChevronLeft, ChevronRight } from "lucide-react";
+import { Sparkles, Plus, Eye, Ban, RefreshCw, ShieldCheck, AlertTriangle, FileSpreadsheet, FileDown, Pencil, Trash2, Printer, Settings as SettingsIcon, Share2, MessageCircle, Mail, Files, ChevronsUpDown, Check, ArrowUpDown, ArrowUp, ArrowDown, Wallet, ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
 import { exportInvoicesXLSX, exportInvoicesCSV, joinInvoiceNotes, joinNotes } from "@/lib/irrigationExports";
 import { exportTablePDF } from "@/lib/exports";
 import { logAudit } from "@/lib/audit";
@@ -1261,6 +1261,27 @@ function GenerateTab({ seasons, offices, userId, isSuper }: any) {
   const [previewPage, setPreviewPage] = useState(0);
   const [previewPageSize, setPreviewPageSize] = useState(100);
   const [missingRates, setMissingRates] = useState<Array<{ land_type_id: string; land_type_name: string }>>([]);
+  const [missingLoading, setMissingLoading] = useState(false);
+  const [missingError, setMissingError] = useState(false);
+  const [missingDiag, setMissingDiag] = useState<{ seasonId: string; officeId: string | null; landTypeIds: string[] } | null>(null);
+  const [missingModalOpen, setMissingModalOpen] = useState(false);
+
+  async function fetchMissingRates(diag: { seasonId: string; officeId: string | null; landTypeIds: string[] }) {
+    setMissingDiag(diag);
+    setMissingLoading(true);
+    setMissingError(false);
+    try {
+      const { data } = await db.functions.invoke("irrigation-missing-rates", {
+        body: { season_id: diag.seasonId, office_id: diag.officeId, land_type_ids: diag.landTypeIds },
+      });
+      setMissingRates(((data as any)?.missing ?? []) as Array<{ land_type_id: string; land_type_name: string }>);
+    } catch {
+      setMissingRates([]);
+      setMissingError(true);
+    } finally {
+      setMissingLoading(false);
+    }
+  }
   const [prevDueWarning, setPrevDueWarning] = useState<{ farmers: number; total: number } | null>(null);
   const [skippedNoRate, setSkippedNoRate] = useState(0);
   const [skipExisting, setSkipExisting] = useState(true);
@@ -1552,15 +1573,12 @@ function GenerateTab({ seasons, offices, userId, isSuper }: any) {
         setErrors((prev) => ({ ...prev, noRate: msg }));
         toast.error(msg);
         // Fetch the precise list of missing season/land-type rates for a diagnostic report.
-        try {
-          const { data: diag } = await db.functions.invoke("irrigation-missing-rates", {
-            body: { season_id: seasonId, office_id: officeId || null, land_type_ids: Array.from(fieldTypes) },
-          });
-          setMissingRates(((diag as any)?.missing ?? []) as Array<{ land_type_id: string; land_type_name: string }>);
-        } catch { setMissingRates([]); }
+        fetchMissingRates({ seasonId, officeId: officeId || null, landTypeIds: Array.from(fieldTypes) });
         return;
       }
       setMissingRates([]);
+      setMissingError(false);
+      setMissingDiag(null);
       setErrors((prev) => { const { noRate: _omit, ...rest } = prev; return rest; });
       toast.success(`${previewArr.length} ${tx("preview", "টি প্রিভিউ")}${noRate ? ` • ${noRate} ${tx("lands have no rate", "টি জমিতে রেট নেই")}` : ""}`);
     } catch (e: any) {
@@ -1861,12 +1879,40 @@ function GenerateTab({ seasons, offices, userId, isSuper }: any) {
               {errors.noRate && (
                 <div className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
                   <p>{errors.noRate}</p>
-                  {missingRates.length > 0 && (
+                  {missingLoading && (
+                    <div className="mt-2 flex items-center gap-2 text-xs">
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      {tx("Loading missing-rate details…", "রেট নেই এমন তথ্য লোড হচ্ছে…")}
+                    </div>
+                  )}
+                  {missingError && !missingLoading && (
+                    <div className="mt-2 flex items-center gap-2 text-xs">
+                      <span>{tx("Couldn't load missing-rate details.", "রেট নেই এমন তথ্য লোড করা যায়নি।")}</span>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        className="h-6 px-2 text-xs"
+                        onClick={() => missingDiag && fetchMissingRates(missingDiag)}
+                      >
+                        <RefreshCw className="mr-1 h-3 w-3" />
+                        {tx("Retry", "আবার চেষ্টা")}
+                      </Button>
+                    </div>
+                  )}
+                  {!missingLoading && !missingError && missingRates.length > 0 && (
                     <div className="mt-2">
                       <p className="text-xs font-medium">{tx("Land types missing a rate:", "রেট নেই এমন জমির ধরন:")}</p>
                       <ul className="mt-1 list-disc pl-5 text-xs">
-                        {missingRates.map((m) => <li key={m.land_type_id}>{m.land_type_name}</li>)}
+                        {missingRates.slice(0, 5).map((m) => <li key={m.land_type_id}>{m.land_type_name}</li>)}
                       </ul>
+                      <button
+                        type="button"
+                        onClick={() => setMissingModalOpen(true)}
+                        className="mt-1 font-medium underline underline-offset-2 hover:opacity-80"
+                      >
+                        {tx("View details", "বিস্তারিত দেখুন")}
+                      </button>
                     </div>
                   )}
                   <Link
@@ -1878,6 +1924,37 @@ function GenerateTab({ seasons, offices, userId, isSuper }: any) {
                   </Link>
                 </div>
               )}
+
+              {/* Missing-rate details modal */}
+              <Dialog open={missingModalOpen} onOpenChange={setMissingModalOpen}>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>{tx("Missing season/land-type rates", "রেট নেই এমন সিজন/জমির ধরন")}</DialogTitle>
+                  </DialogHeader>
+                  <div className="max-h-[50vh] space-y-1 overflow-y-auto text-sm">
+                    {missingRates.length === 0 ? (
+                      <p className="text-muted-foreground">{tx("No missing rates.", "রেট নেই এমন কিছু নেই।")}</p>
+                    ) : (
+                      missingRates.map((m) => (
+                        <div key={m.land_type_id} className="flex items-center justify-between gap-2 rounded border px-2 py-1.5">
+                          <span>{m.land_type_name}</span>
+                          <Link
+                            to="/seasons"
+                            className="inline-flex items-center gap-1 text-xs font-medium underline underline-offset-2 hover:opacity-80"
+                            onClick={() => setMissingModalOpen(false)}
+                          >
+                            <Pencil className="h-3 w-3" />
+                            {tx("Edit rate", "রেট এডিট")}
+                          </Link>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                  <DialogFooter>
+                    <Button variant="outline" onClick={() => setMissingModalOpen(false)}>{tx("Close", "বন্ধ")}</Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
               {skippedNoRate > 0 && (
                 <div className="text-xs text-destructive">{skippedNoRate} {tx("lands had no rate — skipped.", "টি জমিতে রেট পাওয়া যায়নি — বাদ দেওয়া হয়েছে।")}</div>
               )}
