@@ -93,14 +93,17 @@ class FunctionController extends Controller
                 default => response()->json(['error' => 'Unknown action'], 400),
             };
         } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error('admin-users action failed', [
+            $detail = [
                 'request_id' => $requestId,
                 'action' => $action,
                 'actor_id' => $actor->id,
                 'target_user_id' => (string) $request->input('user_id', ''),
                 'role' => (string) $request->input('role', ''),
-                'message' => $e->getMessage(),
-            ]);
+                'error' => $e->getMessage(),
+            ];
+            \Illuminate\Support\Facades\Log::error('admin-users action failed', $detail);
+            // Durable, secured persistence of the failure for the admin failures view.
+            $this->audit($actor, 'user.admin_failure', (string) $request->input('user_id', $requestId), $detail);
             return response()->json([
                 'error' => 'Server error while processing admin-users request.',
                 'request_id' => $requestId,
