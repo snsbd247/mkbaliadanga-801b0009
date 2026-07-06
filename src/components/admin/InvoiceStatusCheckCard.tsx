@@ -55,7 +55,7 @@ export function InvoiceStatusCheckCard() {
         ) : error ? (
           <Badge variant="destructive" className="gap-1"><AlertTriangle className="h-3.5 w-3.5" /> {error}</Badge>
         ) : (
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2" data-testid="invoice-status-null-count" data-null-count={nullCount ?? ""}>
             {ok ? (
               <Badge className="gap-1 bg-emerald-600 hover:bg-emerald-600">
                 <CheckCircle2 className="h-3.5 w-3.5" /> {tx("All invoices have a status", "সব ইনভয়েসে স্ট্যাটাস আছে")}
