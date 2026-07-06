@@ -232,6 +232,15 @@ function InvoiceListTab({ seasons, offices, isSuper }: any) {
     return base;
   }, [rows, search, mouza, mouzaSort]);
 
+  const [pageSize, setPageSize] = useState(100);
+  const [page, setPage] = useState(1);
+  const pageCount = Math.max(1, Math.ceil(filtered.length / pageSize));
+  useEffect(() => { setPage(1); }, [search, mouza, mouzaSort, seasonId, officeId, status, pageSize, rows.length]);
+  const paged = useMemo(
+    () => filtered.slice((page - 1) * pageSize, page * pageSize),
+    [filtered, page, pageSize],
+  );
+
 
   /** Grand totals for the currently-filtered invoices (footer summary).
    *  carried_forward invoices are excluded — their balance has already been
