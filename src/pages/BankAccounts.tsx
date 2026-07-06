@@ -464,7 +464,7 @@ export default function BankAccounts() {
                       <TableCell className="text-right text-success">{money(totalIn)}</TableCell>
                       <TableCell className="text-right text-destructive">{money(totalOut)}</TableCell>
                       <TableCell className="text-right text-primary">{money(closing)}</TableCell>
-                      <TableCell />
+                      <TableCell colSpan={2} />
                     </TableRow>
                   </TableBody>
                 </Table></Card>
