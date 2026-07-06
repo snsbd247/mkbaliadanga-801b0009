@@ -249,42 +249,43 @@ function copyHtml(d: IrrigationInvoiceData, brand: CompanyBranding, copyLabel: s
     </div>`;
 
   const infoTable = `
-    <table style="width:100%;border:1px solid #111;border-collapse:collapse;font-size:11px;">
+    <table style="width:100%;border:1px solid #111;border-collapse:collapse;font-size:11px;line-height:1.6;">
       ${rows.map(([k, v]) => `
         <tr>
-          <td style="padding:2px 6px;vertical-align:top;width:40%;border-bottom:1px solid #ddd;">${k}</td>
-          <td style="padding:2px 6px;vertical-align:top;border-bottom:1px solid #ddd;">${v}</td>
+          <td style="padding:7px 8px;vertical-align:top;width:40%;border-bottom:1px solid #ddd;">${k}</td>
+          <td style="padding:7px 8px;vertical-align:top;border-bottom:1px solid #ddd;">${v}</td>
         </tr>`).join("")}
     </table>`;
 
   const chargeTable = `
-    <table style="width:100%;border:1px solid #111;border-collapse:collapse;font-size:11px;">
+    <table style="width:100%;border:1px solid #111;border-collapse:collapse;font-size:11px;line-height:1.6;">
       <thead>
         <tr style="background:#f4f4f4;">
-          <th style="text-align:left;padding:3px 6px;border-bottom:1px solid #111;">বিবরণ</th>
-          <th style="text-align:right;padding:3px 6px;border-bottom:1px solid #111;">টাকা</th>
+          <th style="text-align:left;padding:7px 8px;border-bottom:1px solid #111;">বিবরণ</th>
+          <th style="text-align:right;padding:7px 8px;border-bottom:1px solid #111;">টাকা</th>
         </tr>
       </thead>
       <tbody>
         ${chargeRows.map(([k, v]) => `
           <tr>
-            <td style="padding:2px 6px;border-bottom:1px solid #eee;">${k}</td>
-            <td style="padding:2px 6px;text-align:right;border-bottom:1px solid #eee;">${fmt2(v as number)}</td>
+            <td style="padding:7px 8px;border-bottom:1px solid #eee;">${k}</td>
+            <td style="padding:7px 8px;text-align:right;border-bottom:1px solid #eee;">${fmt2(v as number)}</td>
           </tr>`).join("")}
         <tr>
-          <td style="padding:3px 6px;font-weight:700;background:#fafafa;border-top:1px solid #111;">মোট প্রদেয়</td>
-          <td style="padding:3px 6px;text-align:right;font-weight:700;background:#fafafa;border-top:1px solid #111;">${fmt2(d.payable_amount)}</td>
+          <td style="padding:7px 8px;font-weight:700;background:#fafafa;border-top:1px solid #111;">মোট প্রদেয়</td>
+          <td style="padding:7px 8px;text-align:right;font-weight:700;background:#fafafa;border-top:1px solid #111;">${fmt2(d.payable_amount)}</td>
         </tr>
         <tr>
-          <td style="padding:2px 6px;">পরিশোধিত</td>
-          <td style="padding:2px 6px;text-align:right;">${fmt2(d.paid_amount)}</td>
+          <td style="padding:7px 8px;">পরিশোধিত</td>
+          <td style="padding:7px 8px;text-align:right;">${fmt2(d.paid_amount)}</td>
         </tr>
         <tr>
-          <td style="padding:3px 6px;font-weight:700;background:#fff5f5;color:#b91c1c;">বকেয়া</td>
-          <td style="padding:3px 6px;text-align:right;font-weight:700;background:#fff5f5;color:#b91c1c;">${fmt2(d.due_amount)}</td>
+          <td style="padding:7px 8px;font-weight:700;background:#fff5f5;color:#b91c1c;">বকেয়া</td>
+          <td style="padding:7px 8px;text-align:right;font-weight:700;background:#fff5f5;color:#b91c1c;">${fmt2(d.due_amount)}</td>
         </tr>
       </tbody>
     </table>`;
+
 
   const wordsBlock = `
     <div style="font-size:10px;margin-top:3px;">কথায়: ${amountWords} টাকা মাত্র।</div>
