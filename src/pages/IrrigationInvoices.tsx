@@ -1261,6 +1261,10 @@ function GenerateTab({ seasons, offices, userId, isSuper }: any) {
   const [previewPage, setPreviewPage] = useState(0);
   const [previewPageSize, setPreviewPageSize] = useState(100);
   const [missingRates, setMissingRates] = useState<Array<{ land_type_id: string; land_type_name: string }>>([]);
+  const [missingLoading, setMissingLoading] = useState(false);
+  const [missingError, setMissingError] = useState(false);
+  const [missingDiag, setMissingDiag] = useState<{ seasonId: string; officeId: string | null; landTypeIds: string[] } | null>(null);
+  const [missingModalOpen, setMissingModalOpen] = useState(false);
   const [prevDueWarning, setPrevDueWarning] = useState<{ farmers: number; total: number } | null>(null);
   const [skippedNoRate, setSkippedNoRate] = useState(0);
   const [skipExisting, setSkipExisting] = useState(true);
