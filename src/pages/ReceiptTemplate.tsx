@@ -390,6 +390,10 @@ export default function ReceiptTemplatePage() {
           )}
         </Card>
       </div>
+
+      <div className="mt-4">
+        <DiagnosticsPanel />
+      </div>
     </>
   );
 }
