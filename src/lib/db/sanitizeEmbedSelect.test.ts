@@ -21,6 +21,18 @@ describe("sanitizeEmbedSelect (Laravel/MySQL embed capability validation)", () =
     );
   });
 
+  it("strips patwaris embed inside lands(...) so Laravel/MySQL does not treat nested relation fields as columns", () => {
+    const input = "id,lands(mouza,land_size,dag_no,field_type,notes,patwaris(name,name_bn,mobile)),seasons(name,year)";
+    expect(sanitizeEmbedSelect(input)).toBe(
+      "id,lands(mouza,land_size,dag_no,field_type,notes),seasons(name,year)",
+    );
+  });
+
+  it("keeps scalar patwari_id while stripping the unsupported patwaris relation", () => {
+    const input = "lands(mouza,land_size,patwari_id,patwaris(name,name_bn,mobile))";
+    expect(sanitizeEmbedSelect(input)).toBe("lands(mouza,land_size,patwari_id)");
+  });
+
   it("preserves supported nested embeds like irrigation_invoice_payments(payments(receipt_no))", () => {
     const input = "*, irrigation_invoice_payments(payments(receipt_no))";
     expect(sanitizeEmbedSelect(input)).toBe(
