@@ -273,18 +273,18 @@ export default function SocietyCashBook() {
           <table className="w-full border-collapse text-xs bn-cb-table" aria-label={tx("Expense cash book", "খরচ ক্যাশ বহি")}>
             <thead>
               <tr>
-                <th rowSpan={2} className="border border-black p-1">{tx("Date", "তারিখ")}</th>
-                <th rowSpan={2} className="border border-black p-1">{tx("Voucher no", "ভাউচার নং")}</th>
-                <th rowSpan={2} className="border border-black p-1">{tx("Paid to", "কাহাকে প্রদত্ত হইল")}</th>
-                <th rowSpan={2} className="border border-black p-1">{tx("Deposit refund", "জমানত ফেরত")}</th>
-                <th rowSpan={2} className="border border-black p-1">{tx("Bank deposit", "ব্যাংক জমা")}</th>
+                <th rowSpan={2} title={tx("Date", "তারিখ")} className="border border-black p-1 bn-cb-th">{tx("Date", "তারিখ")}</th>
+                <th rowSpan={2} title={tx("Voucher no", "ভাউচার নং")} className="border border-black p-1 bn-cb-th">{tx("Voucher no", "ভাউচার নং")}</th>
+                <th rowSpan={2} title={tx("Paid to", "কাহাকে প্রদত্ত হইল")} className="border border-black p-1 bn-cb-th">{tx("Paid to", "কাহাকে প্রদত্ত হইল")}</th>
+                <th rowSpan={2} title={tx("Deposit refund", "জমানত ফেরত")} className="border border-black p-1 bn-cb-th">{tx("Deposit refund", "জমানত ফেরত")}</th>
+                <th rowSpan={2} title={tx("Bank deposit", "ব্যাংক জমা")} className="border border-black p-1 bn-cb-th">{tx("Bank deposit", "ব্যাংক জমা")}</th>
                 <th colSpan={3} className="border border-black p-1 text-center">{tx("Purpose", "কি বাবদ")}</th>
-                <th rowSpan={2} className="border border-black p-1">{tx("Total", "মোট")}</th>
+                <th rowSpan={2} title={tx("Total", "মোট")} className="border border-black p-1 bn-cb-th">{tx("Total", "মোট")}</th>
               </tr>
               <tr>
-                <th className="border border-black p-1">{tx("Loan disbursement", "ঋণ প্রদান")}</th>
-                <th className="border border-black p-1">{tx("Salary allowance", "বেতন ভাতা")}</th>
-                <th className="border border-black p-1">{tx("Miscellaneous", "বিবিধ")}</th>
+                <th title={tx("Loan disbursement", "ঋণ প্রদান")} className="border border-black p-1 bn-cb-th">{tx("Loan disbursement", "ঋণ প্রদান")}</th>
+                <th title={tx("Salary allowance", "বেতন ভাতা")} className="border border-black p-1 bn-cb-th">{tx("Salary allowance", "বেতন ভাতা")}</th>
+                <th title={tx("Miscellaneous", "বিবিধ")} className="border border-black p-1 bn-cb-th">{tx("Miscellaneous", "বিবিধ")}</th>
               </tr>
             </thead>
             <tbody>
