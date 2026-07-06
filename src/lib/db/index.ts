@@ -42,7 +42,7 @@ class LaravelQueryBuilder<T = any> implements PromiseLike<Result<T>> {
 
   // ── terminal/projection ──
   select(cols = "*", opts?: { count?: "exact" | "planned" | "estimated"; head?: boolean }) {
-    this.selectCols = cols || "*";
+    this.selectCols = sanitizeEmbedSelect(cols || "*");
     if (opts?.count) this._count = true;
     if (this.op === "insert" || this.op === "update" || this.op === "delete") {
       this._returnRows = true;
