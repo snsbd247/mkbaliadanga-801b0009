@@ -1861,6 +1861,14 @@ function GenerateTab({ seasons, offices, userId, isSuper }: any) {
               {errors.noRate && (
                 <div className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
                   <p>{errors.noRate}</p>
+                  {missingRates.length > 0 && (
+                    <div className="mt-2">
+                      <p className="text-xs font-medium">{tx("Land types missing a rate:", "রেট নেই এমন জমির ধরন:")}</p>
+                      <ul className="mt-1 list-disc pl-5 text-xs">
+                        {missingRates.map((m) => <li key={m.land_type_id}>{m.land_type_name}</li>)}
+                      </ul>
+                    </div>
+                  )}
                   <Link
                     to="/seasons"
                     className="mt-2 inline-flex items-center gap-1 font-medium underline underline-offset-2 hover:opacity-80"
