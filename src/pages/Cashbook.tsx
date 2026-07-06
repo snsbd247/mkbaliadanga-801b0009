@@ -372,7 +372,11 @@ export default function Cashbook() {
                   <div><Label>{t("note")} ({tx("description", "বিবরণ")})</Label><Textarea value={v.note} onChange={ev => setV({ ...v, note: ev.target.value })} /></div>
                   <div><Label>{tx("Scan copy (image / PDF)", "স্ক্যান কপি (ছবি / PDF)")}</Label>
                     <Input type="file" accept="image/*,application/pdf" onChange={ev => setFile(ev.target.files?.[0] ?? null)} />
-                    {file && <p className="text-xs text-muted-foreground mt-1">{file.name} ({(file.size / 1024).toFixed(0)} KB)</p>}
+                    <div className="flex items-center gap-2 mt-1">
+                      {file && <span className="text-xs text-muted-foreground">{file.name} ({(file.size / 1024).toFixed(0)} KB)</span>}
+                      {file && <Button type="button" size="sm" variant="outline" onClick={() => window.open(URL.createObjectURL(file), "_blank")}>{tx("View", "ভিউ")}</Button>}
+                      {!file && v.attachment_path && <Button type="button" size="sm" variant="outline" onClick={() => downloadScan(v.attachment_path)}>{tx("View attached PDF/photo", "সংযুক্ত PDF/ছবি ভিউ")}</Button>}
+                    </div>
                   </div>
                 </div>
                 <DialogFooter>
