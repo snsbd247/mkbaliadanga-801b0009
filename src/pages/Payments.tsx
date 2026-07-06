@@ -774,7 +774,20 @@ export default function Payments() {
               </div>
             )}
 
+            {dueMismatch && (
+              <div
+                role="alert"
+                data-testid="due-mismatch-alert"
+                className="rounded-md border border-destructive/50 bg-destructive/10 p-2 text-xs text-destructive"
+              >
+                {tx(
+                  `Due mismatch: Farmer list shows ৳${money(dueMismatch.listDue)} but open invoices total ৳${money(dueMismatch.paymentsDue)} (diff ৳${money(dueMismatch.diff)}). An invoice may be hidden — this has been logged.`,
+                  `বকেয়া অমিল: farmer list এ ৳${money(dueMismatch.listDue)} কিন্তু খোলা ইনভয়েসের যোগফল ৳${money(dueMismatch.paymentsDue)} (পার্থক্য ৳${money(dueMismatch.diff)})। কোনো ইনভয়েস লুকানো থাকতে পারে — লগ করা হয়েছে।`,
+                )}
+              </div>
+            )}
             <div className="space-y-2">
+
               <div className="flex items-center justify-between">
                 <Label>{t("allocations")}</Label>
                 <Button type="button" size="sm" variant="ghost" onClick={() => setAllocs([...allocs, { kind: "irrigation", reference_id: "", amount: 0 }])}>
