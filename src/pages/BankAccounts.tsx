@@ -343,9 +343,10 @@ export default function BankAccounts() {
             <TableHeader><TableRow>
               <TableHead>Date</TableHead><TableHead>Account</TableHead><TableHead>Type</TableHead>
               <TableHead className="text-right">Amount</TableHead><TableHead>Ref</TableHead><TableHead>Note</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
             </TableRow></TableHeader>
             <TableBody>
-              {txns.length === 0 && <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">No transactions yet</TableCell></TableRow>}
+              {txns.length === 0 && <TableRow><TableCell colSpan={7} className="text-center py-8 text-muted-foreground">No transactions yet</TableCell></TableRow>}
               {txns.map(t => (
                 <TableRow key={t.id}>
                   <TableCell>{fmtDate(t.txn_date)}</TableCell>
@@ -354,6 +355,16 @@ export default function BankAccounts() {
                   <TableCell className="text-right font-semibold">{money(t.amount)}</TableCell>
                   <TableCell className="font-mono text-xs">{t.reference_no}</TableCell>
                   <TableCell className="text-xs text-muted-foreground">{t.note}</TableCell>
+                  <TableCell className="text-right whitespace-nowrap">
+                    {["transfer_in", "transfer_out"].includes(t.txn_type) ? (
+                      <Button size="icon" variant="ghost" className="text-destructive" onClick={() => deleteTxn(t)}><Trash2 className="h-4 w-4" /></Button>
+                    ) : (
+                      <>
+                        <Button size="icon" variant="ghost" onClick={() => setEditTxn({ ...t })}><Pencil className="h-4 w-4" /></Button>
+                        <Button size="icon" variant="ghost" className="text-destructive" onClick={() => deleteTxn(t)}><Trash2 className="h-4 w-4" /></Button>
+                      </>
+                    )}
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>
