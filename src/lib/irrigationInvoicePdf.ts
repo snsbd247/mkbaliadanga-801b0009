@@ -191,7 +191,7 @@ function copyHtml(d: IrrigationInvoiceData, brand: CompanyBranding, copyLabel: s
   const seasonLabel = [d.season?.name ?? d.season?.type, d.season?.year].filter(Boolean).join(" ");
 
   const logoBlock = brand.logo_url
-    ? `<img src="${brand.logo_url}" crossorigin="anonymous" style="height:${wide ? 34 : 42}px;display:block;margin:0 auto 2px;" />`
+    ? `<img src="${brand.logo_url}" crossorigin="anonymous" style="height:${wide ? 40 : 46}px;display:block;" />`
     : "";
 
   const orgName = brand.company_name_bn ?? brand.company_name ?? "";
@@ -249,83 +249,87 @@ function copyHtml(d: IrrigationInvoiceData, brand: CompanyBranding, copyLabel: s
     </div>`;
 
   const infoTable = `
-    <table style="width:100%;border:1px solid #111;border-collapse:collapse;font-size:11px;line-height:1.6;">
-      ${rows.map(([k, v]) => `
+    <table style="width:100%;border-collapse:collapse;font-size:11px;line-height:1.55;">
+      ${rows.map(([k, v], i) => `
         <tr>
-          <td style="padding:7px 8px;vertical-align:top;width:40%;border-bottom:1px solid #ddd;">${k}</td>
-          <td style="padding:7px 8px;vertical-align:top;border-bottom:1px solid #ddd;">${v}</td>
+          <td style="padding:6px 12px 6px 4px;vertical-align:top;width:42%;color:#374151;border-bottom:1px dotted #cbcbcb;">${k}</td>
+          <td style="padding:6px 4px 6px 8px;vertical-align:top;font-weight:600;border-bottom:1px dotted #cbcbcb;">${v}</td>
         </tr>`).join("")}
     </table>`;
 
   const chargeTable = `
-    <table style="width:100%;border:1px solid #111;border-collapse:collapse;font-size:11px;line-height:1.6;">
+    <table style="width:100%;border-collapse:collapse;font-size:11px;line-height:1.55;">
       <thead>
-        <tr style="background:#f4f4f4;">
-          <th style="text-align:left;padding:7px 8px;border-bottom:1px solid #111;">বিবরণ</th>
-          <th style="text-align:right;padding:7px 8px;border-bottom:1px solid #111;">টাকা</th>
+        <tr>
+          <th style="text-align:left;padding:6px 8px 6px 4px;border-bottom:1.5px solid #333;font-weight:700;">বিবরণ</th>
+          <th style="text-align:right;padding:6px 4px 6px 8px;border-bottom:1.5px solid #333;font-weight:700;">টাকা</th>
         </tr>
       </thead>
       <tbody>
         ${chargeRows.map(([k, v]) => `
           <tr>
-            <td style="padding:7px 8px;border-bottom:1px solid #eee;">${k}</td>
-            <td style="padding:7px 8px;text-align:right;border-bottom:1px solid #eee;">${fmt2(v as number)}</td>
+            <td style="padding:6px 8px 6px 4px;border-bottom:1px dotted #cbcbcb;color:#374151;">${k}</td>
+            <td style="padding:6px 4px 6px 8px;text-align:right;border-bottom:1px dotted #cbcbcb;">${fmt2(v as number)}</td>
           </tr>`).join("")}
         <tr>
-          <td style="padding:7px 8px;font-weight:700;background:#fafafa;border-top:1px solid #111;">মোট প্রদেয়</td>
-          <td style="padding:7px 8px;text-align:right;font-weight:700;background:#fafafa;border-top:1px solid #111;">${fmt2(d.payable_amount)}</td>
+          <td style="padding:7px 8px 7px 4px;font-weight:700;border-top:1.5px solid #333;border-bottom:1px dotted #cbcbcb;">মোট প্রদেয়</td>
+          <td style="padding:7px 4px 7px 8px;text-align:right;font-weight:700;border-top:1.5px solid #333;border-bottom:1px dotted #cbcbcb;">${fmt2(d.payable_amount)}</td>
         </tr>
         <tr>
-          <td style="padding:7px 8px;">পরিশোধিত</td>
-          <td style="padding:7px 8px;text-align:right;">${fmt2(d.paid_amount)}</td>
+          <td style="padding:6px 8px 6px 4px;color:#374151;border-bottom:1px dotted #cbcbcb;">পরিশোধিত</td>
+          <td style="padding:6px 4px 6px 8px;text-align:right;border-bottom:1px dotted #cbcbcb;">${fmt2(d.paid_amount)}</td>
         </tr>
         <tr>
-          <td style="padding:7px 8px;font-weight:700;background:#fff5f5;color:#b91c1c;">বকেয়া</td>
-          <td style="padding:7px 8px;text-align:right;font-weight:700;background:#fff5f5;color:#b91c1c;">${fmt2(d.due_amount)}</td>
+          <td style="padding:7px 8px 7px 4px;font-weight:700;color:#b91c1c;border-bottom:1.5px solid #b91c1c;">বকেয়া</td>
+          <td style="padding:7px 4px 7px 8px;text-align:right;font-weight:700;color:#b91c1c;border-bottom:1.5px solid #b91c1c;">${fmt2(d.due_amount)}</td>
         </tr>
       </tbody>
     </table>`;
 
 
   const wordsBlock = `
-    <div style="font-size:10px;margin-top:3px;">কথায়: ${amountWords} টাকা মাত্র।</div>
-    ${d.note ? `<div style="font-size:10px;margin-top:1px;"><b>মন্তব্য:</b> ${d.note}</div>` : ""}`;
+    <div style="font-size:10.5px;margin-top:6px;">কথায়: ${amountWords} টাকা মাত্র।</div>
+    ${d.note ? `<div style="font-size:10px;margin-top:2px;"><b>মন্তব্য:</b> ${d.note}</div>` : ""}`;
 
   const header = `
-    <div style="text-align:center;">
-      ${logoBlock}
-      <div style="font-size:15px;font-weight:700;">${orgName}</div>
-      ${orgLine2 ? `<div style="font-size:10px;color:#333;">${orgLine2}</div>` : ""}
-      ${regLine ? `<div style="font-size:10px;color:#333;">${regLine}</div>` : ""}
-      <div style="font-size:15px;font-weight:700;margin-top:3px;">সেচ ইনভয়েস</div>
-      <div style="display:inline-block;border:1px solid #111;padding:1px 12px;margin-top:3px;font-size:11px;">${copyLabel}</div>
-      <div style="display:inline-block;border:1px solid ${srcColor};color:${srcColor};padding:1px 8px;margin-top:3px;margin-left:4px;font-size:10px;font-weight:600;border-radius:3px;">${srcBn}</div>
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;">
+      <div style="width:${wide ? 130 : 90}px;flex-shrink:0;">${logoBlock}</div>
+      <div style="flex:1;text-align:center;">
+        <div style="font-size:15px;font-weight:700;">${orgName}</div>
+        ${orgLine2 ? `<div style="font-size:10px;color:#333;margin-top:1px;">${orgLine2}</div>` : ""}
+        ${regLine ? `<div style="font-size:10px;color:#333;">${regLine}</div>` : ""}
+        <div style="font-size:14px;font-weight:700;margin-top:6px;border-bottom:1px solid #333;display:inline-block;padding-bottom:1px;">সেচ ইনভয়েস</div>
+        <div style="margin-top:4px;">
+          <span style="display:inline-block;border:1px solid #111;padding:2px 14px;font-size:11px;">${copyLabel}</span>
+          <span style="display:inline-block;border:1px solid ${srcColor};color:${srcColor};padding:2px 8px;margin-left:4px;font-size:10px;font-weight:600;border-radius:3px;">${srcBn}</span>
+        </div>
+      </div>
+      <div style="width:${wide ? 130 : 90}px;flex-shrink:0;text-align:right;">
+        ${qrDataUrl ? `<img src="${qrDataUrl}" style="width:${wide ? 66 : 54}px;height:${wide ? 66 : 54}px;display:inline-block;" alt="QR" />` : ""}
+      </div>
     </div>
 
-    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-top:6px;font-size:11px;">
-      <div>
-        <div>রসিদ নং: <b>${d.invoice_no}</b></div>
-        <div>তারিখ: ${fmtDate(d.generated_at)}</div>
-      </div>
-      ${qrDataUrl ? `<img src="${qrDataUrl}" style="width:58px;height:58px;display:block;" alt="QR" />` : ""}
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-top:8px;font-size:11px;">
+      <div>রসিদ নং: <b>${d.invoice_no}</b></div>
+      <div>তারিখ: ${fmtDate(d.generated_at)}</div>
     </div>`;
 
   const body = wide
     ? `
-      <div style="display:flex;gap:12px;margin-top:5px;align-items:flex-start;">
+      <div style="display:flex;gap:28px;margin-top:12px;align-items:flex-start;">
         <div style="flex:1;">${infoTable}</div>
         <div style="flex:1;">${chargeTable}${wordsBlock}</div>
       </div>`
     : `
-      <div style="margin-top:5px;">${infoTable}</div>
-      <div style="margin-top:5px;">${chargeTable}</div>
+      <div style="margin-top:10px;">${infoTable}</div>
+      <div style="margin-top:10px;">${chargeTable}</div>
       ${wordsBlock}`;
 
   return `
-  <div style="font-family:'Noto Sans Bengali','Hind Siliguri','SolaimanLipi',sans-serif;color:#111;padding:10px 14px;" data-invoice-copy="${role}">
+  <div style="font-family:'Noto Sans Bengali','Hind Siliguri','SolaimanLipi',sans-serif;color:#111;padding:14px 20px;" data-invoice-copy="${role}">
     ${header}
     ${body}
-    <div style="display:flex;justify-content:space-between;margin-top:${wide ? 14 : 18}px;font-size:10px;gap:12px;">
+    <div style="display:flex;justify-content:space-between;margin-top:${wide ? 34 : 26}px;font-size:10px;gap:12px;">
       ${farmerSig}
       ${collectorSig}
     </div>
