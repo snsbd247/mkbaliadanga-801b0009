@@ -39,7 +39,7 @@ function fmtDisplayDate(v: unknown): string {
 export default function LegacyIrrigationSearch() {
   const { tx } = useLang();
   const [code, setCode] = useState("");
-  const [term, setTerm] = useState("");
+  
   const [inputError, setInputError] = useState<string | null>(null);
   const [records, setRecords] = useState<LegacyIrrigationRecord[]>([]);
   const [searching, setSearching] = useState(false);
