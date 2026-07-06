@@ -435,9 +435,9 @@ export default function BankAccounts() {
                     <TableRow className="bg-muted/40">
                       <TableCell colSpan={5} className="text-right font-medium">প্রারম্ভিক ব্যালেন্স</TableCell>
                       <TableCell className="text-right font-bold">{money(opening)}</TableCell>
-                      <TableCell />
+                      <TableCell colSpan={2} />
                     </TableRow>
-                    {display.length === 0 && <TableRow><TableCell colSpan={7} className="text-center py-8 text-muted-foreground">No transactions in selected range</TableCell></TableRow>}
+                    {display.length === 0 && <TableRow><TableCell colSpan={8} className="text-center py-8 text-muted-foreground">No transactions in selected range</TableCell></TableRow>}
                     {display.map((t: any) => (
                       <TableRow key={t.id}>
                         <TableCell>{fmtDate(t.txn_date)}</TableCell>
@@ -447,6 +447,16 @@ export default function BankAccounts() {
                         <TableCell className="text-right text-destructive">{t.outAmt ? money(t.outAmt) : "—"}</TableCell>
                         <TableCell className="text-right font-semibold">{money(t.balance)}</TableCell>
                         <TableCell className="text-xs text-muted-foreground">{t.note}</TableCell>
+                        <TableCell className="text-right whitespace-nowrap">
+                          {["transfer_in", "transfer_out"].includes(t.txn_type) ? (
+                            <Button size="icon" variant="ghost" className="text-destructive" onClick={() => deleteTxn(t)}><Trash2 className="h-4 w-4" /></Button>
+                          ) : (
+                            <>
+                              <Button size="icon" variant="ghost" onClick={() => setEditTxn({ ...t })}><Pencil className="h-4 w-4" /></Button>
+                              <Button size="icon" variant="ghost" className="text-destructive" onClick={() => deleteTxn(t)}><Trash2 className="h-4 w-4" /></Button>
+                            </>
+                          )}
+                        </TableCell>
                       </TableRow>
                     ))}
                     <TableRow className="bg-muted/60 font-bold">
