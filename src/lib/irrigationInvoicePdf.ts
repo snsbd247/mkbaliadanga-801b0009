@@ -236,6 +236,23 @@ function copyHtml(d: IrrigationInvoiceData, brand: CompanyBranding, copyLabel: s
     chargeRows.push([`ডিসকাউন্ট (Discount)${d.discount_reason ? " — " + d.discount_reason : ""}`, -Number(d.discount_amount)]);
   }
 
+  // Adaptive typography: shrink font / tighten line-height when there is a lot
+  // of content (long farmer names, big addresses, many charge rows) so nothing
+  // overflows or collides with borders. Header rows (মোট প্রদেয়/বকেয়া) stay legible.
+  const maxValueLen = Math.max(
+    orgName.length,
+    orgLine2.length,
+    ...rows.map(([, v]) => v.length),
+    ...chargeRows.map(([k]) => k.length),
+    0,
+  );
+  const totalRows = rows.length + chargeRows.length;
+  const dense = maxValueLen > 46 || totalRows > 18 || (orgLine2?.length ?? 0) > 60;
+  const veryDense = maxValueLen > 64 || totalRows > 22;
+  const cellFont = veryDense ? 9.5 : dense ? 10 : 11;
+  const cellPadV = veryDense ? 4 : dense ? 5 : 6;
+  const cellLh = veryDense ? 1.35 : dense ? 1.45 : 1.55;
+
   const farmerSig = `
     <div style="text-align:center;min-width:150px;">
       <div style="border-top:1px solid #111;padding-top:2px;">${settings.farmerSignTitle || "কৃষকের স্বাক্ষর"}</div>
