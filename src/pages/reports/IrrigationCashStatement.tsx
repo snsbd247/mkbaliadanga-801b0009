@@ -226,6 +226,10 @@ export default function IrrigationCashStatement() {
               <td colSpan={2} className="border border-black p-1 text-right">{tx("Grand total=", "সর্বমোট=")}</td>
               <td className="border border-black p-1 text-right">{formatMoney(grandExpense)}</td>
             </tr>
+            <tr className="font-bold">
+              <td colSpan={5} className="border border-black p-1 text-right">{tx("Bank balance (as of end date)=", "ব্যাংক ব্যালেন্স (তারিখ পর্যন্ত)=")}</td>
+              <td className="border border-black p-1 text-right">{formatMoney(bankBalance)}</td>
+            </tr>
           </tbody>
         </table>
 
