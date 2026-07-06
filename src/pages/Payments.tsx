@@ -25,6 +25,7 @@ import { money, fmtDate } from "@/lib/format";
 import { guardSavingsLoan } from "@/lib/memberEligibility";
 import { toast } from "sonner";
 import { useAuth } from "@/auth/AuthProvider";
+import { usePermission } from "@/hooks/usePermission";
 import { Paperclip, Check, X, FileText, Plus, Trash2, Printer, ArrowDownToLine } from "lucide-react";
 import { DeleteButton } from "@/components/ui/action-icon-button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from "@/components/ui/dialog";
