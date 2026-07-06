@@ -475,14 +475,18 @@ export default function IrrigationCashBook() {
       </Dialog>
 
       <style>{`
-        .bn-cb-table th, .bn-cb-table td { word-wrap: break-word; overflow-wrap: anywhere; }
-        .bn-cb-table { table-layout: fixed; }
+        /* Screen: keep headers on one line and let the wide layout scroll horizontally */
+        .bn-cb-table th { white-space: nowrap; }
+        .bn-cb-table td { white-space: nowrap; }
+        .bn-cb-cols { min-width: 1600px; }
         @media print {
           body * { visibility: hidden; }
           .bn-cashbook, .bn-cashbook * { visibility: visible; }
-          .bn-cashbook { position: absolute; left: 0; top: 0; width: 100%; padding: 0; }
+          .bn-cashbook { position: absolute; left: 0; top: 0; width: 100%; padding: 0; overflow: visible; }
+          .bn-cb-table { table-layout: fixed; }
+          .bn-cb-table th, .bn-cb-table td { white-space: normal; word-wrap: break-word; overflow-wrap: anywhere; }
           .bn-cb-header { display: block; }
-          .bn-cb-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; align-items: start; }
+          .bn-cb-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; align-items: start; min-width: 0; }
           .bn-cb-cols > section { break-inside: auto; }
           .bn-cb-table { width: 100%; }
           .bn-cb-table thead { display: table-header-group; }
