@@ -22,6 +22,8 @@ import {
 } from "@/lib/paymentReceiptPdf";
 import { useBranding } from "@/lib/branding";
 import { notifyReceiptTemplateChange } from "@/lib/receiptTemplate";
+import { previewBnReceiptPdf } from "@/lib/bnReceipts";
+import { buildSampleReceipt } from "@/lib/sampleReceipts";
 
 const SAMPLE: PaymentReceiptData = {
   receipt_no: "ABCD1234",
