@@ -254,6 +254,7 @@ export function AppSidebar() {
         { url: "/irrigation/opening-due/import", icon: Upload, label: lang === "bn" ? "ওপেনিং বকেয়া ইমপোর্ট" : "Opening Due Import", permKey: "irrigation" },
         { url: "/irrigation/legacy-import", icon: Upload, label: lang === "bn" ? "পুরনো সেচ ডাটা ইমপোর্ট" : "Legacy Irrigation Import", permKey: "irrigation" },
         { url: "/admin/import-audit", icon: ScrollText, label: lang === "bn" ? "ইমপোর্ট অডিট লগ" : "Import Audit Logs", adminOnly: true },
+        { url: "/admin/rpc-fallback-audit", icon: ScrollText, label: lang === "bn" ? "RPC ফলব্যাক অডিট" : "RPC Fallback Audit", developerOnly: true },
 
         
         
