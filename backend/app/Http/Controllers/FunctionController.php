@@ -83,6 +83,7 @@ class FunctionController extends Controller
         try {
             return match ($action) {
                 'list' => $this->adminUsersList($request, $isDeveloper, $isSuper),
+                'failures' => $this->adminUsersFailures($request, $isDeveloper, $isSuper),
                 'create' => $this->adminUsersCreate($request, $actor, $isDeveloper),
                 'delete' => $this->adminUsersDelete($request, $actor, $isDeveloper),
                 'reset_password' => $this->adminUsersResetPassword($request),
