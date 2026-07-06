@@ -256,9 +256,8 @@ export default function ReceiptTemplatePage() {
             <div>
               <Label className="text-xs">শুরুর ক্রমিক নম্বর</Label>
               <Input
-                type="number"
-                min={0}
-                step={1}
+                type="text"
+                inputMode="numeric"
                 value={serialStart}
                 onChange={(e) => setSerialStart(e.target.value)}
                 placeholder="যেমন 4641"
