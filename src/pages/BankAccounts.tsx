@@ -103,12 +103,19 @@ export default function BankAccounts() {
       const { error } = await sb.from("bank_accounts").update(a).eq("id", editAccId);
       if (error) return toast.error("আপডেট ব্যর্থ: " + error.message);
       void logAudit({ office_id: (prev as any)?.office_id ?? null, module: "bank_account", action_type: "update", reference_id: editAccId, old_data: prev, new_data: a });
+      // Re-post opening journal only when the opening balance actually changed.
+      if (Number(prev?.opening_balance || 0) !== Number(a.opening_balance || 0)) {
+        void postBankOpening({ bankAccountId: editAccId, openingBalance: Number(a.opening_balance || 0), bankLabel: `${a.bank_name} ${a.account_no}`, officeId: (prev as any)?.office_id ?? null, createdBy: user?.id, force: true });
+      }
       toast.success("Account updated");
     } else {
       const { data, error } = await sb.from("bank_accounts").insert(a).select();
       if (error) return toast.error("যোগ ব্যর্থ: " + error.message);
       const created = Array.isArray(data) ? data[0] : data;
       void logAudit({ office_id: created?.office_id ?? null, module: "bank_account", action_type: "create", reference_id: created?.id ?? null, new_data: created ?? a });
+      if (created?.id) {
+        void postBankOpening({ bankAccountId: created.id, openingBalance: Number(created.opening_balance || 0), bankLabel: `${a.bank_name} ${a.account_no}`, officeId: created?.office_id ?? null, createdBy: user?.id });
+      }
       toast.success("Account added");
     }
     setOpenA(false); setEditAccId(null); load();
