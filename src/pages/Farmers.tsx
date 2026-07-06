@@ -311,7 +311,7 @@ export default function Farmers() {
     el?.scrollIntoView({ behavior: "smooth", block: "center" });
   }, [createErr, editErr]);
 
-  async function loadDueSummaryForFarmers(ids: string[]) {
+  async function loadDueSummaryForFarmers(ids: string[]): Promise<Record<string, { net_due: number; loan_due: number; irr_due: number; savings_bal: number }>> {
     if (!ids.length) return {};
 
     const [invoiceRes, savingsRes, loansRes] = await Promise.all([
