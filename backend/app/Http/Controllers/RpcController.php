@@ -113,6 +113,121 @@ class RpcController extends Controller
         return 'INV-' . $date . '-' . str_pad((string) $seq, 4, '0', STR_PAD_LEFT);
     }
 
+    private function billingAsOf(array $p): string
+    {
+        $asOf = (string) ($p['_as_of'] ?? $p['as_of'] ?? date('Y-m-d'));
+        return preg_match('/^\d{4}-\d{2}-\d{2}/', $asOf) ? substr($asOf, 0, 10) : date('Y-m-d');
+    }
+
+    private function landBillingBase(?string $landId): ?array
+    {
+        if (! $landId || ! Schema::hasTable('lands')) {
+            return null;
+        }
+
+        $land = DB::table('lands')->where('id', $landId)->first();
+        if (! $land) {
+            return null;
+        }
+
+        $owner = $land->owner_farmer_id ?? $land->farmer_id ?? null;
+        if (! $owner) {
+            return null;
+        }
+
+        return [
+            'owner' => (string) $owner,
+            'total' => (float) ($land->land_size ?? $land->area_decimal ?? 0),
+        ];
+    }
+
+    /**
+     * Laravel/MySQL mirror of Postgres RPC get_land_billing_split().
+     * Splits a land bill between active borga sharecroppers and owner remainder.
+     */
+    protected function rpc_get_land_billing_split(array $p): array
+    {
+        $landId = $p['_land_id'] ?? $p['land_id'] ?? null;
+        $asOf = $this->billingAsOf($p);
+        $base = $this->landBillingBase($landId);
+        if (! $base) {
+            return [];
+        }
+
+        $rows = [];
+        $allocated = 0.0;
+
+        if (Schema::hasTable('land_relations')) {
+            $relations = DB::table('land_relations')
+                ->where('land_id', $landId);
+            if (Schema::hasColumn('land_relations', 'deleted_at')) {
+                $relations->whereNull('deleted_at');
+            }
+            if (Schema::hasColumn('land_relations', 'sharecropper_farmer_id')) {
+                $relations->whereNotNull('sharecropper_farmer_id');
+            }
+            if (Schema::hasColumn('land_relations', 'valid_from')) {
+                $relations->where(function ($q) use ($asOf) {
+                    $q->whereNull('valid_from')->orWhere('valid_from', '<=', $asOf);
+                });
+            }
+            if (Schema::hasColumn('land_relations', 'valid_to')) {
+                $relations->where(function ($q) use ($asOf) {
+                    $q->whereNull('valid_to')->orWhere('valid_to', '>=', $asOf);
+                });
+            }
+
+            foreach ($relations->get() as $relation) {
+                $sharecropper = $relation->sharecropper_farmer_id ?? null;
+                if (! $sharecropper) {
+                    continue;
+                }
+                $area = (float) ($relation->area_decimal ?? 0);
+                if ($area <= 0) {
+                    $area = $base['total'] * ((float) ($relation->share_percentage ?? 0)) / 100.0;
+                }
+                if ($area <= 0) {
+                    continue;
+                }
+                $allocated += $area;
+                $rows[] = [
+                    'farmer_id' => (string) $sharecropper,
+                    'owner_farmer_id' => $base['owner'],
+                    'is_borga' => true,
+                    'billed_area' => round($area, 4),
+                ];
+            }
+        }
+
+        $remaining = $base['total'] - $allocated;
+        if ($allocated <= 0 || $remaining > 0.0001) {
+            $rows[] = [
+                'farmer_id' => $base['owner'],
+                'owner_farmer_id' => $base['owner'],
+                'is_borga' => false,
+                'billed_area' => round(max($remaining, 0), 4),
+            ];
+        }
+
+        return $rows;
+    }
+
+    /** Laravel/MySQL mirror of Postgres RPC get_billed_farmer_for_land(). */
+    protected function rpc_get_billed_farmer_for_land(array $p): ?array
+    {
+        $rows = $this->rpc_get_land_billing_split($p);
+        if (empty($rows)) {
+            return null;
+        }
+
+        $row = collect($rows)->firstWhere('is_borga', true) ?? $rows[0];
+        return [
+            'farmer_id' => $row['farmer_id'],
+            'owner_farmer_id' => $row['owner_farmer_id'],
+            'is_borga' => (bool) $row['is_borga'],
+        ];
+    }
+
     protected function rpc_count_farmer_invoices(array $p): int
     {
         $q = DB::table('irrigation_invoices')->where('farmer_id', $p['_farmer_id'] ?? null);
