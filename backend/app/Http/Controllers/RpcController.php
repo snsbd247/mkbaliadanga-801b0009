@@ -21,6 +21,16 @@ use Illuminate\Support\Str;
  */
 class RpcController extends Controller
 {
+    /**
+     * RPCs the frontend depends on. Used by the contract endpoint to report
+     * missing implementations clearly instead of failing at call time.
+     */
+    private const REQUIRED_RPCS = [
+        'get_land_billing_split',
+        'get_billed_farmer_for_land',
+        'generate_invoice_no',
+    ];
+
     public function handle(Request $request, string $name): JsonResponse
     {
         $p = $request->all();
@@ -35,6 +45,37 @@ class RpcController extends Controller
         $result = $this->{$method}($p, $request);
         return response()->json(['result' => $result]);
     }
+
+    /**
+     * RPC contract validation — reports which RPCs are implemented on this
+     * server and returns a clear error (409) when a required RPC is missing.
+     */
+    public function contract(Request $request): JsonResponse
+    {
+        $available = [];
+        foreach (get_class_methods($this) as $m) {
+            if (str_starts_with($m, 'rpc_')) {
+                $available[] = substr($m, 4);
+            }
+        }
+        sort($available);
+
+        $missing = array_values(array_filter(
+            self::REQUIRED_RPCS,
+            fn ($name) => ! method_exists($this, 'rpc_' . $name)
+        ));
+
+        return response()->json([
+            'available'      => $available,
+            'required'       => self::REQUIRED_RPCS,
+            'missing'        => $missing,
+            'ok'             => empty($missing),
+            'message'        => empty($missing)
+                ? 'All required RPCs are available.'
+                : 'Missing required RPCs: ' . implode(', ', $missing),
+        ], empty($missing) ? 200 : 409);
+    }
+
 
     // ── Farmer identifier helpers ─────────────────────────────────────
     private function normalizeIdentifier(?string $value): ?string
