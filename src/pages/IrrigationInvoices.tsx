@@ -1976,7 +1976,8 @@ function GenerateTab({ seasons, offices, userId, isSuper }: any) {
               )}
               <div className="flex flex-wrap gap-2">
                 <Button onClick={preview} disabled={busy || !seasonId || fieldTypes.size === 0}>
-                  <Sparkles className="h-4 w-4 mr-1" /> {previewRows ? tx("Re-run preview", "প্রিভিউ পুনরায়") : tx("Preview", "প্রিভিউ")}
+                  {busy ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Sparkles className="h-4 w-4 mr-1" />}
+                  {busy ? tx("Generating preview…", "প্রিভিউ তৈরি হচ্ছে…") : previewRows ? tx("Re-run preview", "প্রিভিউ পুনরায়") : tx("Preview", "প্রিভিউ")}
                 </Button>
                 {previewRows && previewRows.length > 0 && (
                   <>
@@ -1992,6 +1993,12 @@ function GenerateTab({ seasons, offices, userId, isSuper }: any) {
                   </>
                 )}
               </div>
+              {busy && (
+                <div className="space-y-1">
+                  <Progress value={undefined} className="h-1.5 w-full animate-pulse" />
+                  <p className="text-xs text-muted-foreground">{tx("Building invoice preview…", "ইনভয়েস প্রিভিউ তৈরি হচ্ছে…")}</p>
+                </div>
+              )}
             </div>
           )}
 
