@@ -95,6 +95,28 @@ Deno.serve(async (req) => {
       landId = (inv0 as any)?.land_id ?? null
     }
 
+    // ---- Server-side validation (block wrong farmer / over-payment) ----
+    // Validate new owner farmer exists.
+    if (newOwner != null) {
+      const { data: f } = await svc.from('farmers').select('id').eq('id', newOwner).maybeSingle()
+      if (!f) return new Response(JSON.stringify({ error: 'ভুল কৃষক: farmer not found' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+    }
+    // For irrigation, the (possibly re-computed) payable must cover the new amount —
+    // blocks accidentally entering a higher/lower amount that breaks the invoice.
+    if (invId) {
+      const { data: invV } = await svc.from('irrigation_invoices')
+        .select('payable_amount,delay_fee').eq('id', invId).maybeSingle()
+      if (invV) {
+        const basePayable = Number((invV as any).payable_amount || 0)
+        const feeDelta = newFee != null ? (newFee - Number((invV as any).delay_fee || 0)) : 0
+        const effectivePayable = basePayable + feeDelta
+        if (newAmount > effectivePayable) {
+          return new Response(JSON.stringify({ error: `অঙ্ক প্রদেয়র চেয়ে বেশি (max ${effectivePayable})` }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+        }
+      }
+    }
+
+
     // 1) Land fields
     if (landId && (newMouza != null || newSize != null)) {
       const { data: land } = await svc.from('lands').select('mouza,land_size').eq('id', landId).maybeSingle()
