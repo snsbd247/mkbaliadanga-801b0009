@@ -162,24 +162,38 @@ function InvoiceListTab({ seasons, offices, isSuper }: any) {
 
   async function load() {
     setLoading(true);
-    let q = db
-      .from("irrigation_invoices" as any)
-      .select(`*, farmers!irrigation_invoices_farmer_id_fkey(name_en,name_bn,farmer_code,mobile), ${LANDS_EMBED}, seasons(name,year,type), irrigation_invoice_payments(payments(receipt_no))`)
-      .is("deleted_at", null)
-      .order("generated_at", { ascending: false })
-      .limit(500);
-    if (seasonId !== "all") q = q.eq("season_id", seasonId);
-    if (officeId !== "all") q = q.eq("office_id", officeId);
-    if (status === "due") {
-      // Unified outstanding view: any non-cancelled invoice with money still owed.
-      q = q.gt("due_amount", 0).neq("invoice_status", "cancelled");
-    } else if (status !== "all") {
-      q = q.eq("invoice_status", status);
+    // Fetch ALL matching invoices in pages — the backend caps a single request
+    // at 1000 rows, so a plain .limit(500) silently truncated the list.
+    const PAGE = 1000;
+    const buildQuery = () => {
+      let q = db
+        .from("irrigation_invoices" as any)
+        .select(`*, farmers!irrigation_invoices_farmer_id_fkey(name_en,name_bn,farmer_code,mobile), ${LANDS_EMBED}, seasons(name,year,type), irrigation_invoice_payments(payments(receipt_no))`)
+        .is("deleted_at", null)
+        .order("generated_at", { ascending: false });
+      if (seasonId !== "all") q = q.eq("season_id", seasonId);
+      if (officeId !== "all") q = q.eq("office_id", officeId);
+      if (status === "due") {
+        // Unified outstanding view: any non-cancelled invoice with money still owed.
+        q = q.gt("due_amount", 0).neq("invoice_status", "cancelled");
+      } else if (status !== "all") {
+        q = q.eq("invoice_status", status);
+      }
+      return q;
+    };
+    try {
+      const all: any[] = [];
+      for (let from = 0; ; from += PAGE) {
+        const { data, error } = await buildQuery().range(from, from + PAGE - 1);
+        if (error) { toast.error(error.message); break; }
+        const batch = (data as any[]) ?? [];
+        all.push(...batch);
+        if (batch.length < PAGE) break;
+      }
+      setRows(all);
+    } finally {
+      setLoading(false);
     }
-    const { data, error } = await q;
-    setLoading(false);
-    if (error) { toast.error(error.message); return; }
-    setRows((data as any) ?? []);
   }
   useEffect(() => { load(); }, [seasonId, officeId, status]);
 
