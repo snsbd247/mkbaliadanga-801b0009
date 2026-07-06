@@ -268,6 +268,9 @@ export default function LedgerReconciliation() {
             <Button variant="outline" size="sm" onClick={exportPdf} disabled={!report}>
               <FileDown className="h-4 w-4" />PDF
             </Button>
+            <Button variant="outline" size="sm" onClick={exportXlsx} disabled={!report}>
+              <FileDown className="h-4 w-4" />Excel
+            </Button>
           </div>
         }
       />
