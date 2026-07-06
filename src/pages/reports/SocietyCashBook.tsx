@@ -343,7 +343,7 @@ export default function SocietyCashBook() {
           .bn-cashbook, .bn-cashbook * { visibility: visible; }
           .bn-cashbook { position: absolute; left: 0; top: 0; width: 100%; padding: 0; overflow: visible; }
           /* Fit to page: allow wrapping and equal columns */
-          .bn-cb-table { table-layout: fixed; }
+          .bn-cb-table { table-layout: fixed; min-width: 0 !important; }
           .bn-cb-table th, .bn-cb-table td { white-space: normal; word-wrap: break-word; overflow-wrap: anywhere; }
           /* Two equal columns kept side-by-side and top-aligned on every page */
           .bn-cb-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; align-items: start; min-width: 0; }
