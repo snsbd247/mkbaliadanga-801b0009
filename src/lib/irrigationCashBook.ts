@@ -13,6 +13,7 @@ export type IrrJamaRow = {
   lateFee: number;        // বিলম্ব ফি
   bankWithdraw: number;   // ব্যাংকে উত্তোলন
   pond: number;           // পুকুর
+  hawlat: number;         // হাওলাত গ্রহণ
   misc: number;           // বিবিধ
   total: number;          // মোট
 };
