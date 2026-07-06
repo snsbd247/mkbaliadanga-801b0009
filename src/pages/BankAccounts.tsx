@@ -98,47 +98,64 @@ export default function BankAccounts() {
   async function saveAccount() {
     if (!a.bank_name || !a.account_no) return toast.error("Bank name and account no required");
     if (editAccId) {
+      const prev = accounts.find(x => x.id === editAccId) ?? null;
       const { error } = await sb.from("bank_accounts").update(a).eq("id", editAccId);
-      if (error) return toast.error(error.message);
+      if (error) return toast.error("আপডেট ব্যর্থ: " + error.message);
+      void logAudit({ office_id: (prev as any)?.office_id ?? null, module: "bank_account", action_type: "update", reference_id: editAccId, old_data: prev, new_data: a });
       toast.success("Account updated");
     } else {
-      const { error } = await sb.from("bank_accounts").insert(a);
-      if (error) return toast.error(error.message);
+      const { data, error } = await sb.from("bank_accounts").insert(a).select();
+      if (error) return toast.error("যোগ ব্যর্থ: " + error.message);
+      const created = Array.isArray(data) ? data[0] : data;
+      void logAudit({ office_id: created?.office_id ?? null, module: "bank_account", action_type: "create", reference_id: created?.id ?? null, new_data: created ?? a });
       toast.success("Account added");
     }
     setOpenA(false); setEditAccId(null); load();
     setA(emptyAccount());
   }
 
-  async function deleteAccount(ac: any) {
-    if (!confirm(`Delete bank account "${ac.bank_name} — ${ac.account_no}"? This cannot be undone.`)) return;
-    const { error } = await sb.from("bank_accounts").delete().eq("id", ac.id);
-    if (error) return toast.error(error.message);
-    toast.success("Account deleted"); load();
+  async function confirmDelete() {
+    if (!pendingDelete) return;
+    setDeleting(true);
+    try {
+      if (pendingDelete.kind === "account") {
+        const ac = pendingDelete.item;
+        const { error } = await sb.from("bank_accounts").delete().eq("id", ac.id);
+        if (error) { toast.error("অ্যাকাউন্ট ডিলিট ব্যর্থ: " + error.message); return; }
+        void logAudit({ office_id: ac.office_id ?? null, module: "bank_account", action_type: "delete", reference_id: ac.id, old_data: ac });
+        toast.success("Account deleted");
+      } else {
+        const t = pendingDelete.item;
+        const { error } = await sb.from("bank_transactions").delete().eq("id", t.id);
+        if (error) { toast.error("লেনদেন ডিলিট ব্যর্থ: " + error.message); return; }
+        // Remove any mirrored cashbook rows created with the same link_id.
+        if (t.link_id) {
+          await db.from("expenses").delete().eq("link_id", t.link_id);
+          await db.from("receipts").delete().eq("link_id", t.link_id);
+        }
+        void logAudit({ office_id: t.office_id ?? null, module: "bank_transaction", action_type: "delete", reference_id: t.id, old_data: t });
+        toast.success("Transaction deleted");
+      }
+      setPendingDelete(null); load();
+    } finally {
+      setDeleting(false);
+    }
   }
+
+  function deleteAccount(ac: any) { setPendingDelete({ kind: "account", item: ac }); }
+  function deleteTxn(t: any) { setPendingDelete({ kind: "txn", item: t }); }
 
   async function saveEditTxn() {
     if (!editTxn) return;
     if (Number(editTxn.amount) <= 0) return toast.error("Amount required");
-    const { error } = await sb.from("bank_transactions").update({
-      txn_type: editTxn.txn_type, amount: editTxn.amount, txn_date: editTxn.txn_date,
-      reference_no: editTxn.reference_no, note: editTxn.note,
-    }).eq("id", editTxn.id);
-    if (error) return toast.error(error.message);
+    const prev = txns.find(x => x.id === editTxn.id) ?? null;
+    const changes = { txn_type: editTxn.txn_type, amount: editTxn.amount, txn_date: editTxn.txn_date, reference_no: editTxn.reference_no, note: editTxn.note };
+    const { error } = await sb.from("bank_transactions").update(changes).eq("id", editTxn.id);
+    if (error) return toast.error("লেনদেন আপডেট ব্যর্থ: " + error.message);
+    void logAudit({ office_id: (prev as any)?.office_id ?? null, module: "bank_transaction", action_type: "update", reference_id: editTxn.id, old_data: prev, new_data: changes });
     toast.success("Transaction updated"); setEditTxn(null); load();
   }
 
-  async function deleteTxn(t: any) {
-    if (!confirm("Delete this transaction? Linked cashbook entries will remain unless removed separately.")) return;
-    const { error } = await sb.from("bank_transactions").delete().eq("id", t.id);
-    if (error) return toast.error(error.message);
-    // Remove any mirrored cashbook rows created with the same link_id.
-    if (t.link_id) {
-      await db.from("expenses").delete().eq("link_id", t.link_id);
-      await db.from("receipts").delete().eq("link_id", t.link_id);
-    }
-    toast.success("Transaction deleted"); load();
-  }
 
 
   // Stream-aware lock: only the cash stream the bank account belongs to blocks the txn.
