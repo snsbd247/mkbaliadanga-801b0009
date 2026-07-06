@@ -48,6 +48,7 @@ export default function ReceiptTemplatePage() {
   const { isSuper } = useAuth();
   const brand = useBranding();
   const [tpl, setTpl] = useState<ReceiptTemplate>(DEFAULT_TEMPLATE);
+  const [serialStart, setSerialStart] = useState<string>("0");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -55,7 +56,10 @@ export default function ReceiptTemplatePage() {
     document.title = "Receipt Template";
     (async () => {
       const { data } = await db.from("receipt_settings").select("*").eq("id", 1).maybeSingle();
-      if (data) setTpl({ ...DEFAULT_TEMPLATE, ...(data as any) });
+      if (data) {
+        setTpl({ ...DEFAULT_TEMPLATE, ...(data as any) });
+        setSerialStart(String((data as any).receipt_serial_start ?? 0));
+      }
       setLoading(false);
     })();
   }, []);
@@ -96,6 +100,7 @@ export default function ReceiptTemplatePage() {
           header_alignment: tpl.header_alignment,
           footer_note: tpl.footer_note,
           footer_note_bn: tpl.footer_note_bn,
+          receipt_serial_start: Math.max(0, Math.floor(Number(serialStart) || 0)),
           show_watermark: tpl.show_watermark,
           watermark_text: tpl.watermark_text,
           show_penalty_row: tpl.show_penalty_row,
@@ -216,6 +221,24 @@ export default function ReceiptTemplatePage() {
             <div>
               <Label className="text-xs">Watermark text</Label>
               <Input value={tpl.watermark_text} onChange={(e) => setTpl({ ...tpl, watermark_text: e.target.value })} maxLength={40} placeholder="e.g. COPY / PAID" disabled={!tpl.show_watermark} />
+            </div>
+          </div>
+
+          <div className="grid gap-2 pt-2 border-t">
+            <h4 className="text-sm font-semibold">রিসিপ্ট ক্রমিক নম্বর (Serial number)</h4>
+            <div>
+              <Label className="text-xs">শুরুর ক্রমিক নম্বর</Label>
+              <Input
+                type="number"
+                min={0}
+                value={serialStart}
+                onChange={(e) => setSerialStart(e.target.value)}
+                placeholder="যেমন 4641"
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                এই নম্বরের ঠিক পরের নম্বর থেকে রিসিপ্ট তৈরি শুরু হবে। যেমন 4641 দিলে প্রথম রিসিপ্ট হবে 4642।
+                নিরাপত্তার জন্য বর্তমান নম্বরের চেয়ে ছোট মান দিলে নম্বর পিছাবে না (ডুপ্লিকেট এড়াতে)।
+              </p>
             </div>
           </div>
 

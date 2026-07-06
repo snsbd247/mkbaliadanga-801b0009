@@ -5312,6 +5312,7 @@ export type Database = {
           language: string
           paper_size: string
           qr_placement: string
+          receipt_serial_start: number
           show_charge_row: boolean
           show_logo: boolean
           show_office: boolean
@@ -5332,6 +5333,7 @@ export type Database = {
           language?: string
           paper_size?: string
           qr_placement?: string
+          receipt_serial_start?: number
           show_charge_row?: boolean
           show_logo?: boolean
           show_office?: boolean
@@ -5352,6 +5354,7 @@ export type Database = {
           language?: string
           paper_size?: string
           qr_placement?: string
+          receipt_serial_start?: number
           show_charge_row?: boolean
           show_logo?: boolean
           show_office?: boolean
@@ -6660,6 +6663,7 @@ export type Database = {
         Returns: string
       }
       next_receipt_no: { Args: { p_kind: string }; Returns: string }
+      next_serial_receipt_no: { Args: never; Returns: string }
       next_unified_receipt_no: {
         Args: { p_office_id: string }
         Returns: string
