@@ -315,7 +315,7 @@ function InvoiceListTab({ seasons, offices, isSuper }: any) {
   function buildInvoicePdfPayload(inv: any) {
     return {
       invoice_no: inv.invoice_no,
-      generated_at: inv.generated_at,
+      generated_at: inv.generated_at ?? inv.created_at ?? inv.issue_date ?? null,
       due_date: inv.due_date,
       is_borga: inv.is_borga,
       note: inv.note,
