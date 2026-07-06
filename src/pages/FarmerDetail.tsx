@@ -1201,8 +1201,8 @@ export default function FarmerDetail() {
       )}
 
       <div className="grid gap-4 md:grid-cols-4 mb-4">
-        {farmer.is_voter && <div className="stat-card"><div className="text-xs text-muted-foreground">{t("totalSavings")}</div><div className="text-xl font-bold mt-1">{money(savingsBal)}</div></div>}
-        {farmer.is_voter && <div className="stat-card"><div className="text-xs text-muted-foreground">{t("shareBalance")}</div><div className="text-xl font-bold mt-1">{money(share?.balance ?? 0)}</div></div>}
+        {!!farmer.is_voter && <div className="stat-card"><div className="text-xs text-muted-foreground">{t("totalSavings")}</div><div className="text-xl font-bold mt-1">{money(savingsBal)}</div></div>}
+        {!!farmer.is_voter && <div className="stat-card"><div className="text-xs text-muted-foreground">{t("shareBalance")}</div><div className="text-xl font-bold mt-1">{money(share?.balance ?? 0)}</div></div>}
         
         <div className="stat-card"><div className="text-xs text-muted-foreground">{t("irrigation")} {t("dueAmount")}</div><div className={"text-xl font-bold mt-1 " + (irrDue > 0 ? "due-text" : "")}>{money(irrDue)}</div></div>
       </div>
@@ -1215,13 +1215,13 @@ export default function FarmerDetail() {
           <TabsTrigger value="land_history">{tx("Land History", "ভূমির ইতিহাস")}</TabsTrigger>
           <TabsTrigger value="land_transfers">{tx("Transfer History", "হস্তান্তর ইতিহাস")}</TabsTrigger>
           {borgaOut.length > 0 && <TabsTrigger value="owned_borga">{tx("Owned (Borga)", "মালিকানাধীন জমি")}</TabsTrigger>}
-          {farmer.is_voter && <TabsTrigger value="savings">{t("savings")}</TabsTrigger>}
-          {farmer.is_voter && <TabsTrigger value="loans">{tx("Loans", "ঋণ")}</TabsTrigger>}
+          {!!farmer.is_voter && <TabsTrigger value="savings">{t("savings")}</TabsTrigger>}
+          {!!farmer.is_voter && <TabsTrigger value="loans">{tx("Loans", "ঋণ")}</TabsTrigger>}
           <TabsTrigger value="statement">{t("statement")}</TabsTrigger>
           
           <TabsTrigger value="irr_invoices">{t("irrigation")}</TabsTrigger>
           <TabsTrigger value="payments">{t("pgPaymentsTab")}</TabsTrigger>
-          {farmer.is_voter && <TabsTrigger value="shares">{t("shareBalance")}</TabsTrigger>}
+          {!!farmer.is_voter && <TabsTrigger value="shares">{t("shareBalance")}</TabsTrigger>}
           <TabsTrigger value="notes">{tx("Notes", "নোট")}</TabsTrigger>
         </TabsList>
 
