@@ -353,6 +353,7 @@ export default function SocietyCashBook() {
           .bn-cb-table th, .bn-cb-table td { white-space: normal; word-wrap: break-word; overflow-wrap: anywhere; }
           /* Two equal columns kept side-by-side and top-aligned on every page */
           .bn-cb-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; align-items: start; min-width: 0; }
+          .bn-cb-th { max-width: none; overflow: visible; text-overflow: clip; }
           .bn-cb-cols > section { break-inside: auto; overflow-x: visible; }
           /* Repeat header on each printed page and never split a row */
           .bn-cb-table { width: 100%; }
