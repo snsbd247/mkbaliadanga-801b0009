@@ -185,7 +185,151 @@ function statusBn(s?: string | null) {
   }
 }
 
-function copyHtml(d: IrrigationInvoiceData, brand: CompanyBranding, copyLabel: string, settings: InvoicePdfSettings, role: "office" | "farmer", qrDataUrl?: string): string {
+function copyHtml(d: IrrigationInvoiceData, brand: CompanyBranding, copyLabel: string, settings: InvoicePdfSettings, role: "office" | "farmer", qrDataUrl?: string, wide = false): string {
+  const farmer = d.farmer ?? {};
+  const land = d.land ?? {};
+  const seasonLabel = [d.season?.name ?? d.season?.type, d.season?.year].filter(Boolean).join(" ");
+
+  const logoBlock = brand.logo_url
+    ? `<img src="${brand.logo_url}" crossorigin="anonymous" style="height:${wide ? 34 : 42}px;display:block;margin:0 auto 2px;" />`
+    : "";
+
+  const orgName = brand.company_name_bn ?? brand.company_name ?? "";
+  const orgLine2 = [brand.address, brand.mobile, brand.email].filter(Boolean).join(" • ");
+  const regLine = brand.registration_no ? `নিবন্ধন নং: ${toBnDigits(brand.registration_no)}` : "";
+  const amountWords = bnAmountInWords(Number(d.payable_amount ?? 0));
+
+  const layout = getReceiptLayoutSettings();
+  const { mouza: mouzaLabel, dag: dagLabel } = getIrrigationLabels("bn");
+  const dagJoined = parseDagNumbers(land.dag_no).join(dagSeparatorString(layout.dagSeparator));
+  const srcRaw = (d.rate_source ?? "STANDARD").toString().toUpperCase();
+  const srcBn = srcRaw === "MANUAL" ? "ম্যানুয়াল" : srcRaw === "CATEGORY" ? "ক্যাটেগরি" : "মানক";
+  const srcColor = srcRaw === "MANUAL" ? "#b45309" : srcRaw === "CATEGORY" ? "#1d4ed8" : "#15803d";
+  const appliedRateText = d.applied_rate != null ? `${fmt2(d.applied_rate)}` : "—";
+  const stdRateText = d.original_standard_rate != null ? ` (মানক: ${fmt2(d.original_standard_rate)})` : "";
+
+  const rows: Array<[string, string]> = [
+    ["কৃষকের নাম", `${farmer.name ?? "—"}${farmer.farmer_code ? " (" + farmer.farmer_code + ")" : ""}`],
+    ["গ্রাম / মোবাইল", `${farmer.village ?? "—"}${farmer.mobile ? " / " + farmer.mobile : ""}`],
+    ["জমির ধরন", d.is_borga ? "বর্গাদার" : "নিজ মালিক"],
+    [mouzaLabel, `${land.mouza ?? "—"} / ${formatLandSize(land.land_size, "with_katha") ?? "—"}`],
+    [dagLabel, dagJoined || "—"],
+    ["সিজন", seasonLabel || "—"],
+    ["রেট উৎস", `${srcBn}${d.irrigation_category_name ? " — " + d.irrigation_category_name : ""}`],
+    ["প্রযোজ্য রেট/শতক", `${appliedRateText}${stdRateText}`],
+    ["ইস্যু তারিখ", fmtDate(d.generated_at)],
+    ["মেয়াদ তারিখ", fmtDate(d.due_date)],
+    ["অবস্থা", statusBn(d.invoice_status)],
+  ];
+
+  const chargeRows: Array<[string, number | null | undefined]> = [
+    ["চলতি সেচ চার্জ", d.irrigation_amount],
+    ["রক্ষণাবেক্ষণ", d.maintenance_amount],
+    ["খাল / নালা", d.canal_amount],
+    ["অন্যান্য", d.other_charge],
+    ["বিলম্ব ফি", d.delay_fee],
+  ];
+  if (Number(d.previous_due_amount) > 0) {
+    chargeRows.push(["পূর্বের বকেয়া (পূর্ববর্তী সিজন)", d.previous_due_amount]);
+  }
+  if (Number(d.discount_amount) > 0) {
+    chargeRows.push([`ডিসকাউন্ট (Discount)${d.discount_reason ? " — " + d.discount_reason : ""}`, -Number(d.discount_amount)]);
+  }
+
+  const farmerSig = `
+    <div style="text-align:center;min-width:150px;">
+      <div style="border-top:1px solid #111;padding-top:2px;">${settings.farmerSignTitle || "কৃষকের স্বাক্ষর"}</div>
+      ${settings.farmerSignName ? `<div style="font-weight:600;font-size:11px;">${settings.farmerSignName}</div>` : (farmer.name ? `<div style="font-size:11px;color:#444;">${farmer.name}</div>` : "")}
+    </div>`;
+
+  const collectorSig = `
+    <div style="text-align:center;min-width:150px;">
+      <div style="border-top:1px solid #111;padding-top:2px;">${settings.collectorSignTitle || "আদায়কারীর স্বাক্ষর"}</div>
+      ${settings.collectorSignName ? `<div style="font-weight:600;font-size:11px;">${settings.collectorSignName}</div>` : ""}
+    </div>`;
+
+  const infoTable = `
+    <table style="width:100%;border:1px solid #111;border-collapse:collapse;font-size:11px;">
+      ${rows.map(([k, v]) => `
+        <tr>
+          <td style="padding:2px 6px;vertical-align:top;width:40%;border-bottom:1px solid #ddd;">${k}</td>
+          <td style="padding:2px 6px;vertical-align:top;border-bottom:1px solid #ddd;">${v}</td>
+        </tr>`).join("")}
+    </table>`;
+
+  const chargeTable = `
+    <table style="width:100%;border:1px solid #111;border-collapse:collapse;font-size:11px;">
+      <thead>
+        <tr style="background:#f4f4f4;">
+          <th style="text-align:left;padding:3px 6px;border-bottom:1px solid #111;">বিবরণ</th>
+          <th style="text-align:right;padding:3px 6px;border-bottom:1px solid #111;">টাকা</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${chargeRows.map(([k, v]) => `
+          <tr>
+            <td style="padding:2px 6px;border-bottom:1px solid #eee;">${k}</td>
+            <td style="padding:2px 6px;text-align:right;border-bottom:1px solid #eee;">${fmt2(v as number)}</td>
+          </tr>`).join("")}
+        <tr>
+          <td style="padding:3px 6px;font-weight:700;background:#fafafa;border-top:1px solid #111;">মোট প্রদেয়</td>
+          <td style="padding:3px 6px;text-align:right;font-weight:700;background:#fafafa;border-top:1px solid #111;">${fmt2(d.payable_amount)}</td>
+        </tr>
+        <tr>
+          <td style="padding:2px 6px;">পরিশোধিত</td>
+          <td style="padding:2px 6px;text-align:right;">${fmt2(d.paid_amount)}</td>
+        </tr>
+        <tr>
+          <td style="padding:3px 6px;font-weight:700;background:#fff5f5;color:#b91c1c;">বকেয়া</td>
+          <td style="padding:3px 6px;text-align:right;font-weight:700;background:#fff5f5;color:#b91c1c;">${fmt2(d.due_amount)}</td>
+        </tr>
+      </tbody>
+    </table>`;
+
+  const wordsBlock = `
+    <div style="font-size:10px;margin-top:3px;">কথায়: ${amountWords} টাকা মাত্র।</div>
+    ${d.note ? `<div style="font-size:10px;margin-top:1px;"><b>মন্তব্য:</b> ${d.note}</div>` : ""}`;
+
+  const header = `
+    <div style="text-align:center;">
+      ${logoBlock}
+      <div style="font-size:15px;font-weight:700;">${orgName}</div>
+      ${orgLine2 ? `<div style="font-size:10px;color:#333;">${orgLine2}</div>` : ""}
+      ${regLine ? `<div style="font-size:10px;color:#333;">${regLine}</div>` : ""}
+      <div style="font-size:15px;font-weight:700;margin-top:3px;">সেচ ইনভয়েস</div>
+      <div style="display:inline-block;border:1px solid #111;padding:1px 12px;margin-top:3px;font-size:11px;">${copyLabel}</div>
+      <div style="display:inline-block;border:1px solid ${srcColor};color:${srcColor};padding:1px 8px;margin-top:3px;margin-left:4px;font-size:10px;font-weight:600;border-radius:3px;">${srcBn}</div>
+    </div>
+
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-top:6px;font-size:11px;">
+      <div>
+        <div>রসিদ নং: <b>${d.invoice_no}</b></div>
+        <div>তারিখ: ${fmtDate(d.generated_at)}</div>
+      </div>
+      ${qrDataUrl ? `<img src="${qrDataUrl}" style="width:58px;height:58px;display:block;" alt="QR" />` : ""}
+    </div>`;
+
+  const body = wide
+    ? `
+      <div style="display:flex;gap:12px;margin-top:5px;align-items:flex-start;">
+        <div style="flex:1;">${infoTable}</div>
+        <div style="flex:1;">${chargeTable}${wordsBlock}</div>
+      </div>`
+    : `
+      <div style="margin-top:5px;">${infoTable}</div>
+      <div style="margin-top:5px;">${chargeTable}</div>
+      ${wordsBlock}`;
+
+  return `
+  <div style="font-family:'Noto Sans Bengali','Hind Siliguri','SolaimanLipi',sans-serif;color:#111;padding:10px 14px;" data-invoice-copy="${role}">
+    ${header}
+    ${body}
+    <div style="display:flex;justify-content:space-between;margin-top:${wide ? 14 : 18}px;font-size:10px;gap:12px;">
+      ${farmerSig}
+      ${collectorSig}
+    </div>
+  </div>`;
+}
   const farmer = d.farmer ?? {};
   const land = d.land ?? {};
   const seasonLabel = [d.season?.name ?? d.season?.type, d.season?.year].filter(Boolean).join(" ");
