@@ -1204,6 +1204,11 @@ function InvoiceEditDialog({ inv, onClose, onSaved }: any) {
           </p>
         </div>
         <DialogFooter>
+          {Number(inv.paid_amount) > 0 && (
+            <Button variant="destructive" onClick={markUnpaid} disabled={busy || !perm.ok}>
+              {tx("Mark unpaid (remove payments)", "আনপেইড করুন (পেমেন্ট রিমুভ)")}
+            </Button>
+          )}
           <Button variant="outline" onClick={onClose} disabled={busy}>{tx("Close", "বন্ধ")}</Button>
           <Button onClick={save} disabled={busy || !perm.ok}>{busy ? tx("Saving…", "সংরক্ষণ…") : tx("Save", "সংরক্ষণ করুন")}</Button>
         </DialogFooter>
