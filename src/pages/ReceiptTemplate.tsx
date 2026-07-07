@@ -23,7 +23,7 @@ import {
 } from "@/lib/paymentReceiptPdf";
 import { useBranding } from "@/lib/branding";
 import { notifyReceiptTemplateChange } from "@/lib/receiptTemplate";
-import { checkReceiptSerialRpc, setReceiptSerialStart, serialSaveUnconfirmedToast } from "@/lib/receiptSerial";
+import { checkReceiptSerialRpc, setReceiptSerialStart, serialSaveUnconfirmedToast, getCurrentSerialLast } from "@/lib/receiptSerial";
 import DiagnosticsPanel from "@/components/system/DiagnosticsPanel";
 import { logAudit } from "@/lib/audit";
 import { previewBnReceiptPdf } from "@/lib/bnReceipts";
@@ -68,15 +68,28 @@ export default function ReceiptTemplatePage() {
     document.title = "Receipt Template";
     (async () => {
       const { data } = await db.from("receipt_settings").select("*").eq("id", 1).maybeSingle();
+      let lastUsed = 0;
+      try {
+        lastUsed = await getCurrentSerialLast();
+      } catch {
+        // ignore — fall back to configured start
+      }
       if (data) {
         setTpl({ ...DEFAULT_TEMPLATE, ...(data as any) });
-        const s = Number((data as any).receipt_serial_start ?? 0) || 0;
-        setSerialStart(String(s));
-        setSavedSerialStart(s);
+        const configured = Number((data as any).receipt_serial_start ?? 0) || 0;
+        // Effective value reflects the actual last-used serial so the admin
+        // always sees the current position (e.g. after a receipt is generated).
+        const effective = Math.max(configured, lastUsed);
+        setSerialStart(String(effective));
+        setSavedSerialStart(effective);
+      } else if (lastUsed > 0) {
+        setSerialStart(String(lastUsed));
+        setSavedSerialStart(lastUsed);
       }
       setLoading(false);
     })();
   }, []);
+
 
   const sample = useMemo<PaymentReceiptData>(
     () => ({
@@ -228,12 +241,20 @@ export default function ReceiptTemplatePage() {
 
       // Re-read the persisted row so the UI reflects exactly what is in the DB.
       const { data: fresh } = await db.from("receipt_settings").select("*").eq("id", 1).maybeSingle();
+      let freshLast = 0;
+      try {
+        freshLast = await getCurrentSerialLast();
+      } catch {
+        // ignore
+      }
       if (fresh) {
         setTpl({ ...DEFAULT_TEMPLATE, ...(fresh as any) });
-        const s = Number((fresh as any).receipt_serial_start ?? 0) || 0;
-        setSerialStart(String(s));
-        setSavedSerialStart(s);
+        const configured = Number((fresh as any).receipt_serial_start ?? 0) || 0;
+        const effective = Math.max(configured, freshLast);
+        setSerialStart(String(effective));
+        setSavedSerialStart(effective);
       }
+
 
       notifyReceiptTemplateChange();
       toast.success("Receipt template saved");
@@ -372,10 +393,15 @@ export default function ReceiptTemplatePage() {
               {serialError ? (
                 <p className="text-xs text-destructive mt-1" data-testid="serial-start-error">{serialError}</p>
               ) : (
-                <p className="text-xs text-muted-foreground mt-1">
-                  এই নম্বরের ঠিক পরের নম্বর থেকে রিসিপ্ট তৈরি শুরু হবে। যেমন 4641 দিলে প্রথম রিসিপ্ট হবে 4642।
-                  নিরাপত্তার জন্য বর্তমান নম্বরের চেয়ে ছোট মান দিলে নম্বর পিছাবে না (ডুপ্লিকেট এড়াতে)।
-                </p>
+                <>
+                  <p className="text-xs text-primary mt-1 font-medium" data-testid="serial-status">
+                    সর্বশেষ ব্যবহৃত রশিদ নং: {savedSerialStart} — পরবর্তী রশিদ হবে {savedSerialStart + 1}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    এই নম্বরের ঠিক পরের নম্বর থেকে রিসিপ্ট তৈরি হবে। রশিদ জেনারেট হলে এই নম্বর অটো আপডেট হয়ে সর্বশেষ ব্যবহৃত নম্বর দেখাবে।
+                    নিরাপত্তার জন্য বর্তমান নম্বরের চেয়ে ছোট মান দিলে নম্বর পিছাবে না (ডুপ্লিকেট এড়াতে)।
+                  </p>
+                </>
               )}
             </div>
           </div>
