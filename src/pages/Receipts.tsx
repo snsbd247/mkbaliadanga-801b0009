@@ -45,6 +45,7 @@ export default function Receipts() {
   const [list, setList] = useState<any[]>([]);
   const [mouzaByPayment, setMouzaByPayment] = useState<Record<string, string>>({});
   const [preview, setPreview] = useState<{ data: BnReceiptData; copy: ReceiptCopy } | null>(null);
+  const [editPayment, setEditPayment] = useState<any | null>(null);
 
   // Filters
   const [receiptNo, setReceiptNo] = useState("");
