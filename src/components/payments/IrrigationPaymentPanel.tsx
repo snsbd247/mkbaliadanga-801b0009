@@ -612,6 +612,11 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
       }
 
       const receiptNo = await nextUnifiedReceiptNo(officeId, "IRR", paymentId).catch(() => autoReceiptNo("IRR", paymentId));
+      // Persist the generated receipt number on the payment row so it shows in
+      // the Recent Transactions list (Receipt # column) instead of "—".
+      if (receiptNo) {
+        await db.from("payments").update({ receipt_no: receiptNo }).eq("id", paymentId);
+      }
       const [{ data: farmer }, { data: company }] = await Promise.all([
         db.from("farmers").select("name_bn,name_en,member_no,farmer_code,father_name,village,mobile,office_id,union_id").eq("id", farmerId).maybeSingle(),
         db.from("company_settings").select("company_name,company_name_bn,address,mobile,email,registration_no,logo_url,editor_signature_url").eq("id", 1).maybeSingle(),
