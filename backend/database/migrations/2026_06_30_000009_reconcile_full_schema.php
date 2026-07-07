@@ -4886,6 +4886,7 @@ return new class extends Migration
                 $table->text('idempotency_key')->nullable();
                 $table->timestamp('deleted_at')->nullable();
                 $table->text('receipt_no')->nullable();
+                $table->char('patwari_id', 36)->nullable();
                 $table->text('verify_token');
                 $table->timestamp('voided_at')->nullable();
                 $table->char('voided_by', 36)->nullable();
@@ -4941,6 +4942,9 @@ return new class extends Migration
                 }
                 if (! Schema::hasColumn('payments', 'receipt_no')) {
                     $table->text('receipt_no')->nullable();
+                }
+                if (! Schema::hasColumn('payments', 'patwari_id')) {
+                    $table->char('patwari_id', 36)->nullable();
                 }
                 if (! Schema::hasColumn('payments', 'verify_token')) {
                     $table->text('verify_token')->nullable();

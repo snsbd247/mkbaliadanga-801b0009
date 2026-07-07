@@ -8,7 +8,7 @@ import { joinNotes } from "@/lib/irrigationExports";
 export const PATWARI_NAME_MISSING = "পাটুয়ারী নির্ধারিত নেই";
 export const PATWARI_MOBILE_MISSING = "মোবাইল নম্বর নেই";
 
-export type PatwariSource = "land" | "mouza" | null;
+export type PatwariSource = "payment" | "land" | "mouza" | null;
 
 export interface PatwariRow {
   name?: string | null;
@@ -82,6 +82,9 @@ export interface IrrigationEnrichInput {
   paymentAmount?: number;
   paymentNote?: string | null;
   memberNoFallback?: string | null;
+  /** Patwari explicitly saved on the payment/receipt (manual selection or later edit). */
+  manualPatwariId?: string | null;
+  manualPatwari?: PatwariRow | null;
 }
 
 export interface IrrigationEnriched {
@@ -122,7 +125,7 @@ export interface IrrigationEnriched {
 export async function buildIrrigationReceiptEnrichment(
   input: IrrigationEnrichInput,
 ): Promise<IrrigationEnriched> {
-  const { farmerId, refIds, paymentAmount, paymentNote, memberNoFallback } = input;
+  const { farmerId, refIds, paymentAmount, paymentNote, memberNoFallback, manualPatwariId } = input;
 
   const collectedFromOutstanding = Number(paymentAmount || 0);
   let invoiceRows: any[] = [];
@@ -225,6 +228,16 @@ export async function buildIrrigationReceiptEnrichment(
   const primaryCharge = invoiceRows[0] ?? null;
   dbg("primary invoice", primaryCharge?.invoice_no, "land_id", primaryCharge?.land_id);
 
+  let paymentPatwari: PatwariRow | null = input.manualPatwari ?? null;
+  if (!paymentPatwari && manualPatwariId) {
+    const { data: p } = await db
+      .from("patwaris")
+      .select("id,name,name_bn,mobile")
+      .eq("id", manualPatwariId)
+      .maybeSingle();
+    paymentPatwari = p ?? null;
+  }
+
   let totalOutstanding = 0;
   if (farmerId) {
     const { data: allDues } = await db
@@ -326,8 +339,9 @@ export async function buildIrrigationReceiptEnrichment(
       ),
     ).join("/") || "সেচ চার্জ";
   const patwariInv = invoiceRows.find((inv) => inv?.lands?.patwaris) ?? null;
-  const patwari = patwariInv?.lands?.patwaris ?? null;
-  const patwariSource: PatwariSource = patwari ? patwariInv?.lands?.patwari_source ?? null : null;
+  const landPatwari = patwariInv?.lands?.patwaris ?? null;
+  const patwari = paymentPatwari ?? landPatwari;
+  const patwariSource: PatwariSource = paymentPatwari ? "payment" : (landPatwari ? patwariInv?.lands?.patwari_source ?? null : null);
   const patwariDisp = patwariDisplay(patwari);
   const landNotes = joinNotes(
     ...invoiceRows.map((inv) => (inv?.lands?.notes ?? "").trim()),

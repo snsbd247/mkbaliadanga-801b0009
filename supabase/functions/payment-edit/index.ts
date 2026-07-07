@@ -71,10 +71,11 @@ Deno.serve(async (req) => {
     const newOwner = body.owner_farmer_id ? String(body.owner_farmer_id) : null
     const newFee = body.delay_fee != null ? Math.round(Number(body.delay_fee) || 0) : null
     const newReceiptNo = body.receipt_no != null ? String(body.receipt_no).trim() : null
+    const newPatwariId = body.patwari_id !== undefined ? (body.patwari_id ? String(body.patwari_id) : null) : undefined
 
     // ---- Load payment + allocations ----
     const { data: pay, error: payErr } = await svc.from('payments')
-      .select('id,amount,note,kind,reference_id,office_id,receipt_no,status,voided_at,payment_allocations(id,kind,reference_id,amount)')
+      .select('id,amount,note,kind,reference_id,office_id,receipt_no,patwari_id,status,voided_at,payment_allocations(id,kind,reference_id,amount)')
       .eq('id', paymentId).maybeSingle()
     if (payErr || !pay) return new Response(JSON.stringify({ error: 'Payment not found' }), { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
     if (pay.voided_at || pay.status === 'voided') {
@@ -101,6 +102,10 @@ Deno.serve(async (req) => {
     if (newOwner != null) {
       const { data: f } = await svc.from('farmers').select('id').eq('id', newOwner).maybeSingle()
       if (!f) return new Response(JSON.stringify({ error: 'ভুল কৃষক: farmer not found' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+    }
+    if (newPatwariId) {
+      const { data: p } = await svc.from('patwaris').select('id').eq('id', newPatwariId).maybeSingle()
+      if (!p) return new Response(JSON.stringify({ error: 'ভুল পাটুয়ারি: patwari not found' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
     }
     // For irrigation, the (possibly re-computed) payable must cover the new amount —
     // blocks accidentally entering a higher/lower amount that breaks the invoice.
@@ -189,6 +194,12 @@ Deno.serve(async (req) => {
       if (dup) return new Response(JSON.stringify({ error: `রিসিপ্ট নম্বর ইতিমধ্যে ব্যবহৃত: ${newReceiptNo}` }), { status: 409, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
       before.receipt_no = (pay as any).receipt_no ?? null; after.receipt_no = newReceiptNo
       await svc.from('payments').update({ receipt_no: newReceiptNo }).eq('id', paymentId)
+    }
+
+    // 4c) Receipt patwari override (manual selection / edit)
+    if (newPatwariId !== undefined && newPatwariId !== ((pay as any).patwari_id ?? null)) {
+      before.patwari_id = (pay as any).patwari_id ?? null; after.patwari_id = newPatwariId
+      await svc.from('payments').update({ patwari_id: newPatwariId }).eq('id', paymentId)
     }
 
     // 5) Audit log

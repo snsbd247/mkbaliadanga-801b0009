@@ -28,7 +28,7 @@ import { logAudit } from "@/lib/audit";
 import { Pencil, Trash2 } from "lucide-react";
 
 const PAY_SELECT =
-  "*, farmers(name_en,name_bn,farmer_code,member_no,mobile,village,father_name,voter_number,account_number,is_voter,union_id), payment_allocations(*)";
+  "*, farmers(name_en,name_bn,farmer_code,member_no,mobile,village,father_name,voter_number,account_number,is_voter,union_id), patwaris(name,name_bn,mobile), payment_allocations(*)";
 
 export default function Receipts() {
   const { t, tx } = useLang();
