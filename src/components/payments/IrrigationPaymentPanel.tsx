@@ -440,8 +440,14 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
         if (remainingPrev <= 0) break;
         const take = Math.min(remainingPrev, Number(inv.due_amount));
         if (take <= 0) continue;
+        const newPaid = Number(inv.paid_amount) + take;
+        const newDue = Math.max(0, Number(inv.payable_amount) - newPaid);
         await db.from("irrigation_invoices")
-          .update({ paid_amount: Number(inv.paid_amount) + take })
+          .update({
+            paid_amount: newPaid,
+            due_amount: newDue,
+            invoice_status: newDue <= 0 ? "paid" : "partial_paid",
+          })
           .eq("id", inv.id);
         await db.from("irrigation_invoice_payments").insert({
           invoice_id: inv.id,
