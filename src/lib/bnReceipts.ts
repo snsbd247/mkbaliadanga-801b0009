@@ -492,7 +492,7 @@ function copyHtml(d: BnReceiptData, copyLabel: string, signatureUrl: string | nu
     // 12. কথায়
     if (lang === "bn") rows.push([t.inWords, `${bnAmountInWords(totalIrr)} মাত্র।`]);
     // 13. হোল্ডিং এর বিবরন / পাটুয়ারীর নাম ও মোবা নং (সবসময় দেখাবে)
-    const holdingDesc = (d.holding_description ?? d.remark ?? "").trim() || null;
+    const holdingDesc = (d.holding_description ?? "").trim() || null;
     const patwariText = d.patwari_name
       ? `${d.patwari_name}${d.patwari_mobile ? "-" + digits(String(d.patwari_mobile), lang) : ""}`
       : null;
