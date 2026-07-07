@@ -652,11 +652,11 @@ function copyHtml(d: BnReceiptData, copyLabel: string, signatureUrl: string | nu
       ${tpl.show_signature_line !== false ? `
       <div style="position:relative;z-index:1;display:flex;justify-content:space-between;align-items:flex-end;margin-top:54px;font-size:19px;line-height:1.2;">
         <div style="border-top:1px solid #111;padding-top:2px;min-width:260px;">${lang === "bn" ? "সদস্যের স্বাক্ষর/প্রদানকারীর স্বাক্ষর" : "Member / Payer signature"}</div>
-        <div style="text-align:right;min-width:170px;">
+        <div style="text-align:right;min-width:300px;">
           ${signatureUrl
-            ? `<img src="${signatureUrl}" crossorigin="anonymous" style="height:34px;margin:0 0 2px auto;display:block;" data-sig="filled" />`
+            ? `<img src="${signatureUrl}" crossorigin="anonymous" style="height:60px;margin:0 0 4px auto;display:block;" data-sig="filled" />`
             : ""}
-          <div style="border-top:1px solid #111;padding-top:2px;">${t.collectorSig}</div>
+          <div style="border-top:1px solid #111;padding-top:4px;font-size:22px;font-weight:600;">${t.collectorSig}</div>
         </div>
       </div>` : ""}
       ${(() => { const fn = (lang === "bn" ? tpl.footer_note_bn : tpl.footer_note) || ""; return fn.trim() ? `<div style="position:relative;z-index:1;text-align:center;font-size:13px;color:#555;margin-top:14px;">${fn}</div>` : ""; })()}
