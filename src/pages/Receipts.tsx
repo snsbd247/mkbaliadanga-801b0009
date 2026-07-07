@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { db } from "@/lib/db";
 import { useAuth } from "@/auth/AuthProvider";
 import { useLang } from "@/i18n/LanguageProvider";
@@ -34,7 +33,6 @@ const PAY_SELECT =
 export default function Receipts() {
   const { t, tx } = useLang();
   const { user } = useAuth();
-  const navigate = useNavigate();
   const brand = useBranding();
   const receiptArgs = useReceiptRenderArgs();
   const { confirm, dialog: confirmDialog } = useConfirm();
