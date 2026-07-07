@@ -91,6 +91,8 @@ export interface BnReceiptData {
   /** Patwari (responsible field officer) — irrigation receipts only */
   patwari_name?: string | null;
   patwari_mobile?: string | null;
+  /** Debug indicator: where the patwari came from ("land" | "mouza" | null). */
+  patwari_source?: "land" | "mouza" | null;
 
   description?: string | null;
   outstanding?: number | null;
