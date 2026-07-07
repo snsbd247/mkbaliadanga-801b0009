@@ -84,6 +84,8 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
 
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [selectedPrevIds, setSelectedPrevIds] = useState<Set<string>>(new Set());
+  // Post-submit status summary of the invoices this payment touched.
+  const [paidStatuses, setPaidStatuses] = useState<Array<{ invoice_no: string; cleared: boolean }>>([]);
   // editable delay fees per invoice
   const [delayFee, setDelayFee] = useState<Record<string, number>>({});
   const [delayFeeReason, setDelayFeeReason] = useState<Record<string, string>>({});
