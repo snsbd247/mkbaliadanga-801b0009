@@ -285,6 +285,14 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
     });
   }
 
+  function togglePrevInvoice(id: string) {
+    setSelectedPrevIds(prev => {
+      const n = new Set(prev);
+      n.has(id) ? n.delete(id) : n.add(id);
+      return n;
+    });
+  }
+
   async function submit() {
     if (submitting) return;
     if (!farmerId) return toast.error(t("pickFarmer") || "Pick a farmer");
