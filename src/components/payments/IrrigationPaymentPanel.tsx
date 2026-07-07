@@ -873,6 +873,11 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
           <div className="flex items-center justify-between border-t pt-3">
             <div className="text-sm">
               {tx("Previous due total", "মোট পূর্বের বকেয়া")}: <span className="font-mono font-semibold">{money(previousDueTotal)}</span>
+              {selectedPreviousInvoices.length > 0 && (
+                <span className="ml-1 text-xs text-muted-foreground">
+                  ({selectedPreviousInvoices.map(i => `${i.invoice_no} ${money(i.due_amount)}`).join(" + ")})
+                </span>
+              )}
             </div>
             <div className="flex items-center gap-2">
               <Label className="text-sm">{tx("Previous due received (পূর্বের বকেয়া হতে)", "পূর্বের বকেয়া হতে গৃহীত")}</Label>
