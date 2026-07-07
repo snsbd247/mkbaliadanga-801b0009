@@ -27,6 +27,7 @@ function useFieldLabels() {
     land_size: tx("Land size", "জমির পরিমাণ"),
     owner_farmer_id: tx("Owner", "মালিক"),
     note: tx("Note", "নোট"),
+    receipt_no: tx("Receipt #", "রশিদ নং"),
   }), [tx]);
 }
 
