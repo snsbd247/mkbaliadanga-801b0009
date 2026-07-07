@@ -181,6 +181,16 @@ Deno.serve(async (req) => {
       await svc.from('payments').update({ note: newNote }).eq('id', paymentId)
     }
 
+    // 4b) Receipt number
+    if (newReceiptNo != null && newReceiptNo !== String((pay as any).receipt_no ?? '')) {
+      if (!newReceiptNo) return new Response(JSON.stringify({ error: 'receipt_no cannot be empty' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+      // Ensure uniqueness so two receipts never share a number.
+      const { data: dup } = await svc.from('payments').select('id').eq('receipt_no', newReceiptNo).neq('id', paymentId).maybeSingle()
+      if (dup) return new Response(JSON.stringify({ error: `রিসিপ্ট নম্বর ইতিমধ্যে ব্যবহৃত: ${newReceiptNo}` }), { status: 409, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+      before.receipt_no = (pay as any).receipt_no ?? null; after.receipt_no = newReceiptNo
+      await svc.from('payments').update({ receipt_no: newReceiptNo }).eq('id', paymentId)
+    }
+
     // 5) Audit log
     await svc.from('audit_logs').insert({
       user_id: userId, action: 'edit', entity: 'payments', entity_id: paymentId,
