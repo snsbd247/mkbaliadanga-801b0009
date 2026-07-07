@@ -69,6 +69,14 @@ export default function ReceiptTemplatePage() {
     return null;
   })();
 
+  const watermarkError = (() => {
+    if (!tpl.show_watermark) return null;
+    const raw = String(tpl.watermark_text ?? "");
+    if (raw.trim() === "") return "ওয়াটারমার্ক টেক্সট দিতে হবে / Watermark text is required";
+    if (raw.length > 40) return "ওয়াটারমার্ক টেক্সট ৪০ অক্ষরের বেশি হতে পারবে না / Watermark text must be 40 characters or fewer";
+    return null;
+  })();
+
   useEffect(() => {
     document.title = "Receipt Template";
     (async () => {
