@@ -272,7 +272,7 @@ export default function ReceiptTemplatePage() {
               <Link to="/admin/receipt-serial-audit"><History className="h-4 w-4" />সিরিয়াল লগ</Link>
             </Button>
             <Button variant="outline" size="sm" onClick={reset}><RotateCcw className="h-4 w-4" />Reset</Button>
-            <Button size="sm" onClick={save} disabled={saving || !!serialError}>
+            <Button size="sm" onClick={save} disabled={saving || !!serialError || !!watermarkError}>
               {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}Save
             </Button>
           </div>
