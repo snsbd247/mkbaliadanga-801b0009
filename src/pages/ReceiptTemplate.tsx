@@ -153,7 +153,7 @@ export default function ReceiptTemplatePage() {
 
     setSaving(true);
     try {
-      const { error } = await db
+      const { data: updated, error } = await db
         .from("receipt_settings")
         .update({
           language: tpl.language,
@@ -173,8 +173,15 @@ export default function ReceiptTemplatePage() {
           qr_placement: tpl.qr_placement,
           updated_at: new Date().toISOString(),
         })
-        .eq("id", 1);
+        .eq("id", 1)
+        .select("id, watermark_text");
       if (error) { toast.error(error.message); return; }
+      // A 0-row update means the write was blocked (permission/RLS) even though
+      // no error was thrown — surface it instead of a false "saved".
+      if (!updated || updated.length === 0) {
+        toast.error("সেটিংস সংরক্ষণ করা যায়নি — শুধুমাত্র সুপার অ্যাডমিন রিসিপ্ট টেমপ্লেট পরিবর্তন করতে পারেন। / Could not save — only a super admin can change the receipt template.");
+        return;
+      }
 
       // Audit the template save itself.
       logAudit({ module: "receipt", action_type: "update", reference_id: "receipt_settings:1", new_data: { serial_start: nextSerial } });
