@@ -30,6 +30,7 @@ import { exceedsDue } from "@/lib/irrigationPaymentMath";
 import { verifyPaymentCoverage } from "@/lib/irrigationPaymentCoverage";
 import { recalcInvoice } from "@/lib/invoiceRecalc";
 import { nextMonthlyReceiptNo, nextUnifiedReceiptNo } from "@/lib/monthlyReceiptNo";
+import { resolveReceiptPatwari } from "@/lib/receiptPatwari";
 
 // Shared select for open irrigation invoices (used by both initial load and reload).
 const OPEN_INVOICE_SELECT =
@@ -675,7 +676,7 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
       const manualPatwari = !landPatwari && manualPatwariId
         ? (patwariList.find((p) => p.id === manualPatwariId) ?? null)
         : null;
-      const patwari = landPatwari ?? manualPatwari;
+      const patwari = resolveReceiptPatwari(landPatwari, manualPatwari);
       const landNotes = allReceiptInvoices
         .map((inv) => (inv.lands?.notes ?? "").trim())
         .filter(Boolean)
@@ -726,8 +727,8 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
           remark: specialPermission ? `${tx("Special permission until", "বিশেষ অনুমতি — পরিশোধের তারিখ")}: ${promiseDate}${promiseRemarks ? " — " + promiseRemarks : ""}` : (note || null),
           holding_description: holdingDescription,
           covered_invoices: coveredInvoices.map((c) => ({ invoice_no: c.invoice_no, due_amount: c.due_amount })),
-          patwari_name: patwari ? (patwari.name_bn || patwari.name) : null,
-          patwari_mobile: patwari?.mobile ?? null,
+          patwari_name: patwari.name,
+          patwari_mobile: patwari.mobile,
           collector_signature_url: (company as any)?.editor_signature_url ?? null,
           office_collector_signature_url: (company as any)?.editor_signature_url ?? null,
           verify_url: `${window.location.origin}/r/${receiptNo}`,
