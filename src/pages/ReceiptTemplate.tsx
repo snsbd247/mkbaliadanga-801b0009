@@ -215,6 +215,15 @@ export default function ReceiptTemplatePage() {
         toast.success(`ক্রমিক নম্বর সংরক্ষিত — পরবর্তী রিসিপ্ট হবে ${nextSerial + 1} / Serial saved — the next receipt will be ${nextSerial + 1}`);
       }
 
+      // Re-read the persisted row so the UI reflects exactly what is in the DB.
+      const { data: fresh } = await db.from("receipt_settings").select("*").eq("id", 1).maybeSingle();
+      if (fresh) {
+        setTpl({ ...DEFAULT_TEMPLATE, ...(fresh as any) });
+        const s = Number((fresh as any).receipt_serial_start ?? 0) || 0;
+        setSerialStart(String(s));
+        setSavedSerialStart(s);
+      }
+
       notifyReceiptTemplateChange();
       toast.success("Receipt template saved");
 
