@@ -35,6 +35,7 @@ import { Sparkles, Plus, Eye, Ban, RefreshCw, ShieldCheck, AlertTriangle, FileSp
 import { exportInvoicesXLSX, exportInvoicesCSV, joinInvoiceNotes, joinNotes } from "@/lib/irrigationExports";
 import { exportTablePDF } from "@/lib/exports";
 import { logAudit } from "@/lib/audit";
+import { voidPaymentsForInvoice } from "@/lib/voidInvoicePayments";
 import { validateDiscount, computeInvoiceTotals, grossAmount, canEditInvoice } from "@/lib/invoiceDiscount";
 import {
   downloadIrrigationInvoicePdf, previewIrrigationInvoicePdf,
@@ -127,6 +128,7 @@ export default function IrrigationInvoices() {
 
 function InvoiceListTab({ seasons, offices, isSuper }: any) {
   const { tx, lang } = useLang();
+  const { user } = useAuth();
   const { confirm } = useConfirm();
   const [rows, setRows] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(false);
@@ -300,16 +302,17 @@ function InvoiceListTab({ seasons, offices, isSuper }: any) {
   async function deleteInvoice(inv: any) {
     const ok = await confirm({
       title: tx("Delete invoice?", "ইনভয়েস মুছে ফেলবেন?"),
-      description: `${inv.invoice_no} — ${tx("Deleted invoices won't appear in the list.", "মুছে ফেলা ইনভয়েস তালিকায় দেখাবে না।")}`,
+      description: `${inv.invoice_no} — ${tx("Deleted invoices won't appear in the list. Any payments received against this invoice will also be removed.", "মুছে ফেলা ইনভয়েস তালিকায় দেখাবে না। এই ইনভয়েসের বিপরীতে গৃহীত পেমেন্টও রিমুভ হবে।")}`,
       destructive: true, confirmText: tx("Delete", "মুছুন"),
     });
     if (!ok) return;
+    await voidPaymentsForInvoice(inv.id, { actorId: user?.id ?? null });
     const { error } = await db
       .from("irrigation_invoices" as any)
       .update({ deleted_at: new Date().toISOString() } as any)
       .eq("id", inv.id);
     if (error) return toast.error(error.message);
-    toast.success(tx("Invoice deleted", "ইনভয়েস মুছে ফেলা হয়েছে")); load();
+    toast.success(tx("Invoice and related payments deleted", "ইনভয়েস ও সংশ্লিষ্ট পেমেন্ট মুছে ফেলা হয়েছে")); load();
   }
 
   function buildInvoicePdfPayload(inv: any) {
@@ -1108,11 +1111,7 @@ function InvoiceEditDialog({ inv, onClose, onSaved }: any) {
     });
     if (!ok) return;
     setBusy(true);
-    const { error: delErr } = await db
-      .from("irrigation_invoice_payments" as any)
-      .delete()
-      .eq("invoice_id", inv.id);
-    if (delErr) { setBusy(false); return toast.error(delErr.message); }
+    await voidPaymentsForInvoice(inv.id, { actorId: user?.id ?? null, reason: "ইনভয়েস আনপেইড করার কারণে পেমেন্ট বাতিল" });
     const payable = Number(inv.payable_amount) || 0;
     const { data: updatedRows, error } = await db
       .from("irrigation_invoices" as any)
