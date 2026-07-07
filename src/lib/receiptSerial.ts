@@ -33,7 +33,7 @@ export function isRpcUnavailable(err: unknown): boolean {
   return MISSING_RPC_HINTS.some((h) => msg.includes(h));
 }
 
-async function getCurrentSerialLast(): Promise<number> {
+export async function getCurrentSerialLast(): Promise<number> {
   const { data, error } = await db
     .from("receipt_counters")
     .select("last_no")
