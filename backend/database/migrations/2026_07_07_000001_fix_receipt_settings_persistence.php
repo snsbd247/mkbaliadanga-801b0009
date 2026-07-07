@@ -64,9 +64,19 @@ return new class extends Migration
             DB::table('receipt_settings')->insert($defaults);
         }
 
-        if (Schema::hasTable('receipt_counters')
-            && ! DB::table('receipt_counters')->where('kind', 'SERIAL')->where('year', 0)->exists()) {
-            DB::table('receipt_counters')->insert(['kind' => 'SERIAL', 'year' => 0, 'last_no' => 0, 'updated_at' => now()]);
+        if (! Schema::hasTable('receipt_counters')) {
+            Schema::create('receipt_counters', function (Blueprint $table) {
+                $table->text('kind');
+                $table->integer('year');
+                $table->bigInteger('last_no')->default(0);
+                $table->timestamp('updated_at')->nullable();
+            });
+        }
+
+        if (! DB::table('receipt_counters')->where('kind', 'SERIAL')->where('year', 0)->exists()) {
+            $counter = ['kind' => 'SERIAL', 'year' => 0, 'last_no' => 0, 'updated_at' => now()];
+            $counter = array_filter($counter, fn ($value, $column) => Schema::hasColumn('receipt_counters', $column), ARRAY_FILTER_USE_BOTH);
+            DB::table('receipt_counters')->insert($counter);
         }
     }
 
