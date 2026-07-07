@@ -951,7 +951,7 @@ function InvoiceEditDialog({ inv, onClose, onSaved }: any) {
   const [busy, setBusy] = useState(false);
   const [history, setHistory] = useState<any[]>([]);
 
-  const perm = inv ? canEditInvoice(roles, inv) : { ok: false as boolean, reason: "no_permission" };
+  const perm = inv ? canEditInvoice(roles, inv, { userOfficeId }) : { ok: false as boolean, reason: "no_permission" };
 
   useEffect(() => {
     if (!inv) return;
