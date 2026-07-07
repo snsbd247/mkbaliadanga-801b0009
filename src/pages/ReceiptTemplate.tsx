@@ -201,12 +201,12 @@ export default function ReceiptTemplatePage() {
           });
           return;
         }
-        // Verify the new value actually persisted in the database.
-        const { data: check } = await db.from("receipt_settings").select("receipt_serial_start").eq("id", 1).maybeSingle();
-        const persisted = Number((check as any)?.receipt_serial_start ?? NaN);
-        if (persisted !== nextSerial) {
+        // The RPC/edge function persists with elevated privileges and echoes back
+        // the stored value — trust that instead of a second (replica-lagged) read.
+        const persisted = Number(res.value ?? NaN);
+        if (!Number.isFinite(persisted) || persisted !== nextSerial) {
           toast.error("ক্রমিক নম্বর ডাটাবেসে সংরক্ষণ নিশ্চিত করা যায়নি", {
-            description: `প্রত্যাশিত ${nextSerial}, পাওয়া গেছে ${Number.isFinite(persisted) ? persisted : "—"}। অনুগ্রহ করে আবার চেষ্টা করুন।`,
+            description: `প্রত্যাশিত ${nextSerial}, সার্ভার থেকে পাওয়া গেছে ${Number.isFinite(persisted) ? persisted : "—"}। অনুগ্রহ করে আবার চেষ্টা করুন।`,
           });
           return;
         }
