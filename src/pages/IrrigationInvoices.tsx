@@ -953,7 +953,7 @@ function InvoiceEditDialog({ inv, onClose, onSaved }: any) {
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
   const [history, setHistory] = useState<any[]>([]);
-  const { confirm } = useConfirm();
+  const { confirm, dialog: confirmDialog } = useConfirm();
 
   const perm = inv ? canEditInvoice(roles, inv, { userOfficeId }) : { ok: false as boolean, reason: "no_permission" };
 
@@ -1212,6 +1212,7 @@ function InvoiceEditDialog({ inv, onClose, onSaved }: any) {
           <Button onClick={save} disabled={busy || !perm.ok}>{busy ? tx("Saving…", "সংরক্ষণ…") : tx("Save", "সংরক্ষণ করুন")}</Button>
         </DialogFooter>
       </DialogContent>
+      {confirmDialog}
     </Dialog>
   );
 }
