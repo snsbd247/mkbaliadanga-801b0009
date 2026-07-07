@@ -1269,6 +1269,8 @@ function InvoicePreviewDialog({ invoiceId, onClose, allRows, onRecalculated }: a
           <Row k={tx("Type", "ধরন")} v={inv.is_borga ? `🤝 ${tx("Sharecropper", "বর্গাদার")}` : `🏠 ${tx("Owner", "নিজ মালিক")}`} />
           <Row k={tx("Land", "জমি")} v={`${mouzaName(inv)} • Dag ${formatDagNumbers(inv.lands?.dag_no) || "—"} • ${formatLandSize(invoiceLandSize(inv))}`} />
           <Row k={tx("Land type", "জমির ধরন")} v={inv.land_type_name ?? "—"} />
+          <Row k={tx("Land note", "জমির নোট")} v={(inv.note ?? inv.lands?.notes ?? "").trim() || "—"} />
+
           <Row k={tx("Season", "সিজন")} v={`${inv.seasons?.name ?? inv.seasons?.type} ${inv.seasons?.year}`} />
           <Row k={tx("Season rate / shotok", "সিজন রেট/শতক")} v={inv.season_rate != null ? money(inv.season_rate) : "—"} />
           <Row k={tx("Due date", "মেয়াদ")} v={fmtDate(inv.due_date)} />

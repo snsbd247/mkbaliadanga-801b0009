@@ -16,7 +16,7 @@ import { db } from "@/lib/db";
  */
 
 /** Embed fragment for selecting a land row together with its mouza name. */
-export const LAND_MOUZA_FIELDS = "dag_no,land_size,mouza,mouzas(name)";
+export const LAND_MOUZA_FIELDS = "dag_no,land_size,mouza,notes,mouzas(name)";
 
 /** Full `lands(...)` embed for invoice/payment queries. */
 export const LANDS_EMBED = `lands(${LAND_MOUZA_FIELDS})`;
