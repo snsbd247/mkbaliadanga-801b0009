@@ -153,6 +153,7 @@ import AssetCategories from "./pages/admin/AssetCategories";
 import AssetItems from "./pages/assets/AssetItems";
 import AssetItemDetail from "./pages/assets/AssetItemDetail";
 import AssetDashboard from "./pages/assets/AssetDashboard";
+import IrrigationPaymentCoverageAdmin from "./pages/IrrigationPaymentCoverageAdmin";
 import AssetReports from "./pages/assets/AssetReports";
 import AssetScanner from "./pages/assets/AssetScanner";
 import AssetScanHistory from "./pages/assets/AssetScanHistory";
@@ -311,6 +312,7 @@ const App = () => (
                 <Route path="/admin/retry-jobs" element={<RequireRole roles={["admin","super_admin"]}><RetryJobs /></RequireRole>} />
                 <Route path="/admin/audit-timeline" element={<RequireRole roles={["admin","super_admin"]}><AuditTimeline /></RequireRole>} />
                 <Route path="/admin/import-audit" element={<RequireRole roles={["admin","super_admin"]}><ImportAuditLogs /></RequireRole>} />
+                <Route path="/admin/payment-coverage" element={<RequireRole roles={["admin","super_admin"]}><IrrigationPaymentCoverageAdmin /></RequireRole>} />
                 <Route path="/admin/rpc-fallback-audit" element={<RequireRole roles={["developer","super_admin"]}><RpcFallbackAudit /></RequireRole>} />
                 <Route path="/farmers/import" element={<RequirePerm module="farmers" action="can_add"><FarmersImport /></RequirePerm>} />
                 
