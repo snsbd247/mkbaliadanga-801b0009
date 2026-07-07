@@ -27,6 +27,7 @@ import { logAudit } from "@/lib/audit";
 import { autoReceiptNo } from "@/lib/receiptNo";
 import { exceedsDue } from "@/lib/irrigationPaymentMath";
 import { verifyPaymentCoverage } from "@/lib/irrigationPaymentCoverage";
+import { recalcInvoice } from "@/lib/invoiceRecalc";
 import { nextMonthlyReceiptNo, nextUnifiedReceiptNo } from "@/lib/monthlyReceiptNo";
 
 // Shared select for open irrigation invoices (used by both initial load and reload).
