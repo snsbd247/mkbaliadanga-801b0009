@@ -91,7 +91,7 @@ export function EditReceiptDialog({
       setInvoiceId(invId);
       setLandId(lId);
       setBaseline(base);
-      setForm({ mouza, land_size, owner_farmer_id: owner, delay_fee: delay, amount: Number(payment.amount || 0), note: payment.note ?? "", reason: "" });
+      setForm({ mouza, land_size, owner_farmer_id: owner, delay_fee: delay, amount: Number(payment.amount || 0), note: payment.note ?? "", reason: "", receipt_no: payment.receipt_no ?? "" });
       setLoading(false);
     })();
     return () => { cancelled = true; };
