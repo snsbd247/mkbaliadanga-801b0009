@@ -5,6 +5,8 @@ import { FileDown, FileSpreadsheet, Loader2 } from "lucide-react";
 import { downloadBnReceiptPdf, previewBnReceiptPdf, irrigationReceiptToExcelRow, type BnReceiptData, type ReceiptCopy } from "@/lib/bnReceipts";
 import { exportExcel } from "@/lib/exports";
 import { useLang } from "@/i18n/LanguageProvider";
+import { isReceiptDataDebugEnabled } from "@/lib/irrigationReceiptData";
+import { Badge } from "@/components/ui/badge";
 
 interface Props {
   open: boolean;
