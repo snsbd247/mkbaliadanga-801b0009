@@ -26,6 +26,7 @@ import { safeWithRetry } from "@/lib/retryQueue";
 import { logAudit } from "@/lib/audit";
 import { autoReceiptNo } from "@/lib/receiptNo";
 import { exceedsDue } from "@/lib/irrigationPaymentMath";
+import { verifyPaymentCoverage } from "@/lib/irrigationPaymentCoverage";
 import { nextMonthlyReceiptNo, nextUnifiedReceiptNo } from "@/lib/monthlyReceiptNo";
 
 // Shared select for open irrigation invoices (used by both initial load and reload).
@@ -371,6 +372,9 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
       const paymentId = ins!.id as string;
 
       // 2) Allocate currentCollected across selected current invoices (oldest first)
+      // Track exactly which invoices this payment covered (id + amount) so we can
+      // persist, verify against the backend, and print them on the receipt.
+      const coveredInvoices: Array<{ id: string; invoice_no: string; due_amount: number }> = [];
       let remainingCurrent = Number(currentCollected || 0);
       const sorted = [...selectedCurrentInvoices].sort((a, b) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime());
       for (const inv of sorted) {
@@ -430,6 +434,7 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
           delay_fee_override_reason: newFee !== originalFee ? (delayFeeReason[inv.id] || null) : null,
           created_by: user?.id,
         });
+        coveredInvoices.push({ id: inv.id, invoice_no: inv.invoice_no, due_amount: take });
         remainingCurrent -= take;
       }
 
@@ -459,7 +464,32 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
           previous_due_collected: take,
           created_by: user?.id,
         });
+        coveredInvoices.push({ id: inv.id, invoice_no: inv.invoice_no, due_amount: take });
         remainingPrev -= take;
+      }
+
+      // 3b) Verify the persisted coverage matches what we intended to pay:
+      // re-fetch the saved allocation rows and compare invoice ids + total.
+      if (coveredInvoices.length > 0) {
+        const coverage = await verifyPaymentCoverage(
+          paymentId,
+          coveredInvoices.map((c) => c.id),
+          coveredInvoices.reduce((s, c) => s + c.due_amount, 0),
+        );
+        if (!coverage.ok) {
+          console.warn("[irrigation-payment] coverage verification failed", coverage);
+          toast.warning(tx(
+            "Saved payment coverage could not be verified — please review",
+            "সংরক্ষিত পেমেন্ট কভারেজ যাচাই করা যায়নি — অনুগ্রহ করে যাচাই করুন",
+          ));
+          logAudit({
+            module: "irrigation_payment",
+            action_type: "verify_fail",
+            office_id: officeId,
+            reference_id: paymentId,
+            new_data: coverage as unknown as Record<string, unknown>,
+          });
+        }
       }
 
       // 4) Promise record
@@ -495,7 +525,8 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
           method,
           current_collected: Number(currentCollected || 0),
           previous_collected: Number(previousCollected || 0),
-          invoice_ids: sorted.map(i => i.id),
+         invoice_ids: coveredInvoices.map(i => i.id),
+          covered_invoices: coveredInvoices,
         },
       });
 
@@ -665,6 +696,7 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
           collected_amount: grandTotal,
           remark: specialPermission ? `${tx("Special permission until", "বিশেষ অনুমতি — পরিশোধের তারিখ")}: ${promiseDate}${promiseRemarks ? " — " + promiseRemarks : ""}` : (note || null),
           holding_description: holdingDescription,
+          covered_invoices: coveredInvoices.map((c) => ({ invoice_no: c.invoice_no, due_amount: c.due_amount })),
           patwari_name: patwari ? (patwari.name_bn || patwari.name) : null,
           patwari_mobile: patwari?.mobile ?? null,
           verify_url: `${window.location.origin}/r/${receiptNo}`,
