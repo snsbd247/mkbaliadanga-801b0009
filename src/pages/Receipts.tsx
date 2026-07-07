@@ -273,7 +273,7 @@ export default function Receipts() {
                         <TableCell>
                           <div className="flex gap-1">
                             {(isAdmin || canEdit) && p.status === "approved" && !p.voided_at && (
-                              <Button size="icon" variant="ghost" title={tx("Edit receipt", "রসিদ এডিট")} onClick={() => navigate(`/payments?receipt=${encodeURIComponent(p.receipt_no ?? "")}`)}>
+                              <Button size="icon" variant="ghost" title={tx("Edit receipt", "রসিদ এডিট")} onClick={() => setEditPayment(p)}>
                                 <Pencil className="h-4 w-4" />
                               </Button>
                             )}
