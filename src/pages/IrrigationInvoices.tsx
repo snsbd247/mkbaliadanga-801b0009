@@ -950,6 +950,7 @@ function InvoiceEditDialog({ inv, onClose, onSaved }: any) {
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
   const [history, setHistory] = useState<any[]>([]);
+  const { confirm } = useConfirm();
 
   const perm = inv ? canEditInvoice(roles, inv, { userOfficeId }) : { ok: false as boolean, reason: "no_permission" };
 
