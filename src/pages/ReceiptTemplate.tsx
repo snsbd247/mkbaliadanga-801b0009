@@ -352,7 +352,10 @@ export default function ReceiptTemplatePage() {
             <ToggleRow label="Show watermark" value={tpl.show_watermark} onChange={(v) => setTpl({ ...tpl, show_watermark: v })} />
             <div>
               <Label className="text-xs">Watermark text</Label>
-              <Input value={tpl.watermark_text} onChange={(e) => setTpl({ ...tpl, watermark_text: e.target.value })} maxLength={40} placeholder="e.g. COPY / PAID" disabled={!tpl.show_watermark} />
+              <Input value={tpl.watermark_text} onChange={(e) => setTpl({ ...tpl, watermark_text: e.target.value })} maxLength={40} placeholder="e.g. COPY / PAID" disabled={!tpl.show_watermark} aria-invalid={!!watermarkError} />
+              {watermarkError ? (
+                <p className="text-xs text-destructive mt-1" data-testid="watermark-error">{watermarkError}</p>
+              ) : null}
             </div>
           </div>
 
