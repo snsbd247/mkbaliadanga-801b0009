@@ -595,7 +595,7 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
       const receiptNo = await nextUnifiedReceiptNo(officeId, "IRR", paymentId).catch(() => autoReceiptNo("IRR", paymentId));
       const [{ data: farmer }, { data: company }] = await Promise.all([
         db.from("farmers").select("name_bn,name_en,member_no,farmer_code,father_name,village,mobile,office_id,union_id").eq("id", farmerId).maybeSingle(),
-        db.from("company_settings").select("company_name,company_name_bn,address,mobile,email,registration_no,logo_url").eq("id", 1).maybeSingle(),
+        db.from("company_settings").select("company_name,company_name_bn,address,mobile,email,registration_no,logo_url,editor_signature_url").eq("id", 1).maybeSingle(),
       ]);
       // ইউনিয়ন: farmers.union_id থেকে unions লুকআপ টেবিল হতে নাম স্বয়ংক্রিয়ভাবে আনা
       let unionName: string | null = null;
