@@ -164,9 +164,13 @@ export async function buildIrrigationReceiptEnrichment(
 
     const landById: Record<string, any> = {};
     for (const l of lands) {
+      const patwari =
+        ((l as any).patwari_id ? patwariById[(l as any).patwari_id] : null) ??
+        ((l as any).mouza_id ? patwariByMouza[(l as any).mouza_id] : null) ??
+        null;
       landById[(l as any).id] = {
         ...(l as any),
-        patwaris: (l as any).patwari_id ? patwariById[(l as any).patwari_id] ?? null : null,
+        patwaris: patwari,
         owner: (l as any).owner_farmer_id ? ownerById[(l as any).owner_farmer_id] ?? null : null,
       };
     }
