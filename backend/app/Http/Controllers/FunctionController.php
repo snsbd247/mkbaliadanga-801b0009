@@ -55,6 +55,165 @@ class FunctionController extends Controller
         return response()->json(['error' => 'Due reminders not configured.'], 501);
     }
 
+    /** Laravel/VPS mirror of the payment-edit edge function. */
+    protected function fn_payment_edit(Request $request): JsonResponse
+    {
+        $actor = $request->user();
+        if (! $actor) {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+
+        $roles = method_exists($actor, 'roleNames') ? $actor->roleNames() : [];
+        $isSuper = in_array('developer', $roles, true) || in_array('super_admin', $roles, true);
+        $isAdmin = $isSuper || in_array('admin', $roles, true);
+        $allowed = $isAdmin || (method_exists($actor, 'hasPermission') && ($actor->hasPermission('payments.manage') || $actor->hasPermission('payments.edit')));
+        if (! $allowed) {
+            return response()->json(['error' => 'Forbidden: no edit permission for payments'], 403);
+        }
+
+        $paymentId = (string) $request->input('payment_id', '');
+        $reason = trim((string) $request->input('reason', ''));
+        if ($paymentId === '') return response()->json(['error' => 'payment_id required'], 400);
+        if ($reason === '') return response()->json(['error' => 'reason required'], 400);
+
+        $newAmount = (int) round((float) $request->input('amount', 0));
+        if ($newAmount < 0) return response()->json(['error' => 'amount must be >= 0'], 400);
+        $newNote = $request->has('note') && trim((string) $request->input('note')) !== '' ? trim((string) $request->input('note')) : null;
+        $newMouza = $request->has('mouza') && $request->input('mouza') !== null ? trim((string) $request->input('mouza')) : null;
+        $newSize = $request->has('land_size') && $request->input('land_size') !== null ? (float) $request->input('land_size') : null;
+        $newOwner = $request->filled('owner_farmer_id') ? (string) $request->input('owner_farmer_id') : null;
+        $newFee = $request->has('delay_fee') && $request->input('delay_fee') !== null ? (int) round((float) $request->input('delay_fee')) : null;
+        $newReceiptNo = $request->has('receipt_no') && $request->input('receipt_no') !== null ? trim((string) $request->input('receipt_no')) : null;
+        $newPatwariProvided = $request->has('patwari_id');
+        $newPatwariId = $newPatwariProvided && $request->filled('patwari_id') ? (string) $request->input('patwari_id') : null;
+
+        $pay = DB::table('payments')->where('id', $paymentId)->first();
+        if (! $pay) return response()->json(['error' => 'Payment not found'], 404);
+        if (($pay->voided_at ?? null) || ($pay->status ?? null) === 'voided') {
+            return response()->json(['error' => 'Cannot edit a voided receipt'], 409);
+        }
+
+        $irrAlloc = Schema::hasTable('payment_allocations')
+            ? DB::table('payment_allocations')->where('payment_id', $paymentId)->where('kind', 'irrigation')->whereNotNull('reference_id')->first()
+            : null;
+        $invId = $irrAlloc->reference_id ?? ((($pay->kind ?? null) === 'irrigation' && ($pay->reference_id ?? null)) ? $pay->reference_id : null);
+        $landId = $invId && Schema::hasTable('irrigation_invoices') ? DB::table('irrigation_invoices')->where('id', $invId)->value('land_id') : null;
+
+        if ($newOwner && ! DB::table('farmers')->where('id', $newOwner)->exists()) {
+            return response()->json(['error' => 'ভুল কৃষক: farmer not found'], 400);
+        }
+        if ($newPatwariId && ! DB::table('patwaris')->where('id', $newPatwariId)->exists()) {
+            return response()->json(['error' => 'ভুল পাটুয়ারি: patwari not found'], 400);
+        }
+
+        if ($invId && Schema::hasTable('irrigation_invoices')) {
+            $invV = DB::table('irrigation_invoices')->where('id', $invId)->first(['payable_amount', 'delay_fee']);
+            if ($invV) {
+                $basePayable = (float) ($invV->payable_amount ?? 0);
+                $feeDelta = $newFee !== null ? ($newFee - (float) ($invV->delay_fee ?? 0)) : 0;
+                $effectivePayable = $basePayable + $feeDelta;
+                if ($newAmount > $effectivePayable) {
+                    return response()->json(['error' => "অঙ্ক প্রদেয়র চেয়ে বেশি (max $effectivePayable)"], 400);
+                }
+            }
+        }
+
+        $before = [];
+        $after = [];
+
+        if ($landId && ($newMouza !== null || $newSize !== null) && Schema::hasTable('lands')) {
+            $land = DB::table('lands')->where('id', $landId)->first(['mouza', 'land_size']);
+            if ($land) {
+                $m = $newMouza !== null ? $newMouza : $land->mouza;
+                $s = $newSize !== null ? $newSize : (float) ($land->land_size ?? 0);
+                if (($land->mouza ?? null) !== $m || (float) ($land->land_size ?? 0) !== $s) {
+                    $before['land'] = ['mouza' => $land->mouza ?? null, 'land_size' => $land->land_size ?? null];
+                    $after['land'] = ['mouza' => $m, 'land_size' => $s];
+                    DB::table('lands')->where('id', $landId)->update(array_filter(['mouza' => $m, 'land_size' => $s], fn ($v, $k) => Schema::hasColumn('lands', $k), ARRAY_FILTER_USE_BOTH));
+                }
+            }
+        }
+
+        if ($invId && ($newOwner !== null || $newFee !== null) && Schema::hasTable('irrigation_invoices')) {
+            $inv = DB::table('irrigation_invoices')->where('id', $invId)->first(['owner_farmer_id', 'delay_fee', 'payable_amount', 'due_amount', 'paid_amount']);
+            if ($inv) {
+                $patch = [];
+                if ($newOwner !== null && ($inv->owner_farmer_id ?? null) !== $newOwner) {
+                    $before['owner'] = $inv->owner_farmer_id ?? null; $after['owner'] = $newOwner; $patch['owner_farmer_id'] = $newOwner;
+                }
+                if ($newFee !== null) {
+                    $oldFee = (float) ($inv->delay_fee ?? 0);
+                    if ($oldFee !== (float) $newFee) {
+                        $before['delay_fee'] = $oldFee; $after['delay_fee'] = $newFee;
+                        $patch['delay_fee'] = $newFee;
+                        $patch['payable_amount'] = (float) ($inv->payable_amount ?? 0) + ($newFee - $oldFee);
+                        $patch['due_amount'] = max(0, (float) ($inv->due_amount ?? 0) + ($newFee - $oldFee));
+                    }
+                }
+                if ($patch) DB::table('irrigation_invoices')->where('id', $invId)->update($patch);
+            }
+        }
+
+        if ($newAmount !== (int) round((float) ($pay->amount ?? 0))) {
+            $oldAmount = (float) ($pay->amount ?? 0);
+            $diff = $newAmount - $oldAmount;
+            $before['amount'] = $oldAmount; $after['amount'] = $newAmount;
+            DB::table('payments')->where('id', $paymentId)->update(['amount' => $newAmount]);
+            if ($invId && Schema::hasTable('irrigation_invoices')) {
+                $inv2 = DB::table('irrigation_invoices')->where('id', $invId)->first(['paid_amount', 'payable_amount']);
+                if ($inv2) {
+                    $paid = max(0, round((float) ($inv2->paid_amount ?? 0) + $diff));
+                    $due = max(0, round((float) ($inv2->payable_amount ?? 0)) - $paid);
+                    DB::table('irrigation_invoices')->where('id', $invId)->update(['paid_amount' => $paid, 'due_amount' => $due, 'invoice_status' => $due <= 0 ? 'paid' : 'partial']);
+                }
+            }
+            if (Schema::hasTable('payment_allocations')) DB::table('payment_allocations')->where('payment_id', $paymentId)->where('kind', 'irrigation')->update(['amount' => $newAmount]);
+        }
+
+        if (($pay->note ?? null) !== $newNote) {
+            $before['note'] = $pay->note ?? null; $after['note'] = $newNote;
+            DB::table('payments')->where('id', $paymentId)->update(['note' => $newNote]);
+        }
+
+        if ($newReceiptNo !== null && $newReceiptNo !== (string) ($pay->receipt_no ?? '')) {
+            if ($newReceiptNo === '') return response()->json(['error' => 'receipt_no cannot be empty'], 400);
+            $dup = DB::table('payments')->where('receipt_no', $newReceiptNo)->where('id', '<>', $paymentId)->exists();
+            if ($dup) return response()->json(['error' => "রিসিপ্ট নম্বর ইতিমধ্যে ব্যবহৃত: $newReceiptNo"], 409);
+            $before['receipt_no'] = $pay->receipt_no ?? null; $after['receipt_no'] = $newReceiptNo;
+            DB::table('payments')->where('id', $paymentId)->update(['receipt_no' => $newReceiptNo]);
+        }
+
+        if ($newPatwariProvided && Schema::hasColumn('payments', 'patwari_id') && $newPatwariId !== ($pay->patwari_id ?? null)) {
+            $before['patwari_id'] = $pay->patwari_id ?? null; $after['patwari_id'] = $newPatwariId;
+            DB::table('payments')->where('id', $paymentId)->update(['patwari_id' => $newPatwariId]);
+        }
+
+        try {
+            if (Schema::hasTable('audit_logs')) {
+                $row = [
+                    'id' => (string) Str::uuid(),
+                    'user_id' => $actor->id,
+                    'action' => 'edit',
+                    'entity' => 'payments',
+                    'entity_type' => 'payments',
+                    'entity_id' => $paymentId,
+                    'office_id' => $pay->office_id ?? null,
+                    'old_values' => $before,
+                    'new_values' => array_merge($after, ['reason' => $reason]),
+                    'meta' => ['receipt_no' => $pay->receipt_no ?? null],
+                    'created_at' => now(),
+                ];
+                foreach ($row as $k => $v) if (! Schema::hasColumn('audit_logs', $k)) unset($row[$k]);
+                foreach (['old_values', 'new_values', 'meta'] as $jsonCol) if (isset($row[$jsonCol])) $row[$jsonCol] = json_encode($row[$jsonCol], JSON_UNESCAPED_UNICODE);
+                DB::table('audit_logs')->insert($row);
+            }
+        } catch (\Throwable $e) {
+            // Audit must not block the edit.
+        }
+
+        return response()->json(['ok' => true, 'before' => $before, 'after' => $after]);
+    }
+
     /**
      * VPS/Laravel mirror of the receipt-serial-admin edge function.
      * Ensures the singleton receipt_settings row exists before updating, so
