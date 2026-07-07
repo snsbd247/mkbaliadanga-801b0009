@@ -318,6 +318,7 @@ export async function buildIrrigationReceiptEnrichment(
     ratePerAcre,
     billInfo,
     patwari: patwari?.name_bn || patwari?.name || null,
+    patwariSource,
     holdingDescription,
   });
 
