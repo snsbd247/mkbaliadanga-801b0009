@@ -301,7 +301,10 @@ export async function buildIrrigationReceiptEnrichment(
           .filter(Boolean),
       ),
     ).join("/") || "সেচ চার্জ";
-  const patwari = invoiceRows.find((inv) => inv?.lands?.patwaris)?.lands?.patwaris ?? null;
+  const patwariInv = invoiceRows.find((inv) => inv?.lands?.patwaris) ?? null;
+  const patwari = patwariInv?.lands?.patwaris ?? null;
+  const patwariSource: PatwariSource = patwari ? patwariInv?.lands?.patwari_source ?? null : null;
+  const patwariDisp = patwariDisplay(patwari);
   const landNotes = joinNotes(
     ...invoiceRows.map((inv) => (inv?.lands?.notes ?? "").trim()),
   );
