@@ -198,6 +198,10 @@ export function EditReceiptDialog({
               <Input type="number" step={1} value={form.amount || ""} onChange={(e) => setForm((f) => ({ ...f, amount: Math.round(Number(e.target.value || 0)) }))} />
             </div>
             <div>
+              <Label>{tx("Receipt #", "রশিদ নং")}</Label>
+              <Input value={form.receipt_no} onChange={(e) => setForm((f) => ({ ...f, receipt_no: e.target.value }))} placeholder={tx("Receipt number", "রশিদ নম্বর")} />
+            </div>
+            <div>
               <Label>{tx("Note", "নোট")}</Label>
               <Input value={form.note} onChange={(e) => setForm((f) => ({ ...f, note: e.target.value }))} placeholder={tx("Remark / note", "মন্তব্য / নোট")} />
             </div>
