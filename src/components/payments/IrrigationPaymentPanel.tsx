@@ -525,7 +525,8 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
           method,
           current_collected: Number(currentCollected || 0),
           previous_collected: Number(previousCollected || 0),
-          invoice_ids: sorted.map(i => i.id),
+         invoice_ids: coveredInvoices.map(i => i.id),
+          covered_invoices: coveredInvoices,
         },
       });
 
