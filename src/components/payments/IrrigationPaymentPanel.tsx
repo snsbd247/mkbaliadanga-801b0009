@@ -439,6 +439,7 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
           created_by: user?.id,
         });
         coveredInvoices.push({ id: inv.id, invoice_no: inv.invoice_no, due_amount: take });
+        touchedStatuses.push({ invoice_no: inv.invoice_no, cleared: recalcInvoice(effectivePayable, newPaid, { currentStatus: inv.invoice_status, dueDate: inv.due_date }).cleared });
         remainingCurrent -= take;
       }
 
