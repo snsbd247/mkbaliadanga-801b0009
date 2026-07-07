@@ -426,7 +426,7 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
 
       // 3) Allocate previousCollected across previous invoices (oldest first)
       let remainingPrev = Number(previousCollected || 0);
-      const sortedPrev = [...previousInvoices].sort((a, b) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime());
+      const sortedPrev = [...selectedPreviousInvoices].sort((a, b) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime());
       for (const inv of sortedPrev) {
         if (remainingPrev <= 0) break;
         const take = Math.min(remainingPrev, Number(inv.due_amount));
