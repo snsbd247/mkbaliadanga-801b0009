@@ -143,6 +143,7 @@ export default function ReceiptTemplatePage() {
 
   async function save() {
     if (serialError) { toast.error(serialError); return; }
+    if (watermarkError) { toast.error(watermarkError); return; }
     const nextSerial = Math.floor(Number(serialStart) || 0);
     const serialChanged = nextSerial !== savedSerialStart;
 
