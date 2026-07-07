@@ -254,16 +254,21 @@ class FunctionController extends Controller
             return response()->json(['error' => 'ক্রমিক নম্বর অনেক বড়'], 400);
         }
 
-        $currentLast = 0;
-        if (Schema::hasTable('receipt_counters')) {
-            $currentLast = (int) (DB::table('receipt_counters')
-                ->where('kind', 'SERIAL')
-                ->where('year', 0)
-                ->value('last_no') ?? 0);
+        // Highest ACTUALLY used numeric receipt number across payments and receipts.
+        $maxUsed = 0;
+        foreach (['payments', 'receipts'] as $tbl) {
+            if (Schema::hasTable($tbl) && Schema::hasColumn($tbl, 'receipt_no')) {
+                $m = (int) (DB::table($tbl)
+                    ->whereRaw("receipt_no REGEXP '^[0-9]+$'")
+                    ->max(DB::raw('CAST(receipt_no AS UNSIGNED)')) ?? 0);
+                if ($m > $maxUsed) {
+                    $maxUsed = $m;
+                }
+            }
         }
-        if ($start < $currentLast) {
+        if ($start < $maxUsed) {
             return response()->json([
-                'error' => "এই নম্বর ($start) বর্তমান সর্বশেষ রিসিপ্ট নম্বরের ($currentLast) চেয়ে ছোট — ডুপ্লিকেট এড়াতে বাতিল করা হলো",
+                'error' => "এই নম্বর ($start) প্রকৃতপক্ষে ব্যবহৃত সর্বশেষ রিসিপ্ট নম্বরের ($maxUsed) চেয়ে ছোট — ডুপ্লিকেট এড়াতে বাতিল করা হলো",
             ], 409);
         }
 
@@ -278,6 +283,23 @@ class FunctionController extends Controller
             DB::table('receipt_settings')->where('id', 1)->update($row);
         } else {
             DB::table('receipt_settings')->insert($row);
+        }
+
+        // Reset the live counter so the next receipt is exactly $start + 1
+        // (clearing any phantom drift), never below the highest real receipt.
+        if (Schema::hasTable('receipt_counters')) {
+            $floor = max($start, $maxUsed);
+            $counterExists = DB::table('receipt_counters')
+                ->where('kind', 'SERIAL')->where('year', 0)->exists();
+            if ($counterExists) {
+                DB::table('receipt_counters')
+                    ->where('kind', 'SERIAL')->where('year', 0)
+                    ->update(['last_no' => $floor, 'updated_at' => now()]);
+            } else {
+                DB::table('receipt_counters')->insert([
+                    'kind' => 'SERIAL', 'year' => 0, 'last_no' => $floor, 'updated_at' => now(),
+                ]);
+            }
         }
 
         try {
