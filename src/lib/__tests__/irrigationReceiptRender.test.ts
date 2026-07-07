@@ -4,7 +4,12 @@ import { buildReceiptCopyHtmlForTest, type BnReceiptData } from "@/lib/bnReceipt
 // Strip HTML tags so we can assert on the rendered text content. The PDF export
 // (renderPdf → buildHtml → copyHtml) rasterizes this exact HTML, so verifying
 // the HTML text is equivalent to verifying what appears in the PDF.
-const text = (html: string) => html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+const text = (html: string) =>
+  html
+    .replace(/<[^>]+>/g, " ")
+    .replace(/\s+/g, " ")
+    .replace(/\s*\/\s*/g, "/") // collapse spaces around the cultivator/owner separator
+    .trim();
 
 function baseData(overrides: Partial<BnReceiptData> = {}): BnReceiptData {
   return {
