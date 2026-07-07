@@ -127,6 +127,7 @@ export function EditReceiptDialog({
         land_size: landId ? form.land_size : null,
         owner_farmer_id: invoiceId ? (form.owner_farmer_id || null) : null,
         delay_fee: invoiceId ? Math.round(Number(form.delay_fee) || 0) : null,
+        receipt_no: form.receipt_no.trim() || null,
       },
     });
     setLoading(false);
