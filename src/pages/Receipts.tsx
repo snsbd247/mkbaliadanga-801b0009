@@ -128,11 +128,11 @@ export default function Receipts() {
     const { error } = await db.from("payments").update({ deleted_at: new Date().toISOString() } as any).eq("id", p.id);
     if (error) return toast.error(error.message);
     await logAudit({
-      action: "delete",
-      entity: "payments",
-      entity_id: p.id,
-      meta: { receipt_no: p.receipt_no, farmer_id: p.farmer_id },
-    } as any).catch(() => {});
+      module: "payments",
+      action_type: "delete",
+      reference_id: p.id,
+      old_data: { receipt_no: p.receipt_no, farmer_id: p.farmer_id, amount: p.amount },
+    }).catch(() => {});
     toast.success(tx("Receipt deleted", "রশিদ ডিলিট হয়েছে"));
     load();
   }
