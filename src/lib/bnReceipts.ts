@@ -241,15 +241,20 @@ export function normalizeIrrigationRatePerAcre(
   irrigationCharge: number | null | undefined,
   landSizeShotok: number | null | undefined,
 ): number | null {
+  // Prefer the stored season rate (already per একর). Deriving rate from
+  // charge ÷ land distorts badly for tiny parcels (e.g. ০.০০৩৪ একর → লক্ষ টাকা),
+  // so only fall back to derivation when no valid stored rate exists.
+  const rate = Number(storedRate ?? 0);
+  if (Number.isFinite(rate) && rate > 0) {
+    // Legacy rows sometimes stored rate per শতক. Convert small per-shotok values to acre.
+    return rate < 500 ? rate * 100 : rate;
+  }
   const land = Number(landSizeShotok ?? 0);
   const charge = Number(irrigationCharge ?? 0);
   if (Number.isFinite(land) && land > 0 && Number.isFinite(charge) && charge > 0) {
     return charge / (land / 100);
   }
-  const rate = Number(storedRate ?? 0);
-  if (!Number.isFinite(rate) || rate <= 0) return null;
-  // Legacy rows sometimes stored rate per শতক. Convert small per-shotok values to acre.
-  return rate < 500 ? rate * 100 : rate;
+  return null;
 }
 
 function fixed4Text(n: number | null | undefined, lang: ReceiptLang): string {
