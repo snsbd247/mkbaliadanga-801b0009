@@ -332,7 +332,9 @@ export async function buildIrrigationReceiptEnrichment(
   const landNotes = joinNotes(
     ...invoiceRows.map((inv) => (inv?.lands?.notes ?? "").trim()),
   );
-  const holdingDescription = joinNotes(landNotes, paymentNote?.trim()) || null;
+  // হোল্ডিং এর বিবরন = শুধু জমির নোট (পেমেন্ট নোট নয়), যাতে রশিদে
+  // "জমির নোট / পাটুয়ারীর নাম-মোবাইল" ফরম্যাট পরিষ্কার থাকে।
+  const holdingDescription = landNotes || null;
 
   dbg("resolved fields", {
     mouza,
