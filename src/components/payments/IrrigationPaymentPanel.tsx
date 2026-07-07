@@ -675,7 +675,7 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
       const manualPatwari = !landPatwari && manualPatwariId
         ? (patwariList.find((p) => p.id === manualPatwariId) ?? null)
         : null;
-      const patwari = landPatwari ?? manualPatwari;
+      const patwari = resolveReceiptPatwari(landPatwari, manualPatwari);
       const landNotes = allReceiptInvoices
         .map((inv) => (inv.lands?.notes ?? "").trim())
         .filter(Boolean)
