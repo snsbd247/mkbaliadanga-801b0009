@@ -144,7 +144,8 @@ export default function ReceiptTemplatePage() {
       const probe = await checkReceiptSerialRpc();
       if (!probe.available) {
         toast.error(probe.message, {
-          description: "সিরিয়াল নম্বর সেভ করা যাচ্ছে না। কয়েক সেকেন্ড পর আবার চেষ্টা করুন, অথবা অ্যাপটি নতুন করে publish/deploy করুন।",
+          description:
+            "সিরিয়াল নম্বর সেভ করা যাচ্ছে না। কয়েক সেকেন্ড পর আবার চেষ্টা করুন, অথবা অ্যাপটি নতুন করে publish/deploy করুন। / Cannot save the serial number. Please try again in a few seconds, or re-publish/deploy the app.",
         });
         return;
       }
