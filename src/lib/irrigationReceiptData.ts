@@ -3,6 +3,49 @@ import { resolveFieldTypeLabel } from "@/lib/irrigationLandType";
 import { normalizeIrrigationRatePerAcre } from "@/lib/bnReceipts";
 import { joinNotes } from "@/lib/irrigationExports";
 
+// Placeholders shown on the receipt when patwari data is missing, so the field
+// is never silently blank.
+export const PATWARI_NAME_MISSING = "পাটুয়ারী নির্ধারিত নেই";
+export const PATWARI_MOBILE_MISSING = "মোবাইল নম্বর নেই";
+
+export type PatwariSource = "land" | "mouza" | null;
+
+export interface PatwariRow {
+  name?: string | null;
+  name_bn?: string | null;
+  mobile?: string | null;
+}
+
+/**
+ * Pure patwari resolver for irrigation receipts. Priority:
+ *  1. Patwari explicitly selected on the land (`patwari_id`).
+ *  2. Otherwise the patwari selected for the land's mouza (`mouza_id`).
+ *  3. Otherwise none.
+ * Returns the resolved row and which source it came from (for debug/indicator).
+ */
+export function resolveReceiptPatwari(
+  land: { patwari_id?: string | null; mouza_id?: string | null } | null | undefined,
+  patwariById: Record<string, PatwariRow>,
+  patwariByMouza: Record<string, PatwariRow>,
+): { patwari: PatwariRow | null; source: PatwariSource } {
+  const byLand = land?.patwari_id ? patwariById[land.patwari_id] : null;
+  if (byLand) return { patwari: byLand, source: "land" };
+  const byMouza = land?.mouza_id ? patwariByMouza[land.mouza_id] : null;
+  if (byMouza) return { patwari: byMouza, source: "mouza" };
+  return { patwari: null, source: null };
+}
+
+/** Display name/mobile with explicit placeholder text when missing. */
+export function patwariDisplay(patwari: PatwariRow | null): {
+  name: string;
+  mobile: string;
+} {
+  return {
+    name: patwari ? patwari.name_bn || patwari.name || PATWARI_NAME_MISSING : PATWARI_NAME_MISSING,
+    mobile: patwari?.mobile || PATWARI_MOBILE_MISSING,
+  };
+}
+
 // Feature flag for tracing where receipt land/charge data comes from.
 // Enable in the browser console with: localStorage.setItem("debug:receipt-data", "1")
 export function isReceiptDataDebugEnabled(): boolean {
@@ -65,6 +108,7 @@ export interface IrrigationEnriched {
   holding_description: string | null;
   patwari_name: string | null;
   patwari_mobile: string | null;
+  patwari_source: PatwariSource;
 }
 
 /**
@@ -164,13 +208,11 @@ export async function buildIrrigationReceiptEnrichment(
 
     const landById: Record<string, any> = {};
     for (const l of lands) {
-      const patwari =
-        ((l as any).patwari_id ? patwariById[(l as any).patwari_id] : null) ??
-        ((l as any).mouza_id ? patwariByMouza[(l as any).mouza_id] : null) ??
-        null;
+      const { patwari, source } = resolveReceiptPatwari(l as any, patwariById, patwariByMouza);
       landById[(l as any).id] = {
         ...(l as any),
         patwaris: patwari,
+        patwari_source: source,
         owner: (l as any).owner_farmer_id ? ownerById[(l as any).owner_farmer_id] ?? null : null,
       };
     }
@@ -259,7 +301,10 @@ export async function buildIrrigationReceiptEnrichment(
           .filter(Boolean),
       ),
     ).join("/") || "সেচ চার্জ";
-  const patwari = invoiceRows.find((inv) => inv?.lands?.patwaris)?.lands?.patwaris ?? null;
+  const patwariInv = invoiceRows.find((inv) => inv?.lands?.patwaris) ?? null;
+  const patwari = patwariInv?.lands?.patwaris ?? null;
+  const patwariSource: PatwariSource = patwari ? patwariInv?.lands?.patwari_source ?? null : null;
+  const patwariDisp = patwariDisplay(patwari);
   const landNotes = joinNotes(
     ...invoiceRows.map((inv) => (inv?.lands?.notes ?? "").trim()),
   );
@@ -273,6 +318,7 @@ export async function buildIrrigationReceiptEnrichment(
     ratePerAcre,
     billInfo,
     patwari: patwari?.name_bn || patwari?.name || null,
+    patwariSource,
     holdingDescription,
   });
 
@@ -310,7 +356,8 @@ export async function buildIrrigationReceiptEnrichment(
     collected_from_outstanding: collectedFromOutstanding || Number(paymentAmount || 0),
     remark: paymentNote ?? primaryCharge?.invoice_no ?? null,
     holding_description: holdingDescription,
-    patwari_name: patwari ? patwari.name_bn || patwari.name : null,
-    patwari_mobile: patwari?.mobile ?? null,
+    patwari_name: patwariDisp.name,
+    patwari_mobile: patwariDisp.mobile,
+    patwari_source: patwariSource,
   };
 }

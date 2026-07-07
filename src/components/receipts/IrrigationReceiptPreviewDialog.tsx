@@ -5,6 +5,8 @@ import { FileDown, FileSpreadsheet, Loader2 } from "lucide-react";
 import { downloadBnReceiptPdf, previewBnReceiptPdf, irrigationReceiptToExcelRow, type BnReceiptData, type ReceiptCopy } from "@/lib/bnReceipts";
 import { exportExcel } from "@/lib/exports";
 import { useLang } from "@/i18n/LanguageProvider";
+import { isReceiptDataDebugEnabled } from "@/lib/irrigationReceiptData";
+import { Badge } from "@/components/ui/badge";
 
 interface Props {
   open: boolean;
@@ -40,6 +42,16 @@ export function IrrigationReceiptPreviewDialog({ open, onOpenChange, data, copy 
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-3xl">
         <DialogHeader><DialogTitle>{tx("Irrigation receipt preview (A5 landscape)", "সেচ রসিদ প্রিভিউ (A5 ল্যান্ডস্কেপ)")}</DialogTitle></DialogHeader>
+        {isReceiptDataDebugEnabled() && data && (
+          <Badge variant="outline" className="w-fit">
+            {tx("Patwari source", "পাটুয়ারী সোর্স")}:{" "}
+            {data.patwari_source === "land"
+              ? tx("land", "জমি")
+              : data.patwari_source === "mouza"
+                ? tx("mouza", "মৌজা")
+                : tx("none", "নেই")}
+          </Badge>
+        )}
         <div className="mx-auto w-full max-w-2xl overflow-hidden rounded-md border bg-muted" style={{ aspectRatio: "210 / 148" }}>
           {loading || !url
             ? <div className="flex h-full items-center justify-center text-muted-foreground"><Loader2 className="h-5 w-5 animate-spin mr-2" />{tx("Rendering…", "তৈরি হচ্ছে…")}</div>
