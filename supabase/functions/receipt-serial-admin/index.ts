@@ -48,18 +48,25 @@ Deno.serve(async (req) => {
     if (start < 0) return json({ error: 'ক্রমিক নম্বর ঋণাত্মক হতে পারবে না' }, 400)
     if (start > 9000000000) return json({ error: 'ক্রমিক নম্বর অনেক বড়' }, 400)
 
-    const { data: counter, error: counterErr } = await svc
-      .from('receipt_counters')
-      .select('last_no')
-      .eq('kind', 'SERIAL')
-      .eq('year', 0)
-      .maybeSingle()
-    if (counterErr) return json({ error: counterErr.message }, 500)
+    // Highest ACTUALLY used numeric receipt number across payments and receipts.
+    let maxUsed = 0
+    for (const tbl of ['payments', 'receipts']) {
+      const { data: rows } = await svc
+        .from(tbl)
+        .select('receipt_no')
+        .not('receipt_no', 'is', null)
+      for (const r of (rows ?? []) as Array<{ receipt_no: string | null }>) {
+        const raw = String(r.receipt_no ?? '')
+        if (/^[0-9]+$/.test(raw)) {
+          const n = Number(raw)
+          if (Number.isSafeInteger(n) && n > maxUsed) maxUsed = n
+        }
+      }
+    }
 
-    const currentLast = Number((counter as any)?.last_no ?? 0)
-    if (start < currentLast) {
+    if (start < maxUsed) {
       return json({
-        error: `এই নম্বর (${start}) বর্তমান সর্বশেষ রিসিপ্ট নম্বরের (${currentLast}) চেয়ে ছোট — ডুপ্লিকেট এড়াতে বাতিল করা হলো`,
+        error: `এই নম্বর (${start}) প্রকৃতপক্ষে ব্যবহৃত সর্বশেষ রিসিপ্ট নম্বরের (${maxUsed}) চেয়ে ছোট — ডুপ্লিকেট এড়াতে বাতিল করা হলো`,
       }, 409)
     }
 
@@ -75,6 +82,14 @@ Deno.serve(async (req) => {
       .upsert({ id: 1, receipt_serial_start: start, updated_by: userId, updated_at: new Date().toISOString() }, { onConflict: 'id' })
     if (upsertErr) return json({ error: upsertErr.message }, 500)
 
+    // Reset the live counter so the next receipt is exactly start + 1
+    // (clearing any phantom drift), never below the highest real receipt.
+    const floor = Math.max(start, maxUsed)
+    const { error: counterResetErr } = await svc
+      .from('receipt_counters')
+      .upsert({ kind: 'SERIAL', year: 0, last_no: floor, updated_at: new Date().toISOString() }, { onConflict: 'kind,year' })
+    if (counterResetErr) return json({ error: counterResetErr.message }, 500)
+
     const { error: auditErr } = await svc.from('system_audit_logs').insert({
       office_id: null,
       user_id: userId,
@@ -82,11 +97,12 @@ Deno.serve(async (req) => {
       action_type: 'update',
       reference_id: null,
       old_data: { receipt_serial_start: oldStart },
-      new_data: { receipt_serial_start: start },
+      new_data: { receipt_serial_start: start, counter_reset_to: floor },
       user_agent: req.headers.get('user-agent'),
     })
 
-    return json({ ok: true, receipt_serial_start: start, old_receipt_serial_start: oldStart, audit_logged: !auditErr })
+    return json({ ok: true, receipt_serial_start: start, old_receipt_serial_start: oldStart, next_receipt_no: floor + 1, audit_logged: !auditErr })
+
   } catch (e) {
     return json({ error: String((e as any)?.message || e) }, 500)
   }
