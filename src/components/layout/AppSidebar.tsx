@@ -110,6 +110,7 @@ export function AppSidebar() {
       key: "cash", icon: Banknote, label: t("cashAndPayments"),
       children: [
         { url: "/payments", icon: Receipt, label: t("payments"), permKey: "payments" },
+        { url: "/receipts", icon: Receipt, label: lang === "bn" ? "রশিদ তালিকা" : "Receipts", permKey: "payments" },
         { url: "/payments/combined", icon: Receipt, label: t("combinedPayment" as any), permKey: "payments" },
         { url: "/scan", icon: ScanLine, label: t("scanQr"), permKey: "payments" },
         { url: "/cashbook", icon: BookOpen, label: t("cashbook"), permKey: "cashbook" },
