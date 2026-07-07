@@ -91,11 +91,21 @@ export function canEditInvoiceDiscount(roles: AppRole[]): boolean {
   return roles.some((r) => ["developer", "super_admin", "admin", "staff"].includes(r));
 }
 
-/** Staff may not edit already-approved (paid/partially-paid) invoices; admins may. */
-export function canEditInvoice(roles: AppRole[], inv: DiscountInvoiceInput): { ok: boolean; reason?: string } {
+/** Staff may not edit already-approved (paid/partially-paid) invoices; admins may.
+ *  Staff/admins are also restricted to invoices in their own office; super admins are not. */
+export function canEditInvoice(
+  roles: AppRole[],
+  inv: DiscountInvoiceInput & { office_id?: string | null },
+  opts?: { userOfficeId?: string | null },
+): { ok: boolean; reason?: string } {
   if (!canEditInvoiceDiscount(roles)) return { ok: false, reason: "no_permission" };
+  const isSuperAdmin = roles.some((r) => ["developer", "super_admin"].includes(r));
   const isAdmin = roles.some((r) => ["developer", "super_admin", "admin"].includes(r));
   const isApproved = APPROVED_STATUSES.has(inv.invoice_status ?? "");
   if (!isAdmin && isApproved) return { ok: false, reason: "staff_approved_locked" };
+  // Office scoping mirrors the RLS policy: only super admins cross offices.
+  if (!isSuperAdmin && opts && opts.userOfficeId != null && inv.office_id != null && inv.office_id !== opts.userOfficeId) {
+    return { ok: false, reason: "office_mismatch" };
+  }
   return { ok: true };
 }

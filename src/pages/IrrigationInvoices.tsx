@@ -941,7 +941,7 @@ function InvoiceListTab({ seasons, offices, isSuper }: any) {
 
 function InvoiceEditDialog({ inv, onClose, onSaved }: any) {
   const { tx } = useLang();
-  const { user, roles } = useAuth();
+  const { user, roles, officeId: userOfficeId } = useAuth();
   const [dueDate, setDueDate] = useState("");
   const [otherCharge, setOtherCharge] = useState("0");
   const [delayFee, setDelayFee] = useState("0");
@@ -951,7 +951,7 @@ function InvoiceEditDialog({ inv, onClose, onSaved }: any) {
   const [busy, setBusy] = useState(false);
   const [history, setHistory] = useState<any[]>([]);
 
-  const perm = inv ? canEditInvoice(roles, inv) : { ok: false as boolean, reason: "no_permission" };
+  const perm = inv ? canEditInvoice(roles, inv, { userOfficeId }) : { ok: false as boolean, reason: "no_permission" };
 
   useEffect(() => {
     if (!inv) return;
@@ -996,6 +996,8 @@ function InvoiceEditDialog({ inv, onClose, onSaved }: any) {
       return toast.error(
         perm.reason === "staff_approved_locked"
           ? tx("Staff cannot edit approved invoices", "স্টাফ অনুমোদিত ইনভয়েস এডিট করতে পারবে না")
+          : perm.reason === "office_mismatch"
+          ? tx("This invoice belongs to another office", "এই ইনভয়েস অন্য অফিসের")
           : tx("You do not have permission to edit invoices", "ইনভয়েস এডিট করার অনুমতি নেই")
       );
     }
@@ -1019,7 +1021,7 @@ function InvoiceEditDialog({ inv, onClose, onSaved }: any) {
     const payable = totals.payable;
     const due = totals.due;
     const newStatus = totals.status;
-    const { error } = await db
+    const { data: updatedRows, error } = await db
       .from("irrigation_invoices" as any)
       .update({
         due_date: dueDate,
@@ -1032,9 +1034,19 @@ function InvoiceEditDialog({ inv, onClose, onSaved }: any) {
         due_amount: due,
         invoice_status: newStatus,
       } as any)
-      .eq("id", inv.id);
+      .eq("id", inv.id)
+      .select("id");
     setBusy(false);
     if (error) return toast.error(error.message);
+    // RLS may silently block the update (0 rows) — never claim success then.
+    if (!updatedRows || updatedRows.length === 0) {
+      return toast.error(
+        tx(
+          "Update failed — you may not have permission to edit this invoice or it belongs to another office.",
+          "হালনাগাদ ব্যর্থ — এই ইনভয়েস এডিট করার অনুমতি নেই বা এটি অন্য অফিসের।",
+        ),
+      );
+    }
     const originalFee = Number(inv.delay_fee ?? 0);
     if (df !== originalFee) {
       await db.from("irrigation_delay_fee_audit").insert({
@@ -1091,6 +1103,8 @@ function InvoiceEditDialog({ inv, onClose, onSaved }: any) {
           <p className="text-xs text-destructive">
             {perm.reason === "staff_approved_locked"
               ? tx("This invoice is already approved/paid; staff cannot edit it.", "এই ইনভয়েস অনুমোদিত/পরিশোধিত; স্টাফ এডিট করতে পারবে না।")
+              : perm.reason === "office_mismatch"
+              ? tx("This invoice belongs to another office; you cannot edit it.", "এই ইনভয়েস অন্য অফিসের; আপনি এডিট করতে পারবেন না।")
               : tx("You do not have permission to edit invoices.", "ইনভয়েস এডিট করার অনুমতি নেই।")}
           </p>
         )}
