@@ -4944,6 +4944,7 @@ export type Database = {
           method: string | null
           note: string | null
           office_id: string | null
+          patwari_id: string | null
           receipt_no: string | null
           receipt_url: string | null
           reference_id: string | null
@@ -4968,6 +4969,7 @@ export type Database = {
           method?: string | null
           note?: string | null
           office_id?: string | null
+          patwari_id?: string | null
           receipt_no?: string | null
           receipt_url?: string | null
           reference_id?: string | null
@@ -4992,6 +4994,7 @@ export type Database = {
           method?: string | null
           note?: string | null
           office_id?: string | null
+          patwari_id?: string | null
           receipt_no?: string | null
           receipt_url?: string | null
           reference_id?: string | null
@@ -5021,6 +5024,13 @@ export type Database = {
             columns: ["office_id"]
             isOneToOne: false
             referencedRelation: "offices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payments_patwari_id_fkey"
+            columns: ["patwari_id"]
+            isOneToOne: false
+            referencedRelation: "patwaris"
             referencedColumns: ["id"]
           },
         ]
