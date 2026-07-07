@@ -300,7 +300,7 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
     if (Number(currentCollected) > 0 && selectedCurrentInvoices.length === 0) {
       return toast.error(tx("Select at least one current invoice", "অন্তত একটি বর্তমান ইনভয়েস বাছাই করুন"));
     }
-    if (Number(previousCollected) > previousDueTotal) {
+    if (Number(previousCollected) > previousDueTotal + 0.5) {
       return toast.error(tx("Previous due collected exceeds previous due", "পূর্বের বকেয়া থেকে সংগৃহীত পূর্বের মোট বকেয়ার চেয়ে বেশি"));
     }
     // Full-clearance rule: only roles allowed in settings (or super admins) may
