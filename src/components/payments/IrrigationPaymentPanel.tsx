@@ -404,9 +404,17 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
           });
         }
 
-        // update paid amount
+        // update paid amount — also recompute due_amount/status explicitly so
+        // this works on backends without the Postgres recalc trigger (VPS/MySQL).
+        const newPaid = Number(inv.paid_amount) + take;
+        const effectivePayable = Number(inv.payable_amount) + (newFee - originalFee);
+        const newDue = Math.max(0, effectivePayable - newPaid);
         await db.from("irrigation_invoices")
-          .update({ paid_amount: Number(inv.paid_amount) + take })
+          .update({
+            paid_amount: newPaid,
+            due_amount: newDue,
+            invoice_status: newDue <= 0 ? "paid" : "partial_paid",
+          })
           .eq("id", inv.id);
 
         // split allocation row
