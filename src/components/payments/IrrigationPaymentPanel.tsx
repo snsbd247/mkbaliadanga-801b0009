@@ -595,7 +595,7 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
       const receiptNo = await nextUnifiedReceiptNo(officeId, "IRR", paymentId).catch(() => autoReceiptNo("IRR", paymentId));
       const [{ data: farmer }, { data: company }] = await Promise.all([
         db.from("farmers").select("name_bn,name_en,member_no,farmer_code,father_name,village,mobile,office_id,union_id").eq("id", farmerId).maybeSingle(),
-        db.from("company_settings").select("company_name,company_name_bn,address,mobile,email,registration_no,logo_url").eq("id", 1).maybeSingle(),
+        db.from("company_settings").select("company_name,company_name_bn,address,mobile,email,registration_no,logo_url,editor_signature_url").eq("id", 1).maybeSingle(),
       ]);
       // ইউনিয়ন: farmers.union_id থেকে unions লুকআপ টেবিল হতে নাম স্বয়ংক্রিয়ভাবে আনা
       let unionName: string | null = null;
@@ -705,6 +705,8 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
           covered_invoices: coveredInvoices.map((c) => ({ invoice_no: c.invoice_no, due_amount: c.due_amount })),
           patwari_name: patwari ? (patwari.name_bn || patwari.name) : null,
           patwari_mobile: patwari?.mobile ?? null,
+          collector_signature_url: (company as any)?.editor_signature_url ?? null,
+          office_collector_signature_url: (company as any)?.editor_signature_url ?? null,
           verify_url: `${window.location.origin}/r/${receiptNo}`,
         }, "farmer"),
         { referenceId: paymentId, payload: { kind: "irrigation", receipt_no: receiptNo, farmer_id: farmerId }, officeId: farmer?.office_id ?? null },
