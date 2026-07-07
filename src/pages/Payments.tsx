@@ -46,6 +46,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { IrrigationPaymentPanel } from "@/components/payments/IrrigationPaymentPanel";
 import { findRecentDuplicatePayment } from "@/lib/duplicatePaymentCheck";
 import { buildIrrigationReceiptEnrichment } from "@/lib/irrigationReceiptData";
+import { buildPaymentReceiptData } from "@/lib/buildPaymentReceiptData";
 import { backfillMissingReceiptNos } from "@/lib/backfillReceiptNos";
 import { getTodayMethodSummary, type MethodSummary } from "@/lib/paymentMethodSummary";
 import { previewEdit, checkConsistency, type EditBaseline } from "@/lib/combinedReceiptValidation";
