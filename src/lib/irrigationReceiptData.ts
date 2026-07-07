@@ -74,7 +74,7 @@ const tx = (en: string, bn: string) => bn; // receipts are Bengali
 // build. Land + patwari + owner are fetched with separate queries below so both
 // the Lovable Cloud and VPS backends produce identical receipt data.
 export const IRRIGATION_INVOICE_SELECT =
-  "id,invoice_no,payable_amount,paid_amount,due_amount,discount_amount,discount_reason,irrigation_amount,maintenance_amount,canal_amount,delay_fee,other_charge,is_borga,land_id,note,due_date,season_rate,land_type_name,irrigation_category_name,seasons(name,year,status)";
+  "id,invoice_no,farmer_id,payable_amount,paid_amount,due_amount,discount_amount,discount_reason,irrigation_amount,maintenance_amount,canal_amount,delay_fee,other_charge,is_borga,land_id,note,due_date,season_rate,land_type_name,irrigation_category_name,seasons(name,year,status)";
 
 export interface IrrigationEnrichInput {
   farmerId: string | null;
