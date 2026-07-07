@@ -118,6 +118,8 @@ export interface BnReceiptData {
   current_penalty?: number | null;             // হাল-এর জরিমানা (defaults to penalty_amount)
   due_penalty?: number | null;                 // বকেয়ার জরিমানা
   holding_description?: string | null;         // হোল্ডিং এর বিবরন
+  /** Detailed list of invoices whose due this payment covered (multi-invoice). */
+  covered_invoices?: Array<{ invoice_no: string; due_amount: number }> | null;
   /** When true only the "নিজ/মালিক" label shows for owner (no name/father/etc.). */
   owner_self?: boolean;
 
