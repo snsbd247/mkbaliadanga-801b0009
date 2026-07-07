@@ -108,14 +108,18 @@ class FunctionController extends Controller
             ], 409);
         }
 
+        $exists = DB::table('receipt_settings')->where('id', 1)->exists();
         $oldStart = (int) (DB::table('receipt_settings')->where('id', 1)->value('receipt_serial_start') ?? 0);
-        $row = $this->defaultReceiptSettingsRow($actor->id);
-        $row['receipt_serial_start'] = $start;
-        $row['updated_by'] = $actor->id;
-        $row['updated_at'] = now();
+        $row = $exists
+            ? ['receipt_serial_start' => $start, 'updated_by' => $actor->id, 'updated_at' => now()]
+            : array_merge($this->defaultReceiptSettingsRow($actor->id), ['receipt_serial_start' => $start]);
         $row = array_filter($row, fn ($value, $column) => Schema::hasColumn('receipt_settings', $column), ARRAY_FILTER_USE_BOTH);
 
-        DB::table('receipt_settings')->updateOrInsert(['id' => 1], $row);
+        if ($exists) {
+            DB::table('receipt_settings')->where('id', 1)->update($row);
+        } else {
+            DB::table('receipt_settings')->insert($row);
+        }
 
         try {
             AuditLog::record([

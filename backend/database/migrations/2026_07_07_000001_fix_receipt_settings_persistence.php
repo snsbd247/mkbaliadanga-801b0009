@@ -60,13 +60,13 @@ return new class extends Migration
             'updated_at' => now(),
         ];
         $defaults = array_filter($defaults, fn ($value, $column) => Schema::hasColumn('receipt_settings', $column), ARRAY_FILTER_USE_BOTH);
-        DB::table('receipt_settings')->updateOrInsert(['id' => 1], $defaults);
+        if (! DB::table('receipt_settings')->where('id', 1)->exists()) {
+            DB::table('receipt_settings')->insert($defaults);
+        }
 
-        if (Schema::hasTable('receipt_counters')) {
-            DB::table('receipt_counters')->updateOrInsert(
-                ['kind' => 'SERIAL', 'year' => 0],
-                ['last_no' => 0, 'updated_at' => now()]
-            );
+        if (Schema::hasTable('receipt_counters')
+            && ! DB::table('receipt_counters')->where('kind', 'SERIAL')->where('year', 0)->exists()) {
+            DB::table('receipt_counters')->insert(['kind' => 'SERIAL', 'year' => 0, 'last_no' => 0, 'updated_at' => now()]);
         }
     }
 
