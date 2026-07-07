@@ -87,6 +87,23 @@ describe("buildIrrigationReceiptEnrichment", () => {
     expect(e.member_summary).toBe("1920");
   });
 
+  it("holding_description uses only the land note, not the payment note", async () => {
+    resultQueue.push({ data: [baseInvoice] });
+    resultQueue.push({ data: [baseLand] });
+    resultQueue.push({ data: [patwariRow] });
+    resultQueue.push({ data: [{ due_amount: 0 }] });
+    resultQueue.push({ data: { id: "cult-1", name_bn: "মোঃ মাসুদ", member_no: "1920", account_number: "1920", savings_inactive: false } });
+
+    const e = await buildIrrigationReceiptEnrichment({
+      farmerId: "cult-1",
+      paymentAmount: 4039,
+      paymentNote: "পেমেন্ট নোট",
+      memberNoFallback: "1920",
+    });
+
+    expect(e.holding_description).toBe("নিজ সেচে আবাদ হয়।");
+    expect(e.holding_description).not.toContain("পেমেন্ট নোট");
+
   it("shows borgadar + owner names and N/A when cultivator is not a savings member", async () => {
     const borgaInvoice = { ...baseInvoice, is_borga: true };
     const borgaLand = { ...baseLand, owner_farmer_id: "own-1", patwari_id: null };
