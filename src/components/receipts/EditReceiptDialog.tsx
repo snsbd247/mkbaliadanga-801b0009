@@ -13,9 +13,9 @@ import { MouzaSelect } from "@/components/locations/MouzaSelect";
 import { fetchReceiptAuditLogs } from "@/lib/receiptAudit";
 import { previewEdit, checkConsistency, type EditBaseline } from "@/lib/combinedReceiptValidation";
 
-type EditForm = { mouza: string; land_size: number; owner_farmer_id: string; delay_fee: number; amount: number; note: string; reason: string };
+type EditForm = { mouza: string; land_size: number; owner_farmer_id: string; delay_fee: number; amount: number; note: string; reason: string; receipt_no: string };
 
-const EMPTY: EditForm = { mouza: "", land_size: 0, owner_farmer_id: "", delay_fee: 0, amount: 0, note: "", reason: "" };
+const EMPTY: EditForm = { mouza: "", land_size: 0, owner_farmer_id: "", delay_fee: 0, amount: 0, note: "", reason: "", receipt_no: "" };
 
 /** Human-readable field labels used by the master-detail edit history. */
 function useFieldLabels() {
