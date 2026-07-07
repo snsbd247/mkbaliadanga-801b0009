@@ -292,9 +292,12 @@ export async function buildIrrigationReceiptEnrichment(
     primaryCharge?.lands?.land_size,
   );
   const ownerMember = ownerFarmer?.member_no || ownerFarmer?.farmer_code || null;
-  const memberSummary = `${memberNoFallback ?? "N/A"}/${
-    anyBorga && ownerMember ? ownerMember : "N/A"
-  }`;
+  // "কৃষক এবং মালিক সভ্য সদস্য" = চাষির সেভিং একাউন্ট নম্বর (সদস্য হলে), নইলে N/A।
+  const cultivatorSavingsNo =
+    cultivatorFarmer && !cultivatorFarmer.savings_inactive && cultivatorFarmer.account_number
+      ? String(cultivatorFarmer.account_number)
+      : null;
+  const memberSummary = cultivatorSavingsNo ?? "N/A";
   const mouza = invoiceRows.find((inv) => inv?.lands?.mouza)?.lands?.mouza ?? null;
   const dagNo =
     Array.from(
