@@ -180,6 +180,19 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
 
   useEffect(() => { if (initialFarmerId) setFarmerId(initialFarmerId); }, [initialFarmerId]);
 
+  // Load office-scoped patwaris so the collector can pick one when the land has none.
+  useEffect(() => {
+    const officeId = invoices.find((i) => i.office_id)?.office_id ?? null;
+    let alive = true;
+    (async () => {
+      let q = db.from("patwaris").select("id,name,name_bn,mobile").eq("is_active", true).order("name_bn", { ascending: true });
+      if (officeId) q = q.eq("office_id", officeId);
+      const { data } = await q;
+      if (alive) setPatwariList((data as any[]) ?? []);
+    })();
+    return () => { alive = false; };
+  }, [invoices]);
+
   useEffect(() => {
     if (!farmerId) { setInvoices([]); return; }
     let alive = true;
