@@ -202,17 +202,23 @@ export default function ReceiptTemplatePage() {
           return;
         }
         // The RPC/edge function persists with elevated privileges and echoes back
-        // the stored value — trust that instead of a second (replica-lagged) read.
-        const persisted = Number(res.value ?? NaN);
+        // the stored value — trust that first. If the server omits the value
+        // (null/undefined), fall back to reading the row from the DB before failing.
+        let persisted = Number(res.value ?? NaN);
+        if (!Number.isFinite(persisted)) {
+          const { data: check } = await db.from("receipt_settings").select("receipt_serial_start").eq("id", 1).maybeSingle();
+          persisted = Number((check as any)?.receipt_serial_start ?? NaN);
+        }
         if (!Number.isFinite(persisted) || persisted !== nextSerial) {
-          toast.error("ক্রমিক নম্বর ডাটাবেসে সংরক্ষণ নিশ্চিত করা যায়নি", {
-            description: `প্রত্যাশিত ${nextSerial}, সার্ভার থেকে পাওয়া গেছে ${Number.isFinite(persisted) ? persisted : "—"}। অনুগ্রহ করে আবার চেষ্টা করুন।`,
+          toast.error("ক্রমিক নম্বর ডাটাবেসে সংরক্ষণ নিশ্চিত করা যায়নি / Could not confirm the serial number was saved", {
+            description: `প্রত্যাশিত ${nextSerial}, সার্ভার থেকে পাওয়া গেছে ${Number.isFinite(persisted) ? persisted : "—"}। অনুগ্রহ করে আবার চেষ্টা করুন। / Expected ${nextSerial}, server returned ${Number.isFinite(persisted) ? persisted : "—"}. Please try again.`,
           });
           return;
         }
-        logAudit({ module: "receipt", action_type: "override", reference_id: "receipt_serial_start", old_data: { serial_start: savedSerialStart }, new_data: { serial_start: nextSerial } });
-        setSavedSerialStart(nextSerial);
-        toast.success(`ক্রমিক নম্বর সংরক্ষিত — পরবর্তী রিসিপ্ট হবে ${nextSerial + 1} / Serial saved — the next receipt will be ${nextSerial + 1}`);
+        // Record the authoritative value returned by the server for audit/debug.
+        logAudit({ module: "receipt", action_type: "override", reference_id: "receipt_serial_start", old_data: { serial_start: savedSerialStart }, new_data: { serial_start: persisted, source: res.value != null ? "server" : "db-fallback" } });
+        setSavedSerialStart(persisted);
+        toast.success(`ক্রমিক নম্বর সংরক্ষিত — পরবর্তী রিসিপ্ট হবে ${persisted + 1} / Serial saved — the next receipt will be ${persisted + 1}`);
       }
 
       // Re-read the persisted row so the UI reflects exactly what is in the DB.
