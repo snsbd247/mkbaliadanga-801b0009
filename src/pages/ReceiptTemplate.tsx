@@ -68,15 +68,28 @@ export default function ReceiptTemplatePage() {
     document.title = "Receipt Template";
     (async () => {
       const { data } = await db.from("receipt_settings").select("*").eq("id", 1).maybeSingle();
+      let lastUsed = 0;
+      try {
+        lastUsed = await getCurrentSerialLast();
+      } catch {
+        // ignore — fall back to configured start
+      }
       if (data) {
         setTpl({ ...DEFAULT_TEMPLATE, ...(data as any) });
-        const s = Number((data as any).receipt_serial_start ?? 0) || 0;
-        setSerialStart(String(s));
-        setSavedSerialStart(s);
+        const configured = Number((data as any).receipt_serial_start ?? 0) || 0;
+        // Effective value reflects the actual last-used serial so the admin
+        // always sees the current position (e.g. after a receipt is generated).
+        const effective = Math.max(configured, lastUsed);
+        setSerialStart(String(effective));
+        setSavedSerialStart(effective);
+      } else if (lastUsed > 0) {
+        setSerialStart(String(lastUsed));
+        setSavedSerialStart(lastUsed);
       }
       setLoading(false);
     })();
   }, []);
+
 
   const sample = useMemo<PaymentReceiptData>(
     () => ({
