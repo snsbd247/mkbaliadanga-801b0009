@@ -74,7 +74,7 @@ const tx = (en: string, bn: string) => bn; // receipts are Bengali
 // build. Land + patwari + owner are fetched with separate queries below so both
 // the Lovable Cloud and VPS backends produce identical receipt data.
 export const IRRIGATION_INVOICE_SELECT =
-  "id,invoice_no,payable_amount,paid_amount,due_amount,discount_amount,discount_reason,irrigation_amount,maintenance_amount,canal_amount,delay_fee,other_charge,is_borga,land_id,note,due_date,season_rate,land_type_name,irrigation_category_name,seasons(name,year,status)";
+  "id,invoice_no,farmer_id,payable_amount,paid_amount,due_amount,discount_amount,discount_reason,irrigation_amount,maintenance_amount,canal_amount,delay_fee,other_charge,is_borga,land_id,note,due_date,season_rate,land_type_name,irrigation_category_name,seasons(name,year,status)";
 
 export interface IrrigationEnrichInput {
   farmerId: string | null;
@@ -96,6 +96,7 @@ export interface IrrigationEnriched {
   rate: number | null;
   member_summary: string;
   owner_self: boolean;
+  cultivator_label: string | null;
   land_owner_label: string | null;
   current_season_charge: number;
   penalty_amount: number;
@@ -242,7 +243,27 @@ export async function buildIrrigationReceiptEnrichment(
   const ownerInvoice =
     invoiceRows.find((inv) => inv?.is_borga && inv?.lands?.owner) ?? primaryCharge;
   const ownerFarmer = ownerInvoice?.lands?.owner;
-  const isSelf = !anyBorga;
+  const ownerFarmerId: string | null = ownerFarmer?.id ?? ownerInvoice?.lands?.owner_farmer_id ?? null;
+
+  // চাষি/বর্গাদার = পরিশোধকৃত ইনভয়েসের farmer_id। এখান থেকেই নাম-আইডি ও সেভিং একাউন্ট নম্বর আসবে।
+  const cultivatorId: string | null = primaryCharge?.farmer_id ?? farmerId ?? null;
+  let cultivatorFarmer: any = null;
+  if (cultivatorId) {
+    const { data } = await db
+      .from("farmers")
+      .select("id,name_bn,name_en,member_no,farmer_code,account_number,savings_inactive")
+      .eq("id", cultivatorId)
+      .maybeSingle();
+    cultivatorFarmer = data ?? null;
+  }
+
+  // চাষি ও মালিক একই ব্যক্তি হলে (নিজ জমি) একটিই নাম-আইডি দেখাবে।
+  const isSelf = !ownerFarmerId || !cultivatorId || ownerFarmerId === cultivatorId;
+
+  const cultivatorMember = cultivatorFarmer?.member_no || cultivatorFarmer?.farmer_code || null;
+  const cultivatorLabel = cultivatorFarmer
+    ? `${cultivatorFarmer.name_bn || cultivatorFarmer.name_en}${cultivatorMember ? "-" + cultivatorMember : ""}`
+    : null;
 
   const fieldTypeBn =
     Array.from(
@@ -271,9 +292,12 @@ export async function buildIrrigationReceiptEnrichment(
     primaryCharge?.lands?.land_size,
   );
   const ownerMember = ownerFarmer?.member_no || ownerFarmer?.farmer_code || null;
-  const memberSummary = `${memberNoFallback ?? "N/A"}/${
-    anyBorga && ownerMember ? ownerMember : "N/A"
-  }`;
+  // "কৃষক এবং মালিক সভ্য সদস্য" = চাষির সেভিং একাউন্ট নম্বর (সদস্য হলে), নইলে N/A।
+  const cultivatorSavingsNo =
+    cultivatorFarmer && !cultivatorFarmer.savings_inactive && cultivatorFarmer.account_number
+      ? String(cultivatorFarmer.account_number)
+      : null;
+  const memberSummary = cultivatorSavingsNo ?? "N/A";
   const mouza = invoiceRows.find((inv) => inv?.lands?.mouza)?.lands?.mouza ?? null;
   const dagNo =
     Array.from(
@@ -334,6 +358,7 @@ export async function buildIrrigationReceiptEnrichment(
     rate: ratePerAcre,
     member_summary: memberSummary,
     owner_self: isSelf,
+    cultivator_label: cultivatorLabel,
     land_owner_label: isSelf
       ? "নিজ"
       : ownerFarmer
