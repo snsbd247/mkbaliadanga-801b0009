@@ -247,13 +247,26 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
     return () => { alive = false; };
   }, [farmerId, invoiceReloadTick]);
 
+  // "চলতি" সিজন = status=active সিজন যদি এই কৃষকের ইনভয়েস থাকে; নইলে কৃষকের
+  // খোলা ইনভয়েসগুলোর মধ্যে সর্বশেষ বছরের সিজন। এতে active flag অন্য সিজনে থাকলেও
+  // (যেমন Boro active কিন্তু ইনভয়েস আমন) হাল/বকেয়া সঠিকভাবে ভাগ হয়।
+  const currentSeasonId = useMemo(() => {
+    if (activeSeasonId && invoices.some(i => i.season_id === activeSeasonId)) return activeSeasonId;
+    let best: string | null = null, bestYear = -Infinity, bestDate = "";
+    for (const i of invoices) {
+      const y = Number((i as any).seasons?.year ?? 0);
+      const d = i.due_date ?? "";
+      if (y > bestYear || (y === bestYear && d > bestDate)) { bestYear = y; bestDate = d; best = i.season_id; }
+    }
+    return best;
+  }, [invoices, activeSeasonId]);
   const currentInvoices = useMemo(
-    () => invoices.filter(i => activeSeasonId && i.season_id === activeSeasonId),
-    [invoices, activeSeasonId],
+    () => invoices.filter(i => currentSeasonId && i.season_id === currentSeasonId),
+    [invoices, currentSeasonId],
   );
   const previousInvoices = useMemo(
-    () => invoices.filter(i => !activeSeasonId || i.season_id !== activeSeasonId),
-    [invoices, activeSeasonId],
+    () => invoices.filter(i => !currentSeasonId || i.season_id !== currentSeasonId),
+    [invoices, currentSeasonId],
   );
 
   // Auto-select all previous invoices by default; operator can deselect.
