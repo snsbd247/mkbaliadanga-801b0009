@@ -109,7 +109,7 @@ export async function buildIrrigationReceiptEnrichment(
   if (landIds.length) {
     const { data: landRows } = await db
       .from("lands")
-      .select("id,mouza,dag_no,land_size,field_type,owner_type,owner_farmer_id,patwari_id,notes")
+      .select("id,mouza,mouza_id,dag_no,land_size,field_type,owner_type,owner_farmer_id,patwari_id,notes")
       .in("id", landIds);
     const lands = landRows ?? [];
 
@@ -124,6 +124,31 @@ export async function buildIrrigationReceiptEnrichment(
         .in("id", patwariIds);
       for (const p of patwariRows ?? []) patwariById[(p as any).id] = p;
     }
+
+    // Fallback: for lands without an explicit patwari_id, use the patwari
+    // assigned to the land's mouza (patwaris.mouza_id).
+    const mouzaIdsNeedingPatwari = Array.from(
+      new Set(
+        lands
+          .filter((l: any) => !l?.patwari_id && l?.mouza_id)
+          .map((l: any) => l.mouza_id),
+      ),
+    ) as string[];
+    const patwariByMouza: Record<string, any> = {};
+    if (mouzaIdsNeedingPatwari.length) {
+      const { data: mouzaPatwariRows } = await db
+        .from("patwaris")
+        .select("id,name,name_bn,mobile,mouza_id,is_active")
+        .in("mouza_id", mouzaIdsNeedingPatwari);
+      for (const p of mouzaPatwariRows ?? []) {
+        const mid = (p as any).mouza_id;
+        // Prefer an active patwari; keep the first match otherwise.
+        if (!patwariByMouza[mid] || (p as any).is_active) {
+          patwariByMouza[mid] = p;
+        }
+      }
+    }
+
 
     const ownerIds = Array.from(
       new Set(lands.map((l: any) => l?.owner_farmer_id).filter(Boolean)),
