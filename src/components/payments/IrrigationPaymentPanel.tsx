@@ -464,7 +464,32 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
           previous_due_collected: take,
           created_by: user?.id,
         });
+        coveredInvoices.push({ id: inv.id, invoice_no: inv.invoice_no, due_amount: take });
         remainingPrev -= take;
+      }
+
+      // 3b) Verify the persisted coverage matches what we intended to pay:
+      // re-fetch the saved allocation rows and compare invoice ids + total.
+      if (coveredInvoices.length > 0) {
+        const coverage = await verifyPaymentCoverage(
+          paymentId,
+          coveredInvoices.map((c) => c.id),
+          coveredInvoices.reduce((s, c) => s + c.due_amount, 0),
+        );
+        if (!coverage.ok) {
+          console.warn("[irrigation-payment] coverage verification failed", coverage);
+          toast.warning(tx(
+            "Saved payment coverage could not be verified — please review",
+            "সংরক্ষিত পেমেন্ট কভারেজ যাচাই করা যায়নি — অনুগ্রহ করে যাচাই করুন",
+          ));
+          logAudit({
+            module: "irrigation_payment",
+            action_type: "verify_fail",
+            office_id: officeId,
+            reference_id: paymentId,
+            new_data: coverage as unknown as Record<string, unknown>,
+          });
+        }
       }
 
       // 4) Promise record
