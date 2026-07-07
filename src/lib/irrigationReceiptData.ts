@@ -3,6 +3,49 @@ import { resolveFieldTypeLabel } from "@/lib/irrigationLandType";
 import { normalizeIrrigationRatePerAcre } from "@/lib/bnReceipts";
 import { joinNotes } from "@/lib/irrigationExports";
 
+// Placeholders shown on the receipt when patwari data is missing, so the field
+// is never silently blank.
+export const PATWARI_NAME_MISSING = "পাটুয়ারী নির্ধারিত নেই";
+export const PATWARI_MOBILE_MISSING = "মোবাইল নম্বর নেই";
+
+export type PatwariSource = "land" | "mouza" | null;
+
+export interface PatwariRow {
+  name?: string | null;
+  name_bn?: string | null;
+  mobile?: string | null;
+}
+
+/**
+ * Pure patwari resolver for irrigation receipts. Priority:
+ *  1. Patwari explicitly selected on the land (`patwari_id`).
+ *  2. Otherwise the patwari selected for the land's mouza (`mouza_id`).
+ *  3. Otherwise none.
+ * Returns the resolved row and which source it came from (for debug/indicator).
+ */
+export function resolveReceiptPatwari(
+  land: { patwari_id?: string | null; mouza_id?: string | null } | null | undefined,
+  patwariById: Record<string, PatwariRow>,
+  patwariByMouza: Record<string, PatwariRow>,
+): { patwari: PatwariRow | null; source: PatwariSource } {
+  const byLand = land?.patwari_id ? patwariById[land.patwari_id] : null;
+  if (byLand) return { patwari: byLand, source: "land" };
+  const byMouza = land?.mouza_id ? patwariByMouza[land.mouza_id] : null;
+  if (byMouza) return { patwari: byMouza, source: "mouza" };
+  return { patwari: null, source: null };
+}
+
+/** Display name/mobile with explicit placeholder text when missing. */
+export function patwariDisplay(patwari: PatwariRow | null): {
+  name: string;
+  mobile: string;
+} {
+  return {
+    name: patwari ? patwari.name_bn || patwari.name || PATWARI_NAME_MISSING : PATWARI_NAME_MISSING,
+    mobile: patwari?.mobile || PATWARI_MOBILE_MISSING,
+  };
+}
+
 // Feature flag for tracing where receipt land/charge data comes from.
 // Enable in the browser console with: localStorage.setItem("debug:receipt-data", "1")
 export function isReceiptDataDebugEnabled(): boolean {
