@@ -310,6 +310,12 @@ export default function Receipts() {
         data={preview?.data ?? null}
         copy={preview?.copy ?? "both"}
       />
+      <EditReceiptDialog
+        payment={editPayment}
+        open={!!editPayment}
+        onOpenChange={(o) => { if (!o) setEditPayment(null); }}
+        onSaved={() => { setEditPayment(null); load(); }}
+      />
       {confirmDialog}
     </>
   );
