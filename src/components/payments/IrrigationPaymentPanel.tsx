@@ -320,7 +320,7 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
         if (rows.length === 0) rows.push({ label: tx("Current season charge", "চলতি সিজন চার্জ"), missing: currentShortfall });
       }
       if (previousShortfall > 0.5) {
-        for (const inv of previousInvoices) {
+        for (const inv of selectedPreviousInvoices) {
           if (Number(inv.due_amount) > 0.5) rows.push({ label: `${tx("Previous due", "আগের বকেয়া")} • ${inv.invoice_no}`, missing: Number(inv.due_amount) });
         }
       }
