@@ -116,7 +116,7 @@ export default function Receipts() {
   }, [list, farmerCode, mouza, mouzaByPayment]);
 
   function clearFilters() {
-    setFrom(""); setTo(""); setFarmerId(null); setFarmerCode(""); setMouza("");
+    setReceiptNo(""); setFrom(""); setTo(""); setFarmerId(null); setFarmerCode(""); setMouza("");
   }
 
   async function deleteReceipt(p: any) {
