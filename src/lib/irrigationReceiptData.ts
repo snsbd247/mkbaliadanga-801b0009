@@ -25,8 +25,13 @@ function dbg(...args: unknown[]) {
 
 const tx = (en: string, bn: string) => bn; // receipts are Bengali
 
+// NOTE: We deliberately do NOT nest lands(...)/patwaris(...)/owner(...) embeds
+// here. The self-hosted Laravel/MySQL gateway cannot resolve nested-in-nested
+// embeds, which silently returned blank mouza/dag/land_size/patwari on the VPS
+// build. Land + patwari + owner are fetched with separate queries below so both
+// the Lovable Cloud and VPS backends produce identical receipt data.
 export const IRRIGATION_INVOICE_SELECT =
-  "id,invoice_no,payable_amount,paid_amount,due_amount,discount_amount,discount_reason,irrigation_amount,maintenance_amount,canal_amount,delay_fee,other_charge,is_borga,land_id,note,due_date,season_rate,land_type_name,irrigation_category_name,seasons(name,year,status),lands(mouza,dag_no,land_size,field_type,owner_type,owner_farmer_id,notes,patwaris(name,name_bn,mobile),owner:farmers!lands_owner_farmer_id_fkey(name_bn,name_en,member_no,farmer_code))";
+  "id,invoice_no,payable_amount,paid_amount,due_amount,discount_amount,discount_reason,irrigation_amount,maintenance_amount,canal_amount,delay_fee,other_charge,is_borga,land_id,note,due_date,season_rate,land_type_name,irrigation_category_name,seasons(name,year,status)";
 
 export interface IrrigationEnrichInput {
   farmerId: string | null;
@@ -94,6 +99,55 @@ export async function buildIrrigationReceiptEnrichment(
       .order("due_date", { ascending: true });
     invoiceRows = invs ?? [];
     dbg("source=farmer_id fallback", { farmerId, found: invoiceRows.length });
+  }
+
+  // Attach land + patwari + owner via separate queries (works on both Cloud and
+  // the self-hosted Laravel backend, which cannot resolve nested-in-nested embeds).
+  const landIds = Array.from(
+    new Set(invoiceRows.map((inv) => inv?.land_id).filter(Boolean)),
+  ) as string[];
+  if (landIds.length) {
+    const { data: landRows } = await db
+      .from("lands")
+      .select("id,mouza,dag_no,land_size,field_type,owner_type,owner_farmer_id,patwari_id,notes")
+      .in("id", landIds);
+    const lands = landRows ?? [];
+
+    const patwariIds = Array.from(
+      new Set(lands.map((l: any) => l?.patwari_id).filter(Boolean)),
+    ) as string[];
+    const patwariById: Record<string, any> = {};
+    if (patwariIds.length) {
+      const { data: patwariRows } = await db
+        .from("patwaris")
+        .select("id,name,name_bn,mobile")
+        .in("id", patwariIds);
+      for (const p of patwariRows ?? []) patwariById[(p as any).id] = p;
+    }
+
+    const ownerIds = Array.from(
+      new Set(lands.map((l: any) => l?.owner_farmer_id).filter(Boolean)),
+    ) as string[];
+    const ownerById: Record<string, any> = {};
+    if (ownerIds.length) {
+      const { data: ownerRows } = await db
+        .from("farmers")
+        .select("id,name_bn,name_en,member_no,farmer_code")
+        .in("id", ownerIds);
+      for (const o of ownerRows ?? []) ownerById[(o as any).id] = o;
+    }
+
+    const landById: Record<string, any> = {};
+    for (const l of lands) {
+      landById[(l as any).id] = {
+        ...(l as any),
+        patwaris: (l as any).patwari_id ? patwariById[(l as any).patwari_id] ?? null : null,
+        owner: (l as any).owner_farmer_id ? ownerById[(l as any).owner_farmer_id] ?? null : null,
+      };
+    }
+    for (const inv of invoiceRows) {
+      inv.lands = inv?.land_id ? landById[inv.land_id] ?? null : null;
+    }
   }
 
   const primaryCharge = invoiceRows[0] ?? null;
