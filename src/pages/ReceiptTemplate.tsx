@@ -142,7 +142,12 @@ export default function ReceiptTemplatePage() {
     // so we fail early with clear guidance instead of a cryptic mid-save error.
     if (serialChanged) {
       const probe = await checkReceiptSerialRpc();
-      if (!probe.available) { toast.error(probe.message); return; }
+      if (!probe.available) {
+        toast.error(probe.message, {
+          description: "সিরিয়াল নম্বর সেভ করা যাচ্ছে না। কয়েক সেকেন্ড পর আবার চেষ্টা করুন, অথবা অ্যাপটি নতুন করে publish/deploy করুন।",
+        });
+        return;
+      }
     }
 
     setSaving(true);
