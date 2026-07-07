@@ -372,6 +372,9 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
       const paymentId = ins!.id as string;
 
       // 2) Allocate currentCollected across selected current invoices (oldest first)
+      // Track exactly which invoices this payment covered (id + amount) so we can
+      // persist, verify against the backend, and print them on the receipt.
+      const coveredInvoices: Array<{ id: string; invoice_no: string; due_amount: number }> = [];
       let remainingCurrent = Number(currentCollected || 0);
       const sorted = [...selectedCurrentInvoices].sort((a, b) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime());
       for (const inv of sorted) {
