@@ -844,6 +844,7 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
             <CollapsibleContent>
               <Table>
                 <TableHeader><TableRow>
+                  <TableHead className="w-8"></TableHead>
                   <TableHead>{tx("Season", "সিজন")}</TableHead>
                   <TableHead>{tx("Invoice", "ইনভয়েস")}</TableHead>
                   <TableHead>{tx("Due Date", "নির্ধারিত তারিখ")}</TableHead>
@@ -852,6 +853,12 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
                 <TableBody>
                   {previousInvoices.map(inv => (
                     <TableRow key={inv.id}>
+                      <TableCell>
+                        <Checkbox
+                          checked={selectedPrevIds.has(inv.id)}
+                          onCheckedChange={() => togglePrevInvoice(inv.id)}
+                        />
+                      </TableCell>
                       <TableCell className="text-xs">{inv.seasons?.name} {inv.seasons?.year}</TableCell>
                       <TableCell className="font-mono text-xs">{inv.invoice_no}</TableCell>
                       <TableCell className="text-xs">{fmtDate(inv.due_date)}</TableCell>
