@@ -300,16 +300,17 @@ function InvoiceListTab({ seasons, offices, isSuper }: any) {
   async function deleteInvoice(inv: any) {
     const ok = await confirm({
       title: tx("Delete invoice?", "ইনভয়েস মুছে ফেলবেন?"),
-      description: `${inv.invoice_no} — ${tx("Deleted invoices won't appear in the list.", "মুছে ফেলা ইনভয়েস তালিকায় দেখাবে না।")}`,
+      description: `${inv.invoice_no} — ${tx("Deleted invoices won't appear in the list. Any payments received against this invoice will also be removed.", "মুছে ফেলা ইনভয়েস তালিকায় দেখাবে না। এই ইনভয়েসের বিপরীতে গৃহীত পেমেন্টও রিমুভ হবে।")}`,
       destructive: true, confirmText: tx("Delete", "মুছুন"),
     });
     if (!ok) return;
+    await voidPaymentsForInvoice(inv.id, { actorId: user?.id ?? null });
     const { error } = await db
       .from("irrigation_invoices" as any)
       .update({ deleted_at: new Date().toISOString() } as any)
       .eq("id", inv.id);
     if (error) return toast.error(error.message);
-    toast.success(tx("Invoice deleted", "ইনভয়েস মুছে ফেলা হয়েছে")); load();
+    toast.success(tx("Invoice and related payments deleted", "ইনভয়েস ও সংশ্লিষ্ট পেমেন্ট মুছে ফেলা হয়েছে")); load();
   }
 
   function buildInvoicePdfPayload(inv: any) {
