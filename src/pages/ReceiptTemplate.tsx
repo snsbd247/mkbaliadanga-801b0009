@@ -14,6 +14,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2, Save, RotateCcw, History } from "lucide-react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
+import { validateSerialStart, validateWatermark } from "@/lib/receiptTemplateValidation";
 import {
   DEFAULT_TEMPLATE,
   previewPaymentReceiptPdf,
@@ -59,15 +60,9 @@ export default function ReceiptTemplatePage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
-  const serialError = (() => {
-    const raw = serialStart.trim();
-    if (raw === "") return "শুরুর ক্রমিক নম্বর দিতে হবে / Serial start is required";
-    if (!/^\d+$/.test(raw)) return "শুধু ধনাত্মক পূর্ণসংখ্যা দেওয়া যাবে / Only positive whole numbers allowed";
-    const n = Number(raw);
-    if (!Number.isFinite(n) || n < 0) return "ক্রমিক নম্বর ঋণাত্মক হতে পারবে না / Serial cannot be negative";
-    if (n > 9000000000) return "ক্রমিক নম্বর অনেক বড় / Serial is too large";
-    return null;
-  })();
+  const serialError = validateSerialStart(serialStart);
+
+  const watermarkError = validateWatermark(tpl.show_watermark, tpl.watermark_text);
 
   useEffect(() => {
     document.title = "Receipt Template";
@@ -135,6 +130,7 @@ export default function ReceiptTemplatePage() {
 
   async function save() {
     if (serialError) { toast.error(serialError); return; }
+    if (watermarkError) { toast.error(watermarkError); return; }
     const nextSerial = Math.floor(Number(serialStart) || 0);
     const serialChanged = nextSerial !== savedSerialStart;
 
@@ -263,7 +259,7 @@ export default function ReceiptTemplatePage() {
               <Link to="/admin/receipt-serial-audit"><History className="h-4 w-4" />সিরিয়াল লগ</Link>
             </Button>
             <Button variant="outline" size="sm" onClick={reset}><RotateCcw className="h-4 w-4" />Reset</Button>
-            <Button size="sm" onClick={save} disabled={saving || !!serialError}>
+            <Button size="sm" onClick={save} disabled={saving || !!serialError || !!watermarkError}>
               {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}Save
             </Button>
           </div>
@@ -343,7 +339,10 @@ export default function ReceiptTemplatePage() {
             <ToggleRow label="Show watermark" value={tpl.show_watermark} onChange={(v) => setTpl({ ...tpl, show_watermark: v })} />
             <div>
               <Label className="text-xs">Watermark text</Label>
-              <Input value={tpl.watermark_text} onChange={(e) => setTpl({ ...tpl, watermark_text: e.target.value })} maxLength={40} placeholder="e.g. COPY / PAID" disabled={!tpl.show_watermark} />
+              <Input value={tpl.watermark_text} onChange={(e) => setTpl({ ...tpl, watermark_text: e.target.value })} maxLength={40} placeholder="e.g. COPY / PAID" disabled={!tpl.show_watermark} aria-invalid={!!watermarkError} />
+              {watermarkError ? (
+                <p className="text-xs text-destructive mt-1" data-testid="watermark-error">{watermarkError}</p>
+              ) : null}
             </div>
           </div>
 
