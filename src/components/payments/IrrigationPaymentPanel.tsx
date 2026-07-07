@@ -555,7 +555,7 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
       const totalDelay = sorted.reduce((s, inv) => s + (delayFee[inv.id] ?? Number(inv.delay_fee || 0)), 0);
       const totalMaint = sorted.reduce((s, inv) => s + Number(inv.maintenance_amount || 0), 0);
       const totalCanal = sorted.reduce((s, inv) => s + Number(inv.canal_amount || 0), 0);
-      const allReceiptInvoices = [...sorted, ...previousInvoices];
+      const allReceiptInvoices = [...sorted, ...selectedPreviousInvoices];
       const receiptMouza = allReceiptInvoices.find((inv: any) => inv.lands?.mouza)?.lands?.mouza ?? null;
       const receiptLandSize = allReceiptInvoices.reduce((s, inv: any) => s + Number(inv.lands?.land_size || 0), 0) || null;
 
