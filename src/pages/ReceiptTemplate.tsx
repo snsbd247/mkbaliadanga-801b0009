@@ -182,9 +182,15 @@ export default function ReceiptTemplatePage() {
         toast.error("সেটিংস সংরক্ষণ করা যায়নি — শুধুমাত্র সুপার অ্যাডমিন রিসিপ্ট টেমপ্লেট পরিবর্তন করতে পারেন। / Could not save — only a super admin can change the receipt template.");
         return;
       }
+      // Confirm the watermark actually persisted before claiming success.
+      const persistedWatermark = String((updated[0] as any)?.watermark_text ?? "");
+      if (persistedWatermark !== String(tpl.watermark_text ?? "")) {
+        toast.error("ওয়াটারমার্ক ডাটাবেসে সংরক্ষণ নিশ্চিত করা যায়নি — অনুগ্রহ করে আবার চেষ্টা করুন। / Could not confirm the watermark was saved — please try again.");
+        return;
+      }
 
-      // Audit the template save itself.
-      logAudit({ module: "receipt", action_type: "update", reference_id: "receipt_settings:1", new_data: { serial_start: nextSerial } });
+      // Audit the template save itself (watermark + serial).
+      logAudit({ module: "receipt", action_type: "update", reference_id: "receipt_settings:1", new_data: { serial_start: nextSerial, watermark_text: tpl.watermark_text, show_watermark: tpl.show_watermark } });
 
       // Serial start goes through a server-validated + audited RPC (with auto-retry).
       if (serialChanged) {
@@ -207,6 +213,15 @@ export default function ReceiptTemplatePage() {
         logAudit({ module: "receipt", action_type: "override", reference_id: "receipt_serial_start", old_data: { serial_start: savedSerialStart }, new_data: { serial_start: nextSerial } });
         setSavedSerialStart(nextSerial);
         toast.success(`ক্রমিক নম্বর সংরক্ষিত — পরবর্তী রিসিপ্ট হবে ${nextSerial + 1} / Serial saved — the next receipt will be ${nextSerial + 1}`);
+      }
+
+      // Re-read the persisted row so the UI reflects exactly what is in the DB.
+      const { data: fresh } = await db.from("receipt_settings").select("*").eq("id", 1).maybeSingle();
+      if (fresh) {
+        setTpl({ ...DEFAULT_TEMPLATE, ...(fresh as any) });
+        const s = Number((fresh as any).receipt_serial_start ?? 0) || 0;
+        setSerialStart(String(s));
+        setSavedSerialStart(s);
       }
 
       notifyReceiptTemplateChange();
