@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { db } from "@/lib/db";
 import { useAuth } from "@/auth/AuthProvider";
 import { useLang } from "@/i18n/LanguageProvider";
@@ -19,6 +18,7 @@ import { FarmerSearchSelect } from "@/components/farmers/FarmerSearchSelect";
 import { MouzaSelect } from "@/components/locations/MouzaSelect";
 import { ReceiptCopyMenu } from "@/components/receipts/ReceiptCopyMenu";
 import { IrrigationReceiptPreviewDialog } from "@/components/receipts/IrrigationReceiptPreviewDialog";
+import { EditReceiptDialog } from "@/components/receipts/EditReceiptDialog";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 import { downloadBnReceiptPdf, type ReceiptCopy, type BnReceiptData } from "@/lib/bnReceipts";
 import { buildPaymentReceiptData } from "@/lib/buildPaymentReceiptData";
@@ -33,7 +33,6 @@ const PAY_SELECT =
 export default function Receipts() {
   const { t, tx } = useLang();
   const { user } = useAuth();
-  const navigate = useNavigate();
   const brand = useBranding();
   const receiptArgs = useReceiptRenderArgs();
   const { confirm, dialog: confirmDialog } = useConfirm();
@@ -44,6 +43,7 @@ export default function Receipts() {
   const [list, setList] = useState<any[]>([]);
   const [mouzaByPayment, setMouzaByPayment] = useState<Record<string, string>>({});
   const [preview, setPreview] = useState<{ data: BnReceiptData; copy: ReceiptCopy } | null>(null);
+  const [editPayment, setEditPayment] = useState<any | null>(null);
 
   // Filters
   const [receiptNo, setReceiptNo] = useState("");
@@ -273,7 +273,7 @@ export default function Receipts() {
                         <TableCell>
                           <div className="flex gap-1">
                             {(isAdmin || canEdit) && p.status === "approved" && !p.voided_at && (
-                              <Button size="icon" variant="ghost" title={tx("Edit receipt", "রসিদ এডিট")} onClick={() => navigate(`/payments?receipt=${encodeURIComponent(p.receipt_no ?? "")}`)}>
+                              <Button size="icon" variant="ghost" title={tx("Edit receipt", "রসিদ এডিট")} onClick={() => setEditPayment(p)}>
                                 <Pencil className="h-4 w-4" />
                               </Button>
                             )}
@@ -307,6 +307,12 @@ export default function Receipts() {
         onOpenChange={(o) => { if (!o) setPreview(null); }}
         data={preview?.data ?? null}
         copy={preview?.copy ?? "both"}
+      />
+      <EditReceiptDialog
+        payment={editPayment}
+        open={!!editPayment}
+        onOpenChange={(o) => { if (!o) setEditPayment(null); }}
+        onSaved={() => { setEditPayment(null); load(); }}
       />
       {confirmDialog}
     </>
