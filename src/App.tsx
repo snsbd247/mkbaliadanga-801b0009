@@ -153,6 +153,7 @@ import AssetCategories from "./pages/admin/AssetCategories";
 import AssetItems from "./pages/assets/AssetItems";
 import AssetItemDetail from "./pages/assets/AssetItemDetail";
 import AssetDashboard from "./pages/assets/AssetDashboard";
+import IrrigationPaymentCoverageAdmin from "./pages/IrrigationPaymentCoverageAdmin";
 import AssetReports from "./pages/assets/AssetReports";
 import AssetScanner from "./pages/assets/AssetScanner";
 import AssetScanHistory from "./pages/assets/AssetScanHistory";
