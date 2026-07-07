@@ -23,7 +23,7 @@ import {
 } from "@/lib/paymentReceiptPdf";
 import { useBranding } from "@/lib/branding";
 import { notifyReceiptTemplateChange } from "@/lib/receiptTemplate";
-import { checkReceiptSerialRpc, setReceiptSerialStart, serialSaveUnconfirmedToast } from "@/lib/receiptSerial";
+import { checkReceiptSerialRpc, setReceiptSerialStart, serialSaveUnconfirmedToast, getCurrentSerialLast } from "@/lib/receiptSerial";
 import DiagnosticsPanel from "@/components/system/DiagnosticsPanel";
 import { logAudit } from "@/lib/audit";
 import { previewBnReceiptPdf } from "@/lib/bnReceipts";
