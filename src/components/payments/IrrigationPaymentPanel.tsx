@@ -232,9 +232,19 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
     [invoices, activeSeasonId],
   );
 
+  // Auto-select all previous invoices by default; operator can deselect.
+  useEffect(() => {
+    setSelectedPrevIds(new Set(previousInvoices.map(i => i.id)));
+  }, [previousInvoices]);
+
+  const selectedPreviousInvoices = useMemo(
+    () => previousInvoices.filter(i => selectedPrevIds.has(i.id)),
+    [previousInvoices, selectedPrevIds],
+  );
+
   const previousDueTotal = useMemo(
-    () => previousInvoices.reduce((s, i) => s + Number(i.due_amount || 0), 0),
-    [previousInvoices],
+    () => selectedPreviousInvoices.reduce((s, i) => s + Number(i.due_amount || 0), 0),
+    [selectedPreviousInvoices],
   );
 
   const selectedCurrentInvoices = useMemo(
