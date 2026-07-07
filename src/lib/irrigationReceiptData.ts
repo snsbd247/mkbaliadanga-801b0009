@@ -96,6 +96,7 @@ export interface IrrigationEnriched {
   rate: number | null;
   member_summary: string;
   owner_self: boolean;
+  cultivator_label: string | null;
   land_owner_label: string | null;
   current_season_charge: number;
   penalty_amount: number;
