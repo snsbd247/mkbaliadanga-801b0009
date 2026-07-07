@@ -14,6 +14,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2, Save, RotateCcw, History } from "lucide-react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
+import { validateSerialStart, validateWatermark } from "@/lib/receiptTemplateValidation";
 import {
   DEFAULT_TEMPLATE,
   previewPaymentReceiptPdf,
