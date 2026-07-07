@@ -60,23 +60,9 @@ export default function ReceiptTemplatePage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
-  const serialError = (() => {
-    const raw = serialStart.trim();
-    if (raw === "") return "শুরুর ক্রমিক নম্বর দিতে হবে / Serial start is required";
-    if (!/^\d+$/.test(raw)) return "শুধু ধনাত্মক পূর্ণসংখ্যা দেওয়া যাবে / Only positive whole numbers allowed";
-    const n = Number(raw);
-    if (!Number.isFinite(n) || n < 0) return "ক্রমিক নম্বর ঋণাত্মক হতে পারবে না / Serial cannot be negative";
-    if (n > 9000000000) return "ক্রমিক নম্বর অনেক বড় / Serial is too large";
-    return null;
-  })();
+  const serialError = validateSerialStart(serialStart);
 
-  const watermarkError = (() => {
-    if (!tpl.show_watermark) return null;
-    const raw = String(tpl.watermark_text ?? "");
-    if (raw.trim() === "") return "ওয়াটারমার্ক টেক্সট দিতে হবে / Watermark text is required";
-    if (raw.length > 40) return "ওয়াটারমার্ক টেক্সট ৪০ অক্ষরের বেশি হতে পারবে না / Watermark text must be 40 characters or fewer";
-    return null;
-  })();
+  const watermarkError = validateWatermark(tpl.show_watermark, tpl.watermark_text);
 
   useEffect(() => {
     document.title = "Receipt Template";
