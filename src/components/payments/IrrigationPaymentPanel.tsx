@@ -669,7 +669,12 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
           })
           .filter(Boolean),
       )).join("/") || tx("Irrigation charge", "সেচ চার্জ");
-      const patwari = allReceiptInvoices.find((inv) => inv.lands?.patwaris)?.lands?.patwaris ?? null;
+      const landPatwari = allReceiptInvoices.find((inv) => inv.lands?.patwaris)?.lands?.patwaris ?? null;
+      // Fall back to the manually selected patwari when the land has none linked.
+      const manualPatwari = !landPatwari && manualPatwariId
+        ? (patwariList.find((p) => p.id === manualPatwariId) ?? null)
+        : null;
+      const patwari = landPatwari ?? manualPatwari;
       const landNotes = allReceiptInvoices
         .map((inv) => (inv.lands?.notes ?? "").trim())
         .filter(Boolean)
