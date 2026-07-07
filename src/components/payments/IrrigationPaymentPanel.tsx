@@ -25,6 +25,7 @@ import { resolveFieldTypeLabel } from "@/lib/irrigationLandType";
 import { safeWithRetry } from "@/lib/retryQueue";
 import { logAudit } from "@/lib/audit";
 import { autoReceiptNo } from "@/lib/receiptNo";
+import { exceedsDue } from "@/lib/irrigationPaymentMath";
 import { nextMonthlyReceiptNo, nextUnifiedReceiptNo } from "@/lib/monthlyReceiptNo";
 
 // Shared select for open irrigation invoices (used by both initial load and reload).
@@ -300,7 +301,7 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
     if (Number(currentCollected) > 0 && selectedCurrentInvoices.length === 0) {
       return toast.error(tx("Select at least one current invoice", "অন্তত একটি বর্তমান ইনভয়েস বাছাই করুন"));
     }
-    if (Number(previousCollected) > previousDueTotal + 0.5) {
+    if (exceedsDue(Number(previousCollected), previousDueTotal)) {
       return toast.error(tx("Previous due collected exceeds previous due", "পূর্বের বকেয়া থেকে সংগৃহীত পূর্বের মোট বকেয়ার চেয়ে বেশি"));
     }
     // Full-clearance rule: only roles allowed in settings (or super admins) may
@@ -872,6 +873,11 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
           <div className="flex items-center justify-between border-t pt-3">
             <div className="text-sm">
               {tx("Previous due total", "মোট পূর্বের বকেয়া")}: <span className="font-mono font-semibold">{money(previousDueTotal)}</span>
+              {selectedPreviousInvoices.length > 0 && (
+                <span className="ml-1 text-xs text-muted-foreground">
+                  ({selectedPreviousInvoices.map(i => `${i.invoice_no} ${money(i.due_amount)}`).join(" + ")})
+                </span>
+              )}
             </div>
             <div className="flex items-center gap-2">
               <Label className="text-sm">{tx("Previous due received (পূর্বের বকেয়া হতে)", "পূর্বের বকেয়া হতে গৃহীত")}</Label>
