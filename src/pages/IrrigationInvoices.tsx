@@ -996,6 +996,8 @@ function InvoiceEditDialog({ inv, onClose, onSaved }: any) {
       return toast.error(
         perm.reason === "staff_approved_locked"
           ? tx("Staff cannot edit approved invoices", "স্টাফ অনুমোদিত ইনভয়েস এডিট করতে পারবে না")
+          : perm.reason === "office_mismatch"
+          ? tx("This invoice belongs to another office", "এই ইনভয়েস অন্য অফিসের")
           : tx("You do not have permission to edit invoices", "ইনভয়েস এডিট করার অনুমতি নেই")
       );
     }
