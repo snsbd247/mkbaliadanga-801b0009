@@ -108,6 +108,7 @@ export interface IrrigationEnriched {
   holding_description: string | null;
   patwari_name: string | null;
   patwari_mobile: string | null;
+  patwari_source: PatwariSource;
 }
 
 /**
