@@ -793,7 +793,7 @@ async function renderPdf(data: BnReceiptData, copy: ReceiptCopy, options?: Recei
     opts.margins = { ...IRRIGATION_RECEIPT_PAGE.margins };
   }
   let tpl: ReceiptTemplate = { ...DEFAULT_TEMPLATE };
-  try { tpl = { ...tpl, ...(await loadReceiptTemplate()) }; } catch { /* use defaults */ }
+  try { tpl = { ...tpl, ...(await loadReceiptTemplate(true)) }; } catch { /* use defaults */ }
   if (options?.template) tpl = { ...tpl, ...options.template };
   let qrDataUrl: string | null = null;
   if (data.verify_url) {
