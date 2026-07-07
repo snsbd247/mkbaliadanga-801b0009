@@ -1024,10 +1024,10 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
               <Input value={note} onChange={(e) => setNote(e.target.value)} />
             </div>
             {!invoices.some((i) => i.lands?.patwaris) && (
-              <div>
+              <div data-testid="manual-patwari-block">
                 <Label>{tx("Patwari (manual)", "পাটোয়ারি (ম্যানুয়াল)")}</Label>
                 <Select value={manualPatwariId} onValueChange={setManualPatwariId}>
-                  <SelectTrigger>
+                  <SelectTrigger data-testid="manual-patwari-select">
                     <SelectValue placeholder={tx("Select patwari", "পাটোয়ারি নির্বাচন করুন")} />
                   </SelectTrigger>
                   <SelectContent>
