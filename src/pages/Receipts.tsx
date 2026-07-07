@@ -196,6 +196,10 @@ export default function Receipts() {
       <div className="p-4 space-y-4">
         <Card className="p-4">
           <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-6 items-end">
+            <div className="space-y-1 lg:col-span-2">
+              <Label className="text-xs">{tx("Receipt #", "রশিদ নং")}</Label>
+              <Input value={receiptNo} onChange={(e) => setReceiptNo(e.target.value)} placeholder={tx("Search receipt no", "রশিদ নং খুঁজুন")} />
+            </div>
             <div className="space-y-1">
               <Label className="text-xs">{tx("From", "শুরু")}</Label>
               <Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
