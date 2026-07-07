@@ -770,6 +770,24 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
         <FarmerSearchSelect blockInactive value={farmerId || null} onChange={(id) => setFarmerId(id ?? "")} />
       </Card>
 
+      {paidStatuses.length > 0 && (
+        <Alert>
+          <CheckCircle2 className="h-4 w-4" />
+          <AlertDescription>
+            <div className="mb-1 font-medium">{tx("Invoice status after payment", "পেমেন্টের পর ইনভয়েসের অবস্থা")}</div>
+            <div className="flex flex-wrap gap-2">
+              {paidStatuses.map((s) => (
+                <Badge key={s.invoice_no} variant={s.cleared ? "default" : "secondary"} className="font-mono">
+                  {s.invoice_no}: {s.cleared ? tx("Cleared", "পরিশোধিত") : tx("Pending", "বকেয়া")}
+                </Badge>
+              ))}
+            </div>
+          </AlertDescription>
+        </Alert>
+      )}
+
+
+
       {farmerId && loading && (
         <div className="text-center py-6 text-muted-foreground"><Loader2 className="h-5 w-5 animate-spin inline mr-2" /> {tx("Loading…", "লোড হচ্ছে…")}</div>
       )}
