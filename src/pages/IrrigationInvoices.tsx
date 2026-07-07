@@ -1111,11 +1111,7 @@ function InvoiceEditDialog({ inv, onClose, onSaved }: any) {
     });
     if (!ok) return;
     setBusy(true);
-    const { error: delErr } = await db
-      .from("irrigation_invoice_payments" as any)
-      .delete()
-      .eq("invoice_id", inv.id);
-    if (delErr) { setBusy(false); return toast.error(delErr.message); }
+    await voidPaymentsForInvoice(inv.id, { actorId: user?.id ?? null, reason: "ইনভয়েস আনপেইড করার কারণে পেমেন্ট বাতিল" });
     const payable = Number(inv.payable_amount) || 0;
     const { data: updatedRows, error } = await db
       .from("irrigation_invoices" as any)
