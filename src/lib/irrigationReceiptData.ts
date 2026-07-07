@@ -243,7 +243,27 @@ export async function buildIrrigationReceiptEnrichment(
   const ownerInvoice =
     invoiceRows.find((inv) => inv?.is_borga && inv?.lands?.owner) ?? primaryCharge;
   const ownerFarmer = ownerInvoice?.lands?.owner;
-  const isSelf = !anyBorga;
+  const ownerFarmerId: string | null = ownerFarmer?.id ?? ownerInvoice?.lands?.owner_farmer_id ?? null;
+
+  // চাষি/বর্গাদার = পরিশোধকৃত ইনভয়েসের farmer_id। এখান থেকেই নাম-আইডি ও সেভিং একাউন্ট নম্বর আসবে।
+  const cultivatorId: string | null = primaryCharge?.farmer_id ?? farmerId ?? null;
+  let cultivatorFarmer: any = null;
+  if (cultivatorId) {
+    const { data } = await db
+      .from("farmers")
+      .select("id,name_bn,name_en,member_no,farmer_code,account_number,savings_inactive")
+      .eq("id", cultivatorId)
+      .maybeSingle();
+    cultivatorFarmer = data ?? null;
+  }
+
+  // চাষি ও মালিক একই ব্যক্তি হলে (নিজ জমি) একটিই নাম-আইডি দেখাবে।
+  const isSelf = !ownerFarmerId || !cultivatorId || ownerFarmerId === cultivatorId;
+
+  const cultivatorMember = cultivatorFarmer?.member_no || cultivatorFarmer?.farmer_code || null;
+  const cultivatorLabel = cultivatorFarmer
+    ? `${cultivatorFarmer.name_bn || cultivatorFarmer.name_en}${cultivatorMember ? "-" + cultivatorMember : ""}`
+    : null;
 
   const fieldTypeBn =
     Array.from(
