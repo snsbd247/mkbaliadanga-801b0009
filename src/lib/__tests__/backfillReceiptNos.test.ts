@@ -4,12 +4,13 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 const updateCalls: any[] = [];
 
 function makeBuilder() {
+  const rows = [{ id: "p1", occurred_at: "2026-01-01T00:00:00Z", created_at: null }];
   const builder: any = {
-    _rows: [{ id: "p1", occurred_at: "2026-01-01T00:00:00Z", created_at: null }],
     select: () => builder,
     is: () => builder,
     eq: () => builder,
-    limit: () => Promise.resolve({ data: builder._rows, error: null }),
+    limit: () => builder,
+    then: (resolve: any) => resolve({ data: rows, error: null }),
     update: (payload: any) => {
       updateCalls.push(payload);
       return {
