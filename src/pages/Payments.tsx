@@ -46,6 +46,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { IrrigationPaymentPanel } from "@/components/payments/IrrigationPaymentPanel";
 import { findRecentDuplicatePayment } from "@/lib/duplicatePaymentCheck";
 import { buildIrrigationReceiptEnrichment } from "@/lib/irrigationReceiptData";
+import { backfillMissingReceiptNos } from "@/lib/backfillReceiptNos";
 import { getTodayMethodSummary, type MethodSummary } from "@/lib/paymentMethodSummary";
 import { previewEdit, checkConsistency, type EditBaseline } from "@/lib/combinedReceiptValidation";
 
@@ -267,6 +268,7 @@ export default function Payments() {
   }
 
   useEffect(() => { document.title = `${t("payments")} — ${t("appName")}`; load(); checkRole(); loadPriority(); }, []);
+  useEffect(() => { backfillMissingReceiptNos(officeId).then((n) => { if (n > 0) load(); }); }, [officeId]);
   useEffect(() => { load(); /* refresh on filters */ }, [showDeleted, period]);
   useEffect(() => { if (farmerId) { loadDues(); loadSavingsBalance(farmerId); } else { setOpenIrr([]); setCancelledIrr([]); setSavingsBalance(0); } setInvoiceFilter("open"); }, [farmerId]);
   // Lazy-load cancelled/soft-deleted invoices only when that filter is selected.

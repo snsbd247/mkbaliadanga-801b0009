@@ -767,7 +767,10 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
         }
       }
 
-      toast.success(tx("Payment recorded", "পেমেন্ট সংরক্ষিত হয়েছে"));
+      toast.success(
+        tx("Payment recorded", "পেমেন্ট সংরক্ষিত হয়েছে"),
+        receiptNo ? { description: tx(`Receipt #: ${receiptNo}`, `রসিদ নং: ${receiptNo}`) } : undefined,
+      );
       setPaidStatuses(touchedStatuses);
       // refresh
       setFarmerId(farmerId);
