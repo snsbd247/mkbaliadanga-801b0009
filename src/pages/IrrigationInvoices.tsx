@@ -35,6 +35,7 @@ import { Sparkles, Plus, Eye, Ban, RefreshCw, ShieldCheck, AlertTriangle, FileSp
 import { exportInvoicesXLSX, exportInvoicesCSV, joinInvoiceNotes, joinNotes } from "@/lib/irrigationExports";
 import { exportTablePDF } from "@/lib/exports";
 import { logAudit } from "@/lib/audit";
+import { voidPaymentsForInvoice } from "@/lib/voidInvoicePayments";
 import { validateDiscount, computeInvoiceTotals, grossAmount, canEditInvoice } from "@/lib/invoiceDiscount";
 import {
   downloadIrrigationInvoicePdf, previewIrrigationInvoicePdf,
