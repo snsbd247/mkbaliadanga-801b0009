@@ -502,6 +502,16 @@ function copyHtml(d: BnReceiptData, copyLabel: string, signatureUrl: string | nu
       : null;
     const holdingParts = [holdingDesc, patwariText].filter(Boolean).join(" / ");
     rows.push([t.holding, holdingParts || "—"]);
+    // 14. পরিশোধিত ইনভয়েসসমূহ — একাধিক ইনভয়েস কভার করলে বিস্তারিত তালিকা ও যোগফল
+    const covered = (d.covered_invoices ?? []).filter((c) => c && c.invoice_no);
+    if (covered.length > 0) {
+      const list = covered
+        .map((c) => `${digits(String(c.invoice_no), lang)} — ${moneyInt(Number(c.due_amount || 0), lang, "৳")}`)
+        .join("<br/>");
+      const sum = covered.reduce((s, c) => s + Number(c.due_amount || 0), 0);
+      const label = lang === "bn" ? "পরিশোধিত ইনভয়েস:" : "Invoices covered:";
+      rows.push([label, `${list}<br/><b>${lang === "bn" ? "যোগফল" : "Total"}: ${moneyInt(sum, lang, "৳")}</b>`]);
+    }
   } else {
     // কৃষকের নাম এবং কৃষক সদস্য নং: name - member_no - owner_type - voter/savings ref
     const memberRefSuffix = d.farmer.member_type_bn || d.farmer.member_ref_no
