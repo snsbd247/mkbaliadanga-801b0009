@@ -81,6 +81,7 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
   const [activeSeasonId, setActiveSeasonId] = useState<string | null>(null);
 
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [selectedPrevIds, setSelectedPrevIds] = useState<Set<string>>(new Set());
   // editable delay fees per invoice
   const [delayFee, setDelayFee] = useState<Record<string, number>>({});
   const [delayFeeReason, setDelayFeeReason] = useState<Record<string, string>>({});
@@ -209,6 +210,7 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
       }
 
       setSelectedIds(new Set());
+      setSelectedPrevIds(new Set());
       setDelayFee({});
       setDelayFeeReason({});
       setCurrentCollected(0);
@@ -230,9 +232,19 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
     [invoices, activeSeasonId],
   );
 
+  // Auto-select all previous invoices by default; operator can deselect.
+  useEffect(() => {
+    setSelectedPrevIds(new Set(previousInvoices.map(i => i.id)));
+  }, [previousInvoices]);
+
+  const selectedPreviousInvoices = useMemo(
+    () => previousInvoices.filter(i => selectedPrevIds.has(i.id)),
+    [previousInvoices, selectedPrevIds],
+  );
+
   const previousDueTotal = useMemo(
-    () => previousInvoices.reduce((s, i) => s + Number(i.due_amount || 0), 0),
-    [previousInvoices],
+    () => selectedPreviousInvoices.reduce((s, i) => s + Number(i.due_amount || 0), 0),
+    [selectedPreviousInvoices],
   );
 
   const selectedCurrentInvoices = useMemo(
@@ -273,6 +285,14 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
     });
   }
 
+  function togglePrevInvoice(id: string) {
+    setSelectedPrevIds(prev => {
+      const n = new Set(prev);
+      n.has(id) ? n.delete(id) : n.add(id);
+      return n;
+    });
+  }
+
   async function submit() {
     if (submitting) return;
     if (!farmerId) return toast.error(t("pickFarmer") || "Pick a farmer");
@@ -280,7 +300,7 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
     if (Number(currentCollected) > 0 && selectedCurrentInvoices.length === 0) {
       return toast.error(tx("Select at least one current invoice", "অন্তত একটি বর্তমান ইনভয়েস বাছাই করুন"));
     }
-    if (Number(previousCollected) > previousDueTotal) {
+    if (Number(previousCollected) > previousDueTotal + 0.5) {
       return toast.error(tx("Previous due collected exceeds previous due", "পূর্বের বকেয়া থেকে সংগৃহীত পূর্বের মোট বকেয়ার চেয়ে বেশি"));
     }
     // Full-clearance rule: only roles allowed in settings (or super admins) may
@@ -300,7 +320,7 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
         if (rows.length === 0) rows.push({ label: tx("Current season charge", "চলতি সিজন চার্জ"), missing: currentShortfall });
       }
       if (previousShortfall > 0.5) {
-        for (const inv of previousInvoices) {
+        for (const inv of selectedPreviousInvoices) {
           if (Number(inv.due_amount) > 0.5) rows.push({ label: `${tx("Previous due", "আগের বকেয়া")} • ${inv.invoice_no}`, missing: Number(inv.due_amount) });
         }
       }
@@ -406,7 +426,7 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
 
       // 3) Allocate previousCollected across previous invoices (oldest first)
       let remainingPrev = Number(previousCollected || 0);
-      const sortedPrev = [...previousInvoices].sort((a, b) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime());
+      const sortedPrev = [...selectedPreviousInvoices].sort((a, b) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime());
       for (const inv of sortedPrev) {
         if (remainingPrev <= 0) break;
         const take = Math.min(remainingPrev, Number(inv.due_amount));
@@ -535,7 +555,7 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
       const totalDelay = sorted.reduce((s, inv) => s + (delayFee[inv.id] ?? Number(inv.delay_fee || 0)), 0);
       const totalMaint = sorted.reduce((s, inv) => s + Number(inv.maintenance_amount || 0), 0);
       const totalCanal = sorted.reduce((s, inv) => s + Number(inv.canal_amount || 0), 0);
-      const allReceiptInvoices = [...sorted, ...previousInvoices];
+      const allReceiptInvoices = [...sorted, ...selectedPreviousInvoices];
       const receiptMouza = allReceiptInvoices.find((inv: any) => inv.lands?.mouza)?.lands?.mouza ?? null;
       const receiptLandSize = allReceiptInvoices.reduce((s, inv: any) => s + Number(inv.lands?.land_size || 0), 0) || null;
 
@@ -824,6 +844,7 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
             <CollapsibleContent>
               <Table>
                 <TableHeader><TableRow>
+                  <TableHead className="w-8"></TableHead>
                   <TableHead>{tx("Season", "সিজন")}</TableHead>
                   <TableHead>{tx("Invoice", "ইনভয়েস")}</TableHead>
                   <TableHead>{tx("Due Date", "নির্ধারিত তারিখ")}</TableHead>
@@ -832,6 +853,12 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
                 <TableBody>
                   {previousInvoices.map(inv => (
                     <TableRow key={inv.id}>
+                      <TableCell>
+                        <Checkbox
+                          checked={selectedPrevIds.has(inv.id)}
+                          onCheckedChange={() => togglePrevInvoice(inv.id)}
+                        />
+                      </TableCell>
                       <TableCell className="text-xs">{inv.seasons?.name} {inv.seasons?.year}</TableCell>
                       <TableCell className="font-mono text-xs">{inv.invoice_no}</TableCell>
                       <TableCell className="text-xs">{fmtDate(inv.due_date)}</TableCell>
