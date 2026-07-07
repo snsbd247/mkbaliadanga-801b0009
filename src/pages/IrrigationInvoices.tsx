@@ -760,7 +760,7 @@ function InvoiceListTab({ seasons, offices, isSuper }: any) {
                           </Link>
                         </Button>
                       )}
-                      {r.invoice_status !== "cancelled" && r.invoice_status !== "paid" && (
+                      {r.invoice_status !== "cancelled" && (r.invoice_status !== "paid" || isSuper) && (
                         <Button size="sm" variant="ghost" title={tx("Edit", "এডিট")} onClick={() => setEditInv(r)}><Pencil className="h-4 w-4" /></Button>
                       )}
                       {r.invoice_status !== "cancelled" && r.invoice_status !== "paid" && (
@@ -950,6 +950,7 @@ function InvoiceEditDialog({ inv, onClose, onSaved }: any) {
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
   const [history, setHistory] = useState<any[]>([]);
+  const { confirm } = useConfirm();
 
   const perm = inv ? canEditInvoice(roles, inv, { userOfficeId }) : { ok: false as boolean, reason: "no_permission" };
 
@@ -1095,6 +1096,47 @@ function InvoiceEditDialog({ inv, onClose, onSaved }: any) {
 
   const previewPayable = computeInvoiceTotals(inv, Number(discount) || 0, dueDate, Number(otherCharge) || 0, Number(delayFee) || 0).payable;
 
+  async function markUnpaid() {
+    if (!perm.ok) return toast.error(tx("You do not have permission to edit invoices", "ইনভয়েস এডিট করার অনুমতি নেই"));
+    const ok = await confirm({
+      title: tx("Mark invoice as unpaid?", "ইনভয়েস আনপেইড করবেন?"),
+      description: tx(
+        "All received payment records against this invoice will be removed and the due amount will be restored.",
+        "এই ইনভয়েসের বিপরীতে গৃহীত সকল পেমেন্ট রেকর্ড মুছে যাবে এবং বকেয়া পুনরুদ্ধার হবে।",
+      ),
+      destructive: true, confirmText: tx("Mark unpaid", "আনপেইড করুন"),
+    });
+    if (!ok) return;
+    setBusy(true);
+    const { error: delErr } = await db
+      .from("irrigation_invoice_payments" as any)
+      .delete()
+      .eq("invoice_id", inv.id);
+    if (delErr) { setBusy(false); return toast.error(delErr.message); }
+    const payable = Number(inv.payable_amount) || 0;
+    const { data: updatedRows, error } = await db
+      .from("irrigation_invoices" as any)
+      .update({ paid_amount: 0, due_amount: payable, invoice_status: "generated" } as any)
+      .eq("id", inv.id)
+      .select("id");
+    setBusy(false);
+    if (error) return toast.error(error.message);
+    if (!updatedRows || updatedRows.length === 0) {
+      return toast.error(tx("Update failed — permission or office mismatch.", "হালনাগাদ ব্যর্থ — অনুমতি নেই বা অন্য অফিসের।"));
+    }
+    logAudit({
+      module: "irrigation_invoice_mark_unpaid",
+      action_type: "update",
+      office_id: inv.office_id ?? null,
+      reference_id: inv.id,
+      old_data: { paid_amount: inv.paid_amount, due_amount: inv.due_amount, invoice_status: inv.invoice_status },
+      new_data: { paid_amount: 0, due_amount: payable, invoice_status: "generated" },
+    });
+    toast.success(tx("Invoice marked as unpaid; payments removed", "ইনভয়েস আনপেইড করা হয়েছে; পেমেন্ট মুছে ফেলা হয়েছে"));
+    onSaved?.(); onClose();
+  }
+
+
   return (
     <Dialog open={!!inv} onOpenChange={(v) => !v && onClose()}>
       <DialogContent>
@@ -1162,6 +1204,11 @@ function InvoiceEditDialog({ inv, onClose, onSaved }: any) {
           </p>
         </div>
         <DialogFooter>
+          {Number(inv.paid_amount) > 0 && (
+            <Button variant="destructive" onClick={markUnpaid} disabled={busy || !perm.ok}>
+              {tx("Mark unpaid (remove payments)", "আনপেইড করুন (পেমেন্ট রিমুভ)")}
+            </Button>
+          )}
           <Button variant="outline" onClick={onClose} disabled={busy}>{tx("Close", "বন্ধ")}</Button>
           <Button onClick={save} disabled={busy || !perm.ok}>{busy ? tx("Saving…", "সংরক্ষণ…") : tx("Save", "সংরক্ষণ করুন")}</Button>
         </DialogFooter>
