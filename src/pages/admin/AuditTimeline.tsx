@@ -121,7 +121,7 @@ export default function AuditTimeline() {
           </div>
           <div>
             <Label>{tx("Search", "অনুসন্ধান")}</Label>
-            <Input value={search} onChange={e => setSearch(e.target.value)} placeholder={tx("action / id / data", "অ্যাকশন / আইডি / ডেটা")} />
+            <Input value={search} onChange={e => setSearch(e.target.value)} placeholder={tx("action / invoice id / payment id / data", "অ্যাকশন / ইনভয়েস আইডি / পেমেন্ট আইডি / ডেটা")} />
           </div>
           <div>
             <Label>{tx("From", "হতে")}</Label>

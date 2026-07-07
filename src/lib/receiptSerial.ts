@@ -171,3 +171,17 @@ export async function setReceiptSerialStart(
   logDiagnostic("/api/rpc/admin_set_receipt_serial_start", "ok", functionUnavailable ? "RPC fallback succeeded" : "Serial start updated", { durationMs: t(rs) });
   return { ok: true, message: "Serial start updated", value: Number.isFinite(stored) ? stored : nextSerial };
 }
+
+/** Bilingual (Bangla / English) toast content shown when the serial save
+ * cannot be confirmed — e.g. the RPC/edge returned a null value and the DB
+ * fallback did not match the expected next serial. Extracted for testability. */
+export function serialSaveUnconfirmedToast(
+  nextSerial: number,
+  persisted: number | null | undefined,
+): { title: string; description: string } {
+  const got = persisted != null && Number.isFinite(persisted) ? persisted : "—";
+  return {
+    title: "ক্রমিক নম্বর ডাটাবেসে সংরক্ষণ নিশ্চিত করা যায়নি / Could not confirm the serial number was saved",
+    description: `প্রত্যাশিত ${nextSerial}, সার্ভার থেকে পাওয়া গেছে ${got}। অনুগ্রহ করে আবার চেষ্টা করুন। / Expected ${nextSerial}, server returned ${got}. Please try again.`,
+  };
+}
