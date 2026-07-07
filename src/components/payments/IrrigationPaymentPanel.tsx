@@ -27,6 +27,7 @@ import { logAudit } from "@/lib/audit";
 import { autoReceiptNo } from "@/lib/receiptNo";
 import { exceedsDue } from "@/lib/irrigationPaymentMath";
 import { verifyPaymentCoverage } from "@/lib/irrigationPaymentCoverage";
+import { recalcInvoice } from "@/lib/invoiceRecalc";
 import { nextMonthlyReceiptNo, nextUnifiedReceiptNo } from "@/lib/monthlyReceiptNo";
 
 // Shared select for open irrigation invoices (used by both initial load and reload).
@@ -84,6 +85,8 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
 
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [selectedPrevIds, setSelectedPrevIds] = useState<Set<string>>(new Set());
+  // Post-submit status summary of the invoices this payment touched.
+  const [paidStatuses, setPaidStatuses] = useState<Array<{ invoice_no: string; cleared: boolean }>>([]);
   // editable delay fees per invoice
   const [delayFee, setDelayFee] = useState<Record<string, number>>({});
   const [delayFeeReason, setDelayFeeReason] = useState<Record<string, string>>({});
@@ -375,6 +378,7 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
       // Track exactly which invoices this payment covered (id + amount) so we can
       // persist, verify against the backend, and print them on the receipt.
       const coveredInvoices: Array<{ id: string; invoice_no: string; due_amount: number }> = [];
+      const touchedStatuses: Array<{ invoice_no: string; cleared: boolean }> = [];
       let remainingCurrent = Number(currentCollected || 0);
       const sorted = [...selectedCurrentInvoices].sort((a, b) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime());
       for (const inv of sorted) {
@@ -435,6 +439,7 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
           created_by: user?.id,
         });
         coveredInvoices.push({ id: inv.id, invoice_no: inv.invoice_no, due_amount: take });
+        touchedStatuses.push({ invoice_no: inv.invoice_no, cleared: recalcInvoice(effectivePayable, newPaid, { currentStatus: inv.invoice_status, dueDate: inv.due_date }).cleared });
         remainingCurrent -= take;
       }
 
@@ -465,6 +470,7 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
           created_by: user?.id,
         });
         coveredInvoices.push({ id: inv.id, invoice_no: inv.invoice_no, due_amount: take });
+        touchedStatuses.push({ invoice_no: inv.invoice_no, cleared: recalcInvoice(Number(inv.payable_amount), newPaid, { currentStatus: inv.invoice_status, dueDate: inv.due_date }).cleared });
         remainingPrev -= take;
       }
 
@@ -731,6 +737,7 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
       }
 
       toast.success(tx("Payment recorded", "পেমেন্ট সংরক্ষিত হয়েছে"));
+      setPaidStatuses(touchedStatuses);
       // refresh
       setFarmerId(farmerId);
       setCurrentCollected(0);
@@ -762,6 +769,24 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
         <Label>{tx("Select farmer", "ফার্মার বাছাই")}</Label>
         <FarmerSearchSelect blockInactive value={farmerId || null} onChange={(id) => setFarmerId(id ?? "")} />
       </Card>
+
+      {paidStatuses.length > 0 && (
+        <Alert>
+          <CheckCircle2 className="h-4 w-4" />
+          <AlertDescription>
+            <div className="mb-1 font-medium">{tx("Invoice status after payment", "পেমেন্টের পর ইনভয়েসের অবস্থা")}</div>
+            <div className="flex flex-wrap gap-2">
+              {paidStatuses.map((s) => (
+                <Badge key={s.invoice_no} variant={s.cleared ? "default" : "secondary"} className="font-mono">
+                  {s.invoice_no}: {s.cleared ? tx("Cleared", "পরিশোধিত") : tx("Pending", "বকেয়া")}
+                </Badge>
+              ))}
+            </div>
+          </AlertDescription>
+        </Alert>
+      )}
+
+
 
       {farmerId && loading && (
         <div className="text-center py-6 text-muted-foreground"><Loader2 className="h-5 w-5 animate-spin inline mr-2" /> {tx("Loading…", "লোড হচ্ছে…")}</div>
