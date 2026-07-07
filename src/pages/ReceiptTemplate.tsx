@@ -199,7 +199,7 @@ export default function ReceiptTemplatePage() {
         }
         logAudit({ module: "receipt", action_type: "override", reference_id: "receipt_serial_start", old_data: { serial_start: savedSerialStart }, new_data: { serial_start: nextSerial } });
         setSavedSerialStart(nextSerial);
-        toast.success(`ক্রমিক নম্বর সংরক্ষিত — পরবর্তী রিসিপ্ট হবে ${nextSerial + 1}`);
+        toast.success(`ক্রমিক নম্বর সংরক্ষিত — পরবর্তী রিসিপ্ট হবে ${nextSerial + 1} / Serial saved — the next receipt will be ${nextSerial + 1}`);
       }
 
       notifyReceiptTemplateChange();
