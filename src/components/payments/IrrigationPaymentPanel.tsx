@@ -696,6 +696,7 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
           collected_amount: grandTotal,
           remark: specialPermission ? `${tx("Special permission until", "বিশেষ অনুমতি — পরিশোধের তারিখ")}: ${promiseDate}${promiseRemarks ? " — " + promiseRemarks : ""}` : (note || null),
           holding_description: holdingDescription,
+          covered_invoices: coveredInvoices.map((c) => ({ invoice_no: c.invoice_no, due_amount: c.due_amount })),
           patwari_name: patwari ? (patwari.name_bn || patwari.name) : null,
           patwari_mobile: patwari?.mobile ?? null,
           verify_url: `${window.location.origin}/r/${receiptNo}`,
