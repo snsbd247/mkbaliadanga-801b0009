@@ -19,6 +19,7 @@ import { FarmerSearchSelect } from "@/components/farmers/FarmerSearchSelect";
 import { MouzaSelect } from "@/components/locations/MouzaSelect";
 import { ReceiptCopyMenu } from "@/components/receipts/ReceiptCopyMenu";
 import { IrrigationReceiptPreviewDialog } from "@/components/receipts/IrrigationReceiptPreviewDialog";
+import { EditReceiptDialog } from "@/components/receipts/EditReceiptDialog";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 import { downloadBnReceiptPdf, type ReceiptCopy, type BnReceiptData } from "@/lib/bnReceipts";
 import { buildPaymentReceiptData } from "@/lib/buildPaymentReceiptData";
