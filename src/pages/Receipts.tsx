@@ -46,6 +46,7 @@ export default function Receipts() {
   const [preview, setPreview] = useState<{ data: BnReceiptData; copy: ReceiptCopy } | null>(null);
 
   // Filters
+  const [receiptNo, setReceiptNo] = useState("");
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
   const [farmerId, setFarmerId] = useState<string | null>(null);
@@ -53,11 +54,16 @@ export default function Receipts() {
   const [mouza, setMouza] = useState("");
 
   useEffect(() => { document.title = `${tx("Receipts", "রশিদ তালিকা")} — ${t("appName")}`; }, [t, tx]);
-  useEffect(() => { load(); /* eslint-disable-next-line */ }, [from, to, farmerId]);
+  useEffect(() => {
+    const id = setTimeout(load, 300); // debounce receipt-no typing
+    return () => clearTimeout(id);
+    /* eslint-disable-next-line */
+  }, [from, to, farmerId, receiptNo]);
 
   async function load() {
     setLoading(true);
     let q = db.from("payments").select(PAY_SELECT).is("deleted_at", null).order("created_at", { ascending: false }).limit(500);
+    if (receiptNo.trim()) q = q.ilike("receipt_no", `%${receiptNo.trim()}%`);
     if (from) q = q.gte("created_at", new Date(from).toISOString());
     if (to) { const end = new Date(to); end.setHours(23, 59, 59, 999); q = q.lte("created_at", end.toISOString()); }
     if (farmerId) q = q.eq("farmer_id", farmerId);
@@ -110,7 +116,7 @@ export default function Receipts() {
   }, [list, farmerCode, mouza, mouzaByPayment]);
 
   function clearFilters() {
-    setFrom(""); setTo(""); setFarmerId(null); setFarmerCode(""); setMouza("");
+    setReceiptNo(""); setFrom(""); setTo(""); setFarmerId(null); setFarmerCode(""); setMouza("");
   }
 
   async function deleteReceipt(p: any) {
@@ -190,6 +196,10 @@ export default function Receipts() {
       <div className="p-4 space-y-4">
         <Card className="p-4">
           <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-6 items-end">
+            <div className="space-y-1 lg:col-span-2">
+              <Label className="text-xs">{tx("Receipt #", "রশিদ নং")}</Label>
+              <Input value={receiptNo} onChange={(e) => setReceiptNo(e.target.value)} placeholder={tx("Search receipt no", "রশিদ নং খুঁজুন")} />
+            </div>
             <div className="space-y-1">
               <Label className="text-xs">{tx("From", "শুরু")}</Label>
               <Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
