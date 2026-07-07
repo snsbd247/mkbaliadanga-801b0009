@@ -3,6 +3,7 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\DB;
 
 return new class extends Migration
 {
@@ -29,10 +30,29 @@ return new class extends Migration
                 $table->unique(['source_table', 'source_id'], 'receipt_no_legacy_map_source_table_source_id_key');
             });
         }
+
+        // 3) farmer_savings_balance view — per-farmer approved deposit/withdraw totals
+        if (Schema::hasTable('farmers') && Schema::hasTable('savings_transactions')) {
+            DB::statement('DROP VIEW IF EXISTS farmer_savings_balance');
+            DB::statement(<<<'SQL'
+                CREATE VIEW farmer_savings_balance AS
+                SELECT
+                    f.id AS farmer_id,
+                    COALESCE(SUM(CASE WHEN s.type = 'deposit'  AND s.status = 'approved' THEN s.amount ELSE 0 END), 0) AS total_deposit,
+                    COALESCE(SUM(CASE WHEN s.type = 'withdraw' AND s.status = 'approved' THEN s.amount ELSE 0 END), 0) AS total_withdraw,
+                    COALESCE(SUM(CASE WHEN s.type = 'deposit'  AND s.status = 'approved' THEN s.amount ELSE 0 END), 0)
+                      - COALESCE(SUM(CASE WHEN s.type = 'withdraw' AND s.status = 'approved' THEN s.amount ELSE 0 END), 0) AS balance
+                FROM farmers f
+                LEFT JOIN savings_transactions s ON s.farmer_id = f.id
+                GROUP BY f.id
+            SQL);
+        }
     }
 
     public function down(): void
     {
+        DB::statement('DROP VIEW IF EXISTS farmer_savings_balance');
+
         if (Schema::hasTable('profiles') && Schema::hasColumn('profiles', 'receipt_layout')) {
             Schema::table('profiles', function (Blueprint $table) {
                 $table->dropColumn('receipt_layout');
