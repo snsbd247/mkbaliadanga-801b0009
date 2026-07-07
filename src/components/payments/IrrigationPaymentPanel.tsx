@@ -9,6 +9,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
@@ -104,6 +105,10 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
   const [method, setMethod] = useState("cash");
   const [note, setNote] = useState("");
 
+  // Manual patwari selection — used when the land has no patwari linked.
+  const [patwariList, setPatwariList] = useState<Array<{ id: string; name: string | null; name_bn: string | null; mobile: string | null }>>([]);
+  const [manualPatwariId, setManualPatwariId] = useState<string>("");
+
   // Configurable: which roles may receive partial payments.
   const [allowedRoles, setAllowedRoles] = useState<string[]>(["super_admin"]);
   const [settingsId, setSettingsId] = useState<string | null>(null);
@@ -175,6 +180,19 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
   }
 
   useEffect(() => { if (initialFarmerId) setFarmerId(initialFarmerId); }, [initialFarmerId]);
+
+  // Load office-scoped patwaris so the collector can pick one when the land has none.
+  useEffect(() => {
+    const officeId = invoices.find((i) => i.office_id)?.office_id ?? null;
+    let alive = true;
+    (async () => {
+      let q = db.from("patwaris").select("id,name,name_bn,mobile").eq("is_active", true).order("name_bn", { ascending: true });
+      if (officeId) q = q.eq("office_id", officeId);
+      const { data } = await q;
+      if (alive) setPatwariList((data as any[]) ?? []);
+    })();
+    return () => { alive = false; };
+  }, [invoices]);
 
   useEffect(() => {
     if (!farmerId) { setInvoices([]); return; }
@@ -652,7 +670,12 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
           })
           .filter(Boolean),
       )).join("/") || tx("Irrigation charge", "সেচ চার্জ");
-      const patwari = allReceiptInvoices.find((inv) => inv.lands?.patwaris)?.lands?.patwaris ?? null;
+      const landPatwari = allReceiptInvoices.find((inv) => inv.lands?.patwaris)?.lands?.patwaris ?? null;
+      // Fall back to the manually selected patwari when the land has none linked.
+      const manualPatwari = !landPatwari && manualPatwariId
+        ? (patwariList.find((p) => p.id === manualPatwariId) ?? null)
+        : null;
+      const patwari = landPatwari ?? manualPatwari;
       const landNotes = allReceiptInvoices
         .map((inv) => (inv.lands?.notes ?? "").trim())
         .filter(Boolean)
@@ -999,6 +1022,26 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
               <Label>{tx("Note", "নোট")}</Label>
               <Input value={note} onChange={(e) => setNote(e.target.value)} />
             </div>
+            {!invoices.some((i) => i.lands?.patwaris) && (
+              <div>
+                <Label>{tx("Patwari (manual)", "পাটোয়ারি (ম্যানুয়াল)")}</Label>
+                <Select value={manualPatwariId} onValueChange={setManualPatwariId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder={tx("Select patwari", "পাটোয়ারি নির্বাচন করুন")} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {patwariList.map((p) => (
+                      <SelectItem key={p.id} value={p.id}>
+                        {(p.name_bn || p.name) ?? "—"}{p.mobile ? ` — ${p.mobile}` : ""}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {tx("Land has no patwari linked; the selected patwari will appear on the receipt.", "জমিতে পাটোয়ারি যুক্ত নেই; নির্বাচিত পাটোয়ারি রসিদে দেখাবে।")}
+                </p>
+              </div>
+            )}
           </div>
           <Label className="hidden items-center gap-2 cursor-pointer text-sm">
             <Switch checked={simplifiedReceipt} onCheckedChange={setSimplifiedReceipt} />
