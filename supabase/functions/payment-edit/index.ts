@@ -70,6 +70,7 @@ Deno.serve(async (req) => {
     const newSize = body.land_size != null ? Number(body.land_size) || 0 : null
     const newOwner = body.owner_farmer_id ? String(body.owner_farmer_id) : null
     const newFee = body.delay_fee != null ? Math.round(Number(body.delay_fee) || 0) : null
+    const newReceiptNo = body.receipt_no != null ? String(body.receipt_no).trim() : null
 
     // ---- Load payment + allocations ----
     const { data: pay, error: payErr } = await svc.from('payments')
