@@ -210,9 +210,8 @@ export default function ReceiptTemplatePage() {
           persisted = Number((check as any)?.receipt_serial_start ?? NaN);
         }
         if (!Number.isFinite(persisted) || persisted !== nextSerial) {
-          toast.error("ক্রমিক নম্বর ডাটাবেসে সংরক্ষণ নিশ্চিত করা যায়নি / Could not confirm the serial number was saved", {
-            description: `প্রত্যাশিত ${nextSerial}, সার্ভার থেকে পাওয়া গেছে ${Number.isFinite(persisted) ? persisted : "—"}। অনুগ্রহ করে আবার চেষ্টা করুন। / Expected ${nextSerial}, server returned ${Number.isFinite(persisted) ? persisted : "—"}. Please try again.`,
-          });
+          const t = serialSaveUnconfirmedToast(nextSerial, Number.isFinite(persisted) ? persisted : null);
+          toast.error(t.title, { description: t.description });
           return;
         }
         // Record the authoritative value returned by the server for audit/debug.
