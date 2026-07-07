@@ -144,7 +144,8 @@ export default function ReceiptTemplatePage() {
       const probe = await checkReceiptSerialRpc();
       if (!probe.available) {
         toast.error(probe.message, {
-          description: "সিরিয়াল নম্বর সেভ করা যাচ্ছে না। কয়েক সেকেন্ড পর আবার চেষ্টা করুন, অথবা অ্যাপটি নতুন করে publish/deploy করুন।",
+          description:
+            "সিরিয়াল নম্বর সেভ করা যাচ্ছে না। কয়েক সেকেন্ড পর আবার চেষ্টা করুন, অথবা অ্যাপটি নতুন করে publish/deploy করুন। / Cannot save the serial number. Please try again in a few seconds, or re-publish/deploy the app.",
         });
         return;
       }
@@ -198,7 +199,7 @@ export default function ReceiptTemplatePage() {
         }
         logAudit({ module: "receipt", action_type: "override", reference_id: "receipt_serial_start", old_data: { serial_start: savedSerialStart }, new_data: { serial_start: nextSerial } });
         setSavedSerialStart(nextSerial);
-        toast.success(`ক্রমিক নম্বর সংরক্ষিত — পরবর্তী রিসিপ্ট হবে ${nextSerial + 1}`);
+        toast.success(`ক্রমিক নম্বর সংরক্ষিত — পরবর্তী রিসিপ্ট হবে ${nextSerial + 1} / Serial saved — the next receipt will be ${nextSerial + 1}`);
       }
 
       notifyReceiptTemplateChange();
