@@ -355,7 +355,8 @@ export async function buildIrrigationReceiptEnrichment(
     collected_from_outstanding: collectedFromOutstanding || Number(paymentAmount || 0),
     remark: paymentNote ?? primaryCharge?.invoice_no ?? null,
     holding_description: holdingDescription,
-    patwari_name: patwari ? patwari.name_bn || patwari.name : null,
-    patwari_mobile: patwari?.mobile ?? null,
+    patwari_name: patwariDisp.name,
+    patwari_mobile: patwariDisp.mobile,
+    patwari_source: patwariSource,
   };
 }
