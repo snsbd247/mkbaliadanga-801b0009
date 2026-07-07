@@ -1103,6 +1103,8 @@ function InvoiceEditDialog({ inv, onClose, onSaved }: any) {
           <p className="text-xs text-destructive">
             {perm.reason === "staff_approved_locked"
               ? tx("This invoice is already approved/paid; staff cannot edit it.", "এই ইনভয়েস অনুমোদিত/পরিশোধিত; স্টাফ এডিট করতে পারবে না।")
+              : perm.reason === "office_mismatch"
+              ? tx("This invoice belongs to another office; you cannot edit it.", "এই ইনভয়েস অন্য অফিসের; আপনি এডিট করতে পারবেন না।")
               : tx("You do not have permission to edit invoices.", "ইনভয়েস এডিট করার অনুমতি নেই।")}
           </p>
         )}
