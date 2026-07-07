@@ -439,18 +439,19 @@ function copyHtml(d: BnReceiptData, copyLabel: string, signatureUrl: string | nu
     const mouzaLabel = ((lang === "bn" ? layout.mouzaLabelBn : layout.mouzaLabelEn) || "").trim() || t.mouza;
 
     // 1. কৃষকের নাম ও আইডি / মালিকের নাম ও আইডি
-    //    মালিক নিজে হলে শুধু মালিকের নাম; বর্গাদার হলে "বর্গাদার নাম / মালিকের নাম"।
+    //    চাষি/বর্গাদার = পরিশোধকৃত ইনভয়েসের farmer_id; মালিক = জমির owner_farmer_id।
+    //    চাষি ও মালিক একই হলে (নিজ জমি) একটিই নাম-আইডি দেখাবে।
     const idPart = `${d.farmer.name}${d.farmer.member_no ? "-" + digits(String(d.farmer.member_no), lang) : ""}`;
-    if (d.cultivator_label && d.cultivator_label.trim()) {
-      // বর্গা রশিদ: "বর্গাদার - নাম/ মালিকের নাম-আইডি"
-      rows.push([t.farmerLine, `${d.cultivator_label.trim()}/ ${idPart}`]);
-    } else if (d.owner_self) {
-      rows.push([t.farmerLine, idPart]);
+    const cultivatorPart = (d.cultivator_label && d.cultivator_label.trim())
+      ? digits(d.cultivator_label.trim(), lang)
+      : idPart;
+    if (d.owner_self) {
+      rows.push([t.farmerLine, cultivatorPart]);
     } else {
       const ownerPart = (d.land_owner_label && d.land_owner_label.trim())
-        ? banglaOwnerLabel(d.land_owner_label, lang)
+        ? banglaOwnerLabel(digits(d.land_owner_label, lang), lang)
         : idPart;
-      rows.push([t.farmerLine, `${idPart}/${ownerPart}`]);
+      rows.push([t.farmerLine, `${cultivatorPart}/${ownerPart}`]);
     }
     // 2. পিতার/স্বামীর নাম
     rows.push([t.fatherLine, d.farmer.father_or_husband ?? "—"]);
