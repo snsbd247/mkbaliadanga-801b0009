@@ -77,6 +77,7 @@ export async function buildPaymentReceiptData(p: any, ctx: ReceiptBuildContext):
     ...(kind === "irrigation"
       ? {
           owner_self: irrEnriched.owner_self,
+          cultivator_label: irrEnriched.cultivator_label,
           land_owner_label: irrEnriched.land_owner_label,
           village_union: villageUnion,
           rate: irrEnriched.rate,
