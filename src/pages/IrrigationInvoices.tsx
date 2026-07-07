@@ -1019,7 +1019,7 @@ function InvoiceEditDialog({ inv, onClose, onSaved }: any) {
     const payable = totals.payable;
     const due = totals.due;
     const newStatus = totals.status;
-    const { error } = await db
+    const { data: updatedRows, error } = await db
       .from("irrigation_invoices" as any)
       .update({
         due_date: dueDate,
@@ -1032,9 +1032,19 @@ function InvoiceEditDialog({ inv, onClose, onSaved }: any) {
         due_amount: due,
         invoice_status: newStatus,
       } as any)
-      .eq("id", inv.id);
+      .eq("id", inv.id)
+      .select("id");
     setBusy(false);
     if (error) return toast.error(error.message);
+    // RLS may silently block the update (0 rows) — never claim success then.
+    if (!updatedRows || updatedRows.length === 0) {
+      return toast.error(
+        tx(
+          "Update failed — you may not have permission to edit this invoice or it belongs to another office.",
+          "হালনাগাদ ব্যর্থ — এই ইনভয়েস এডিট করার অনুমতি নেই বা এটি অন্য অফিসের।",
+        ),
+      );
+    }
     const originalFee = Number(inv.delay_fee ?? 0);
     if (df !== originalFee) {
       await db.from("irrigation_delay_fee_audit").insert({
