@@ -181,9 +181,24 @@ export default function ReceiptTemplatePage() {
       // Serial start goes through a server-validated + audited RPC (with auto-retry).
       if (serialChanged) {
         const res = await setReceiptSerialStart(nextSerial);
-        if (!res.ok) { toast.error(res.message); return; }
+        if (!res.ok) {
+          toast.error(res.message, {
+            description: "ক্রমিক নম্বর সংরক্ষণ ব্যর্থ। নম্বরটি সর্বশেষ ইস্যু হওয়া রিসিপ্টের চেয়ে বড় কিনা যাচাই করুন এবং আবার চেষ্টা করুন।",
+          });
+          return;
+        }
+        // Verify the new value actually persisted in the database.
+        const { data: check } = await db.from("receipt_settings").select("receipt_serial_start").eq("id", 1).maybeSingle();
+        const persisted = Number((check as any)?.receipt_serial_start ?? NaN);
+        if (persisted !== nextSerial) {
+          toast.error("ক্রমিক নম্বর ডাটাবেসে সংরক্ষণ নিশ্চিত করা যায়নি", {
+            description: `প্রত্যাশিত ${nextSerial}, পাওয়া গেছে ${Number.isFinite(persisted) ? persisted : "—"}। অনুগ্রহ করে আবার চেষ্টা করুন।`,
+          });
+          return;
+        }
         logAudit({ module: "receipt", action_type: "override", reference_id: "receipt_serial_start", old_data: { serial_start: savedSerialStart }, new_data: { serial_start: nextSerial } });
         setSavedSerialStart(nextSerial);
+        toast.success(`ক্রমিক নম্বর সংরক্ষিত — পরবর্তী রিসিপ্ট হবে ${nextSerial + 1}`);
       }
 
       notifyReceiptTemplateChange();
