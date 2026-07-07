@@ -59,7 +59,7 @@ describe("irrigation payment math — multi-invoice allocation", () => {
     const r = allocateOldestFirst(invs, 2000);
     expect(r.takes.old).toBe(500);
     expect(r.takes.new).toBe(788);
-    expect(r.remaining).toBe(212);
+    expect(r.remaining).toBe(712);
   });
 
   it("fully covers exact total of 1288", () => {
