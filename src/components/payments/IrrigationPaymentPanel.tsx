@@ -26,6 +26,7 @@ import { safeWithRetry } from "@/lib/retryQueue";
 import { logAudit } from "@/lib/audit";
 import { autoReceiptNo } from "@/lib/receiptNo";
 import { exceedsDue } from "@/lib/irrigationPaymentMath";
+import { verifyPaymentCoverage } from "@/lib/irrigationPaymentCoverage";
 import { nextMonthlyReceiptNo, nextUnifiedReceiptNo } from "@/lib/monthlyReceiptNo";
 
 // Shared select for open irrigation invoices (used by both initial load and reload).
