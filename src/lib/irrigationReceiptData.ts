@@ -358,6 +358,7 @@ export async function buildIrrigationReceiptEnrichment(
     rate: ratePerAcre,
     member_summary: memberSummary,
     owner_self: isSelf,
+    cultivator_label: cultivatorLabel,
     land_owner_label: isSelf
       ? "নিজ"
       : ownerFarmer
