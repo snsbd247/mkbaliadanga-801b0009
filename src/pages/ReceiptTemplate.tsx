@@ -393,10 +393,15 @@ export default function ReceiptTemplatePage() {
               {serialError ? (
                 <p className="text-xs text-destructive mt-1" data-testid="serial-start-error">{serialError}</p>
               ) : (
-                <p className="text-xs text-muted-foreground mt-1">
-                  এই নম্বরের ঠিক পরের নম্বর থেকে রিসিপ্ট তৈরি শুরু হবে। যেমন 4641 দিলে প্রথম রিসিপ্ট হবে 4642।
-                  নিরাপত্তার জন্য বর্তমান নম্বরের চেয়ে ছোট মান দিলে নম্বর পিছাবে না (ডুপ্লিকেট এড়াতে)।
-                </p>
+                <>
+                  <p className="text-xs text-primary mt-1 font-medium" data-testid="serial-status">
+                    সর্বশেষ ব্যবহৃত রশিদ নং: {savedSerialStart} — পরবর্তী রশিদ হবে {savedSerialStart + 1}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    এই নম্বরের ঠিক পরের নম্বর থেকে রিসিপ্ট তৈরি হবে। রশিদ জেনারেট হলে এই নম্বর অটো আপডেট হয়ে সর্বশেষ ব্যবহৃত নম্বর দেখাবে।
+                    নিরাপত্তার জন্য বর্তমান নম্বরের চেয়ে ছোট মান দিলে নম্বর পিছাবে না (ডুপ্লিকেট এড়াতে)।
+                  </p>
+                </>
               )}
             </div>
           </div>
