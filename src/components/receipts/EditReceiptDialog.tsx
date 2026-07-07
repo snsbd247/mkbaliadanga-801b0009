@@ -8,14 +8,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { FarmerSearchSelect } from "@/components/farmers/FarmerSearchSelect";
 import { MouzaSelect } from "@/components/locations/MouzaSelect";
 import { fetchReceiptAuditLogs } from "@/lib/receiptAudit";
 import { previewEdit, checkConsistency, type EditBaseline } from "@/lib/combinedReceiptValidation";
 
-type EditForm = { mouza: string; land_size: number; owner_farmer_id: string; delay_fee: number; amount: number; note: string; reason: string; receipt_no: string };
+type EditForm = { mouza: string; land_size: number; owner_farmer_id: string; patwari_id: string; delay_fee: number; amount: number; note: string; reason: string; receipt_no: string };
 
-const EMPTY: EditForm = { mouza: "", land_size: 0, owner_farmer_id: "", delay_fee: 0, amount: 0, note: "", reason: "", receipt_no: "" };
+const EMPTY: EditForm = { mouza: "", land_size: 0, owner_farmer_id: "", patwari_id: "", delay_fee: 0, amount: 0, note: "", reason: "", receipt_no: "" };
 
 /** Human-readable field labels used by the master-detail edit history. */
 function useFieldLabels() {
@@ -26,6 +27,7 @@ function useFieldLabels() {
     mouza: tx("Mouza", "মৌজা"),
     land_size: tx("Land size", "জমির পরিমাণ"),
     owner_farmer_id: tx("Owner", "মালিক"),
+    patwari_id: tx("Patwari", "পাটুয়ারি"),
     note: tx("Note", "নোট"),
     receipt_no: tx("Receipt #", "রশিদ নং"),
   }), [tx]);
@@ -50,6 +52,7 @@ export function EditReceiptDialog({
   const [baseline, setBaseline] = useState<EditBaseline | null>(null);
   const [form, setForm] = useState<EditForm>(EMPTY);
   const [history, setHistory] = useState<any[]>([]);
+  const [patwaris, setPatwaris] = useState<Array<{ id: string; name: string | null; name_bn: string | null; mobile: string | null }>>([]);
 
   const preview = useMemo(() => {
     if (!baseline) return null;
@@ -87,11 +90,15 @@ export function EditReceiptDialog({
           };
         }
       }
+      let pq = db.from("patwaris").select("id,name,name_bn,mobile").eq("is_active", true).order("name_bn", { ascending: true });
+      if (payment.office_id) pq = pq.eq("office_id", payment.office_id);
+      const { data: patwariRows } = await pq;
       if (cancelled) return;
       setInvoiceId(invId);
       setLandId(lId);
       setBaseline(base);
-      setForm({ mouza, land_size, owner_farmer_id: owner, delay_fee: delay, amount: Number(payment.amount || 0), note: payment.note ?? "", reason: "", receipt_no: payment.receipt_no ?? "" });
+      setPatwaris((patwariRows as any[]) ?? []);
+      setForm({ mouza, land_size, owner_farmer_id: owner, patwari_id: payment.patwari_id ?? "", delay_fee: delay, amount: Number(payment.amount || 0), note: payment.note ?? "", reason: "", receipt_no: payment.receipt_no ?? "" });
       setLoading(false);
     })();
     return () => { cancelled = true; };
@@ -126,6 +133,7 @@ export function EditReceiptDialog({
         mouza: landId ? form.mouza : null,
         land_size: landId ? form.land_size : null,
         owner_farmer_id: invoiceId ? (form.owner_farmer_id || null) : null,
+        patwari_id: invoiceId ? (form.patwari_id || null) : null,
         delay_fee: invoiceId ? Math.round(Number(form.delay_fee) || 0) : null,
         receipt_no: form.receipt_no.trim() || null,
       },
@@ -185,6 +193,22 @@ export function EditReceiptDialog({
               <div>
                 <Label>{tx("Owner", "মালিক")}</Label>
                 <FarmerSearchSelect value={form.owner_farmer_id || null} onChange={(id) => setForm((f) => ({ ...f, owner_farmer_id: id ?? "" }))} />
+              </div>
+              <div>
+                <Label>{tx("Patwari", "পাটুয়ারি")}</Label>
+                <Select value={form.patwari_id || "__none__"} onValueChange={(v) => setForm((f) => ({ ...f, patwari_id: v === "__none__" ? "" : v }))}>
+                  <SelectTrigger>
+                    <SelectValue placeholder={tx("No patwari", "পাটুয়ারি নেই")} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none__">{tx("No patwari", "পাটুয়ারি নেই")}</SelectItem>
+                    {patwaris.map((p) => (
+                      <SelectItem key={p.id} value={p.id}>
+                        {(p.name_bn || p.name) ?? "—"}{p.mobile ? ` — ${p.mobile}` : ""}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>

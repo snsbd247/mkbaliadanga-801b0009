@@ -40,6 +40,8 @@ export async function buildPaymentReceiptData(p: any, ctx: ReceiptBuildContext):
       paymentAmount: collectedFromOutstanding,
       paymentNote: p.note ?? null,
       memberNoFallback: p.farmers?.member_no ?? p.farmers?.farmer_code ?? null,
+      manualPatwariId: p.patwari_id ?? null,
+      manualPatwari: p.patwaris ?? null,
     });
   }
 

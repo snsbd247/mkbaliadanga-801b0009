@@ -105,6 +105,26 @@ describe("buildIrrigationReceiptEnrichment", () => {
     expect(e.holding_description).not.toContain("পেমেন্ট নোট");
   });
 
+  it("prefers the payment/manual patwari when reprinting an irrigation receipt", async () => {
+    resultQueue.push({ data: [baseInvoice] });
+    resultQueue.push({ data: [baseLand] });
+    resultQueue.push({ data: [patwariRow] });
+    resultQueue.push({ data: { id: "pat-manual", name: "Manual", name_bn: "ম্যানুয়াল পাটুয়ারি", mobile: "0180000000" } });
+    resultQueue.push({ data: [{ due_amount: 0 }] });
+    resultQueue.push({ data: { id: "cult-1", name_bn: "মোঃ মাসুদ", member_no: "1920", account_number: "1920", savings_inactive: false } });
+
+    const e = await buildIrrigationReceiptEnrichment({
+      farmerId: "cult-1",
+      paymentAmount: 4039,
+      paymentNote: null,
+      manualPatwariId: "pat-manual",
+    });
+
+    expect(e.patwari_source).toBe("payment");
+    expect(e.patwari_name).toBe("ম্যানুয়াল পাটুয়ারি");
+    expect(e.patwari_mobile).toBe("0180000000");
+  });
+
 
 
   it("shows borgadar + owner names and N/A when cultivator is not a savings member", async () => {

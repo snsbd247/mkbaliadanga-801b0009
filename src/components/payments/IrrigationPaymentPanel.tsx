@@ -386,6 +386,7 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
         amount: grandTotal,
         method,
         note: note || null,
+        patwari_id: manualPatwariId || null,
         collected_by: user?.id,
         status: "approved",
         office_id: officeId,
@@ -781,6 +782,7 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
       setPromiseDate("");
       setPromiseRemarks("");
       setNote("");
+      setManualPatwariId("");
       onPaid?.();
       // re-trigger load (shared util keeps filtering identical)
       const refreshed = await fetchOpenIrrigationInvoicesResult<Invoice>(farmerId, OPEN_INVOICE_SELECT);
