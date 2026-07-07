@@ -149,34 +149,44 @@ export default function ReceiptTemplatePage() {
 
     setSaving(true);
     try {
-      const { data: updated, error } = await db
+      const templatePayload = {
+        language: tpl.language,
+        paper_size: tpl.paper_size,
+        accent_color: tpl.accent_color,
+        show_logo: tpl.show_logo,
+        show_signature_line: tpl.show_signature_line,
+        show_office: tpl.show_office,
+        show_token_block: tpl.show_token_block,
+        header_alignment: tpl.header_alignment,
+        footer_note: tpl.footer_note,
+        footer_note_bn: tpl.footer_note_bn,
+        show_watermark: tpl.show_watermark,
+        watermark_text: tpl.watermark_text,
+        show_penalty_row: tpl.show_penalty_row,
+        show_charge_row: tpl.show_charge_row,
+        qr_placement: tpl.qr_placement,
+        updated_at: new Date().toISOString(),
+      } as any;
+
+      let { data: updated, error } = await db
         .from("receipt_settings")
-        .update({
-          language: tpl.language,
-          paper_size: tpl.paper_size,
-          accent_color: tpl.accent_color,
-          show_logo: tpl.show_logo,
-          show_signature_line: tpl.show_signature_line,
-          show_office: tpl.show_office,
-          show_token_block: tpl.show_token_block,
-          header_alignment: tpl.header_alignment,
-          footer_note: tpl.footer_note,
-          footer_note_bn: tpl.footer_note_bn,
-          show_watermark: tpl.show_watermark,
-          watermark_text: tpl.watermark_text,
-          show_penalty_row: tpl.show_penalty_row,
-          show_charge_row: tpl.show_charge_row,
-          qr_placement: tpl.qr_placement,
-          updated_at: new Date().toISOString(),
-        })
+        .update(templatePayload)
         .eq("id", 1)
         .select("id, watermark_text");
       if (error) { toast.error(error.message); return; }
-      // A 0-row update means the write was blocked (permission/RLS) even though
-      // no error was thrown — surface it instead of a false "saved".
+      // Fresh VPS installs can miss the singleton settings row; create it once
+      // instead of reporting a false permission failure, then verify below.
       if (!updated || updated.length === 0) {
-        toast.error("সেটিংস সংরক্ষণ করা যায়নি — শুধুমাত্র সুপার অ্যাডমিন রিসিপ্ট টেমপ্লেট পরিবর্তন করতে পারেন। / Could not save — only a super admin can change the receipt template.");
-        return;
+        const inserted = await db
+          .from("receipt_settings")
+          .insert({ id: 1, ...templatePayload, receipt_serial_start: nextSerial } as any)
+          .select("id, watermark_text");
+        if (inserted.error) { toast.error(inserted.error.message); return; }
+        updated = inserted.data as any;
+        if (!updated || updated.length === 0) {
+          toast.error("সেটিংস সংরক্ষণ করা যায়নি — শুধুমাত্র সুপার অ্যাডমিন রিসিপ্ট টেমপ্লেট পরিবর্তন করতে পারেন। / Could not save — only a super admin can change the receipt template.");
+          return;
+        }
       }
       // Confirm the watermark actually persisted before claiming success.
       const persistedWatermark = String((updated[0] as any)?.watermark_text ?? "");

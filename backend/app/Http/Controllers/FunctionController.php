@@ -56,6 +56,121 @@ class FunctionController extends Controller
     }
 
     /**
+     * VPS/Laravel mirror of the receipt-serial-admin edge function.
+     * Ensures the singleton receipt_settings row exists before updating, so
+     * template/serial values survive a page reload after fresh VPS installs.
+     */
+    protected function fn_receipt_serial_admin(Request $request): JsonResponse
+    {
+        $actor = $request->user();
+        if (! $actor) {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+
+        $roles = method_exists($actor, 'roleNames') ? $actor->roleNames() : [];
+        if (! in_array('developer', $roles, true) && ! in_array('super_admin', $roles, true)) {
+            return response()->json(['error' => 'Forbidden: only developer or super admin can change receipt serial settings'], 403);
+        }
+
+        if ($request->boolean('check')) {
+            return response()->json(['ok' => true, 'available' => true, 'method' => 'laravel-function']);
+        }
+
+        if (! Schema::hasTable('receipt_settings')) {
+            return response()->json(['error' => 'receipt_settings table is missing. Run backend migrations first.'], 500);
+        }
+        if (! Schema::hasColumn('receipt_settings', 'receipt_serial_start')) {
+            return response()->json(['error' => 'receipt_serial_start column is missing. Run backend migrations first.'], 500);
+        }
+
+        $rawStart = $request->input('p_start', $request->input('start'));
+        if (! is_numeric($rawStart) || floor((float) $rawStart) != (float) $rawStart) {
+            return response()->json(['error' => 'শুরুর ক্রমিক নম্বর সঠিক নয়'], 400);
+        }
+        $start = (int) $rawStart;
+        if ($start < 0) {
+            return response()->json(['error' => 'ক্রমিক নম্বর ঋণাত্মক হতে পারবে না'], 400);
+        }
+        if ($start > 9000000000) {
+            return response()->json(['error' => 'ক্রমিক নম্বর অনেক বড়'], 400);
+        }
+
+        $currentLast = 0;
+        if (Schema::hasTable('receipt_counters')) {
+            $currentLast = (int) (DB::table('receipt_counters')
+                ->where('kind', 'SERIAL')
+                ->where('year', 0)
+                ->value('last_no') ?? 0);
+        }
+        if ($start < $currentLast) {
+            return response()->json([
+                'error' => "এই নম্বর ($start) বর্তমান সর্বশেষ রিসিপ্ট নম্বরের ($currentLast) চেয়ে ছোট — ডুপ্লিকেট এড়াতে বাতিল করা হলো",
+            ], 409);
+        }
+
+        $exists = DB::table('receipt_settings')->where('id', 1)->exists();
+        $oldStart = (int) (DB::table('receipt_settings')->where('id', 1)->value('receipt_serial_start') ?? 0);
+        $row = $exists
+            ? ['receipt_serial_start' => $start, 'updated_by' => $actor->id, 'updated_at' => now()]
+            : array_merge($this->defaultReceiptSettingsRow($actor->id), ['receipt_serial_start' => $start]);
+        $row = array_filter($row, fn ($value, $column) => Schema::hasColumn('receipt_settings', $column), ARRAY_FILTER_USE_BOTH);
+
+        if ($exists) {
+            DB::table('receipt_settings')->where('id', 1)->update($row);
+        } else {
+            DB::table('receipt_settings')->insert($row);
+        }
+
+        try {
+            AuditLog::record([
+                'user_id' => $actor->id,
+                'office_id' => null,
+                'action' => 'receipt.serial.update',
+                'entity_type' => 'receipt_settings',
+                'entity_id' => '1',
+                'meta' => [
+                    'old_data' => ['receipt_serial_start' => $oldStart],
+                    'new_data' => ['receipt_serial_start' => $start],
+                ],
+            ]);
+        } catch (\Throwable $e) {
+            // Audit failure must never block the settings save.
+        }
+
+        return response()->json([
+            'ok' => true,
+            'receipt_serial_start' => $start,
+            'old_receipt_serial_start' => $oldStart,
+            'audit_logged' => true,
+        ]);
+    }
+
+    private function defaultReceiptSettingsRow(?string $userId = null): array
+    {
+        return [
+            'id' => 1,
+            'language' => 'en',
+            'paper_size' => 'a5',
+            'accent_color' => '#1f4e79',
+            'show_logo' => true,
+            'show_signature_line' => true,
+            'show_office' => true,
+            'show_token_block' => true,
+            'header_alignment' => 'center',
+            'footer_note' => 'This is a system-generated receipt. Please retain for your records.',
+            'footer_note_bn' => 'এটি সিস্টেম-জেনারেটেড রসিদ। অনুগ্রহ করে আপনার রেকর্ডের জন্য সংরক্ষণ করুন।',
+            'show_watermark' => false,
+            'watermark_text' => '',
+            'show_penalty_row' => true,
+            'show_charge_row' => true,
+            'qr_placement' => 'right',
+            'receipt_serial_start' => 0,
+            'updated_by' => $userId,
+            'updated_at' => now(),
+        ];
+    }
+
+    /**
      * Supabase-compatible user administration endpoint used by the React
      * Users page (`db.functions.invoke('admin-users', ...)`) when the app is
      * running against the Laravel/VPS backend.

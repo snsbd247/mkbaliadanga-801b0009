@@ -54,11 +54,45 @@ async function setReceiptSerialStartDirect(nextSerial: number): Promise<{ ok: bo
       };
     }
 
-    const { error } = await db
+    const payload = { receipt_serial_start: nextSerial, updated_at: new Date().toISOString() } as any;
+    let { data, error } = await db
       .from("receipt_settings")
-      .update({ receipt_serial_start: nextSerial, updated_at: new Date().toISOString() } as any)
-      .eq("id", 1);
+      .update(payload)
+      .eq("id", 1)
+      .select("id,receipt_serial_start");
     if (error) return { ok: false, message: error.message };
+
+    const rows = Array.isArray(data) ? data : data ? [data] : [];
+    if (rows.length === 0) {
+      const defaults = {
+        id: 1,
+        language: "en",
+        paper_size: "a5",
+        accent_color: "#1f4e79",
+        show_logo: true,
+        show_signature_line: true,
+        show_office: true,
+        show_token_block: true,
+        header_alignment: "center",
+        footer_note: "This is a system-generated receipt. Please retain for your records.",
+        footer_note_bn: "এটি সিস্টেম-জেনারেটেড রসিদ। অনুগ্রহ করে আপনার রেকর্ডের জন্য সংরক্ষণ করুন।",
+        show_watermark: false,
+        watermark_text: "",
+        show_penalty_row: true,
+        show_charge_row: true,
+        qr_placement: "right",
+        ...payload,
+      } as any;
+      const inserted = await db.from("receipt_settings").insert(defaults).select("id,receipt_serial_start");
+      if (inserted.error) return { ok: false, message: inserted.error.message };
+      data = inserted.data as any;
+    }
+
+    const savedRows = Array.isArray(data) ? data : data ? [data] : [];
+    const persisted = Number((savedRows[0] as any)?.receipt_serial_start ?? NaN);
+    if (!Number.isFinite(persisted) || persisted !== nextSerial) {
+      return { ok: false, message: `Serial start save was not confirmed (expected ${nextSerial}, got ${Number.isFinite(persisted) ? persisted : "—"})` };
+    }
     return { ok: true, message: "Serial start updated" };
   } catch (e) {
     return { ok: false, message: errorMessage(e) || "Serial start update failed" };
@@ -73,6 +107,8 @@ async function setReceiptSerialStartDirect(nextSerial: number): Promise<{ ok: bo
  */
 export async function checkReceiptSerialRpc(): Promise<{ available: boolean; message: string }> {
   if (isLaravelBackend) {
+    const viaFunction = await (db as any).functions.invoke("receipt-serial-admin", { body: { check: true } });
+    if (!viaFunction.error) return { available: true, message: "Receipt serial admin endpoint available" };
     try {
       await getCurrentSerialLast();
       return { available: true, message: "Receipt serial direct fallback available" };
@@ -119,13 +155,6 @@ export async function setReceiptSerialStart(
   nextSerial: number,
 ): Promise<{ ok: boolean; message: string; value?: number }> {
   const t = (start: number) => Math.round(performance.now() - start);
-
-  if (isLaravelBackend) {
-    const s = performance.now();
-    const res = await setReceiptSerialStartDirect(nextSerial);
-    logDiagnostic("/api/db receipt_settings (direct)", res.ok ? "ok" : "error", res.message, { durationMs: t(s), usedFallback: true });
-    return res.ok ? { ...res, value: nextSerial } : res;
-  }
 
   const functionAttempt = () => (db as any).functions.invoke("receipt-serial-admin", { body: { p_start: nextSerial } });
   let fs = performance.now();

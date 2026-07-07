@@ -54,6 +54,15 @@ class GenericTableController extends Controller
      */
     private function authorizeWrite(Request $request, string $table): void
     {
+        if (in_array($table, ['receipt_settings', 'receipt_counters'], true)) {
+            $user = $request->user();
+            $roles = $user && method_exists($user, 'roleNames') ? $user->roleNames() : [];
+            if (! in_array('developer', $roles, true) && ! in_array('super_admin', $roles, true)) {
+                abort(403, 'শুধুমাত্র সুপার অ্যাডমিন রিসিপ্ট সেটিংস পরিবর্তন করতে পারেন।');
+            }
+            return;
+        }
+
         $guard = self::WRITE_GUARD[$table] ?? null;
         if (! $guard) {
             return;
