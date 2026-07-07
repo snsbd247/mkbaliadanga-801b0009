@@ -705,6 +705,8 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
           covered_invoices: coveredInvoices.map((c) => ({ invoice_no: c.invoice_no, due_amount: c.due_amount })),
           patwari_name: patwari ? (patwari.name_bn || patwari.name) : null,
           patwari_mobile: patwari?.mobile ?? null,
+          collector_signature_url: (company as any)?.editor_signature_url ?? null,
+          office_collector_signature_url: (company as any)?.editor_signature_url ?? null,
           verify_url: `${window.location.origin}/r/${receiptNo}`,
         }, "farmer"),
         { referenceId: paymentId, payload: { kind: "irrigation", receipt_no: receiptNo, farmer_id: farmerId }, officeId: farmer?.office_id ?? null },
