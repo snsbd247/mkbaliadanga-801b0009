@@ -210,6 +210,7 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
       }
 
       setSelectedIds(new Set());
+      setSelectedPrevIds(new Set());
       setDelayFee({});
       setDelayFeeReason({});
       setCurrentCollected(0);
