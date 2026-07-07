@@ -583,7 +583,7 @@ function copyHtml(d: BnReceiptData, copyLabel: string, signatureUrl: string | nu
     : "";
   const watermark = wmText
     ? `<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:0;">
-         <div style="transform:rotate(-30deg);font-size:64px;font-weight:800;color:rgba(0,0,0,0.07);white-space:nowrap;letter-spacing:6px;font-family:${fontFamily};">${wmText}</div>
+         <div style="transform:rotate(-30deg);font-size:64px;font-weight:800;color:rgba(0,0,0,0.12);white-space:nowrap;letter-spacing:6px;font-family:${fontFamily};">${wmText}</div>
        </div>` : "";
 
   if (officialIrrigationReceipt) {
