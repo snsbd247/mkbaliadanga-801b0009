@@ -103,6 +103,9 @@ describe("buildIrrigationReceiptEnrichment", () => {
 
     expect(e.holding_description).toBe("নিজ সেচে আবাদ হয়।");
     expect(e.holding_description).not.toContain("পেমেন্ট নোট");
+  });
+
+
 
   it("shows borgadar + owner names and N/A when cultivator is not a savings member", async () => {
     const borgaInvoice = { ...baseInvoice, is_borga: true };
