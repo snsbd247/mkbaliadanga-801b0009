@@ -132,7 +132,15 @@ export function EditReceiptDialog({
     });
     setLoading(false);
     if (error || (data as any)?.error) {
-      return toast.error((data as any)?.error || error?.message || tx("Failed to update receipt", "রসিদ হালনাগাদ ব্যর্থ হয়েছে"));
+      // supabase.functions.invoke returns a generic "non-2xx" message on HTTP
+      // errors; the real reason is in the Response body (error.context). Read it
+      // so users see the actual cause (e.g. duplicate receipt no, over-payment).
+      let serverMsg: string | null = (data as any)?.error ?? null;
+      const ctx = (error as any)?.context;
+      if (!serverMsg && ctx && typeof ctx.json === "function") {
+        try { serverMsg = (await ctx.json())?.error ?? null; } catch { /* ignore */ }
+      }
+      return toast.error(serverMsg || error?.message || tx("Failed to update receipt", "রসিদ হালনাগাদ ব্যর্থ হয়েছে"));
     }
     toast.success(tx("Receipt updated", "রসিদ হালনাগাদ হয়েছে"));
     onOpenChange(false);
