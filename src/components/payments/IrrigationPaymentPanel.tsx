@@ -434,6 +434,7 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
           delay_fee_override_reason: newFee !== originalFee ? (delayFeeReason[inv.id] || null) : null,
           created_by: user?.id,
         });
+        coveredInvoices.push({ id: inv.id, invoice_no: inv.invoice_no, due_amount: take });
         remainingCurrent -= take;
       }
 
