@@ -104,6 +104,10 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
   const [method, setMethod] = useState("cash");
   const [note, setNote] = useState("");
 
+  // Manual patwari selection — used when the land has no patwari linked.
+  const [patwariList, setPatwariList] = useState<Array<{ id: string; name: string | null; name_bn: string | null; mobile: string | null }>>([]);
+  const [manualPatwariId, setManualPatwariId] = useState<string>("");
+
   // Configurable: which roles may receive partial payments.
   const [allowedRoles, setAllowedRoles] = useState<string[]>(["super_admin"]);
   const [settingsId, setSettingsId] = useState<string | null>(null);
