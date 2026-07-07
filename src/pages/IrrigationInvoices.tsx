@@ -760,7 +760,7 @@ function InvoiceListTab({ seasons, offices, isSuper }: any) {
                           </Link>
                         </Button>
                       )}
-                      {r.invoice_status !== "cancelled" && r.invoice_status !== "paid" && (
+                      {r.invoice_status !== "cancelled" && (r.invoice_status !== "paid" || isSuper) && (
                         <Button size="sm" variant="ghost" title={tx("Edit", "এডিট")} onClick={() => setEditInv(r)}><Pencil className="h-4 w-4" /></Button>
                       )}
                       {r.invoice_status !== "cancelled" && r.invoice_status !== "paid" && (
