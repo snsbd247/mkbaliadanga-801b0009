@@ -25,11 +25,9 @@ import { downloadBnReceiptPdf, normalizeIrrigationRatePerAcre } from "@/lib/bnRe
 import { resolveFieldTypeLabel } from "@/lib/irrigationLandType";
 import { safeWithRetry } from "@/lib/retryQueue";
 import { logAudit } from "@/lib/audit";
-import { autoReceiptNo } from "@/lib/receiptNo";
 import { exceedsDue } from "@/lib/irrigationPaymentMath";
 import { verifyPaymentCoverage } from "@/lib/irrigationPaymentCoverage";
 import { recalcInvoice } from "@/lib/invoiceRecalc";
-import { nextMonthlyReceiptNo, nextUnifiedReceiptNo } from "@/lib/monthlyReceiptNo";
 import { resolveReceiptPatwari } from "@/lib/receiptPatwari";
 
 // Shared select for open irrigation invoices (used by both initial load and reload).
@@ -429,9 +427,13 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
         collected_by: user?.id,
         status: "approved",
         office_id: officeId,
-      }).select("id").single();
+      }).select("id, receipt_no").single();
       if (payErr) throw payErr;
       const paymentId = ins!.id as string;
+      const receiptNo = String((ins as any)?.receipt_no ?? "").trim();
+      if (!receiptNo) {
+        throw new Error(tx("Receipt number was not generated", "রশিদ নম্বর তৈরি হয়নি"));
+      }
 
       // 2) Allocate currentCollected across selected current invoices (oldest first)
       // Track exactly which invoices this payment covered (id + amount) so we can
@@ -651,12 +653,6 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
         console.warn("[irrigation-pay] journal posting failed", jErr);
       }
 
-      const receiptNo = await nextUnifiedReceiptNo(officeId, "IRR", paymentId).catch(() => autoReceiptNo("IRR", paymentId));
-      // Persist the generated receipt number on the payment row so it shows in
-      // the Recent Transactions list (Receipt # column) instead of "—".
-      if (receiptNo) {
-        await db.from("payments").update({ receipt_no: receiptNo }).eq("id", paymentId);
-      }
       const [{ data: farmer }, { data: company }] = await Promise.all([
         db.from("farmers").select("name_bn,name_en,member_no,farmer_code,father_name,village,mobile,office_id,union_id").eq("id", farmerId).maybeSingle(),
         db.from("company_settings").select("company_name,company_name_bn,address,mobile,email,registration_no,logo_url,editor_signature_url").eq("id", 1).maybeSingle(),
