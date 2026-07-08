@@ -37,6 +37,7 @@ import { exportTablePDF } from "@/lib/exports";
 import { logAudit } from "@/lib/audit";
 import { voidPaymentsForInvoice } from "@/lib/voidInvoicePayments";
 import { validateDiscount, computeInvoiceTotals, grossAmount, canEditInvoice } from "@/lib/invoiceDiscount";
+import { InvoiceBreakdown } from "@/components/irrigation/InvoiceBreakdown";
 import {
   downloadIrrigationInvoicePdf, previewIrrigationInvoicePdf,
   downloadIrrigationInvoicesBulkPdf, previewIrrigationInvoicesBulkPdf,
