@@ -99,7 +99,15 @@ describe("Bangla receipt template (visual regression)", () => {
     await downloadBnReceiptPdf(cases[0].data, "farmer");
     expect(capturedHtml).toContain("আদায়কারীর স্বাক্ষর");
     expect(capturedHtml).toContain("border-top:1px solid #111");
-    expect(capturedHtml).not.toContain("<img src=\"data:image");
+    // Signature must be a placeholder line, not an embedded image.
+    expect(capturedHtml).toContain('data-sig="placeholder"');
+    expect(capturedHtml).not.toContain('data-sig="filled"');
+  });
+
+  it("irrigation receipt never shows the removed পরিশোধকৃত টাকা row", async () => {
+    await downloadBnReceiptPdf(cases[0].data, "farmer");
+    expect(capturedHtml).toContain("সেচ চার্জ ও বিবিধ আদায় রশিদ");
+    expect(capturedHtml).not.toContain("পরিশোধকৃত টাকা");
   });
 
   it("office copy uses office_collector_signature_url when provided", async () => {
