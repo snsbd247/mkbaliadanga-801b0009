@@ -806,6 +806,19 @@ async function renderPdf(data: BnReceiptData, copy: ReceiptCopy, options?: Recei
   if (verifyUrl && tpl.qr_placement !== "none") {
     try { qrDataUrl = await QRCode.toDataURL(verifyUrl, { margin: 0, width: 180 }); } catch { /* noop */ }
   }
+  // Preload the signature/logo images as data URLs so html2canvas always
+  // captures them (remote crossorigin images can silently fail to render).
+  const [sigData, officeSigData, logoData] = await Promise.all([
+    imageUrlToDataUrl(data.collector_signature_url),
+    imageUrlToDataUrl(data.office_collector_signature_url),
+    imageUrlToDataUrl(data.logo_url),
+  ]);
+  data = {
+    ...data,
+    collector_signature_url: sigData ?? data.collector_signature_url,
+    office_collector_signature_url: officeSigData ?? data.office_collector_signature_url,
+    logo_url: logoData ?? data.logo_url,
+  };
   const node = buildHtml(data, copy, opts.lang, opts.orgLayout, opts.orgSize, qrDataUrl, opts.showVerifyUrl, tpl);
   try {
     await new Promise((r) => setTimeout(r, 60));
