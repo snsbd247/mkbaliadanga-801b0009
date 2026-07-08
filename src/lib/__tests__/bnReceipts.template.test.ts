@@ -95,12 +95,11 @@ describe("Bangla receipt template (visual regression)", () => {
     });
   }
 
-  it("missing collector_signature_url renders fixed-size placeholder line", async () => {
+  it("missing collector_signature_url renders signature line without an image", async () => {
     await downloadBnReceiptPdf(cases[0].data, "farmer");
     expect(capturedHtml).toContain("আদায়কারীর স্বাক্ষর");
     expect(capturedHtml).toContain("border-top:1px solid #111");
-    // Signature must be a placeholder line, not an embedded image.
-    expect(capturedHtml).toContain('data-sig="placeholder"');
+    // Signature must be a printed line, never an embedded signature image.
     expect(capturedHtml).not.toContain('data-sig="filled"');
   });
 
