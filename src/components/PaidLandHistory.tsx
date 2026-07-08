@@ -50,6 +50,7 @@ type PaidRow = {
   patwari_name: string | null;
   patwari_mobile: string | null;
   verify_token: string | null;
+  payment_id: string | null;
 };
 
 const money = (v: number) => Number(v || 0).toLocaleString("bn-BD", { maximumFractionDigits: 2 });
