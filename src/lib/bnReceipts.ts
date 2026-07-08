@@ -871,32 +871,20 @@ async function renderPdf(data: BnReceiptData, copy: ReceiptCopy, options?: Recei
     office_collector_signature_url: officeSigData ?? data.office_collector_signature_url,
     logo_url: logoData ?? data.logo_url,
   };
-  // Render a single receipt copy (office/farmer/both) to a JPEG data URL.
-  const renderCopyToImage = async (c: ReceiptCopy): Promise<string> => {
+  // Render a single receipt copy (office/farmer/both) to a JPEG data URL plus
+  // its aspect ratio (width/height) taken straight from the source canvas.
+  const renderCopyToImage = async (c: ReceiptCopy): Promise<{ img: string; aspect: number }> => {
     const node = buildHtml(data, c, opts.lang, opts.orgLayout, opts.orgSize, qrDataUrl, opts.showVerifyUrl, tpl);
     try {
       await new Promise((r) => setTimeout(r, 60));
       const canvas = await html2canvas(node, { scale: 2, useCORS: true, backgroundColor: "#ffffff" });
-      return canvas.toDataURL("image/jpeg", 0.95);
+      const aspect = canvas.width && canvas.height ? canvas.width / canvas.height : 0.7;
+      return { img: canvas.toDataURL("image/jpeg", 0.95), aspect };
     } finally {
       node.remove();
     }
   };
 
-  // Image natural aspect (width/height) — needed to scale into the printable slot.
-  const imageAspect = async (dataUrl: string): Promise<number> => {
-    try {
-      const img = new Image();
-      await new Promise<void>((resolve, reject) => {
-        img.onload = () => resolve();
-        img.onerror = () => reject(new Error("img load failed"));
-        img.src = dataUrl;
-      });
-      return img.naturalWidth && img.naturalHeight ? img.naturalWidth / img.naturalHeight : 0.7;
-    } catch {
-      return 0.7; // fallback ~A5 landscape-ish ratio
-    }
-  };
 
   let pdf: jsPDF;
   if (target) {
