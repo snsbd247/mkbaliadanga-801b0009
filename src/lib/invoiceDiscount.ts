@@ -17,12 +17,19 @@ export interface DiscountInvoiceInput {
 
 const n = (v: unknown) => Number(v) || 0;
 
-/** Gross invoice amount before any discount. */
+/**
+ * Gross invoice amount before any discount.
+ *
+ * Billing model: only the irrigation (land) charge, delay fee and other charge
+ * are billed to the farmer. Maintenance & canal are internal splits of the
+ * irrigation amount and MUST NOT be added on top — otherwise the payable/due
+ * inflates above the actual land charge (e.g. doubling when the percentages
+ * add up to 100%). This mirrors `calcInvoice` in irrigationInvoice.ts and the
+ * `tg_irrigation_invoice_recalc` database trigger.
+ */
 export function grossAmount(inv: DiscountInvoiceInput, otherCharge?: number, delayFee?: number): number {
   return (
     n(inv.irrigation_amount) +
-    n(inv.maintenance_amount) +
-    n(inv.canal_amount) +
     (otherCharge != null ? n(otherCharge) : n(inv.other_charge)) +
     (delayFee != null ? n(delayFee) : n(inv.delay_fee))
   );
