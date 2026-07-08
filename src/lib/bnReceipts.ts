@@ -653,7 +653,7 @@ function copyHtml(d: BnReceiptData, copyLabel: string, signatureUrl: string | nu
         <div style="border-top:1px solid #111;padding-top:2px;min-width:260px;">${lang === "bn" ? "সদস্যের স্বাক্ষর/প্রদানকারীর স্বাক্ষর" : "Member / Payer signature"}</div>
         <div style="text-align:right;min-width:300px;">
           ${signatureUrl
-            ? `<img src="${signatureUrl}" crossorigin="anonymous" style="height:60px;margin:0 0 4px auto;display:block;" data-sig="filled" />`
+            ? `<img src="${signatureUrl}" crossorigin="anonymous" style="height:96px;margin:0 0 4px auto;display:block;object-fit:contain;" data-sig="filled" />`
             : ""}
           <div style="border-top:1px solid #111;padding-top:4px;font-size:22px;font-weight:600;">${t.collectorSig}</div>
         </div>
@@ -781,6 +781,25 @@ function resolveOpts(o?: ReceiptOptions) {
   };
 }
 
+/** Fetch a remote image and return a data URL so html2canvas can always draw it. */
+async function imageUrlToDataUrl(url?: string | null): Promise<string | null> {
+  if (!url) return null;
+  if (url.startsWith("data:")) return url;
+  try {
+    const res = await fetch(url, { mode: "cors" });
+    if (!res.ok) return null;
+    const blob = await res.blob();
+    return await new Promise<string | null>((resolve) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(typeof reader.result === "string" ? reader.result : null);
+      reader.onerror = () => resolve(null);
+      reader.readAsDataURL(blob);
+    });
+  } catch {
+    return null;
+  }
+}
+
 async function renderPdf(data: BnReceiptData, copy: ReceiptCopy, options?: ReceiptOptions, target?: jsPDF): Promise<jsPDF> {
   const opts = resolveOpts(options);
   // সেচ চার্জ ও বিবিধ আদায় রশিদ: সবসময় FIXED A5 landscape।
@@ -806,6 +825,19 @@ async function renderPdf(data: BnReceiptData, copy: ReceiptCopy, options?: Recei
   if (verifyUrl && tpl.qr_placement !== "none") {
     try { qrDataUrl = await QRCode.toDataURL(verifyUrl, { margin: 0, width: 180 }); } catch { /* noop */ }
   }
+  // Preload the signature/logo images as data URLs so html2canvas always
+  // captures them (remote crossorigin images can silently fail to render).
+  const [sigData, officeSigData, logoData] = await Promise.all([
+    imageUrlToDataUrl(data.collector_signature_url),
+    imageUrlToDataUrl(data.office_collector_signature_url),
+    imageUrlToDataUrl(data.logo_url),
+  ]);
+  data = {
+    ...data,
+    collector_signature_url: sigData ?? data.collector_signature_url,
+    office_collector_signature_url: officeSigData ?? data.office_collector_signature_url,
+    logo_url: logoData ?? data.logo_url,
+  };
   const node = buildHtml(data, copy, opts.lang, opts.orgLayout, opts.orgSize, qrDataUrl, opts.showVerifyUrl, tpl);
   try {
     await new Promise((r) => setTimeout(r, 60));
