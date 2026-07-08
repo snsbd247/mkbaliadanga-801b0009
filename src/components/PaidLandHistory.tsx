@@ -351,6 +351,7 @@ export function PaidLandHistory({ farmerId }: Props) {
         onOpenChange={(o) => !o && setPreviewData(null)}
         data={previewData}
         copy="farmer"
+        options={receiptArgs.options}
       />
     </Card>
   );

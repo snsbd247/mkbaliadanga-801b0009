@@ -24,6 +24,7 @@ import { useReceiptRenderArgs } from "@/lib/receiptOptions";
 import { ReceiptSettingsButton } from "@/components/receipts/ReceiptSettingsButton";
 import { ReceiptCopyMenu } from "@/components/receipts/ReceiptCopyMenu";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { IrrigationReceiptPreviewDialog } from "@/components/receipts/IrrigationReceiptPreviewDialog";
 
 const FN = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1`;
 
@@ -65,7 +66,7 @@ export default function ScanPayment() {
   const brand = useBranding();
   const receiptArgs = useReceiptRenderArgs();
   const tpl = useReceiptTemplate();
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [previewData, setPreviewData] = useState<BnReceiptData | null>(null);
 
   function buildReceiptPayload(): BnReceiptData | null {
     if (!done || !resolved) return null;
@@ -328,7 +329,7 @@ export default function ScanPayment() {
                   variant="ghost"
                   onClick={async () => {
                     const payload = await resolveReceiptData();
-                    if (payload) setPreviewUrl(await previewBnReceiptPdf(payload, "both", receiptArgs.options));
+                    if (payload) setPreviewData(payload);
                   }}
                 >
                   <Eye className="h-4 w-4" />Preview
@@ -348,14 +349,13 @@ export default function ScanPayment() {
         </Card>
       </div>
 
-      <Dialog open={!!previewUrl} onOpenChange={(o) => !o && setPreviewUrl(null)}>
-        <DialogContent className="max-w-3xl">
-          <DialogHeader><DialogTitle>{t("receiptPreview")}</DialogTitle></DialogHeader>
-          {previewUrl && (
-            <iframe src={previewUrl} title="Receipt preview" className="w-full h-[70vh] border rounded-md bg-white" />
-          )}
-        </DialogContent>
-      </Dialog>
+      <IrrigationReceiptPreviewDialog
+        open={!!previewData}
+        onOpenChange={(o) => !o && setPreviewData(null)}
+        data={previewData}
+        copy="both"
+        options={receiptArgs.options}
+      />
     </>
   );
 }

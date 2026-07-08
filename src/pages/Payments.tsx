@@ -1286,6 +1286,7 @@ export default function Payments() {
         onOpenChange={(o) => { if (!o) setPreview(null); }}
         data={preview?.data ?? null}
         copy={preview?.copy ?? "both"}
+        options={receiptArgs.options}
       />
 
       <Dialog open={!!detailInvoice} onOpenChange={(o) => { if (!o) setDetailInvoice(null); }}>

@@ -13,14 +13,19 @@ interface Props {
   onOpenChange: (o: boolean) => void;
   data: BnReceiptData | null;
   copy?: ReceiptCopy;
+  /** Print/paper settings so preview + download match the Payments page exactly. */
+  options?: Parameters<typeof previewBnReceiptPdf>[2];
 }
 
 /**
  * Print-ready preview for the সেচ (irrigation) receipt. Renders the exact PDF
  * (QR code, মৌজা, watermark) in an iframe so the user can verify it before
  * downloading PDF or Excel — both produced from the same receipt data.
+ *
+ * Shared across PaidLandHistory, IrrigationPaymentPanel, ScanPayment, Payments,
+ * Receipts and FarmerDetail so every entry point shows an identical layout.
  */
-export function IrrigationReceiptPreviewDialog({ open, onOpenChange, data, copy = "both" }: Props) {
+export function IrrigationReceiptPreviewDialog({ open, onOpenChange, data, copy = "both", options }: Props) {
   const { tx } = useLang();
   const [url, setUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -29,14 +34,14 @@ export function IrrigationReceiptPreviewDialog({ open, onOpenChange, data, copy 
     let active = true;
     if (open && data) {
       setLoading(true);
-      previewBnReceiptPdf(data, copy)
+      previewBnReceiptPdf(data, copy, options)
         .then((u) => { if (active) setUrl(u); })
         .finally(() => { if (active) setLoading(false); });
     } else {
       setUrl(null);
     }
     return () => { active = false; };
-  }, [open, data, copy]);
+  }, [open, data, copy, options]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -58,7 +63,7 @@ export function IrrigationReceiptPreviewDialog({ open, onOpenChange, data, copy 
             : <iframe title="receipt-preview" src={url} className="h-full w-full" />}
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={() => data && downloadBnReceiptPdf(data, copy)} disabled={!data}>
+          <Button variant="outline" onClick={() => data && downloadBnReceiptPdf(data, copy, options)} disabled={!data}>
             <FileDown className="h-4 w-4 mr-1" />{tx("Download PDF", "PDF ডাউনলোড")}
           </Button>
           <Button variant="outline" disabled={!url} onClick={() => {

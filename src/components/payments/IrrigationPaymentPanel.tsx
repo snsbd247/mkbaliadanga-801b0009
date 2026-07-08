@@ -25,6 +25,8 @@ import { downloadBnReceiptPdf, normalizeIrrigationRatePerAcre } from "@/lib/bnRe
 import { fetchPaymentReceiptData } from "@/lib/buildPaymentReceiptData";
 import { useBranding } from "@/lib/branding";
 import { useReceiptRenderArgs } from "@/lib/receiptOptions";
+import { IrrigationReceiptPreviewDialog } from "@/components/receipts/IrrigationReceiptPreviewDialog";
+import type { BnReceiptData, ReceiptCopy } from "@/lib/bnReceipts";
 import { resolveFieldTypeLabel } from "@/lib/irrigationLandType";
 import { safeWithRetry } from "@/lib/retryQueue";
 import { logAudit } from "@/lib/audit";
@@ -95,6 +97,9 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
   const [selectedPrevIds, setSelectedPrevIds] = useState<Set<string>>(new Set());
   // Post-submit status summary of the invoices this payment touched.
   const [paidStatuses, setPaidStatuses] = useState<Array<{ invoice_no: string; cleared: boolean }>>([]);
+  // Last successful payment id — enables preview/re-download of the exact receipt.
+  const [lastPaymentId, setLastPaymentId] = useState<string | null>(null);
+  const [previewData, setPreviewData] = useState<BnReceiptData | null>(null);
   // editable delay fees per invoice
   const [delayFee, setDelayFee] = useState<Record<string, number>>({});
   const [delayFeeReason, setDelayFeeReason] = useState<Record<string, string>>({});
@@ -798,6 +803,7 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
         receiptNo ? { description: tx(`Receipt #: ${receiptNo}`, `রসিদ নং: ${receiptNo}`) } : undefined,
       );
       setPaidStatuses(touchedStatuses);
+      setLastPaymentId(paymentId);
       // refresh
       setFarmerId(farmerId);
       setCurrentCollected(0);
@@ -843,9 +849,51 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
                 </Badge>
               ))}
             </div>
+            {lastPaymentId && (
+              <div className="mt-3 flex flex-wrap gap-2">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={async () => {
+                    try {
+                      setPreviewData(await fetchPaymentReceiptData(lastPaymentId, { brand, receiptArgs, tx }));
+                    } catch (e: any) {
+                      toast.error(e?.message ?? tx("Receipt preview failed", "রসিদ প্রিভিউ ব্যর্থ"));
+                    }
+                  }}
+                >
+                  {tx("Preview receipt", "রসিদ প্রিভিউ")}
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={async () => {
+                    try {
+                      const data = await fetchPaymentReceiptData(lastPaymentId, { brand, receiptArgs, tx });
+                      await downloadBnReceiptPdf(data, "farmer", receiptArgs.options);
+                    } catch (e: any) {
+                      toast.error(e?.message ?? tx("Receipt download failed", "রসিদ ডাউনলোড ব্যর্থ"));
+                    }
+                  }}
+                >
+                  {tx("Download receipt", "রসিদ ডাউনলোড")}
+                </Button>
+              </div>
+            )}
           </AlertDescription>
         </Alert>
       )}
+
+      <IrrigationReceiptPreviewDialog
+        open={!!previewData}
+        onOpenChange={(o) => !o && setPreviewData(null)}
+        data={previewData}
+        copy="farmer"
+        options={receiptArgs.options}
+      />
+
 
 
 
