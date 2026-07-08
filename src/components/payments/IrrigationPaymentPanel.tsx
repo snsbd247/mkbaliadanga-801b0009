@@ -29,6 +29,7 @@ import { exceedsDue } from "@/lib/irrigationPaymentMath";
 import { verifyPaymentCoverage } from "@/lib/irrigationPaymentCoverage";
 import { recalcInvoice } from "@/lib/invoiceRecalc";
 import { resolveReceiptPatwari } from "@/lib/receiptPatwari";
+import { verifyInvoiceConsistency } from "@/lib/invoiceBreakdown";
 
 // Shared select for open irrigation invoices (used by both initial load and reload).
 const OPEN_INVOICE_SELECT =
@@ -217,7 +218,19 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
           const hydrated = await hydrateLandPatwaris((result.rows ?? []) as Invoice[]);
           if (!alive) return;
           setInvoices(hydrated);
+          // Auto-check: warn if any stored due/payable disagrees with the model.
+          const bad = hydrated.filter((inv) => !verifyInvoiceConsistency(inv as any).ok);
+          if (bad.length) {
+            toast.warning(
+              tx(
+                `${bad.length} invoice(s) have inconsistent due/total — please recalculate.`,
+                `${bad.length} টি ইনভয়েসের বকেয়া/মোট মিলছে না — পুনরায় হিসাব করুন।`,
+              ),
+              { description: bad.map((b) => b.invoice_no).join(", ") },
+            );
+          }
         }
+
       } catch (e: any) {
         if (!alive) return;
         const traceId = (typeof crypto !== "undefined" && crypto.randomUUID) ? crypto.randomUUID() : `${Date.now()}`;

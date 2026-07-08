@@ -37,6 +37,7 @@ import { exportTablePDF } from "@/lib/exports";
 import { logAudit } from "@/lib/audit";
 import { voidPaymentsForInvoice } from "@/lib/voidInvoicePayments";
 import { validateDiscount, computeInvoiceTotals, grossAmount, canEditInvoice } from "@/lib/invoiceDiscount";
+import { InvoiceBreakdown } from "@/components/irrigation/InvoiceBreakdown";
 import {
   downloadIrrigationInvoicePdf, previewIrrigationInvoicePdf,
   downloadIrrigationInvoicesBulkPdf, previewIrrigationInvoicesBulkPdf,
@@ -1105,7 +1106,7 @@ function InvoiceEditDialog({ inv, onClose, onSaved }: any) {
     onSaved?.(); onClose();
   }
 
-  const previewPayable = computeInvoiceTotals(inv, Number(discount) || 0, dueDate, Number(otherCharge) || 0, Number(delayFee) || 0).payable;
+  
 
   async function markUnpaid() {
     if (!perm.ok) return toast.error(tx("You do not have permission to edit invoices", "ইনভয়েস এডিট করার অনুমতি নেই"));
@@ -1182,9 +1183,15 @@ function InvoiceEditDialog({ inv, onClose, onSaved }: any) {
               <Input value={discountReason} onChange={(e) => setDiscountReason(e.target.value)} placeholder={tx("Required when discounting", "ডিসকাউন্ট দিলে আবশ্যক")} disabled={!perm.ok} />
             </div>
           </div>
-          <p className="text-xs text-muted-foreground">
-            {tx("Payable after discount", "ডিসকাউন্টের পর প্রদেয়")}: <span className="font-medium text-foreground">{money(previewPayable)}</span>
-          </p>
+          <InvoiceBreakdown
+            invoice={{
+              ...inv,
+              other_charge: Number(otherCharge) || 0,
+              delay_fee: Number(delayFee) || 0,
+              discount_amount: Number(discount) || 0,
+            }}
+          />
+
           <div>
             <Label>{tx("Note", "মন্তব্য")}</Label>
             <Textarea value={note} onChange={(e) => setNote(e.target.value)} rows={3} disabled={!perm.ok} />
