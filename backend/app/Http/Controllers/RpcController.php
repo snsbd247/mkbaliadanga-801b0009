@@ -1117,4 +1117,117 @@ class RpcController extends Controller
         }
         return null;
     }
+
+    // ── Permanent cascade delete of a payment / irrigation receipt ──────
+    // Removes the payment and every related row (journal entries + lines,
+    // irrigation invoice links, payment allocations), restores affected
+    // irrigation invoices' paid/due/status, and writes an audit entry.
+    protected function rpc_delete_payment_cascade(array $p, Request $request): array
+    {
+        $paymentId = $p['_payment_id'] ?? $p['payment_id'] ?? null;
+        if (! $paymentId) {
+            throw new \RuntimeException('Payment id is required.');
+        }
+
+        $payment = DB::table('payments')->where('id', $paymentId)->first();
+        if (! $payment) {
+            throw new \RuntimeException('Payment not found');
+        }
+
+        $receiptNo = $payment->receipt_no ?? null;
+        $user = $request->user();
+
+        $affected = DB::transaction(function () use ($paymentId, $receiptNo) {
+            $counts = [
+                'payments' => 0,
+                'irrigation_invoice_payments' => 0,
+                'payment_allocations' => 0,
+                'journal_entries' => 0,
+                'journal_entry_lines' => 0,
+            ];
+
+            // 1) Restore irrigation invoices for each invoice payment we remove.
+            if (Schema::hasTable('irrigation_invoice_payments')) {
+                $iips = DB::table('irrigation_invoice_payments')
+                    ->where('payment_id', $paymentId)->get();
+                foreach ($iips as $iip) {
+                    $inv = DB::table('irrigation_invoices')->where('id', $iip->invoice_id)
+                        ->lockForUpdate()->first();
+                    if ($inv) {
+                        $paid = max(0, (float) ($inv->paid_amount ?? 0) - (float) ($iip->amount ?? 0));
+                        $base = (float) ($inv->amount ?? $inv->payable_amount ?? 0);
+                        $due = max(0, $base - $paid);
+                        $update = [
+                            'paid_amount' => $paid,
+                            'due_amount' => $due,
+                            'updated_at' => now(),
+                        ];
+                        $status = $due <= 0 ? 'paid' : ($paid > 0 ? 'partial' : 'unpaid');
+                        if (Schema::hasColumn('irrigation_invoices', 'status')) {
+                            $update['status'] = $status;
+                        }
+                        if (Schema::hasColumn('irrigation_invoices', 'invoice_status')) {
+                            $update['invoice_status'] = $status;
+                        }
+                        DB::table('irrigation_invoices')->where('id', $inv->id)->update($update);
+                    }
+                }
+                $counts['irrigation_invoice_payments'] =
+                    DB::table('irrigation_invoice_payments')->where('payment_id', $paymentId)->delete();
+            }
+
+            // 2) Delete accounting journals posted for this receipt.
+            if ($receiptNo !== null && trim((string) $receiptNo) !== '' && Schema::hasTable('journal_entries')) {
+                $jeIds = DB::table('journal_entries')->where('reference', $receiptNo)->pluck('id')->all();
+                if (! empty($jeIds)) {
+                    if (Schema::hasTable('journal_entry_lines')) {
+                        $counts['journal_entry_lines'] =
+                            DB::table('journal_entry_lines')->whereIn('journal_id', $jeIds)->delete();
+                    }
+                    $counts['journal_entries'] =
+                        DB::table('journal_entries')->whereIn('id', $jeIds)->delete();
+                }
+            }
+
+            // 3) Payment allocations.
+            if (Schema::hasTable('payment_allocations')) {
+                $counts['payment_allocations'] =
+                    DB::table('payment_allocations')->where('payment_id', $paymentId)->delete();
+            }
+
+            // 4) The payment itself.
+            $counts['payments'] = DB::table('payments')->where('id', $paymentId)->delete();
+
+            return $counts;
+        });
+
+        // 5) Audit log (best-effort — never breaks the delete).
+        try {
+            if (Schema::hasTable('system_audit_logs')) {
+                $row = [
+                    'module' => 'payments',
+                    'action_type' => 'delete',
+                    'reference_id' => (string) $paymentId,
+                    'created_at' => now(),
+                ];
+                if (Schema::hasColumn('system_audit_logs', 'id')) $row['id'] = (string) Str::uuid();
+                if (Schema::hasColumn('system_audit_logs', 'user_id')) $row['user_id'] = $user->id ?? null;
+                if (Schema::hasColumn('system_audit_logs', 'office_id')) $row['office_id'] = $payment->office_id ?? ($user->office_id ?? null);
+                $oldData = [
+                    'receipt_no' => $receiptNo,
+                    'farmer_id' => $payment->farmer_id ?? null,
+                    'amount' => $payment->amount ?? null,
+                ];
+                $newData = ['permanent_delete' => true, 'affected' => $affected];
+                if (Schema::hasColumn('system_audit_logs', 'old_data')) $row['old_data'] = json_encode($oldData);
+                if (Schema::hasColumn('system_audit_logs', 'new_data')) $row['new_data'] = json_encode($newData);
+                DB::table('system_audit_logs')->insert($row);
+            }
+        } catch (\Throwable $e) {
+            // ignore audit failures
+        }
+
+        return ['ok' => true, 'affected' => $affected];
+    }
 }
+
