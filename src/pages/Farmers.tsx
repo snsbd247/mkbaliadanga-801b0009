@@ -426,11 +426,15 @@ export default function Farmers() {
       qy = qy.ilike("father_name", `%${fatherQ.trim()}%`);
     }
     const { data } = await qy;
+    // Latest-request-wins: ignore this response if a newer load started meanwhile.
+    if (seq !== loadSeqRef.current) return;
     const farmers = data ?? [];
     setList(farmers);
     if (farmers.length) {
       const ids = farmers.map((f: any) => f.id).filter(Boolean);
-      setDuesMap(await loadDueSummaryForFarmers(ids));
+      const dues = await loadDueSummaryForFarmers(ids);
+      if (seq !== loadSeqRef.current) return;
+      setDuesMap(dues);
     } else {
       setDuesMap({});
     }
