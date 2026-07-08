@@ -59,7 +59,14 @@ export function IrrigationReceiptPreviewDialog({ open, onOpenChange, data, copy 
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => data && downloadBnReceiptPdf(data, copy)} disabled={!data}>
-            <FileDown className="h-4 w-4 mr-1" />PDF
+            <FileDown className="h-4 w-4 mr-1" />{tx("Download PDF", "PDF ডাউনলোড")}
+          </Button>
+          <Button variant="outline" disabled={!url} onClick={() => {
+            const frame = document.querySelector<HTMLIFrameElement>('iframe[title="receipt-preview"]');
+            frame?.contentWindow?.focus();
+            frame?.contentWindow?.print();
+          }}>
+            <Printer className="h-4 w-4 mr-1" />{tx("Print", "প্রিন্ট")}
           </Button>
           <Button variant="outline" disabled={!data} onClick={() => {
             if (!data) return;
