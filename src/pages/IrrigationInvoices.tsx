@@ -291,11 +291,14 @@ function InvoiceListTab({ seasons, offices, isSuper }: any) {
       destructive: true, confirmText: tx("Cancel it", "বাতিল করুন"),
     });
     if (!ok) return;
-    const { error } = await db
+    const { data, error } = await db
       .from("irrigation_invoices" as any)
       .update({ invoice_status: "cancelled", cancelled_at: new Date().toISOString(), cancel_reason: "Manually cancelled" } as any)
-      .eq("id", inv.id);
+      .eq("id", inv.id)
+      .select("id");
     if (error) return toast.error(error.message);
+    if (!data || data.length === 0)
+      return toast.error(tx("Cancel failed — permission or office mismatch.", "বাতিল ব্যর্থ — অনুমতি নেই বা অন্য অফিসের।"));
     toast.success(tx("Invoice cancelled", "ইনভয়েস বাতিল করা হয়েছে")); load();
   }
 
@@ -307,13 +310,17 @@ function InvoiceListTab({ seasons, offices, isSuper }: any) {
     });
     if (!ok) return;
     await voidPaymentsForInvoice(inv.id, { actorId: user?.id ?? null });
-    const { error } = await db
+    const { data, error } = await db
       .from("irrigation_invoices" as any)
       .update({ deleted_at: new Date().toISOString() } as any)
-      .eq("id", inv.id);
+      .eq("id", inv.id)
+      .select("id");
     if (error) return toast.error(error.message);
+    if (!data || data.length === 0)
+      return toast.error(tx("Delete failed — permission or office mismatch.", "মুছে ফেলা ব্যর্থ — অনুমতি নেই বা অন্য অফিসের।"));
     toast.success(tx("Invoice and related payments deleted", "ইনভয়েস ও সংশ্লিষ্ট পেমেন্ট মুছে ফেলা হয়েছে")); load();
   }
+
 
   function buildInvoicePdfPayload(inv: any) {
     return {
