@@ -35,6 +35,30 @@ describe("buildMemberSummary", () => {
     })).toBe("01711");
   });
 
+  // Regression: receipt no. 4683 — cultivator is also the land owner (self land).
+  // The "কৃষক এবং মালিক সভ্য সদস্য" field must show Savings Number 01711,
+  // never the Farmer ID 02473.
+  it("receipt 4683: self-land owner shows savings number 01711, not farmer id 02473", () => {
+    const self = { account_number: "01711", member_no: "02473", farmer_code: "02473", is_voter: false } as any;
+    const summary = buildMemberSummary({ cultivator: self, owner: self, isBorga: false });
+    expect(summary).toBe("01711");
+    expect(summary).not.toContain("02473");
+  });
+
+  // Validation guard: if the Farmer ID accidentally lands in account_number,
+  // savingsNoOf must reject it rather than display the Farmer ID.
+  it("rejects farmer id used as a savings-number fallback", () => {
+    expect(savingsNoOf({ account_number: "02473", member_no: "02473", farmer_code: "02473" } as any)).toBeNull();
+  });
+
+  it("borga land shows বর্গাদার savings / মালিক savings when both exist", () => {
+    expect(buildMemberSummary({
+      cultivator: { account_number: "01711" },
+      owner: { account_number: "01925" },
+      isBorga: true,
+    })).toBe("01711/01925");
+  });
+
   it("own land with non-member cultivator shows নাই", () => {
     expect(buildMemberSummary({ cultivator: { savings_inactive: true }, owner: null, isBorga: false })).toBe("নাই");
   });
