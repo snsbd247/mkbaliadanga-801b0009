@@ -886,6 +886,56 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
         <Alert><AlertDescription>{tx("No outstanding irrigation invoices for this farmer.", "এই ফার্মারের কোনো বকেয়া সেচ ইনভয়েস নেই।")}</AlertDescription></Alert>
       )}
 
+      {farmerId && !loading && invoices.length > 0 && (isAdmin || isSuper) && (
+        <Card className="p-4 space-y-3 border-sky-300 dark:border-sky-800">
+          <div className="flex items-center gap-2">
+            <h3 className="font-semibold text-sm">{tx("Season classification & receipt breakdown", "সিজন শ্রেণিবিন্যাস ও রশিদ ব্রেকডাউন")}</h3>
+            <Badge variant="outline" className="text-[10px]">{tx("Admin", "অ্যাডমিন")}</Badge>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            {tx("Season classified as হাল (current)", "হাল (চলতি) হিসেবে বিবেচিত সিজন")}:{" "}
+            <span className="font-semibold text-foreground">{currentSeasonLabel}</span>
+            {" · "}
+            {activeSeasonId && invoices.some(i => i.season_id === activeSeasonId)
+              ? tx("(from global active season)", "(গ্লোবাল সক্রিয় সিজন থেকে)")
+              : tx("(latest-year fallback)", "(সর্বশেষ বছরের ফলব্যাক)")}
+          </p>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>{tx("Invoice", "ইনভয়েস")}</TableHead>
+                <TableHead>{tx("Season", "সিজন")}</TableHead>
+                <TableHead>{tx("Class", "শ্রেণি")}</TableHead>
+                <TableHead className="text-right">{tx("Charge", "চার্জ")}</TableHead>
+                <TableHead className="text-right">{tx("Penalty (জরিমানা)", "জরিমানা")}</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {halPenaltyReconciliation.rows.map(r => (
+                <TableRow key={r.id}>
+                  <TableCell className="font-mono text-xs">{r.invoice_no}</TableCell>
+                  <TableCell className="text-xs">{r.season}</TableCell>
+                  <TableCell>
+                    <Badge variant={r.classification === "hal" ? "default" : "outline"} className="text-[10px]">
+                      {r.classification === "hal" ? tx("হাল", "হাল") : tx("বকেয়া", "বকেয়া")}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-right font-mono text-xs">{money(r.charge)}</TableCell>
+                  <TableCell className="text-right font-mono text-xs">{money(r.penalty)}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+          <div className="grid grid-cols-2 gap-2 border-t pt-2 text-xs">
+            <div>{tx("হাল charge", "হাল চার্জ")}: <span className="font-mono font-semibold">{money(halPenaltyReconciliation.halCharge)}</span></div>
+            <div>{tx("হাল penalty", "হাল জরিমানা")}: <span className="font-mono font-semibold">{money(halPenaltyReconciliation.halPenalty)}</span></div>
+            <div>{tx("বকেয়া charge", "বকেয়া চার্জ")}: <span className="font-mono font-semibold">{money(halPenaltyReconciliation.dueCharge)}</span></div>
+            <div>{tx("বকেয়া penalty", "বকেয়া জরিমানা")}: <span className="font-mono font-semibold">{money(halPenaltyReconciliation.duePenalty)}</span></div>
+          </div>
+        </Card>
+      )}
+
+
       {farmerId && !loading && currentInvoices.length > 0 && (
         <Card className="p-4 space-y-3">
           <h3 className="font-semibold">{tx("Current Invoice (বর্তমান বকেয়া)", "বর্তমান বকেয়া")}</h3>
