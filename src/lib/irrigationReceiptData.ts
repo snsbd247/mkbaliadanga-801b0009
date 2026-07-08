@@ -2,6 +2,7 @@ import { db } from "@/lib/db";
 import { resolveFieldTypeLabel } from "@/lib/irrigationLandType";
 import { normalizeIrrigationRatePerAcre } from "@/lib/bnReceipts";
 import { joinNotes } from "@/lib/irrigationExports";
+import { buildMemberSummary, savingsNoOf } from "@/lib/receiptMemberSummary";
 
 // Placeholders shown on the receipt when patwari data is missing, so the field
 // is never silently blank.
