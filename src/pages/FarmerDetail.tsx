@@ -66,7 +66,7 @@ import { LandAmountBreakdown } from "@/components/LandAmountBreakdown";
 import { LandNoteCell } from "@/components/farmers/LandNoteCell";
 import { Textarea } from "@/components/ui/textarea";
 import { LandTypeSelect, useLandTypes, landTypeLabel } from "@/components/locations/LandTypeSelect";
-import { buildMemberSummary, savingsNoOf } from "@/lib/receiptMemberSummary";
+import { buildMemberSummary } from "@/lib/receiptMemberSummary";
 
 type LandRow = LandExportRow & { id: string; mouza_id?: string | null; ward_id?: string | null; owner_farmer_id?: string | null; land_type_id?: string | null };
 
@@ -704,6 +704,7 @@ export default function FarmerDetail() {
 
     // Land owner label: "নিজ" for self, otherwise "Owner Name (member_no)"
     let landOwnerLabel: string | null = null;
+    let ownerFarmer: any = null;
     let ownerMemberNo: string | null = null;
     if (land) {
       if (land.owner_type === "borgadar" && land.owner_farmer_id && land.owner_farmer_id !== farmer?.id) {
@@ -713,6 +714,7 @@ export default function FarmerDetail() {
           .eq("id", land.owner_farmer_id)
           .maybeSingle();
         if (own) {
+          ownerFarmer = own;
           ownerMemberNo = own.member_no || own.farmer_code || null;
           landOwnerLabel = `${own.name_bn || own.name_en}${ownerMemberNo ? "-" + ownerMemberNo : ""}`;
         } else {
@@ -762,7 +764,7 @@ export default function FarmerDetail() {
       village_union: await getFarmerUnionName(),
       member_summary: buildMemberSummary({
         cultivator: farmer,
-        owner: land?.owner_type === "borgadar" && land?.owner_farmer_id ? { account_number: ownerMemberNo, is_voter: !!ownerMemberNo } : null,
+        owner: land?.owner_type === "borgadar" && land?.owner_farmer_id ? ownerFarmer : null,
         isBorga: land?.owner_type === "borgadar" && !!land?.owner_farmer_id,
       }),
       owner_self: landOwnerLabel === tx("Self", "নিজ"),
