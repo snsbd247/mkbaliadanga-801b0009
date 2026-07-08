@@ -123,15 +123,15 @@ export default function Receipts() {
     const ok = await confirm({
       title: tx("Delete receipt?", "রশিদ ডিলিট করবেন?"),
       description: tx(
-        `Receipt ${p.receipt_no ?? p.id} will be archived (soft delete).`,
-        `রশিদ ${p.receipt_no ?? p.id} আর্কাইভ করা হবে (সফট ডিলিট)।`,
+        `Receipt ${p.receipt_no ?? p.id} and all its related data (payment, invoice links, journal entries) will be permanently removed.`,
+        `রশিদ ${p.receipt_no ?? p.id} এবং এর সাথে যুক্ত সব ডাটা (পেমেন্ট, ইনভয়েস লিংক, জার্নাল এন্ট্রি) স্থায়ীভাবে মুছে ফেলা হবে।`,
       ),
       confirmText: tx("Delete", "ডিলিট"),
       cancelText: tx("Cancel", "বাতিল"),
       destructive: true,
     });
     if (!ok) return;
-    const { error } = await db.from("payments").update({ deleted_at: new Date().toISOString() } as any).eq("id", p.id);
+    const { error } = await (db as any).rpc("delete_payment_cascade", { _payment_id: p.id });
     if (error) return toast.error(error.message);
     await logAudit({
       module: "payments",
