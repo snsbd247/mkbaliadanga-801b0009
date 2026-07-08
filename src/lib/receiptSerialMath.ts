@@ -3,13 +3,14 @@
  *
  * Admin sets `receipt_serial_start` = N, meaning N is the LAST number they
  * consider already used. The next issued receipt is therefore N + 1.
- * Raising the start jumps the counter up; it never goes backwards (no
- * duplicates), so the effective next number is:
+ * Raising the start jumps the next number up. Deleted/voided payment rows are
+ * ignored, so a phantom counter drift cannot skip a number. The effective next
+ * number is:
  *
- *   max(counterLastNo + 1, serialStart + 1)
+ *   max(serialStart, maxActiveReceiptNo) + 1
  */
-export function computeNextSerial(serialStart: number, counterLastNo: number): number {
+export function computeNextSerial(serialStart: number, maxActiveReceiptNo: number): number {
   const start = Math.floor(Number(serialStart) || 0);
-  const last = Math.floor(Number(counterLastNo) || 0);
-  return Math.max(last + 1, start + 1);
+  const activeMax = Math.floor(Number(maxActiveReceiptNo) || 0);
+  return Math.max(start, activeMax) + 1;
 }

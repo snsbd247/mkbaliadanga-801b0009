@@ -7,8 +7,15 @@ describe("computeNextSerial (receipt serial semantics)", () => {
     expect(computeNextSerial(4641, 8)).toBe(4642);
   });
 
-  it("never goes backwards when counter is already ahead of the start", () => {
+  it("never goes backwards when an active receipt is already ahead of the start", () => {
     expect(computeNextSerial(10, 100)).toBe(101);
+  });
+
+  it("ignores phantom counter drift after a payment row is deleted", () => {
+    // Scenario: start is 4641, a failed/deleted attempt moved the counter to
+    // 4643, but the highest active receipt is still 4642. The next valid
+    // receipt must be 4643, not 4644.
+    expect(computeNextSerial(4641, 4642)).toBe(4643);
   });
 
   it("keeps incrementing sequentially once the start is reached", () => {

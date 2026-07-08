@@ -23,7 +23,7 @@ import {
 } from "@/lib/paymentReceiptPdf";
 import { useBranding } from "@/lib/branding";
 import { notifyReceiptTemplateChange } from "@/lib/receiptTemplate";
-import { checkReceiptSerialRpc, setReceiptSerialStart, serialSaveUnconfirmedToast, getCurrentSerialLast } from "@/lib/receiptSerial";
+import { checkReceiptSerialRpc, setReceiptSerialStart, serialSaveUnconfirmedToast } from "@/lib/receiptSerial";
 import DiagnosticsPanel from "@/components/system/DiagnosticsPanel";
 import { logAudit } from "@/lib/audit";
 import { previewBnReceiptPdf } from "@/lib/bnReceipts";
@@ -68,23 +68,11 @@ export default function ReceiptTemplatePage() {
     document.title = "Receipt Template";
     (async () => {
       const { data } = await db.from("receipt_settings").select("*").eq("id", 1).maybeSingle();
-      let lastUsed = 0;
-      try {
-        lastUsed = await getCurrentSerialLast();
-      } catch {
-        // ignore — fall back to configured start
-      }
       if (data) {
         setTpl({ ...DEFAULT_TEMPLATE, ...(data as any) });
         const configured = Number((data as any).receipt_serial_start ?? 0) || 0;
-        // Effective value reflects the actual last-used serial so the admin
-        // always sees the current position (e.g. after a receipt is generated).
-        const effective = Math.max(configured, lastUsed);
-        setSerialStart(String(effective));
-        setSavedSerialStart(effective);
-      } else if (lastUsed > 0) {
-        setSerialStart(String(lastUsed));
-        setSavedSerialStart(lastUsed);
+        setSerialStart(String(configured));
+        setSavedSerialStart(configured);
       }
       setLoading(false);
     })();
@@ -241,18 +229,11 @@ export default function ReceiptTemplatePage() {
 
       // Re-read the persisted row so the UI reflects exactly what is in the DB.
       const { data: fresh } = await db.from("receipt_settings").select("*").eq("id", 1).maybeSingle();
-      let freshLast = 0;
-      try {
-        freshLast = await getCurrentSerialLast();
-      } catch {
-        // ignore
-      }
       if (fresh) {
         setTpl({ ...DEFAULT_TEMPLATE, ...(fresh as any) });
         const configured = Number((fresh as any).receipt_serial_start ?? 0) || 0;
-        const effective = Math.max(configured, freshLast);
-        setSerialStart(String(effective));
-        setSavedSerialStart(effective);
+        setSerialStart(String(configured));
+        setSavedSerialStart(configured);
       }
 
 
