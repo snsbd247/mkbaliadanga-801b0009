@@ -30,6 +30,7 @@ import { verifyPaymentCoverage } from "@/lib/irrigationPaymentCoverage";
 import { recalcInvoice } from "@/lib/invoiceRecalc";
 import { resolveReceiptPatwari } from "@/lib/receiptPatwari";
 import { verifyInvoiceConsistency } from "@/lib/invoiceBreakdown";
+import { nextUnifiedReceiptNo } from "@/lib/monthlyReceiptNo";
 
 // Shared select for open irrigation invoices (used by both initial load and reload).
 const OPEN_INVOICE_SELECT =
