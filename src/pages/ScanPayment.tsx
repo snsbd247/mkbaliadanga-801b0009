@@ -329,7 +329,7 @@ export default function ScanPayment() {
                   variant="ghost"
                   onClick={async () => {
                     const payload = await resolveReceiptData();
-                    if (payload) setPreviewUrl(await previewBnReceiptPdf(payload, "both", receiptArgs.options));
+                    if (payload) setPreviewData(payload);
                   }}
                 >
                   <Eye className="h-4 w-4" />Preview
