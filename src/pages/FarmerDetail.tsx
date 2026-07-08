@@ -58,7 +58,7 @@ import { LoanStatement } from "@/components/LoanStatement";
 import { downloadIrrigationInvoicePdf, loadInvoiceSettings } from "@/lib/irrigationInvoicePdf";
 import { ReceiptPreviewModal } from "@/components/irrigation/ReceiptPreviewModal";
 import { buildPaidHistory, type PaidHistoryRow } from "@/lib/irrigationReceiptHistory";
-import { buildPaymentReceiptData } from "@/lib/buildPaymentReceiptData";
+import { buildPaymentReceiptData, fetchPaymentReceiptData } from "@/lib/buildPaymentReceiptData";
 import { IrrigationReceiptPreviewDialog } from "@/components/receipts/IrrigationReceiptPreviewDialog";
 import type { ReceiptCopy } from "@/lib/bnReceipts";
 import { formatLand, parseLandInput, normalizeLandSize } from "@/lib/landMath";
@@ -1979,7 +1979,7 @@ export default function FarmerDetail() {
                     const items = [] as { data: BnReceiptData; copy: ReceiptCopy; options: any }[];
                     for (const p of rows) {
                       items.push({
-                        data: await buildPaymentReceiptData(p, { brand, receiptArgs, tx }),
+                        data: await fetchPaymentReceiptData(p.id, { brand, receiptArgs, tx }),
                         copy: p.kind === "irrigation" ? "farmer" : "both",
                         options: receiptArgs.options,
                       });
@@ -2017,7 +2017,7 @@ export default function FarmerDetail() {
               {payments.map((p) => {
                 const prefix = p.kind === "loan" ? "LOAN" : p.kind === "irrigation" ? "IRR" : "SAV";
                 const receiptNo = p.receipt_no || autoReceiptNo(prefix as any, p.id, new Date(p.created_at));
-                const buildData = () => buildPaymentReceiptData(p, { brand, receiptArgs, tx });
+                const buildData = () => fetchPaymentReceiptData(p.id, { brand, receiptArgs, tx });
                 return (
                 <TableRow key={p.id}>
                   <TableCell>
