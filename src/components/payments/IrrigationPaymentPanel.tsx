@@ -849,9 +849,51 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
                 </Badge>
               ))}
             </div>
+            {lastPaymentId && (
+              <div className="mt-3 flex flex-wrap gap-2">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={async () => {
+                    try {
+                      setPreviewData(await fetchPaymentReceiptData(lastPaymentId, { brand, receiptArgs, tx }));
+                    } catch (e: any) {
+                      toast.error(e?.message ?? tx("Receipt preview failed", "রসিদ প্রিভিউ ব্যর্থ"));
+                    }
+                  }}
+                >
+                  {tx("Preview receipt", "রসিদ প্রিভিউ")}
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={async () => {
+                    try {
+                      const data = await fetchPaymentReceiptData(lastPaymentId, { brand, receiptArgs, tx });
+                      await downloadBnReceiptPdf(data, "farmer", receiptArgs.options);
+                    } catch (e: any) {
+                      toast.error(e?.message ?? tx("Receipt download failed", "রসিদ ডাউনলোড ব্যর্থ"));
+                    }
+                  }}
+                >
+                  {tx("Download receipt", "রসিদ ডাউনলোড")}
+                </Button>
+              </div>
+            )}
           </AlertDescription>
         </Alert>
       )}
+
+      <IrrigationReceiptPreviewDialog
+        open={!!previewData}
+        onOpenChange={(o) => !o && setPreviewData(null)}
+        data={previewData}
+        copy="farmer"
+        options={receiptArgs.options}
+      />
+
 
 
 
