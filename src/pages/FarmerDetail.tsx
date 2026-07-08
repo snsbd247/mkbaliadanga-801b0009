@@ -32,7 +32,7 @@ import { validateDagNumbers, findDuplicateDagInMouza, normalizeDagInput } from "
 import { MouzaSelect } from "@/components/locations/MouzaSelect";
 import { SavingsStatement } from "@/components/SavingsStatement";
 import { EditButton, DeleteButton } from "@/components/ui/action-icon-button";
-import { downloadBnReceiptPdf, normalizeIrrigationRatePerAcre, type BnReceiptData } from "@/lib/bnReceipts";
+import { downloadBnReceiptPdf, downloadBnReceiptsPdf, normalizeIrrigationRatePerAcre, type BnReceiptData } from "@/lib/bnReceipts";
 import { autoReceiptNo } from "@/lib/receiptNo";
 import { calcInvoice, getChargeSettings } from "@/lib/irrigationInvoice";
 import { ReceiptCopyMenu } from "@/components/receipts/ReceiptCopyMenu";
