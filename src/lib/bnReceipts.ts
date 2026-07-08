@@ -369,6 +369,7 @@ const STR = {
     totalLoan: "Installment received:",
     totalIrr: "Total collected:",
     discount: "Discount:",
+    breakdown: "Breakdown (hāl+hāl penalty+arrears+arrears penalty−discount):",
     remark: "Remark / Note:",
     memberSig: "Member signature",
     collectorSig: "Collector signature",
