@@ -4,6 +4,7 @@
 
 export type ReceiptFarmer = {
   account_number?: string | number | null;
+  voter_number?: string | number | null;
   savings_inactive?: boolean | null;
   is_voter?: boolean | null;
 } | null | undefined;
@@ -17,8 +18,9 @@ export function savingsNoOf(farmer: ReceiptFarmer): string | null {
   // Savings A/C exists only for voter members; non-voters have no savings no.
   if (farmer.is_voter === false) return null;
   if (farmer.savings_inactive) return null;
-  if (farmer.account_number == null || farmer.account_number === "") return null;
-  return String(farmer.account_number);
+  const savingsNo = farmer.account_number ?? farmer.voter_number ?? null;
+  if (savingsNo == null || savingsNo === "") return null;
+  return String(savingsNo);
 }
 
 /**

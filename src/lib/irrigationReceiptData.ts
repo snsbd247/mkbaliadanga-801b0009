@@ -206,7 +206,7 @@ export async function buildIrrigationReceiptEnrichment(
     if (ownerIds.length) {
       const { data: ownerRows } = await db
         .from("farmers")
-        .select("id,name_bn,name_en,member_no,farmer_code,account_number,savings_inactive,is_voter")
+        .select("id,name_bn,name_en,member_no,farmer_code,account_number,voter_number,savings_inactive,is_voter")
         .in("id", ownerIds);
       for (const o of ownerRows ?? []) ownerById[(o as any).id] = o;
     }
@@ -265,7 +265,7 @@ export async function buildIrrigationReceiptEnrichment(
   if (cultivatorId) {
     const { data } = await db
       .from("farmers")
-      .select("id,name_bn,name_en,member_no,farmer_code,account_number,savings_inactive,is_voter")
+      .select("id,name_bn,name_en,member_no,farmer_code,account_number,voter_number,savings_inactive,is_voter")
       .eq("id", cultivatorId)
       .maybeSingle();
     cultivatorFarmer = data ?? null;

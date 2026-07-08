@@ -13,6 +13,7 @@ import { fmtDate } from "@/lib/format";
 import { toast } from "sonner";
 import { downloadBnReceiptPdf, normalizeIrrigationRatePerAcre, ratePerBighaFromAcre } from "@/lib/bnReceipts";
 import { loadBranding } from "@/lib/branding";
+import { buildMemberSummary } from "@/lib/receiptMemberSummary";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import * as XLSX from "xlsx";
@@ -45,6 +46,7 @@ type PaidRow = {
   holding_description: string | null;
   patwari_name: string | null;
   patwari_mobile: string | null;
+  verify_token: string | null;
 };
 
 const money = (v: number) => Number(v || 0).toLocaleString("bn-BD", { maximumFractionDigits: 2 });
@@ -74,12 +76,12 @@ export function PaidLandHistory({ farmerId }: Props) {
         .from("irrigation_invoice_payments")
         .select(
           "collected_amount, irrigation_collected, maintenance_collected, canal_collected, delay_fee_collected, current_invoice_collected, previous_due_collected, created_at, " +
-          "invoice:irrigation_invoices!inner(invoice_no, farmer_id, season_rate, irrigation_amount, land_type_name, due_amount, is_borga, lands(dag_no, mouza, land_size, notes, patwaris(name,name_bn,mobile), owner:farmers!lands_owner_farmer_id_fkey(name_bn,name_en,member_no,farmer_code)), seasons(name,year,type)), " +
-          "payment:payments(receipt_no, created_at, status, voided_at)"
+          "invoice:irrigation_invoices!inner(invoice_no, farmer_id, season_rate, irrigation_amount, land_type_name, due_amount, is_borga, lands(dag_no, mouza, land_size, notes, patwaris(name,name_bn,mobile), owner:farmers!lands_owner_farmer_id_fkey(name_bn,name_en,member_no,farmer_code,account_number,voter_number,savings_inactive,is_voter)), seasons(name,year,type)), " +
+          "payment:payments(receipt_no, created_at, status, voided_at, verify_token)"
         )
         .eq("invoice.farmer_id", farmerId)
         .order("created_at", { ascending: false }),
-      db.from("farmers").select("name_bn,name_en,member_no,farmer_code,father_name,mobile,village,office_id,union_id").eq("id", farmerId).maybeSingle(),
+      db.from("farmers").select("name_bn,name_en,member_no,farmer_code,account_number,voter_number,savings_inactive,is_voter,father_name,mobile,village,office_id,union_id").eq("id", farmerId).maybeSingle(),
     ]);
     const list: PaidRow[] = (data ?? []).map((r: any) => {
       const acreRate = normalizeIrrigationRatePerAcre(r.invoice?.season_rate, r.invoice?.irrigation_amount, r.invoice?.lands?.land_size);
@@ -106,12 +108,13 @@ export function PaidLandHistory({ farmerId }: Props) {
         current_collected: Number(r.current_invoice_collected || 0),
         previous_collected: Number(r.previous_due_collected || 0),
         cancelled: r.payment?.status === "cancelled" || !!r.payment?.voided_at,
-        member_summary: `${f?.member_no ?? f?.farmer_code ?? "N/A"}/${(isBorga && ownerMember) ? ownerMember : "N/A"}`,
+        member_summary: buildMemberSummary({ cultivator: f, owner, isBorga }),
         owner_self: !isBorga,
         land_owner_label: isBorga && owner ? `${owner.name_bn || owner.name_en || ""}${ownerMember ? "-" + ownerMember : ""}` : "নিজ",
         holding_description: r.invoice?.lands?.notes ?? null,
         patwari_name: r.invoice?.lands?.patwaris ? (r.invoice.lands.patwaris.name_bn || r.invoice.lands.patwaris.name) : null,
         patwari_mobile: r.invoice?.lands?.patwaris?.mobile ?? null,
+        verify_token: r.payment?.verify_token ?? null,
       };
     });
     setRows(list);
@@ -189,7 +192,7 @@ export function PaidLandHistory({ farmerId }: Props) {
         patwari_name: r.patwari_name,
         patwari_mobile: r.patwari_mobile,
         collected_amount: r.amount,
-        verify_url: `${window.location.origin}/r/${r.receipt_no}`,
+        verify_url: r.verify_token ? `${window.location.origin}/r/${r.verify_token}` : `${window.location.origin}/r/legacy-${encodeURIComponent(r.receipt_no)}`,
       }, "farmer");
     } catch (e: any) {
       toast.error(e?.message ?? tx("Receipt download failed", "রসিদ ডাউনলোড ব্যর্থ"));
