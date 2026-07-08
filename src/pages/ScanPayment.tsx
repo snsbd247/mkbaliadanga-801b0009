@@ -24,6 +24,7 @@ import { useReceiptRenderArgs } from "@/lib/receiptOptions";
 import { ReceiptSettingsButton } from "@/components/receipts/ReceiptSettingsButton";
 import { ReceiptCopyMenu } from "@/components/receipts/ReceiptCopyMenu";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { IrrigationReceiptPreviewDialog } from "@/components/receipts/IrrigationReceiptPreviewDialog";
 
 const FN = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1`;
 
