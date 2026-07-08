@@ -112,7 +112,7 @@ export async function buildPaymentReceiptData(p: any, ctx: ReceiptBuildContext):
  * module renders the identical সেচ চার্জ ও বিবিধ আদায় রশিদ.
  */
 export const RECEIPT_PAY_SELECT =
-  "*, farmers(name_en,name_bn,farmer_code,member_no,mobile,village,father_name,voter_number,account_number,is_voter,union_id), patwaris(name,name_bn,mobile), payment_allocations(*)";
+  "*, farmers(name_en,name_bn,farmer_code,member_no,mobile,village,father_name,voter_number,account_number,savings_inactive,is_voter,union_id), patwaris(name,name_bn,mobile), payment_allocations(*)";
 
 /**
  * Fetch a payment row by id and build the identical receipt payload used on the
