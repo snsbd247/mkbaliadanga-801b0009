@@ -57,7 +57,7 @@ export function IrrigationReceiptPreviewDialog({ open, onOpenChange, data, copy 
                 : tx("none", "নেই")}
           </Badge>
         )}
-        <div className="mx-auto w-full max-w-2xl overflow-hidden rounded-md border bg-muted" style={{ aspectRatio: "210 / 148" }}>
+        <div className="mx-auto w-full max-w-md overflow-hidden rounded-md border bg-muted" style={{ aspectRatio: "210 / 297" }}>
           {loading || !url
             ? <div className="flex h-full items-center justify-center text-muted-foreground"><Loader2 className="h-5 w-5 animate-spin mr-2" />{tx("Rendering…", "তৈরি হচ্ছে…")}</div>
             : <iframe title="receipt-preview" src={url} className="h-full w-full" />}
