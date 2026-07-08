@@ -57,6 +57,8 @@ const money = (v: number) => Number(v || 0).toLocaleString("bn-BD", { maximumFra
 
 export function PaidLandHistory({ farmerId }: Props) {
   const { t, tx } = useLang();
+  const brand = useBranding();
+  const receiptArgs = useReceiptRenderArgs();
   const [rows, setRows] = useState<PaidRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [farmer, setFarmer] = useState<any>(null);
