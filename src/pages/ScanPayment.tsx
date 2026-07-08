@@ -48,7 +48,7 @@ async function sha256Hex(s: string): Promise<string> {
 }
 
 export default function ScanPayment() {
-  const { t } = useLang();
+  const { t, tx } = useLang();
   const { user } = useAuth();
   const [scanning, setScanning] = useState(false);
   const [resolving, setResolving] = useState(false);
