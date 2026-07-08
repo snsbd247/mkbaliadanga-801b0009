@@ -653,7 +653,7 @@ function copyHtml(d: BnReceiptData, copyLabel: string, signatureUrl: string | nu
         <div style="border-top:1px solid #111;padding-top:2px;min-width:260px;">${lang === "bn" ? "সদস্যের স্বাক্ষর/প্রদানকারীর স্বাক্ষর" : "Member / Payer signature"}</div>
         <div style="text-align:right;min-width:300px;">
           ${signatureUrl
-            ? `<img src="${signatureUrl}" crossorigin="anonymous" style="height:60px;margin:0 0 4px auto;display:block;" data-sig="filled" />`
+            ? `<img src="${signatureUrl}" crossorigin="anonymous" style="height:96px;margin:0 0 4px auto;display:block;object-fit:contain;" data-sig="filled" />`
             : ""}
           <div style="border-top:1px solid #111;padding-top:4px;font-size:22px;font-weight:600;">${t.collectorSig}</div>
         </div>
