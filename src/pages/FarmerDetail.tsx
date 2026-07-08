@@ -2046,7 +2046,7 @@ export default function FarmerDetail() {
                     >
                       {tx("Preview", "প্রিভিউ")}
                     </Button>
-                    <ReceiptCopyMenu size="sm" label={t("pgDownload" as any)} onSelect={async (c) => downloadBnReceiptPdf(await buildData(), c, receiptArgs.options)} />
+                    <ReceiptCopyMenu size="sm" singleCopy={p.kind === "irrigation"} label={t("pgDownload" as any)} onSelect={async (c) => downloadBnReceiptPdf(await buildData(), c, receiptArgs.options)} />
                     {isSuper && <DeleteButton onConfirm={() => deletePayment(p)} title={t("delete")} />}
                   </TableCell>
                 </TableRow>
