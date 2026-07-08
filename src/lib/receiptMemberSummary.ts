@@ -25,7 +25,14 @@ export function savingsNoOf(farmer: ReceiptFarmer): string | null {
   // caller shows "নাই" for that side.
   const savingsNo = farmer.account_number ?? farmer.voter_number ?? null;
   if (savingsNo == null || savingsNo === "") return null;
-  return String(savingsNo);
+  const value = String(savingsNo);
+  // Validation guard: reject the Farmer ID (member_no/farmer_code) even if a
+  // caller accidentally routed it into account_number/voter_number. The savings
+  // number field must never display the Farmer ID.
+  const anyFarmer = farmer as Record<string, unknown>;
+  const farmerId = anyFarmer.member_no ?? anyFarmer.farmer_code;
+  if (farmerId != null && farmerId !== "" && String(farmerId) === value) return null;
+  return value;
 }
 
 /**
