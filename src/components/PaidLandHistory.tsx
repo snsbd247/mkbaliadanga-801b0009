@@ -119,6 +119,7 @@ export function PaidLandHistory({ farmerId }: Props) {
         patwari_name: r.invoice?.lands?.patwaris ? (r.invoice.lands.patwaris.name_bn || r.invoice.lands.patwaris.name) : null,
         patwari_mobile: r.invoice?.lands?.patwaris?.mobile ?? null,
         verify_token: r.payment?.verify_token ?? null,
+        payment_id: r.payment?.id ?? null,
       };
     });
     setRows(list);
