@@ -6520,6 +6520,10 @@ export type Database = {
       count_farmer_invoices: { Args: { _farmer_id: string }; Returns: number }
       current_user_office: { Args: never; Returns: string }
       data_integrity_scan: { Args: never; Returns: Json }
+      delete_payment_cascade: {
+        Args: { _payment_id: string }
+        Returns: undefined
+      }
       email_for_username: { Args: { _username: string }; Returns: string }
       exec_sql_admin: { Args: { sql: string }; Returns: undefined }
       farmer_dues_breakdown: {
