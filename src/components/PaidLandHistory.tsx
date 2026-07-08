@@ -344,42 +344,13 @@ export function PaidLandHistory({ farmerId }: Props) {
         </TableBody>
       </Table>
 
-      {/* Per-row print preview before download */}
-      <Dialog open={!!preview} onOpenChange={(o) => !o && setPreview(null)}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>{tx("Receipt Preview", "রসিদ প্রিভিউ")}</DialogTitle>
-          </DialogHeader>
-          {preview && (
-            <div className="text-sm space-y-2">
-              <div className="text-center font-semibold">{office?.name_bn || office?.name || branding_fallback()}</div>
-              <div className="text-center text-muted-foreground">{tx("Irrigation Receipt", "সেচ রসিদ")}</div>
-              <div className="flex justify-between"><span>{tx("Receipt No", "রসিদ নং")}</span><span className="font-medium">{preview.receipt_no}</span></div>
-              <div className="flex justify-between"><span>{tx("Date", "তারিখ")}</span><span>{preview.paid_on ? fmtDate(preview.paid_on) : "—"}</span></div>
-              <div className="flex justify-between"><span>{tx("Farmer", "কৃষক")}</span><span>{farmer?.name_bn || farmer?.name_en || "—"}</span></div>
-              <div className="flex justify-between"><span>{tx("Member No", "সদস্য নং")}</span><span>{farmer?.member_no ?? farmer?.farmer_code ?? "—"}</span></div>
-              <div className="flex justify-between"><span>{tx("Season", "সিজন")}</span><span>{preview.season}</span></div>
-              <div className="flex justify-between"><span>{tx("Dag / Mouza", "দাগ / মৌজা")}</span><span>{preview.dag_no} / {preview.mouza}</span></div>
-              <div className="flex justify-between"><span>{tx("Land (shotok)", "জমি (শতক)")}</span><span>{preview.land_size ?? "—"}</span></div>
-              <hr />
-              <div className="font-medium">{tx("Payment breakdown", "পেমেন্ট বিভাজন")}</div>
-              <div className="flex justify-between"><span>{tx("Irrigation", "সেচ")}</span><span>{money(preview.irrigation)}</span></div>
-              <div className="flex justify-between"><span>{tx("Maintenance", "রক্ষণাবেক্ষণ")}</span><span>{money(preview.maintenance)}</span></div>
-              <div className="flex justify-between"><span>{tx("Canal", "নালা")}</span><span>{money(preview.canal)}</span></div>
-              <div className="flex justify-between"><span>{tx("Delay fee", "বিলম্ব ফি")}</span><span>{money(preview.delay_fee)}</span></div>
-              <div className="flex justify-between"><span>{tx("From previous due", "পূর্বের বকেয়া থেকে")}</span><span>{money(preview.previous_collected)}</span></div>
-              <hr />
-              <div className="flex justify-between font-semibold"><span>{tx("Total collected", "মোট আদায়")}</span><span>{money(preview.amount)}</span></div>
-            </div>
-          )}
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setPreview(null)}>{tx("Close", "বন্ধ")}</Button>
-            <Button onClick={() => preview && downloadReceipt(preview)}>
-              <Download className="h-4 w-4 mr-1" />{tx("Download PDF", "পিডিএফ ডাউনলোড")}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* Canonical print-ready preview, identical to the Payments page receipt */}
+      <IrrigationReceiptPreviewDialog
+        open={!!previewData}
+        onOpenChange={(o) => !o && setPreviewData(null)}
+        data={previewData}
+        copy="farmer"
+      />
     </Card>
   );
 
