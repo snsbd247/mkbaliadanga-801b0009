@@ -372,7 +372,7 @@ export default function Payments() {
   }
 
   async function load() {
-    let pq = db.from("payments").select("*, farmers(name_en,name_bn,farmer_code,member_no,mobile,village,father_name,voter_number,account_number,is_voter,union_id), patwaris(name,name_bn,mobile), payment_allocations(*)").order("created_at", { ascending: false }).limit(100);
+    let pq = db.from("payments").select("*, farmers(name_en,name_bn,farmer_code,member_no,mobile,village,father_name,voter_number,account_number,is_voter,union_id), patwaris(name,name_bn,mobile), offices(name), payment_allocations(*)").order("created_at", { ascending: false }).limit(100);
     pq = showDeleted ? pq.not("deleted_at", "is", null) : pq.is("deleted_at", null);
     if (period !== "all") {
       const now = new Date();
