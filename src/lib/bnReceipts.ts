@@ -811,7 +811,13 @@ async function renderPdf(data: BnReceiptData, copy: ReceiptCopy, options?: Recei
   try {
     await new Promise((r) => setTimeout(r, 60));
     const canvas = await html2canvas(node, { scale: 2, useCORS: true, backgroundColor: "#ffffff" });
-    const pdf = new jsPDF({ unit: "mm", format: opts.paper, orientation: opts.orientation });
+    let pdf: jsPDF;
+    if (target) {
+      target.addPage(opts.paper, opts.orientation);
+      pdf = target;
+    } else {
+      pdf = new jsPDF({ unit: "mm", format: opts.paper, orientation: opts.orientation });
+    }
     const pageW = pdf.internal.pageSize.getWidth();
     const pageH = pdf.internal.pageSize.getHeight();
     const innerW = pageW - opts.margins.l - opts.margins.r;
