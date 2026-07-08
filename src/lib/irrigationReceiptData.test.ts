@@ -67,7 +67,7 @@ describe("buildIrrigationReceiptEnrichment", () => {
     resultQueue.push({ data: [baseLand] });
     resultQueue.push({ data: [patwariRow] });
     resultQueue.push({ data: [{ due_amount: 0 }] });
-    resultQueue.push({ data: { id: "cult-1", name_bn: "মোঃ মাসুদ", member_no: "1920", account_number: "1920", savings_inactive: false } });
+    resultQueue.push({ data: { id: "cult-1", name_bn: "মোঃ মাসুদ", member_no: "1920", account_number: "1920", savings_inactive: false, is_voter: true } });
 
     const e = await buildIrrigationReceiptEnrichment({
       farmerId: "cult-1",
@@ -92,7 +92,7 @@ describe("buildIrrigationReceiptEnrichment", () => {
     resultQueue.push({ data: [baseLand] });
     resultQueue.push({ data: [patwariRow] });
     resultQueue.push({ data: [{ due_amount: 0 }] });
-    resultQueue.push({ data: { id: "cult-1", name_bn: "মোঃ মাসুদ", member_no: "1920", account_number: "1920", savings_inactive: false } });
+    resultQueue.push({ data: { id: "cult-1", name_bn: "মোঃ মাসুদ", member_no: "1920", account_number: "1920", savings_inactive: false, is_voter: true } });
 
     const e = await buildIrrigationReceiptEnrichment({
       farmerId: "cult-1",
@@ -111,7 +111,7 @@ describe("buildIrrigationReceiptEnrichment", () => {
     resultQueue.push({ data: [patwariRow] });
     resultQueue.push({ data: { id: "pat-manual", name: "Manual", name_bn: "ম্যানুয়াল পাটুয়ারি", mobile: "0180000000" } });
     resultQueue.push({ data: [{ due_amount: 0 }] });
-    resultQueue.push({ data: { id: "cult-1", name_bn: "মোঃ মাসুদ", member_no: "1920", account_number: "1920", savings_inactive: false } });
+    resultQueue.push({ data: { id: "cult-1", name_bn: "মোঃ মাসুদ", member_no: "1920", account_number: "1920", savings_inactive: false, is_voter: true } });
 
     const e = await buildIrrigationReceiptEnrichment({
       farmerId: "cult-1",
@@ -127,15 +127,15 @@ describe("buildIrrigationReceiptEnrichment", () => {
 
 
 
-  it("shows borgadar + owner names and N/A when cultivator is not a savings member", async () => {
+  it("shows borgadar savings number and নাই for a non-voter owner", async () => {
     const borgaInvoice = { ...baseInvoice, is_borga: true };
     const borgaLand = { ...baseLand, owner_farmer_id: "own-1", patwari_id: null };
     // Query order: invoices, lands, owner farmers, totalOutstanding, cultivator.
     resultQueue.push({ data: [borgaInvoice] });
     resultQueue.push({ data: [borgaLand] });
-    resultQueue.push({ data: [{ id: "own-1", name_bn: "মালিক সাহেব", member_no: "1687", farmer_code: null }] });
+    resultQueue.push({ data: [{ id: "own-1", name_bn: "মালিক সাহেব", member_no: "1687", farmer_code: null, account_number: "1687", is_voter: false, savings_inactive: false }] });
     resultQueue.push({ data: [{ due_amount: 0 }] });
-    resultQueue.push({ data: { id: "cult-1", name_bn: "বর্গা চাষি", member_no: "1920", account_number: null, savings_inactive: false } });
+    resultQueue.push({ data: { id: "cult-1", name_bn: "বর্গা চাষি", member_no: "1920", account_number: "1920", savings_inactive: false, is_voter: true } });
 
     const e = await buildIrrigationReceiptEnrichment({
       farmerId: "cult-1",
@@ -147,8 +147,8 @@ describe("buildIrrigationReceiptEnrichment", () => {
     expect(e.owner_self).toBe(false);
     expect(e.cultivator_label).toBe("বর্গা চাষি-1920");
     expect(e.land_owner_label).toBe("মালিক সাহেব-1687");
-    // No savings account number → N/A.
-    expect(e.member_summary).toBe("N/A");
+    // Cultivator savings no first; non-voter owner has no savings no.
+    expect(e.member_summary).toBe("1920/নাই");
   });
 
   it("returns safe defaults when no invoices exist", async () => {
@@ -157,6 +157,6 @@ describe("buildIrrigationReceiptEnrichment", () => {
     const e = await buildIrrigationReceiptEnrichment({ farmerId: "x", memberNoFallback: null });
     expect(e.farmerExtras.mouza).toBeNull();
     expect(e.bill_info).toBe("সেচ চার্জ");
-    expect(e.member_summary).toBe("N/A");
+    expect(e.member_summary).toBe("নাই");
   });
 });

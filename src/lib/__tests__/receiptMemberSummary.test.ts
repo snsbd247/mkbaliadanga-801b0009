@@ -6,6 +6,7 @@ describe("savingsNoOf", () => {
     expect(savingsNoOf({ account_number: "123", savings_inactive: false })).toBe("123");
     expect(savingsNoOf({ account_number: 456 })).toBe("456");
     expect(savingsNoOf({ account_number: "123", is_voter: true })).toBe("123");
+    expect(savingsNoOf({ voter_number: "789", is_voter: true })).toBe("789");
   });
   it("returns null for inactive / non-voter / non-member / missing", () => {
     expect(savingsNoOf({ account_number: "123", savings_inactive: true })).toBeNull();

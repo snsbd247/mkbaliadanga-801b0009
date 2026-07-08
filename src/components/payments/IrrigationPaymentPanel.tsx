@@ -31,10 +31,11 @@ import { recalcInvoice } from "@/lib/invoiceRecalc";
 import { resolveReceiptPatwari } from "@/lib/receiptPatwari";
 import { verifyInvoiceConsistency } from "@/lib/invoiceBreakdown";
 import { nextUnifiedReceiptNo } from "@/lib/monthlyReceiptNo";
+import { buildMemberSummary } from "@/lib/receiptMemberSummary";
 
 // Shared select for open irrigation invoices (used by both initial load and reload).
 const OPEN_INVOICE_SELECT =
-  "id,invoice_no,season_id,office_id,land_id,owner_farmer_id,is_borga,due_date,due_amount,paid_amount,payable_amount,irrigation_amount,delay_fee,maintenance_amount,canal_amount,other_charge,season_rate,land_type_name,irrigation_category_name,invoice_status,deleted_at,seasons(name,year,status),lands(mouza,land_size,dag_no,field_type,notes,patwari_id),owner:farmers!irrigation_invoices_owner_farmer_id_fkey(name_bn,name_en,member_no,farmer_code)";
+  "id,invoice_no,season_id,office_id,land_id,owner_farmer_id,is_borga,due_date,due_amount,paid_amount,payable_amount,irrigation_amount,delay_fee,maintenance_amount,canal_amount,other_charge,season_rate,land_type_name,irrigation_category_name,invoice_status,deleted_at,seasons(name,year,status),lands(mouza,land_size,dag_no,field_type,notes,patwari_id),owner:farmers!irrigation_invoices_owner_farmer_id_fkey(name_bn,name_en,member_no,farmer_code,account_number,voter_number,savings_inactive,is_voter)";
 
 
 type Invoice = {
@@ -69,7 +70,7 @@ type Invoice = {
     patwari_id?: string | null;
     patwaris?: { name: string | null; name_bn: string | null; mobile: string | null } | null;
   } | null;
-  owner?: { name_bn: string | null; name_en: string | null; member_no?: string | null; farmer_code?: string | null } | null;
+  owner?: { name_bn: string | null; name_en: string | null; member_no?: string | null; farmer_code?: string | null; account_number?: string | null; voter_number?: string | null; savings_inactive?: boolean | null; is_voter?: boolean | null } | null;
 };
 
 // All money values are whole-taka (round figure). Land sizes keep decimals.
@@ -672,7 +673,7 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
       }
 
       const [{ data: farmer }, { data: company }] = await Promise.all([
-        db.from("farmers").select("name_bn,name_en,member_no,farmer_code,father_name,village,mobile,office_id,union_id").eq("id", farmerId).maybeSingle(),
+        db.from("farmers").select("name_bn,name_en,member_no,farmer_code,account_number,voter_number,savings_inactive,is_voter,father_name,village,mobile,office_id,union_id").eq("id", farmerId).maybeSingle(),
         db.from("company_settings").select("company_name,company_name_bn,address,mobile,email,registration_no,logo_url,editor_signature_url").eq("id", 1).maybeSingle(),
       ]);
       // ইউনিয়ন: farmers.union_id থেকে unions লুকআপ টেবিল হতে নাম স্বয়ংক্রিয়ভাবে আনা
@@ -722,7 +723,11 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
       const ownerName = ownerRep?.owner ? (lang === "bn" ? ownerRep.owner.name_bn : ownerRep.owner.name_en) || ownerRep.owner.name_bn || ownerRep.owner.name_en : null;
       const ownerMember = ownerRep?.owner?.member_no || ownerRep?.owner?.farmer_code || null;
       const ownerLabel = ownerName ? `${ownerName}${ownerMember ? "-" + ownerMember : ""}` : null;
-      const memberSummary = `${farmer?.member_no ?? farmer?.farmer_code ?? "N/A"}/${(isBorga && ownerMember) ? ownerMember : "N/A"}`;
+      const memberSummary = buildMemberSummary({
+        cultivator: farmer,
+        owner: ownerRep?.owner,
+        isBorga,
+      });
       const billInfo = Array.from(new Set(
         allReceiptInvoices
           .map((inv) => {

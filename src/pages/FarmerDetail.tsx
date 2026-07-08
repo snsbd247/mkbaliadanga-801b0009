@@ -66,6 +66,7 @@ import { LandAmountBreakdown } from "@/components/LandAmountBreakdown";
 import { LandNoteCell } from "@/components/farmers/LandNoteCell";
 import { Textarea } from "@/components/ui/textarea";
 import { LandTypeSelect, useLandTypes, landTypeLabel } from "@/components/locations/LandTypeSelect";
+import { buildMemberSummary } from "@/lib/receiptMemberSummary";
 
 type LandRow = LandExportRow & { id: string; mouza_id?: string | null; ward_id?: string | null; owner_farmer_id?: string | null; land_type_id?: string | null };
 
@@ -551,7 +552,7 @@ export default function FarmerDetail() {
       if (allocIds.length) {
         const { data } = await db
           .from("irrigation_invoices")
-          .select("id,invoice_no,irrigation_amount,maintenance_amount,canal_amount,delay_fee,due_amount,discount_amount,season_rate,is_borga,note,seasons(name,year,status),land_type_name,irrigation_category_name,lands(mouza,dag_no,land_size,field_type,land_type_id,owner_type,owner_farmer_id,notes,patwaris(name,name_bn,mobile),owner:farmers!lands_owner_farmer_id_fkey(name_bn,name_en,member_no,farmer_code))")
+          .select("id,invoice_no,irrigation_amount,maintenance_amount,canal_amount,delay_fee,due_amount,discount_amount,season_rate,is_borga,note,seasons(name,year,status),land_type_name,irrigation_category_name,lands(mouza,dag_no,land_size,field_type,land_type_id,owner_type,owner_farmer_id,notes,patwaris(name,name_bn,mobile),owner:farmers!lands_owner_farmer_id_fkey(name_bn,name_en,member_no,farmer_code,account_number,voter_number,savings_inactive,is_voter))")
           .in("id", allocIds);
         invoiceRows = data ?? [];
       }
@@ -578,7 +579,7 @@ export default function FarmerDetail() {
       irrigationExtras = {
         bill_info: billInfo,
         village_union: await getFarmerUnionName(),
-        member_summary: `${farmer?.member_no ?? farmer?.farmer_code ?? "N/A"}/${(isBorga && ownerMember) ? ownerMember : "N/A"}`,
+        member_summary: buildMemberSummary({ cultivator: farmer, owner: ownerFarmer, isBorga }),
         owner_self: !isBorga,
         land_owner_label: isBorga && ownerName ? `${ownerName}${ownerMember ? "-" + ownerMember : ""}` : "নিজ",
         rate: normalizeIrrigationRatePerAcre(primary?.season_rate, primary?.irrigation_amount, land?.land_size),
@@ -703,15 +704,17 @@ export default function FarmerDetail() {
 
     // Land owner label: "নিজ" for self, otherwise "Owner Name (member_no)"
     let landOwnerLabel: string | null = null;
+    let ownerFarmer: any = null;
     let ownerMemberNo: string | null = null;
     if (land) {
       if (land.owner_type === "borgadar" && land.owner_farmer_id && land.owner_farmer_id !== farmer?.id) {
         const { data: own } = await db
           .from("farmers")
-          .select("name_bn,name_en,member_no,farmer_code")
+          .select("name_bn,name_en,member_no,farmer_code,account_number,voter_number,savings_inactive,is_voter")
           .eq("id", land.owner_farmer_id)
           .maybeSingle();
         if (own) {
+          ownerFarmer = own;
           ownerMemberNo = own.member_no || own.farmer_code || null;
           landOwnerLabel = `${own.name_bn || own.name_en}${ownerMemberNo ? "-" + ownerMemberNo : ""}`;
         } else {
@@ -759,7 +762,11 @@ export default function FarmerDetail() {
         owner_type_bn: land?.owner_type === "borgadar" ? "বর্গাদার" : land?.owner_type === "owner" ? "মালিক" : null,
       }),
       village_union: await getFarmerUnionName(),
-      member_summary: `${farmer?.member_no ?? farmer?.farmer_code ?? "N/A"}/${land?.owner_type === "borgadar" && land?.owner_farmer_id ? (ownerMemberNo ?? "N/A") : "N/A"}`,
+      member_summary: buildMemberSummary({
+        cultivator: farmer,
+        owner: land?.owner_type === "borgadar" && land?.owner_farmer_id ? ownerFarmer : null,
+        isBorga: land?.owner_type === "borgadar" && !!land?.owner_farmer_id,
+      }),
       owner_self: landOwnerLabel === tx("Self", "নিজ"),
       rate: normalizeIrrigationRatePerAcre(null, baseCharge, land?.land_size),
       charge_amount: Number(i.total),

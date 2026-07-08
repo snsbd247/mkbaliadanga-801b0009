@@ -2,7 +2,7 @@ import { db } from "@/lib/db";
 import { resolveFieldTypeLabel } from "@/lib/irrigationLandType";
 import { normalizeIrrigationRatePerAcre } from "@/lib/bnReceipts";
 import { joinNotes } from "@/lib/irrigationExports";
-import { buildMemberSummary, savingsNoOf } from "@/lib/receiptMemberSummary";
+import { buildMemberSummary } from "@/lib/receiptMemberSummary";
 
 // Placeholders shown on the receipt when patwari data is missing, so the field
 // is never silently blank.
@@ -206,7 +206,7 @@ export async function buildIrrigationReceiptEnrichment(
     if (ownerIds.length) {
       const { data: ownerRows } = await db
         .from("farmers")
-        .select("id,name_bn,name_en,member_no,farmer_code,account_number,savings_inactive,is_voter")
+        .select("id,name_bn,name_en,member_no,farmer_code,account_number,voter_number,savings_inactive,is_voter")
         .in("id", ownerIds);
       for (const o of ownerRows ?? []) ownerById[(o as any).id] = o;
     }
@@ -265,7 +265,7 @@ export async function buildIrrigationReceiptEnrichment(
   if (cultivatorId) {
     const { data } = await db
       .from("farmers")
-      .select("id,name_bn,name_en,member_no,farmer_code,account_number,savings_inactive,is_voter")
+      .select("id,name_bn,name_en,member_no,farmer_code,account_number,voter_number,savings_inactive,is_voter")
       .eq("id", cultivatorId)
       .maybeSingle();
     cultivatorFarmer = data ?? null;
@@ -308,7 +308,6 @@ export async function buildIrrigationReceiptEnrichment(
   const ownerMember = ownerFarmer?.member_no || ownerFarmer?.farmer_code || null;
   // "কৃষক এবং মালিক সভ্য সদস্য": বর্গা জমি → "বর্গাদারের Savings No / মালিকের Savings No";
   // নিজ জমি → শুধু চাষির Savings No। (pure helper — receiptMemberSummary.ts)
-  const cultivatorSavingsNo = savingsNoOf(cultivatorFarmer);
   const memberSummary = buildMemberSummary({
     cultivator: cultivatorFarmer,
     owner: ownerFarmer,
