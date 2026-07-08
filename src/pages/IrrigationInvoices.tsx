@@ -129,7 +129,7 @@ export default function IrrigationInvoices() {
 function InvoiceListTab({ seasons, offices, isSuper }: any) {
   const { tx, lang } = useLang();
   const { user } = useAuth();
-  const { confirm } = useConfirm();
+  const { confirm, dialog: confirmDialog } = useConfirm();
   const [rows, setRows] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(false);
   const persisted = useMemo<Record<string, string>>(() => {
@@ -944,6 +944,7 @@ function InvoiceListTab({ seasons, offices, isSuper }: any) {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+        {confirmDialog}
       </CardContent>
     </Card>
   );
