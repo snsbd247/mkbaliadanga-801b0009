@@ -66,7 +66,7 @@ export default function ScanPayment() {
   const brand = useBranding();
   const receiptArgs = useReceiptRenderArgs();
   const tpl = useReceiptTemplate();
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [previewData, setPreviewData] = useState<BnReceiptData | null>(null);
 
   function buildReceiptPayload(): BnReceiptData | null {
     if (!done || !resolved) return null;
