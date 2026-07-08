@@ -499,17 +499,6 @@ function copyHtml(d: BnReceiptData, copyLabel: string, signatureUrl: string | nu
     if (discount > 0) rows.push([t.discount, `-${moneyInt(discount, lang, "৳")}`]);
     // 12. মোট আদায়ের পরিমাণ (হাল + হাল জরিমানা + বকেয়া + বকেয়া জরিমানা − ছাড়)
     const totalDue = Math.max(0, halCharge + halPenalty + dueCharge + duePenalty - discount);
-    // Explicit computation breakdown mirroring the admin reconciliation panel.
-    const breakdownParts = [
-      `${moneyInt(halCharge, lang, "৳")}`,
-      `${moneyInt(halPenalty, lang, "৳")}`,
-      `${moneyInt(dueCharge, lang, "৳")}`,
-      `${moneyInt(duePenalty, lang, "৳")}`,
-    ].join(" + ");
-    const breakdownText = discount > 0
-      ? `${breakdownParts} − ${moneyInt(discount, lang, "৳")} = ${moneyInt(totalDue, lang, "৳")}`
-      : `${breakdownParts} = ${moneyInt(totalDue, lang, "৳")}`;
-    rows.push([t.breakdown, breakdownText]);
     const totalIrr = Number(d.collected_amount ?? 0) > 0 ? Number(d.collected_amount ?? 0) : totalDue;
     rows.push([t.totalIrr, moneyInt(totalIrr, lang, "৳")]);
     // 12. কথায়
@@ -521,16 +510,9 @@ function copyHtml(d: BnReceiptData, copyLabel: string, signatureUrl: string | nu
       : null;
     const holdingParts = [holdingDesc, patwariText].filter(Boolean).join(" / ");
     rows.push([t.holding, holdingParts || "—"]);
-    // 14. পরিশোধিত ইনভয়েসসমূহ — একাধিক ইনভয়েস কভার করলে বিস্তারিত তালিকা ও যোগফল
-    const covered = (d.covered_invoices ?? []).filter((c) => c && c.invoice_no);
-    if (covered.length > 0) {
-      const list = covered
-        .map((c) => `${digits(String(c.invoice_no), lang)} — ${moneyInt(Number(c.due_amount || 0), lang, "৳")}`)
-        .join("<br/>");
-      const sum = covered.reduce((s, c) => s + Number(c.due_amount || 0), 0);
-      const label = lang === "bn" ? "পরিশোধিত ইনভয়েস:" : "Invoices covered:";
-      rows.push([label, `${list}<br/><b>${lang === "bn" ? "যোগফল" : "Total"}: ${moneyInt(sum, lang, "৳")}</b>`]);
-    }
+    // 14. পরিশোধকৃত টাকা — যত টাকা পেমেন্ট করা হয়েছে
+    const paidLabel = lang === "bn" ? "পরিশোধকৃত টাকা:" : "Amount paid:";
+    rows.push([paidLabel, moneyInt(totalIrr, lang, "৳")]);
   } else {
     // কৃষকের নাম এবং কৃষক সদস্য নং: name - member_no - owner_type - voter/savings ref
     const memberRefSuffix = d.farmer.member_type_bn || d.farmer.member_ref_no
