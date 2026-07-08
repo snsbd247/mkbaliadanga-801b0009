@@ -20,6 +20,11 @@ vi.mock("jspdf", () => {
     default: class {
       internal = { pageSize: { getWidth: () => 210, getHeight: () => 297 } };
       addImage = vi.fn();
+      addPage = vi.fn();
+      setLineDashPattern = vi.fn();
+      setLineWidth = vi.fn();
+      setDrawColor = vi.fn();
+      line = vi.fn();
       save = vi.fn();
       output = () => "data:application/pdf;base64,xxx";
     },
