@@ -386,7 +386,9 @@ export default function Farmers() {
     return map;
   }
 
+  const loadSeqRef = useRef(0);
   async function load() {
+    const seq = ++loadSeqRef.current;
     // If the search includes dag-like tokens (comma / newline / whitespace
     // separated), also pull farmer_ids whose lands match ANY token. This lets
     // a search like "123, 124/A" find both single- and multi-dag lands.
@@ -424,11 +426,15 @@ export default function Farmers() {
       qy = qy.ilike("father_name", `%${fatherQ.trim()}%`);
     }
     const { data } = await qy;
+    // Latest-request-wins: ignore this response if a newer load started meanwhile.
+    if (seq !== loadSeqRef.current) return;
     const farmers = data ?? [];
     setList(farmers);
     if (farmers.length) {
       const ids = farmers.map((f: any) => f.id).filter(Boolean);
-      setDuesMap(await loadDueSummaryForFarmers(ids));
+      const dues = await loadDueSummaryForFarmers(ids);
+      if (seq !== loadSeqRef.current) return;
+      setDuesMap(dues);
     } else {
       setDuesMap({});
     }
