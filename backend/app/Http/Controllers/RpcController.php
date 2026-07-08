@@ -1230,5 +1230,68 @@ class RpcController extends Controller
 
         return ['ok' => true, 'affected' => $affected];
     }
+
+    // ── Receipt serial number generation (MySQL-backed) ─────────────────
+    // Atomically issues the next numeric receipt number, honouring the admin
+    // configured `receipt_serial_start` and never colliding with an existing
+    // used number. This is the SINGLE source of truth on the VPS backend so
+    // the serial start actually drives the generated receipt number.
+    protected function rpc_next_serial_receipt_no(array $p): string
+    {
+        return DB::transaction(function () {
+            // Highest actually-used numeric receipt number across payments/receipts.
+            $maxUsed = 0;
+            foreach (['payments', 'receipts'] as $tbl) {
+                if (Schema::hasTable($tbl) && Schema::hasColumn($tbl, 'receipt_no')) {
+                    $m = (int) (DB::table($tbl)
+                        ->whereRaw("receipt_no REGEXP '^[0-9]+$'")
+                        ->max(DB::raw('CAST(receipt_no AS UNSIGNED)')) ?? 0);
+                    if ($m > $maxUsed) {
+                        $maxUsed = $m;
+                    }
+                }
+            }
+
+            // Admin-configured serial start (treated as "last used" → next = start + 1).
+            $start = 0;
+            if (Schema::hasTable('receipt_settings') && Schema::hasColumn('receipt_settings', 'receipt_serial_start')) {
+                $start = (int) (DB::table('receipt_settings')->where('id', 1)->value('receipt_serial_start') ?? 0);
+            }
+
+            $counter = null;
+            if (Schema::hasTable('receipt_counters')) {
+                $counter = DB::table('receipt_counters')
+                    ->where('kind', 'SERIAL')->where('year', 0)
+                    ->lockForUpdate()->first();
+            }
+            $lastNo = $counter ? (int) $counter->last_no : 0;
+
+            // Baseline = highest of live counter, real max used, and (start - 1)
+            // so the very next receipt is exactly max(start, maxUsed + 1).
+            $baseline = max($lastNo, $maxUsed, max(0, $start - 1));
+            $next = $baseline + 1;
+
+            if (Schema::hasTable('receipt_counters')) {
+                if ($counter) {
+                    DB::table('receipt_counters')
+                        ->where('kind', 'SERIAL')->where('year', 0)
+                        ->update(['last_no' => $next, 'updated_at' => now()]);
+                } else {
+                    DB::table('receipt_counters')->insert([
+                        'kind' => 'SERIAL', 'year' => 0, 'last_no' => $next, 'updated_at' => now(),
+                    ]);
+                }
+            }
+
+            return (string) $next;
+        });
+    }
+
+    // Alias used by the unified paid-receipt flow (irrigation/savings/loan/combined).
+    protected function rpc_next_unified_receipt_no(array $p): string
+    {
+        return $this->rpc_next_serial_receipt_no($p);
+    }
 }
+
 
