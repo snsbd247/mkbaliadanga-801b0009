@@ -97,6 +97,21 @@ export default function ScanPayment() {
     };
   }
 
+  // For irrigation, load the full সেচ চার্জ রশিদ identical to the Payments page.
+  // Other kinds keep the lightweight scan payload.
+  async function resolveReceiptData(): Promise<BnReceiptData | null> {
+    if (!done) return null;
+    if (done.kind === "irrigation") {
+      try {
+        return await fetchPaymentReceiptData(done.paymentId, { brand, receiptArgs, tx });
+      } catch {
+        return buildReceiptPayload();
+      }
+    }
+    return buildReceiptPayload();
+  }
+
+
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const containerId = "qr-scan-payment";
 
