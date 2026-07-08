@@ -781,6 +781,39 @@ function resolveOpts(o?: ReceiptOptions) {
   };
 }
 
+/**
+ * Render a short Bengali/English label to a transparent PNG data URL using the
+ * browser canvas (jsPDF has no Bengali glyphs). Returns the data URL and its
+ * width/height ratio so callers can size it correctly on the page.
+ */
+async function textToDataUrl(text: string): Promise<{ data: string; ratio: number } | null> {
+  try {
+    if (typeof document === "undefined") return null;
+    try { await (document as any).fonts?.ready; } catch { /* noop */ }
+    const scale = 4;
+    const fontPx = 20;
+    const font = `bold ${fontPx}px 'Noto Sans Bengali','Hind Siliguri','SolaimanLipi',sans-serif`;
+    const measure = document.createElement("canvas").getContext("2d");
+    if (!measure) return null;
+    measure.font = font;
+    const w = Math.ceil(measure.measureText(text).width) + 8;
+    const h = Math.ceil(fontPx * 1.4);
+    const canvas = document.createElement("canvas");
+    canvas.width = w * scale;
+    canvas.height = h * scale;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return null;
+    ctx.scale(scale, scale);
+    ctx.font = font;
+    ctx.fillStyle = "#111";
+    ctx.textBaseline = "middle";
+    ctx.fillText(text, 4, h / 2);
+    return { data: canvas.toDataURL("image/png"), ratio: w / h };
+  } catch {
+    return null;
+  }
+}
+
 /** Fetch a remote image and return a data URL so html2canvas can always draw it. */
 async function imageUrlToDataUrl(url?: string | null): Promise<string | null> {
   if (!url) return null;
