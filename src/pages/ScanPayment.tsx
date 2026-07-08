@@ -349,14 +349,13 @@ export default function ScanPayment() {
         </Card>
       </div>
 
-      <Dialog open={!!previewUrl} onOpenChange={(o) => !o && setPreviewUrl(null)}>
-        <DialogContent className="max-w-3xl">
-          <DialogHeader><DialogTitle>{t("receiptPreview")}</DialogTitle></DialogHeader>
-          {previewUrl && (
-            <iframe src={previewUrl} title="Receipt preview" className="w-full h-[70vh] border rounded-md bg-white" />
-          )}
-        </DialogContent>
-      </Dialog>
+      <IrrigationReceiptPreviewDialog
+        open={!!previewData}
+        onOpenChange={(o) => !o && setPreviewData(null)}
+        data={previewData}
+        copy="both"
+        options={receiptArgs.options}
+      />
     </>
   );
 }
