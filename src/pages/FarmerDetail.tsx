@@ -21,6 +21,7 @@ import { useLang } from "@/i18n/LanguageProvider";
 import { money, money2, fmtDate } from "@/lib/format";
 import { toBool } from "@/lib/bool";
 import { computeIrrigationDue } from "@/lib/dues";
+import { computeInvoiceDue } from "@/lib/irrigationDue";
 import { toast } from "sonner";
 import { QRCodeSVG } from "qrcode.react";
 import { useNavigate } from "react-router-dom";
