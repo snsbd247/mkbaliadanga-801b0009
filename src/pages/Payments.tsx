@@ -1204,9 +1204,20 @@ export default function Payments() {
             <div className="py-6 text-center text-muted-foreground">{tx("Loading…", "লোড হচ্ছে…")}</div>
           ) : (
             <div className="space-y-3">
+              {editPayment && (
+                <div className="rounded-md border bg-muted/40 p-2 grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
+                  <div><span className="text-muted-foreground">{tx("Receipt #", "রশিদ নং")}: </span><span className="font-medium">{editPayment.receipt_no || "—"}</span></div>
+                  <div><span className="text-muted-foreground">{tx("Date", "তারিখ")}: </span><span className="font-medium">{fmtDate(editPayment.created_at)}</span></div>
+                  <div><span className="text-muted-foreground">{tx("Type", "ধরন")}: </span><span className="font-medium">{editPayment.kind || "—"}</span></div>
+                  <div><span className="text-muted-foreground">{tx("Method", "মাধ্যম")}: </span><span className="font-medium">{editPayment.method || "—"}</span></div>
+                  <div><span className="text-muted-foreground">{tx("Office", "অফিস")}: </span><span className="font-medium">{editPayment.offices?.name || "—"}</span></div>
+                  <div><span className="text-muted-foreground">{tx("Current amount", "বর্তমান টাকা")}: </span><span className="font-medium">{money(Number(editPayment.amount || 0))}</span></div>
+                </div>
+              )}
               {!editInvoiceId && (
                 <p className="text-xs text-muted-foreground">{tx("This receipt has no linked irrigation invoice; only amount can be edited.", "এই রসিদে কোনো সেচ ইনভয়েস যুক্ত নেই; শুধু টাকা এডিট করা যাবে।")}</p>
               )}
+
               {editInvoiceId && (<>
                 <div>
                   <Label>{tx("Owner", "মালিক")}</Label>
