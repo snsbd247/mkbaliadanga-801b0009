@@ -58,7 +58,7 @@ import { LoanStatement } from "@/components/LoanStatement";
 import { downloadIrrigationInvoicePdf, loadInvoiceSettings } from "@/lib/irrigationInvoicePdf";
 import { ReceiptPreviewModal } from "@/components/irrigation/ReceiptPreviewModal";
 import { buildPaidHistory, type PaidHistoryRow } from "@/lib/irrigationReceiptHistory";
-import { buildPaymentReceiptData, fetchPaymentReceiptData } from "@/lib/buildPaymentReceiptData";
+import { fetchPaymentReceiptData } from "@/lib/buildPaymentReceiptData";
 import { IrrigationReceiptPreviewDialog } from "@/components/receipts/IrrigationReceiptPreviewDialog";
 import type { ReceiptCopy } from "@/lib/bnReceipts";
 import { formatLand, parseLandInput, normalizeLandSize } from "@/lib/landMath";
