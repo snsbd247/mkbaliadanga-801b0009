@@ -46,7 +46,7 @@ export function IrrigationReceiptPreviewDialog({ open, onOpenChange, data, copy 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-3xl">
-        <DialogHeader><DialogTitle>{tx("Irrigation receipt preview (A5 landscape)", "সেচ রসিদ প্রিভিউ (A5 ল্যান্ডস্কেপ)")}</DialogTitle></DialogHeader>
+        <DialogHeader><DialogTitle>{tx("Irrigation receipt preview (A4, 2 copies)", "সেচ রসিদ প্রিভিউ (A4, ২ কপি)")}</DialogTitle></DialogHeader>
         {isReceiptDataDebugEnabled() && data && (
           <Badge variant="outline" className="w-fit">
             {tx("Patwari source", "পাটুয়ারী সোর্স")}:{" "}
