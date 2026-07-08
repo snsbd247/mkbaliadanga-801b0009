@@ -70,8 +70,8 @@ export function PaidLandHistory({ farmerId }: Props) {
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
 
-  // Preview
-  const [preview, setPreview] = useState<PaidRow | null>(null);
+  // Preview (canonical receipt render, identical to Payments page)
+  const [previewData, setPreviewData] = useState<BnReceiptData | null>(null);
 
   useEffect(() => { load(); /* eslint-disable-next-line */ }, [farmerId]);
 
