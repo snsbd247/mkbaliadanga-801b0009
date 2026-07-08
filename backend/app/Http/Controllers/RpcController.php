@@ -29,6 +29,7 @@ class RpcController extends Controller
         'get_land_billing_split',
         'get_billed_farmer_for_land',
         'generate_invoice_no',
+        'delete_payment_cascade',
     ];
 
     public function handle(Request $request, string $name): JsonResponse
