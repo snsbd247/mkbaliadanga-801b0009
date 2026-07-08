@@ -803,6 +803,7 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
         receiptNo ? { description: tx(`Receipt #: ${receiptNo}`, `রসিদ নং: ${receiptNo}`) } : undefined,
       );
       setPaidStatuses(touchedStatuses);
+      setLastPaymentId(paymentId);
       // refresh
       setFarmerId(farmerId);
       setCurrentCollected(0);
