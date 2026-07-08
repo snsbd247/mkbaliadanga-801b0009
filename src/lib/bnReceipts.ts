@@ -795,9 +795,15 @@ async function renderPdf(data: BnReceiptData, copy: ReceiptCopy, options?: Recei
   let tpl: ReceiptTemplate = { ...DEFAULT_TEMPLATE };
   try { tpl = { ...tpl, ...(await loadReceiptTemplate(true)) }; } catch { /* use defaults */ }
   if (options?.template) tpl = { ...tpl, ...options.template };
+  // QR verify link. Always render a QR for scan-to-verify: prefer an explicit
+  // verify_url, otherwise fall back to the canonical `/r/{receipt_no}` route so
+  // reprints and history exports never lose the QR code.
   let qrDataUrl: string | null = null;
-  if (data.verify_url) {
-    try { qrDataUrl = await QRCode.toDataURL(data.verify_url, { margin: 0, width: 180 }); } catch { /* noop */ }
+  const verifyUrl =
+    data.verify_url ||
+    (data.receipt_no ? `${window.location.origin}/r/${data.receipt_no}` : null);
+  if (verifyUrl && tpl.qr_placement !== "none") {
+    try { qrDataUrl = await QRCode.toDataURL(verifyUrl, { margin: 0, width: 180 }); } catch { /* noop */ }
   }
   const node = buildHtml(data, copy, opts.lang, opts.orgLayout, opts.orgSize, qrDataUrl, opts.showVerifyUrl, tpl);
   try {
