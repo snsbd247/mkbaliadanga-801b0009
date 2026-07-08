@@ -92,6 +92,17 @@ export function LandTypeSelect({ landTypeId, fieldType, onChange, disabled, clas
     if (m) currentId = m.id;
   }
 
+  // Persist the derived id back to the parent so validation (which requires a
+  // real land_type_id) passes even when the field only carried the legacy
+  // field_type enum. Runs once the catalogue is loaded and a match is found.
+  useEffect(() => {
+    if (!landTypeId && currentId) {
+      const row = rows.find((r) => r.id === currentId);
+      onChange(currentId, codeToFieldType(row?.code));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentId, landTypeId, rows]);
+
   return (
     <Select
       value={currentId}
