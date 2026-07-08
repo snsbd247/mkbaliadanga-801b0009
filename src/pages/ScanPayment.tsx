@@ -16,6 +16,7 @@ import { Loader2, Camera, X, User, CheckCircle2, FileDown, Eye } from "lucide-re
 import { toast } from "sonner";
 import { z } from "zod";
 import { downloadBnReceiptPdf, previewBnReceiptPdf, type BnReceiptData, type ReceiptCopy } from "@/lib/bnReceipts";
+import { fetchPaymentReceiptData } from "@/lib/buildPaymentReceiptData";
 import { autoReceiptNo } from "@/lib/receiptNo";
 import { useBranding } from "@/lib/branding";
 import { useReceiptTemplate } from "@/lib/receiptTemplate";
