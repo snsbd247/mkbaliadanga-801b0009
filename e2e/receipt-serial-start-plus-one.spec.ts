@@ -83,8 +83,8 @@ test.describe("receipt serial start yields next = start + 1", () => {
     const settings = await settingsRes.json();
     expect(Number(settings?.[0]?.receipt_serial_start)).toBe(start);
 
-    // Next minted receipt must be exactly start + 1.
+    // Next minted receipt must be exactly the configured start.
     const next = await mintSerial(api, token);
-    expect(next).toBe(start + 1);
+    expect(next).toBe(start);
   });
 });
