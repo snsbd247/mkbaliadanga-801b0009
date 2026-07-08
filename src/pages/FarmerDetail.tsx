@@ -1960,16 +1960,22 @@ export default function FarmerDetail() {
             <TableHeader><TableRow>
               <TableHead>{t("date")}</TableHead>
               <TableHead>{t("type")}</TableHead>
+              <TableHead>{tx("Receipt No", "রশিদ নং")}</TableHead>
               <TableHead>{t("pgMethod")}</TableHead>
               <TableHead className="text-right">{t("amount")}</TableHead>
               <TableHead>{t("pgOffice")}</TableHead>
               <TableHead className="text-right">{t("pgReceipt")}</TableHead>
             </TableRow></TableHeader>
             <TableBody>
-              {payments.map((p) => (
+              {payments.map((p) => {
+                const prefix = p.kind === "loan" ? "LOAN" : p.kind === "irrigation" ? "IRR" : "SAV";
+                const receiptNo = p.receipt_no || autoReceiptNo(prefix as any, p.id, new Date(p.created_at));
+                const buildData = () => buildPaymentReceiptData(p, { brand, receiptArgs, tx });
+                return (
                 <TableRow key={p.id}>
                   <TableCell>{fmtDate(p.created_at)}</TableCell>
                   <TableCell><Badge variant="secondary">{p.kind}</Badge></TableCell>
+                  <TableCell className="font-mono text-xs">{receiptNo}</TableCell>
                   <TableCell>{p.method ?? "cash"}</TableCell>
                   <TableCell className="text-right tabular-nums font-mono">{money(p.amount)}</TableCell>
                   <TableCell className="text-xs text-muted-foreground">{p.offices?.name ?? "-"}</TableCell>
@@ -1978,23 +1984,18 @@ export default function FarmerDetail() {
                       size="sm"
                       variant="outline"
                       className="mr-2"
-                      onClick={() => {
-                        const [row] = buildPaidHistory(Number(p.amount || 0), [
-                          { receipt_no: p.receipt_no, amount: Number(p.amount || 0), paid_at: p.created_at, method: p.method },
-                        ], { kind: "IRR", seed: p.id });
-                        setReceiptRow(row);
-                        setReceiptOpen(true);
-                      }}
+                      onClick={async () => setPaymentPreview({ data: await buildData(), copy: p.kind === "irrigation" ? "farmer" : "both" })}
                     >
                       {tx("Preview", "প্রিভিউ")}
                     </Button>
-                    <ReceiptCopyMenu size="sm" label={t("pgDownload" as any)} onSelect={(c) => reprintReceipt(p, c)} />
+                    <ReceiptCopyMenu size="sm" label={t("pgDownload" as any)} onSelect={async (c) => downloadBnReceiptPdf(await buildData(), c, receiptArgs.options)} />
                     {isSuper && <DeleteButton onConfirm={() => deletePayment(p)} title={t("delete")} />}
                   </TableCell>
                 </TableRow>
-              ))}
+                );
+              })}
               {payments.length === 0 && (
-                <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground">{t("noData")}</TableCell></TableRow>
+                <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground">{t("noData")}</TableCell></TableRow>
               )}
             </TableBody>
           </Table></Card>
