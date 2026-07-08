@@ -63,7 +63,7 @@ export function IrrigationReceiptPreviewDialog({ open, onOpenChange, data, copy 
             : <iframe title="receipt-preview" src={url} className="h-full w-full" />}
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={() => data && downloadBnReceiptPdf(data, copy)} disabled={!data}>
+          <Button variant="outline" onClick={() => data && downloadBnReceiptPdf(data, copy, options)} disabled={!data}>
             <FileDown className="h-4 w-4 mr-1" />{tx("Download PDF", "PDF ডাউনলোড")}
           </Button>
           <Button variant="outline" disabled={!url} onClick={() => {
