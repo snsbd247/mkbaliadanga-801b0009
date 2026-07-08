@@ -1,52 +1,53 @@
 ## লক্ষ্য
 
-Payments পেজে পেমেন্ট গ্রহণের পর যে **সেচ চার্জ ও বিবিধ আদায় রশিদ** তৈরি হয়, সফটওয়্যারের সব জায়গায় সেই একই রশিদ (একই ফরম্যাট, একই ডেটা, একই ফিল্ড) ডাউনলোড ও প্রিভিউ হবে।
+সেচ চার্জ ও বিবিধ আদায় রশিদের “কৃষক এবং মালিক সভ্য সদস্য” ফিল্ডে কখনও Farmer ID / member_no / farmer_code দেখানো যাবে না। এখানে সবসময় Savings Number (`account_number`) দেখাবে।
 
-## বর্তমান অবস্থা (অডিট)
+## রুল
 
-সেচ রশিদ তৈরির দুই ধরনের পথ পাওয়া গেছে:
+1. নিজ জমি হলে:
+   - শুধু কৃষকের Savings Number দেখাবে।
+   - উদাহরণ: `01711`
 
-**A. ক্যানোনিকাল পথ — `buildPaymentReceiptData()` ব্যবহার করে (সঠিক, পূর্ণ enrichment: rate, member summary, বকেয়া, patwari, বর্গাদার/মালিক savings ইত্যাদি):**
-- `src/pages/Payments.tsx` (লাইন ~1168)
-- `src/pages/Receipts.tsx` (লাইন ~254)
-- `src/pages/FarmerDetail.tsx` পেমেন্ট ট্যাব (লাইন ~2020)
+2. বর্গা জমি হলে:
+   - প্রথমে বর্গাদার/চাষির Savings Number।
+   - তারপর `/` দিয়ে জমির মালিকের Savings Number।
+   - উদাহরণ: `01711/01925`
 
-**B. আলাদা ইনলাইন পথ — নিজের মতো `BnReceiptData` বানিয়ে `downloadBnReceiptPdf` কল করে (অসঙ্গতিপূর্ণ, enrichment অসম্পূর্ণ, প্রিভিউ নেই বা কম ফিল্ড):**
-- `src/components/payments/IrrigationPaymentPanel.tsx` (লাইন ~755)
-- `src/components/PaidLandHistory.tsx` (লাইন ~160)
-- `src/pages/FarmerDetail.tsx` জমি-ভিত্তিক ডাউনলোড (লাইন ~751)
-- `src/pages/Cashbook.tsx` (লাইন ~292)
-- `src/pages/irrigation/OfficeIncomeTab.tsx` `buildBnData` (অফিস আয় — এটি ভিন্ন ধরনের রশিদ, আলাদা রাখা হবে)
-- `src/pages/ScanPayment.tsx` (QR স্ক্যান পেমেন্ট)
+3. কারও Savings Number না থাকলে:
+   - শুধু সেই অংশে `নাই` দেখাবে।
+   - উদাহরণ: `01711/নাই`, `নাই/01925`, `নাই`
 
-সমস্যা: B পথের জায়গাগুলো A-এর সমান ডেটা/ফরম্যাট দেয় না, এবং বেশ কয়েকটিতে প্রিভিউ বাটন নেই।
+4. এই ফিল্ডে fallback হিসেবে `member_no`, `farmer_code`, Farmer ID, বা ৫-ডিজিট farmer code ব্যবহার করা হবে না।
 
-## পরিকল্পনা
+## কী পরিবর্তন করব
 
-1. **শেয়ার্ড বিল্ডার সম্প্রসারণ** — `buildPaymentReceiptData` এখন একটি payment row নেয়। যেসব জায়গায় শুধু invoice/allocation বা payment id আছে, সেগুলোর জন্য `buildPaymentReceiptData`-কে সোর্স হিসেবে ব্যবহার করা যায় এমনভাবে ইনপুট normalize করা হবে (একই farmer/allocation/patwari গঠন দিয়ে)।
+### 1. Canonical helper ঠিক করা
+`receiptMemberSummary`-এর Savings Number resolver আপডেট করব যাতে:
+- `account_number` থাকলে সেটিই Savings Number হিসেবে নেয়।
+- `account_number` না থাকলে `voter_number` fallback হিসেবে নিতে পারে, যদি এটি সঞ্চয় নম্বর হিসেবে ব্যবহৃত হয়।
+- `member_no`/`farmer_code` fallback পুরোপুরি বাদ থাকবে।
+- `is_voter` false হলেও `account_number` থাকলে সেটি দেখাবে, কারণ এখানে প্রয়োজন Savings Number, ভোটার স্ট্যাটাস নয়।
+- `savings_inactive` true হলে `নাই` থাকবে।
 
-2. **B পথের প্রতিটি সাইট ক্যানোনিকাল পথে রূপান্তর:**
-   - `IrrigationPaymentPanel.tsx` — পেমেন্ট সফল হওয়ার পর তৈরি payment রেকর্ড থেকে `buildPaymentReceiptData` দিয়ে রশিদ বানিয়ে ডাউনলোড; প্রিভিউ ডায়ালগ যোগ।
-   - `PaidLandHistory.tsx` — সংশ্লিষ্ট payment রেকর্ড fetch করে `buildPaymentReceiptData` ব্যবহার; প্রিভিউ যোগ।
-   - `FarmerDetail.tsx` (লাইন ~751 জমি-ভিত্তিক) — একই ক্যানোনিকাল বিল্ডারে একত্রিত।
-   - `Cashbook.tsx` — সেচ রশিদ ডাউনলোড ক্যানোনিকাল বিল্ডারে; প্রিভিউ যোগ।
-   - `ScanPayment.tsx` — ইতিমধ্যে preview আছে, কিন্তু payload একই বিল্ডার থেকে আসছে কিনা নিশ্চিত করা হবে।
+### 2. সব রশিদ সোর্স একই helper ব্যবহার করছে কিনা নিশ্চিত করা
+নিচের entry point-গুলোতে একই canonical logic থাকবে:
+- Payment page receipt download/preview
+- Farmer profile receipt download/preview
+- Scan/verify/source যেখানে `fetchPaymentReceiptData` ব্যবহার হয়
 
-3. **প্রিভিউ সামঞ্জস্য** — প্রতিটি সেচ রশিদ সাইটে `IrrigationReceiptPreviewDialog` উপস্থিত থাকবে যাতে সব জায়গায় ডাউনলোড + প্রিভিউ দুটোই একই রকম হয়।
+### 3. Farmer profile legacy/manual receipt path-ও ঠিক করা
+Farmer profile-এর পুরনো/manual সেচ receipt builder-এ owner/cultivator data fetch করার সময় `account_number`, `voter_number`, `savings_inactive`, `is_voter` আছে কিনা নিশ্চিত করব এবং `buildMemberSummary` দিয়েই row বানাব।
 
-4. **OfficeIncomeTab** — এটি "অফিস আয়" রশিদ, সেচ চার্জ রশিদ নয়; এর নিজস্ব ফরম্যাট অপরিবর্তিত থাকবে (স্কোপের বাইরে)।
-
-## ঝুঁকি নিয়ন্ত্রণ
-
-- সেভিংস/লোন রশিদ (`Savings.tsx` ইত্যাদি) সেচ রশিদ নয় — অপরিবর্তিত।
-- কোনো মডিউলের বিদ্যমান কার্যকারিতা যেন না ভাঙে সেজন্য পরিবর্তনের পর টাইপচেক ও সংশ্লিষ্ট ইউনিট/টেস্ট চালানো হবে।
+### 4. Automated tests যোগ/আপডেট করা
+টেস্টে এই caseগুলো cover করব:
+- নিজ জমি: cultivator `account_number = 01711`, `member_no/farmer_code = 02473` হলেও output হবে `01711`, `02473` নয়।
+- বর্গা জমি: output হবে `বর্গাদারSavings/মালিকSavings`।
+- owner/cultivator কারও Savings Number না থাকলে শুধু সেই অংশে `নাই`।
+- canonical receipt data JSON-এ “পরিশোধকৃত টাকা” row না থাকার আগের rule বজায় থাকবে।
 
 ## যাচাই
 
-- `bnReceipts` ও receipt সংক্রান্ত ইউনিট টেস্ট রান।
-- টাইপচেক।
-- প্রতিটি সাইটে ডাউনলোড ও প্রিভিউ একই রশিদ দিচ্ছে কিনা ব্রাউজারে যাচাই।
+- Targeted receipt tests চালিয়ে নিশ্চিত করব।
+- কোডে search করে নিশ্চিত করব “কৃষক এবং মালিক সভ্য সদস্য” row আর farmer code/member_no fallback থেকে তৈরি হচ্ছে না।
 
-## টেকনিক্যাল নোট
-
-মূল পরিবর্তন `buildPaymentReceiptData.ts`-কে একমাত্র সোর্স-অফ-ট্রুথ বানানো এবং B পথের ৪–৫টি কল সাইট রিফ্যাক্টর করা। কোনো নতুন ব্যাকএন্ড/স্কিমা পরিবর্তন নেই — শুধু ফ্রন্টএন্ড প্রেজেন্টেশন একীকরণ।
+Approve করলে আমি এই প্ল্যান অনুযায়ী ফিক্স করব।
