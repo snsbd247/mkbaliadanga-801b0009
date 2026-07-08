@@ -205,7 +205,7 @@ export async function buildIrrigationReceiptEnrichment(
     if (ownerIds.length) {
       const { data: ownerRows } = await db
         .from("farmers")
-        .select("id,name_bn,name_en,member_no,farmer_code")
+        .select("id,name_bn,name_en,member_no,farmer_code,account_number,savings_inactive")
         .in("id", ownerIds);
       for (const o of ownerRows ?? []) ownerById[(o as any).id] = o;
     }
