@@ -327,6 +327,7 @@ const STR = {
     totalLoan: "প্রাপ্ত কিস্তি:",
     totalIrr: "মোট আদায়ের পরিমাণ:",
     discount: "ছাড় (ডিসকাউন্ট):",
+    breakdown: "হিসাব বিবরণ (হাল+হাল জরিমানা+বকেয়া+বকেয়া জরিমানা−ছাড়):",
     remark: "রিমার্ক/নোট:",
     memberSig: "সদস্যের স্বাক্ষর",
     collectorSig: "আদায়কারীর স্বাক্ষর",
@@ -368,6 +369,7 @@ const STR = {
     totalLoan: "Installment received:",
     totalIrr: "Total collected:",
     discount: "Discount:",
+    breakdown: "Breakdown (hāl+hāl penalty+arrears+arrears penalty−discount):",
     remark: "Remark / Note:",
     memberSig: "Member signature",
     collectorSig: "Collector signature",
@@ -497,6 +499,17 @@ function copyHtml(d: BnReceiptData, copyLabel: string, signatureUrl: string | nu
     if (discount > 0) rows.push([t.discount, `-${moneyInt(discount, lang, "৳")}`]);
     // 12. মোট আদায়ের পরিমাণ (হাল + হাল জরিমানা + বকেয়া + বকেয়া জরিমানা − ছাড়)
     const totalDue = Math.max(0, halCharge + halPenalty + dueCharge + duePenalty - discount);
+    // Explicit computation breakdown mirroring the admin reconciliation panel.
+    const breakdownParts = [
+      `${moneyInt(halCharge, lang, "৳")}`,
+      `${moneyInt(halPenalty, lang, "৳")}`,
+      `${moneyInt(dueCharge, lang, "৳")}`,
+      `${moneyInt(duePenalty, lang, "৳")}`,
+    ].join(" + ");
+    const breakdownText = discount > 0
+      ? `${breakdownParts} − ${moneyInt(discount, lang, "৳")} = ${moneyInt(totalDue, lang, "৳")}`
+      : `${breakdownParts} = ${moneyInt(totalDue, lang, "৳")}`;
+    rows.push([t.breakdown, breakdownText]);
     const totalIrr = Number(d.collected_amount ?? 0) > 0 ? Number(d.collected_amount ?? 0) : totalDue;
     rows.push([t.totalIrr, moneyInt(totalIrr, lang, "৳")]);
     // 12. কথায়

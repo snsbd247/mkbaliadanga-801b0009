@@ -200,6 +200,7 @@ export function AppSidebar() {
       key: "reportsDue", icon: AlertTriangle, label: lang === "bn" ? "রিপোর্ট (বকেয়া)" : "Reports (Dues)",
       children: [
         { url: "/reports/irrigation-due", icon: AlertTriangle, label: t("irrigationDueReport"), permKey: "reports" },
+        { url: "/reports/irrigation-reconciliation", icon: FileBarChart, label: lang === "bn" ? "সেচ রিকনসিলিয়েশন" : "Irrigation Reconciliation", permKey: "reports" },
         { url: "/reports/promise-due", icon: AlertTriangle, label: t("promiseDueReport" as any) || "Promise Due", permKey: "reports" },
         { url: "/dues", icon: AlertTriangle, label: t("dues"), permKey: "reports" },
         { url: "/dues-audit", icon: AlertTriangle, label: t("duesAudit"), permKey: "reports" },

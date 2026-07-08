@@ -56,3 +56,44 @@ describe("normalizeIrrigationRatePerAcre — rate normalization", () => {
     expect(ratePerBighaFromAcre(acre)).toBeCloseTo(396, 6);
   });
 });
+
+describe("rounding & edge cases — stable conversions", () => {
+  it("handles a very small acre parcel with a stored rate without exploding", () => {
+    // 0.0034 acre (~0.34 শতক); stored rate must win, never charge/land derivation
+    const rate = normalizeIrrigationRatePerAcre(1200, 4.08, 0.34);
+    expect(rate).toBe(1200);
+    expect(ratePerBighaFromAcre(rate)).toBeCloseTo(396, 6);
+  });
+
+  it("handles a very large acre value in bigha conversion", () => {
+    expect(ratePerBighaFromAcre(1_000_000)).toBeCloseTo(330_000, 3);
+  });
+
+  it("treats undefined/NaN rate fields as missing and derives instead", () => {
+    expect(normalizeIrrigationRatePerAcre(undefined, 396, 33)).toBeCloseTo(1200, 6);
+    expect(normalizeIrrigationRatePerAcre(NaN as unknown as number, 396, 33)).toBeCloseTo(1200, 6);
+  });
+
+  it("returns null when all fields are missing/undefined", () => {
+    expect(normalizeIrrigationRatePerAcre(undefined, undefined, undefined)).toBeNull();
+    expect(normalizeIrrigationRatePerAcre(null, NaN as unknown as number, null)).toBeNull();
+  });
+
+  it("does not derive when land is present but charge is missing", () => {
+    expect(normalizeIrrigationRatePerAcre(null, null, 33)).toBeNull();
+    expect(normalizeIrrigationRatePerAcre(null, 0, 33)).toBeNull();
+  });
+
+  it("does not divide by zero when land size is zero", () => {
+    expect(normalizeIrrigationRatePerAcre(null, 500, 0)).toBeNull();
+  });
+
+  it("upscale boundary: exactly 500 stays per-acre, 499 becomes per-acre×100", () => {
+    expect(normalizeIrrigationRatePerAcre(500, null, null)).toBe(500);
+    expect(normalizeIrrigationRatePerAcre(499, null, null)).toBe(49900);
+  });
+
+  it("bigha conversion of a null acre rate stays null", () => {
+    expect(ratePerBighaFromAcre(normalizeIrrigationRatePerAcre(null, null, null))).toBeNull();
+  });
+});
