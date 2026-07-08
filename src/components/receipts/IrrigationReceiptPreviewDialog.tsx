@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { FileDown, FileSpreadsheet, Loader2 } from "lucide-react";
+import { FileDown, FileSpreadsheet, Loader2, Printer } from "lucide-react";
 import { downloadBnReceiptPdf, previewBnReceiptPdf, irrigationReceiptToExcelRow, type BnReceiptData, type ReceiptCopy } from "@/lib/bnReceipts";
 import { exportExcel } from "@/lib/exports";
 import { useLang } from "@/i18n/LanguageProvider";
