@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger, DropdownMenuCheckboxItem, DropdownMenuSeparator, DropdownMenuItem } from "@/components/ui/dropdown-menu";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
@@ -32,7 +33,7 @@ import { validateDagNumbers, findDuplicateDagInMouza, normalizeDagInput } from "
 import { MouzaSelect } from "@/components/locations/MouzaSelect";
 import { SavingsStatement } from "@/components/SavingsStatement";
 import { EditButton, DeleteButton } from "@/components/ui/action-icon-button";
-import { downloadBnReceiptPdf, normalizeIrrigationRatePerAcre, type BnReceiptData } from "@/lib/bnReceipts";
+import { downloadBnReceiptPdf, downloadBnReceiptsPdf, normalizeIrrigationRatePerAcre, type BnReceiptData } from "@/lib/bnReceipts";
 import { autoReceiptNo } from "@/lib/receiptNo";
 import { calcInvoice, getChargeSettings } from "@/lib/irrigationInvoice";
 import { ReceiptCopyMenu } from "@/components/receipts/ReceiptCopyMenu";
@@ -116,6 +117,8 @@ export default function FarmerDetail() {
   const [receiptRow, setReceiptRow] = useState<PaidHistoryRow | null>(null);
   const [receiptOpen, setReceiptOpen] = useState(false);
   const [paymentPreview, setPaymentPreview] = useState<{ data: BnReceiptData; copy: ReceiptCopy } | null>(null);
+  const [selectedReceipts, setSelectedReceipts] = useState<Set<string>>(new Set());
+  const [bulkExporting, setBulkExporting] = useState(false);
   const [rateMap, setRateMap] = useState<RateRow[]>([]);
   const [activeSeasonName, setActiveSeasonName] = useState<string>("");
   const [activeSeasonId, setActiveSeasonId] = useState<string | null>(null);
@@ -1956,8 +1959,45 @@ export default function FarmerDetail() {
         </TabsContent>
 
         <TabsContent value="payments">
+          {selectedReceipts.size > 0 && (
+            <div className="mb-2 flex items-center gap-3 rounded-md border bg-muted/40 px-3 py-2 text-sm">
+              <span>{tx(`${selectedReceipts.size} selected`, `${selectedReceipts.size} টি নির্বাচিত`)}</span>
+              <Button
+                size="sm"
+                disabled={bulkExporting}
+                onClick={async () => {
+                  setBulkExporting(true);
+                  try {
+                    const rows = payments.filter((p) => selectedReceipts.has(p.id));
+                    const items = [] as { data: BnReceiptData; copy: ReceiptCopy; options: any }[];
+                    for (const p of rows) {
+                      items.push({
+                        data: await buildPaymentReceiptData(p, { brand, receiptArgs, tx }),
+                        copy: p.kind === "irrigation" ? "farmer" : "both",
+                        options: receiptArgs.options,
+                      });
+                    }
+                    await downloadBnReceiptsPdf(items, `${(farmer?.name_bn ?? farmer?.name_en ?? "farmer")}_receipts.pdf`);
+                  } finally {
+                    setBulkExporting(false);
+                  }
+                }}
+              >
+                <FileDown className="h-4 w-4 mr-1" />
+                {bulkExporting ? tx("Exporting…", "এক্সপোর্ট হচ্ছে…") : tx("Download selected PDF", "নির্বাচিত রশিদ ডাউনলোড")}
+              </Button>
+              <Button size="sm" variant="ghost" onClick={() => setSelectedReceipts(new Set())}>{tx("Clear", "বাতিল")}</Button>
+            </div>
+          )}
           <Card><Table>
             <TableHeader><TableRow>
+              <TableHead className="w-8">
+                <Checkbox
+                  checked={payments.length > 0 && selectedReceipts.size === payments.length}
+                  onCheckedChange={(c) => setSelectedReceipts(c ? new Set(payments.map((p) => p.id)) : new Set())}
+                  aria-label={tx("Select all", "সব নির্বাচন")}
+                />
+              </TableHead>
               <TableHead>{t("date")}</TableHead>
               <TableHead>{t("type")}</TableHead>
               <TableHead>{tx("Receipt No", "রশিদ নং")}</TableHead>
@@ -1973,6 +2013,17 @@ export default function FarmerDetail() {
                 const buildData = () => buildPaymentReceiptData(p, { brand, receiptArgs, tx });
                 return (
                 <TableRow key={p.id}>
+                  <TableCell>
+                    <Checkbox
+                      checked={selectedReceipts.has(p.id)}
+                      onCheckedChange={(c) => setSelectedReceipts((prev) => {
+                        const next = new Set(prev);
+                        if (c) next.add(p.id); else next.delete(p.id);
+                        return next;
+                      })}
+                      aria-label={tx("Select receipt", "রশিদ নির্বাচন")}
+                    />
+                  </TableCell>
                   <TableCell>{fmtDate(p.created_at)}</TableCell>
                   <TableCell><Badge variant="secondary">{p.kind}</Badge></TableCell>
                   <TableCell className="font-mono text-xs">{receiptNo}</TableCell>
@@ -1995,7 +2046,7 @@ export default function FarmerDetail() {
                 );
               })}
               {payments.length === 0 && (
-                <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground">{t("noData")}</TableCell></TableRow>
+                <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground">{t("noData")}</TableCell></TableRow>
               )}
             </TableBody>
           </Table></Card>

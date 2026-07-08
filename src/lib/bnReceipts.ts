@@ -783,7 +783,7 @@ function resolveOpts(o?: ReceiptOptions) {
   };
 }
 
-async function renderPdf(data: BnReceiptData, copy: ReceiptCopy, options?: ReceiptOptions): Promise<jsPDF> {
+async function renderPdf(data: BnReceiptData, copy: ReceiptCopy, options?: ReceiptOptions, target?: jsPDF): Promise<jsPDF> {
   const opts = resolveOpts(options);
   // সেচ চার্জ ও বিবিধ আদায় রশিদ: সবসময় FIXED A5 landscape।
   // User/profile receipt settings (A4/portrait) irrigation official receipt-কে override করতে পারবে না।
@@ -796,12 +796,14 @@ async function renderPdf(data: BnReceiptData, copy: ReceiptCopy, options?: Recei
   try { tpl = { ...tpl, ...(await loadReceiptTemplate(true)) }; } catch { /* use defaults */ }
   if (options?.template) tpl = { ...tpl, ...options.template };
   // QR verify link. Always render a QR for scan-to-verify: prefer an explicit
-  // verify_url, otherwise fall back to the canonical `/r/{receipt_no}` route so
-  // reprints and history exports never lose the QR code.
+  // verify_url (contains the payment's verify_token). When absent (e.g. legacy
+  // receipts / reprints without a token), fall back to the legacy verify route
+  // `/r/legacy-{receipt_no}` which the verify page resolves by receipt number —
+  // never `/r/{receipt_no}` which would fail the hex-token check.
   let qrDataUrl: string | null = null;
   const verifyUrl =
     data.verify_url ||
-    (data.receipt_no ? `${window.location.origin}/r/${data.receipt_no}` : null);
+    (data.receipt_no ? `${window.location.origin}/r/legacy-${encodeURIComponent(data.receipt_no)}` : null);
   if (verifyUrl && tpl.qr_placement !== "none") {
     try { qrDataUrl = await QRCode.toDataURL(verifyUrl, { margin: 0, width: 180 }); } catch { /* noop */ }
   }
@@ -809,7 +811,13 @@ async function renderPdf(data: BnReceiptData, copy: ReceiptCopy, options?: Recei
   try {
     await new Promise((r) => setTimeout(r, 60));
     const canvas = await html2canvas(node, { scale: 2, useCORS: true, backgroundColor: "#ffffff" });
-    const pdf = new jsPDF({ unit: "mm", format: opts.paper, orientation: opts.orientation });
+    let pdf: jsPDF;
+    if (target) {
+      target.addPage(opts.paper, opts.orientation);
+      pdf = target;
+    } else {
+      pdf = new jsPDF({ unit: "mm", format: opts.paper, orientation: opts.orientation });
+    }
     const pageW = pdf.internal.pageSize.getWidth();
     const pageH = pdf.internal.pageSize.getHeight();
     const innerW = pageW - opts.margins.l - opts.margins.r;
@@ -836,6 +844,25 @@ async function renderPdf(data: BnReceiptData, copy: ReceiptCopy, options?: Recei
 export async function downloadBnReceiptPdf(data: BnReceiptData, copy: ReceiptCopy = "both", options?: ReceiptOptions): Promise<void> {
   const pdf = await renderPdf(data, copy, options);
   pdf.save(`${data.farmer.name.replace(/\s+/g, "_")}_${data.receipt_no}_${data.kind}${copySuffix(copy)}_receipt.pdf`);
+}
+
+/**
+ * Render several receipts into ONE multi-page PDF and download it. Each receipt
+ * keeps its own paper/orientation (e.g. irrigation stays A5 landscape).
+ */
+export async function downloadBnReceiptsPdf(
+  items: { data: BnReceiptData; copy?: ReceiptCopy; options?: ReceiptOptions }[],
+  fileName = `receipts_${new Date().toISOString().slice(0, 10)}.pdf`,
+): Promise<void> {
+  if (!items.length) return;
+  if (items.length === 1) {
+    return downloadBnReceiptPdf(items[0].data, items[0].copy ?? "both", items[0].options);
+  }
+  let pdf: jsPDF | undefined;
+  for (const it of items) {
+    pdf = await renderPdf(it.data, it.copy ?? "both", it.options, pdf);
+  }
+  pdf!.save(fileName);
 }
 
 export async function previewBnReceiptPdf(data: BnReceiptData, copy: ReceiptCopy = "both", options?: ReceiptOptions): Promise<string> {

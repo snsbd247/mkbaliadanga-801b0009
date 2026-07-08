@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { FileDown, FileSpreadsheet, Loader2 } from "lucide-react";
+import { FileDown, FileSpreadsheet, Loader2, Printer } from "lucide-react";
 import { downloadBnReceiptPdf, previewBnReceiptPdf, irrigationReceiptToExcelRow, type BnReceiptData, type ReceiptCopy } from "@/lib/bnReceipts";
 import { exportExcel } from "@/lib/exports";
 import { useLang } from "@/i18n/LanguageProvider";
@@ -59,7 +59,14 @@ export function IrrigationReceiptPreviewDialog({ open, onOpenChange, data, copy 
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => data && downloadBnReceiptPdf(data, copy)} disabled={!data}>
-            <FileDown className="h-4 w-4 mr-1" />PDF
+            <FileDown className="h-4 w-4 mr-1" />{tx("Download PDF", "PDF ডাউনলোড")}
+          </Button>
+          <Button variant="outline" disabled={!url} onClick={() => {
+            const frame = document.querySelector<HTMLIFrameElement>('iframe[title="receipt-preview"]');
+            frame?.contentWindow?.focus();
+            frame?.contentWindow?.print();
+          }}>
+            <Printer className="h-4 w-4 mr-1" />{tx("Print", "প্রিন্ট")}
           </Button>
           <Button variant="outline" disabled={!data} onClick={() => {
             if (!data) return;

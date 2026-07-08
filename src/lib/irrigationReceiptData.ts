@@ -2,6 +2,7 @@ import { db } from "@/lib/db";
 import { resolveFieldTypeLabel } from "@/lib/irrigationLandType";
 import { normalizeIrrigationRatePerAcre } from "@/lib/bnReceipts";
 import { joinNotes } from "@/lib/irrigationExports";
+import { buildMemberSummary, savingsNoOf } from "@/lib/receiptMemberSummary";
 
 // Placeholders shown on the receipt when patwari data is missing, so the field
 // is never silently blank.
@@ -305,20 +306,14 @@ export async function buildIrrigationReceiptEnrichment(
     primaryCharge?.lands?.land_size,
   );
   const ownerMember = ownerFarmer?.member_no || ownerFarmer?.farmer_code || null;
-  // "কৃষক এবং মালিক সভ্য সদস্য" = চাষির সেভিং একাউন্ট নম্বর (সদস্য হলে), নইলে N/A।
-  const cultivatorSavingsNo =
-    cultivatorFarmer && !cultivatorFarmer.savings_inactive && cultivatorFarmer.account_number
-      ? String(cultivatorFarmer.account_number)
-      : null;
-  // বর্গা হলে মালিকের সেভিং একাউন্ট নম্বর (সদস্য হলে), নইলে N/A।
-  const ownerSavingsNo =
-    ownerFarmer && !ownerFarmer.savings_inactive && ownerFarmer.account_number
-      ? String(ownerFarmer.account_number)
-      : null;
-  // বর্গা জমি: "বর্গাদারের Savings No / মালিকের Savings No"; নিজ জমি: শুধু চাষির Savings No।
-  const memberSummary = anyBorga
-    ? `${cultivatorSavingsNo ?? "N/A"}/${ownerSavingsNo ?? "N/A"}`
-    : (cultivatorSavingsNo ?? "N/A");
+  // "কৃষক এবং মালিক সভ্য সদস্য": বর্গা জমি → "বর্গাদারের Savings No / মালিকের Savings No";
+  // নিজ জমি → শুধু চাষির Savings No। (pure helper — receiptMemberSummary.ts)
+  const cultivatorSavingsNo = savingsNoOf(cultivatorFarmer);
+  const memberSummary = buildMemberSummary({
+    cultivator: cultivatorFarmer,
+    owner: ownerFarmer,
+    isBorga: anyBorga,
+  });
   const mouza = invoiceRows.find((inv) => inv?.lands?.mouza)?.lands?.mouza ?? null;
   const dagNo =
     Array.from(
