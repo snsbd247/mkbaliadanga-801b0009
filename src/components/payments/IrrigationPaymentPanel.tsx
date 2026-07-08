@@ -97,6 +97,9 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
   const [selectedPrevIds, setSelectedPrevIds] = useState<Set<string>>(new Set());
   // Post-submit status summary of the invoices this payment touched.
   const [paidStatuses, setPaidStatuses] = useState<Array<{ invoice_no: string; cleared: boolean }>>([]);
+  // Last successful payment id — enables preview/re-download of the exact receipt.
+  const [lastPaymentId, setLastPaymentId] = useState<string | null>(null);
+  const [previewData, setPreviewData] = useState<BnReceiptData | null>(null);
   // editable delay fees per invoice
   const [delayFee, setDelayFee] = useState<Record<string, number>>({});
   const [delayFeeReason, setDelayFeeReason] = useState<Record<string, string>>({});
