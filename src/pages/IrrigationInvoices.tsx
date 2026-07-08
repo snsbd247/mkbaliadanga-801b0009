@@ -1106,7 +1106,7 @@ function InvoiceEditDialog({ inv, onClose, onSaved }: any) {
     onSaved?.(); onClose();
   }
 
-  const previewPayable = computeInvoiceTotals(inv, Number(discount) || 0, dueDate, Number(otherCharge) || 0, Number(delayFee) || 0).payable;
+  
 
   async function markUnpaid() {
     if (!perm.ok) return toast.error(tx("You do not have permission to edit invoices", "ইনভয়েস এডিট করার অনুমতি নেই"));
