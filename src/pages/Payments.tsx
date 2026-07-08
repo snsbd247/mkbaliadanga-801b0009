@@ -137,6 +137,40 @@ export default function Payments() {
     return previewEdit(editBaseline, { delay_fee: editForm.delay_fee, amount: editForm.amount });
   }, [editBaseline, editForm.delay_fee, editForm.amount]);
 
+  // Human-readable labels for the receipt edit history diff (no raw JSON).
+  const editFieldLabels: Record<string, string> = {
+    amount: tx("Amount", "টাকা"),
+    delay_fee: tx("Delay fee", "জরিমানা"),
+    mouza: tx("Mouza", "মৌজা"),
+    land_size: tx("Land size", "জমির পরিমাণ"),
+    owner_farmer_id: tx("Owner", "মালিক"),
+    patwari_id: tx("Patwari", "পাটুয়ারি"),
+    note: tx("Note", "নোট"),
+    receipt_no: tx("Receipt #", "রশিদ নং"),
+  };
+
+  function renderEditDiff(h: any) {
+    const before = h.old_values || {};
+    const { reason, ...after } = (h.new_values || {}) as Record<string, unknown>;
+    const keys = Array.from(new Set([...Object.keys(before), ...Object.keys(after)]))
+      .filter((k) => editFieldLabels[k] && String(before[k] ?? "") !== String((after as any)[k] ?? ""));
+    if (keys.length === 0) return <div className="text-muted-foreground">{tx("No field changes", "কোনো পরিবর্তন নেই")}</div>;
+    return (
+      <div className="space-y-0.5">
+        {keys.map((k) => (
+          <div key={k} className="flex flex-wrap gap-1">
+            <span className="font-medium">{editFieldLabels[k]}:</span>
+            <span className="text-destructive line-through">{String(before[k] ?? "—")}</span>
+            <span>→</span>
+            <span className="text-success">{String((after as any)[k] ?? "—")}</span>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+
+
   async function loadEditHistory(paymentId: string) {
     try {
       const { rows } = await fetchReceiptAuditLogs({ paymentId, limit: 50 });
