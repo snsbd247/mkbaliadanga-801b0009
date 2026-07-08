@@ -77,21 +77,6 @@ Deno.serve(async (req) => {
         if (Number.isSafeInteger(n) && n > maxUsed) maxUsed = n
       }
     }
-
-    /* for (const tbl of ['payments', 'receipts']) {
-      const { data: rows } = await svc
-        .from(tbl)
-        .select('receipt_no')
-        .not('receipt_no', 'is', null)
-      for (const r of (rows ?? []) as Array<{ receipt_no: string | null }>) {
-        const raw = String(r.receipt_no ?? '')
-        if (/^[0-9]+$/.test(raw)) {
-          const n = Number(raw)
-          if (Number.isSafeInteger(n) && n > maxUsed) maxUsed = n
-        }
-      }
-    } */
-
     if (start < maxUsed) {
       return json({
         error: `এই নম্বর (${start}) প্রকৃতপক্ষে ব্যবহৃত সর্বশেষ রিসিপ্ট নম্বরের (${maxUsed}) চেয়ে ছোট — ডুপ্লিকেট এড়াতে বাতিল করা হলো`,
