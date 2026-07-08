@@ -57,6 +57,9 @@ import { LoanStatement } from "@/components/LoanStatement";
 import { downloadIrrigationInvoicePdf, loadInvoiceSettings } from "@/lib/irrigationInvoicePdf";
 import { ReceiptPreviewModal } from "@/components/irrigation/ReceiptPreviewModal";
 import { buildPaidHistory, type PaidHistoryRow } from "@/lib/irrigationReceiptHistory";
+import { buildPaymentReceiptData } from "@/lib/buildPaymentReceiptData";
+import { IrrigationReceiptPreviewDialog } from "@/components/receipts/IrrigationReceiptPreviewDialog";
+import type { ReceiptCopy } from "@/lib/bnReceipts";
 import { formatLand, parseLandInput, normalizeLandSize } from "@/lib/landMath";
 import { LandAmountBreakdown } from "@/components/LandAmountBreakdown";
 import { LandNoteCell } from "@/components/farmers/LandNoteCell";
@@ -112,6 +115,7 @@ export default function FarmerDetail() {
   const [payments, setPayments] = useState<any[]>([]);
   const [receiptRow, setReceiptRow] = useState<PaidHistoryRow | null>(null);
   const [receiptOpen, setReceiptOpen] = useState(false);
+  const [paymentPreview, setPaymentPreview] = useState<{ data: BnReceiptData; copy: ReceiptCopy } | null>(null);
   const [rateMap, setRateMap] = useState<RateRow[]>([]);
   const [activeSeasonName, setActiveSeasonName] = useState<string>("");
   const [activeSeasonId, setActiveSeasonId] = useState<string | null>(null);
@@ -1956,16 +1960,22 @@ export default function FarmerDetail() {
             <TableHeader><TableRow>
               <TableHead>{t("date")}</TableHead>
               <TableHead>{t("type")}</TableHead>
+              <TableHead>{tx("Receipt No", "রশিদ নং")}</TableHead>
               <TableHead>{t("pgMethod")}</TableHead>
               <TableHead className="text-right">{t("amount")}</TableHead>
               <TableHead>{t("pgOffice")}</TableHead>
               <TableHead className="text-right">{t("pgReceipt")}</TableHead>
             </TableRow></TableHeader>
             <TableBody>
-              {payments.map((p) => (
+              {payments.map((p) => {
+                const prefix = p.kind === "loan" ? "LOAN" : p.kind === "irrigation" ? "IRR" : "SAV";
+                const receiptNo = p.receipt_no || autoReceiptNo(prefix as any, p.id, new Date(p.created_at));
+                const buildData = () => buildPaymentReceiptData(p, { brand, receiptArgs, tx });
+                return (
                 <TableRow key={p.id}>
                   <TableCell>{fmtDate(p.created_at)}</TableCell>
                   <TableCell><Badge variant="secondary">{p.kind}</Badge></TableCell>
+                  <TableCell className="font-mono text-xs">{receiptNo}</TableCell>
                   <TableCell>{p.method ?? "cash"}</TableCell>
                   <TableCell className="text-right tabular-nums font-mono">{money(p.amount)}</TableCell>
                   <TableCell className="text-xs text-muted-foreground">{p.offices?.name ?? "-"}</TableCell>
@@ -1974,23 +1984,18 @@ export default function FarmerDetail() {
                       size="sm"
                       variant="outline"
                       className="mr-2"
-                      onClick={() => {
-                        const [row] = buildPaidHistory(Number(p.amount || 0), [
-                          { receipt_no: p.receipt_no, amount: Number(p.amount || 0), paid_at: p.created_at, method: p.method },
-                        ], { kind: "IRR", seed: p.id });
-                        setReceiptRow(row);
-                        setReceiptOpen(true);
-                      }}
+                      onClick={async () => setPaymentPreview({ data: await buildData(), copy: p.kind === "irrigation" ? "farmer" : "both" })}
                     >
                       {tx("Preview", "প্রিভিউ")}
                     </Button>
-                    <ReceiptCopyMenu size="sm" label={t("pgDownload" as any)} onSelect={(c) => reprintReceipt(p, c)} />
+                    <ReceiptCopyMenu size="sm" label={t("pgDownload" as any)} onSelect={async (c) => downloadBnReceiptPdf(await buildData(), c, receiptArgs.options)} />
                     {isSuper && <DeleteButton onConfirm={() => deletePayment(p)} title={t("delete")} />}
                   </TableCell>
                 </TableRow>
-              ))}
+                );
+              })}
               {payments.length === 0 && (
-                <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground">{t("noData")}</TableCell></TableRow>
+                <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground">{t("noData")}</TableCell></TableRow>
               )}
             </TableBody>
           </Table></Card>
@@ -2213,6 +2218,12 @@ export default function FarmerDetail() {
         row={receiptRow}
         payable={receiptRow?.amount ?? 0}
         farmerName={farmer?.name_bn ?? farmer?.name_en}
+      />
+      <IrrigationReceiptPreviewDialog
+        open={!!paymentPreview}
+        onOpenChange={(o) => { if (!o) setPaymentPreview(null); }}
+        data={paymentPreview?.data ?? null}
+        copy={paymentPreview?.copy ?? "both"}
       />
     </>
 

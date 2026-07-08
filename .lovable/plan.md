@@ -1,34 +1,40 @@
-# ওয়াটারমার্ক ও রশিদ ক্রমিক নম্বর ফিক্স প্ল্যান
+# ফার্মার প্রোফাইল পেমেন্ট ট্যাব — রশিদ ঠিক করা
 
-## সমস্যা বিশ্লেষণ (ডাটাবেস চেক করে)
-- `receipt_settings`: `receipt_serial_start = 4641`, `show_watermark = true`, `watermark_text = "Mohammadkhani"` — সঠিক আছে।
-- `receipt_counters` (SERIAL): `last_no = 4647` — অথচ প্রকৃত ব্যবহৃত রশিদ আছে শুধু **4642**। মানে 4643–4647 নম্বরগুলো "ফ্যান্টম" — প্রিভিউ/বাতিল হওয়া জেনারেশনে রিজার্ভ হয়েছে কিন্তু আসল রশিদ তৈরি হয়নি। এজন্যই 4641 সেট করার পরও রশিদ 4645 এসেছে।
+## সমস্যা
+1. ফার্মার প্রোফাইলের **পেমেন্ট ট্যাবে** রশিদের প্রিভিউ ও ডাউনলোড আলাদা (পুরনো) কোড দিয়ে তৈরি হয় — পেমেন্ট পেজের রশিদের সাথে মিলছে না।
+2. পেমেন্ট ট্যাবের রশিদ লিস্টে **রশিদ নম্বর** দেখায় না।
+3. রশিদে "কৃষক এবং মালিক সভ্য সদস্য" নম্বর ভুল আসছে — বর্গা জমির ক্ষেত্রে **প্রথমে বর্গাদারের Savings Number**, তারপর `/` দিয়ে **জমির মালিকের Savings Number** আসা উচিত।
 
-### সমস্যা ১ — ক্রমিক নম্বর ড্রিফট
-`next_serial_receipt_no()` প্রতিবার ডাকলেই কাউন্টার বাড়ে (রশিদ আসলে সেভ হোক বা না হোক) → গ্যাপ তৈরি হয়। অ্যাডমিন 4641 সেট করলেও কাউন্টার (4647) বেশি থাকায় নম্বর সামনে চলে যায়। বর্তমান `admin_set_receipt_serial_start` শুধু setting আপডেট করে, লাইভ কাউন্টার রিসেট করে না।
+## কারণ
+- `FarmerDetail.tsx`-এ প্রিভিউ ব্যবহার করে `buildPaidHistory` + `ReceiptPreviewModal` (নকল/লোকাল ডেটা) এবং ডাউনলোড ব্যবহার করে নিজস্ব `reprintReceipt()` — অথচ পেমেন্ট পেজ ব্যবহার করে শেয়ার্ড `buildPaymentReceiptData()` + `IrrigationReceiptPreviewDialog`।
+- `irrigationReceiptData.ts`-এ `memberSummary = cultivatorSavingsNo ?? "N/A"` — শুধু চাষির Savings Number, বর্গা হলে মালিকের নম্বর যোগ হয় না। মালিকের কোয়েরিতে `account_number`/`savings_inactive` আনা হয় না।
 
-### সমস্যা ২ — ওয়াটারমার্ক
-প্রিভিউতে ওয়াটারমার্ক দেখাচ্ছে (হালকাভাবে), কিন্তু আসল ডাউনলোড রশিদে দেখা যাচ্ছে না। দুই কারণ: (ক) টেমপ্লেট module-level cache পুরনো থেকে যেতে পারে, (খ) ওয়াটারমার্ক opacity মাত্র 0.07 — প্রিন্টে প্রায় অদৃশ্য।
+## পরিকল্পনা
 
-## যা করা হবে
+### ১. পেমেন্ট ট্যাবের রশিদ পেমেন্ট পেজের সাথে একীভূত করা
+`src/pages/FarmerDetail.tsx`:
+- `buildPaymentReceiptData` ও `IrrigationReceiptPreviewDialog` ইমপোর্ট করা।
+- একটি `preview` স্টেট যোগ করা (পেমেন্ট পেজের মতো `{ data, copy }`)।
+- পেমেন্ট রো-এর **Preview** বাটন: `buildPaymentReceiptData(p, { brand, receiptArgs, tx })` দিয়ে ডেটা তৈরি করে `IrrigationReceiptPreviewDialog`-এ দেখানো।
+- **Download** (`ReceiptCopyMenu`): একই `buildPaymentReceiptData()` → `downloadBnReceiptPdf(...)`।
+- পুরনো `reprintReceipt()` এবং পেমেন্ট-ট্যাব সংশ্লিষ্ট `buildPaidHistory`/`ReceiptPreviewModal` ব্যবহার সরানো (শুধু পেমেন্ট ট্যাবে; অন্য ট্যাব অক্ষত রাখা)।
+- `brand` অবজেক্ট (company name/logo) পেমেন্ট পেজের মতো তৈরি করা।
 
-### ১. ক্রমিক নম্বর রিসেট ঠিক করা
-- **নতুন Supabase মাইগ্রেশন**: `admin_set_receipt_serial_start(p_start)` আপডেট —
-  - প্রকৃত সর্বোচ্চ ব্যবহৃত রশিদ নম্বর বের করা হবে (`payments` + `receipts` টেবিল থেকে, শুধু numeric)।
-  - গার্ড এখন প্রকৃত ব্যবহৃত নম্বরের সাথে তুলনা করবে (ফ্যান্টম কাউন্টারের সাথে নয়)। `p_start < highest_real_used` হলেই কেবল বাতিল (আসল ডুপ্লিকেট এড়াতে)।
-  - `receipt_settings.receipt_serial_start` সেট + `receipt_counters.last_no` কে `GREATEST(p_start, highest_real_used)`-এ রিসেট করা হবে → ফ্যান্টম গ্যাপ মুছে যাবে।
-  - ফলে 4641 সেট করলে (আসল সর্বোচ্চ 4642 হলে) পরবর্তী রশিদ হবে 4643; কোনো আসল রশিদ ≥ p_start না থাকলে ঠিক p_start+1।
-  - শেষে `NOTIFY pgrst, 'reload schema'`।
-- **VPS ব্যাকএন্ড parity**: `FunctionController`-এ `fn_receipt_serial_admin` লজিক একই নিয়মে আপডেট + প্রয়োজনে মাইগ্রেশন।
+### ২. রশিদ লিস্টে রশিদ নম্বর দেখানো
+পেমেন্ট ট্যাবের টেবিলে একটি **"রশিদ নং"** কলাম যোগ করা, যা `p.receipt_no` (না থাকলে `autoReceiptNo`) দেখাবে।
 
-### ২. ওয়াটারমার্ক নির্ভরযোগ্যভাবে দেখানো (`src/lib/bnReceipts.ts`)
-- রশিদ জেনারেশনের সময় টেমপ্লেট **force-refresh** (`loadReceiptTemplate(true)`) → পুরনো cache-এর কারণে ওয়াটারমার্ক বাদ পড়বে না।
-- ওয়াটারমার্ক opacity `0.07` → `0.12` (স্পষ্ট কিন্তু কনটেন্ট পড়া যায়) করা হবে; সাধারণ (non-official) রশিদেও একই।
-
-## ফলাফল
-- Receipt Template-এ ক্রমিক নম্বর সেট করলে লাইভ কাউন্টার সেই অনুযায়ী রিসেট হবে; ফ্যান্টম গ্যাপ আর নম্বর সামনে নেবে না।
-- সেচ চার্জ ও বিবিধ আদায় রশিদে "Mohammadkhani" ওয়াটারমার্ক স্পষ্টভাবে দেখাবে।
+### ৩. বর্গা/মালিকের Savings Number ঠিক করা
+`src/lib/irrigationReceiptData.ts`:
+- মালিকের কোয়েরিতে (`ownerRows`) `account_number, savings_inactive` যোগ করা।
+- `ownerSavingsNo` বের করা (মালিক সদস্য হলে `account_number`, নইলে `N/A`)।
+- `memberSummary` লজিক:
+  - বর্গা হলে → `"{বর্গাদারের Savings No}/{মালিকের Savings No}"`
+  - নিজ জমি হলে → শুধু `cultivatorSavingsNo` (আগের মতো)।
 
 ## টেকনিক্যাল নোট
-- `next_serial_receipt_no()`-এর মূল `GREATEST(last_no, start)+1` লজিক অপরিবর্তিত (নিরাপত্তা), শুধু অ্যাডমিন রিসেটে কাউন্টার সঠিক অবস্থানে আনা হবে।
-- Supabase ও Laravel/VPS দুই ব্যাকএন্ডেই পরিবর্তন যোগ হবে।
+- শুধু ফ্রন্টএন্ড/রশিদ-বিল্ডিং কোড পরিবর্তন; ডাটাবেজ স্কিমা বা অন্য মডিউল অপরিবর্তিত।
+- শেয়ার্ড `buildPaymentReceiptData`/`irrigationReceiptData` পরিবর্তন পেমেন্ট পেজেও একই বর্গা/মালিক নম্বর সঠিকভাবে দেখাবে — অসংগতি দূর হবে।
+- QR, সিরিয়াল নম্বর, সেভিং/লোন রশিদ — কোনোটিতে হাত দেওয়া হবে না।
+
+## ঝুঁকি
+- বর্গা `member_summary` পরিবর্তন পেমেন্ট পেজের রশিদেও প্রযোজ্য — এটাই কাঙ্ক্ষিত (সব জায়গায় এক রকম)।

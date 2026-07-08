@@ -205,7 +205,7 @@ export async function buildIrrigationReceiptEnrichment(
     if (ownerIds.length) {
       const { data: ownerRows } = await db
         .from("farmers")
-        .select("id,name_bn,name_en,member_no,farmer_code")
+        .select("id,name_bn,name_en,member_no,farmer_code,account_number,savings_inactive")
         .in("id", ownerIds);
       for (const o of ownerRows ?? []) ownerById[(o as any).id] = o;
     }
@@ -310,7 +310,15 @@ export async function buildIrrigationReceiptEnrichment(
     cultivatorFarmer && !cultivatorFarmer.savings_inactive && cultivatorFarmer.account_number
       ? String(cultivatorFarmer.account_number)
       : null;
-  const memberSummary = cultivatorSavingsNo ?? "N/A";
+  // বর্গা হলে মালিকের সেভিং একাউন্ট নম্বর (সদস্য হলে), নইলে N/A।
+  const ownerSavingsNo =
+    ownerFarmer && !ownerFarmer.savings_inactive && ownerFarmer.account_number
+      ? String(ownerFarmer.account_number)
+      : null;
+  // বর্গা জমি: "বর্গাদারের Savings No / মালিকের Savings No"; নিজ জমি: শুধু চাষির Savings No।
+  const memberSummary = anyBorga
+    ? `${cultivatorSavingsNo ?? "N/A"}/${ownerSavingsNo ?? "N/A"}`
+    : (cultivatorSavingsNo ?? "N/A");
   const mouza = invoiceRows.find((inv) => inv?.lands?.mouza)?.lands?.mouza ?? null;
   const dagNo =
     Array.from(
