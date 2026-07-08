@@ -268,7 +268,33 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
     () => invoices.filter(i => !currentSeasonId || i.season_id !== currentSeasonId),
     [invoices, currentSeasonId],
   );
-
+ 
+  // Admin-visible reconciliation: which season classifies as হাল, and the
+  // computed হাল/জরিমানা totals used when generating the receipt.
+  const currentSeasonLabel = useMemo(() => {
+    const inv = invoices.find(i => i.season_id === currentSeasonId);
+    return inv ? `${inv.seasons?.name ?? "—"} ${inv.seasons?.year ?? ""}`.trim() : "—";
+  }, [invoices, currentSeasonId]);
+  const halPenaltyReconciliation = useMemo(() => {
+    const rows = invoices.map(inv => {
+      const isHal = !!currentSeasonId && inv.season_id === currentSeasonId;
+      const penalty = (delayFee[inv.id] ?? Number(inv.delay_fee || 0));
+      const original = Number(inv.delay_fee || 0);
+      return {
+        id: inv.id,
+        invoice_no: inv.invoice_no,
+        season: `${inv.seasons?.name ?? "—"} ${inv.seasons?.year ?? ""}`.trim(),
+        classification: isHal ? "hal" : "due",
+        charge: Math.max(0, Number(inv.due_amount || 0) - original),
+        penalty,
+      };
+    });
+    const halCharge = rows.filter(r => r.classification === "hal").reduce((s, r) => s + r.charge, 0);
+    const halPenalty = rows.filter(r => r.classification === "hal").reduce((s, r) => s + r.penalty, 0);
+    const dueCharge = rows.filter(r => r.classification === "due").reduce((s, r) => s + r.charge, 0);
+    const duePenalty = rows.filter(r => r.classification === "due").reduce((s, r) => s + r.penalty, 0);
+    return { rows, halCharge, halPenalty, dueCharge, duePenalty };
+  }, [invoices, currentSeasonId, delayFee]);
   // Auto-select all previous invoices by default; operator can deselect.
   useEffect(() => {
     setSelectedPrevIds(new Set(previousInvoices.map(i => i.id)));
