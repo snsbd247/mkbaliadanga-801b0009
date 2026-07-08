@@ -353,8 +353,4 @@ export function PaidLandHistory({ farmerId }: Props) {
       />
     </Card>
   );
-
-  function branding_fallback() {
-    return "";
-  }
 }
