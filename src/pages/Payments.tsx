@@ -137,6 +137,40 @@ export default function Payments() {
     return previewEdit(editBaseline, { delay_fee: editForm.delay_fee, amount: editForm.amount });
   }, [editBaseline, editForm.delay_fee, editForm.amount]);
 
+  // Human-readable labels for the receipt edit history diff (no raw JSON).
+  const editFieldLabels: Record<string, string> = {
+    amount: tx("Amount", "টাকা"),
+    delay_fee: tx("Delay fee", "জরিমানা"),
+    mouza: tx("Mouza", "মৌজা"),
+    land_size: tx("Land size", "জমির পরিমাণ"),
+    owner_farmer_id: tx("Owner", "মালিক"),
+    patwari_id: tx("Patwari", "পাটুয়ারি"),
+    note: tx("Note", "নোট"),
+    receipt_no: tx("Receipt #", "রশিদ নং"),
+  };
+
+  function renderEditDiff(h: any) {
+    const before = h.old_values || {};
+    const { reason, ...after } = (h.new_values || {}) as Record<string, unknown>;
+    const keys = Array.from(new Set([...Object.keys(before), ...Object.keys(after)]))
+      .filter((k) => editFieldLabels[k] && String(before[k] ?? "") !== String((after as any)[k] ?? ""));
+    if (keys.length === 0) return <div className="text-muted-foreground">{tx("No field changes", "কোনো পরিবর্তন নেই")}</div>;
+    return (
+      <div className="space-y-0.5">
+        {keys.map((k) => (
+          <div key={k} className="flex flex-wrap gap-1">
+            <span className="font-medium">{editFieldLabels[k]}:</span>
+            <span className="text-destructive line-through">{String(before[k] ?? "—")}</span>
+            <span>→</span>
+            <span className="text-success">{String((after as any)[k] ?? "—")}</span>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+
+
   async function loadEditHistory(paymentId: string) {
     try {
       const { rows } = await fetchReceiptAuditLogs({ paymentId, limit: 50 });
@@ -338,7 +372,7 @@ export default function Payments() {
   }
 
   async function load() {
-    let pq = db.from("payments").select("*, farmers(name_en,name_bn,farmer_code,member_no,mobile,village,father_name,voter_number,account_number,is_voter,union_id), patwaris(name,name_bn,mobile), payment_allocations(*)").order("created_at", { ascending: false }).limit(100);
+    let pq = db.from("payments").select("*, farmers(name_en,name_bn,farmer_code,member_no,mobile,village,father_name,voter_number,account_number,is_voter,union_id), patwaris(name,name_bn,mobile), offices(name), payment_allocations(*)").order("created_at", { ascending: false }).limit(100);
     pq = showDeleted ? pq.not("deleted_at", "is", null) : pq.is("deleted_at", null);
     if (period !== "all") {
       const now = new Date();
@@ -1170,9 +1204,20 @@ export default function Payments() {
             <div className="py-6 text-center text-muted-foreground">{tx("Loading…", "লোড হচ্ছে…")}</div>
           ) : (
             <div className="space-y-3">
+              {editPayment && (
+                <div className="rounded-md border bg-muted/40 p-2 grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
+                  <div><span className="text-muted-foreground">{tx("Receipt #", "রশিদ নং")}: </span><span className="font-medium">{editPayment.receipt_no || "—"}</span></div>
+                  <div><span className="text-muted-foreground">{tx("Date", "তারিখ")}: </span><span className="font-medium">{fmtDate(editPayment.created_at)}</span></div>
+                  <div><span className="text-muted-foreground">{tx("Type", "ধরন")}: </span><span className="font-medium">{editPayment.kind || "—"}</span></div>
+                  <div><span className="text-muted-foreground">{tx("Method", "মাধ্যম")}: </span><span className="font-medium">{editPayment.method || "—"}</span></div>
+                  <div><span className="text-muted-foreground">{tx("Office", "অফিস")}: </span><span className="font-medium">{editPayment.offices?.name || "—"}</span></div>
+                  <div><span className="text-muted-foreground">{tx("Current amount", "বর্তমান টাকা")}: </span><span className="font-medium">{money(Number(editPayment.amount || 0))}</span></div>
+                </div>
+              )}
               {!editInvoiceId && (
                 <p className="text-xs text-muted-foreground">{tx("This receipt has no linked irrigation invoice; only amount can be edited.", "এই রসিদে কোনো সেচ ইনভয়েস যুক্ত নেই; শুধু টাকা এডিট করা যাবে।")}</p>
               )}
+
               {editInvoiceId && (<>
                 <div>
                   <Label>{tx("Owner", "মালিক")}</Label>
@@ -1222,9 +1267,7 @@ export default function Payments() {
                   {editHistory.map((h) => (
                     <div key={h.id} className="text-xs border-b pb-1 last:border-0">
                       <div className="text-muted-foreground">{new Date(h.created_at).toLocaleString()} · {h.new_values?.reason || "—"}</div>
-                      <div className="font-mono whitespace-pre-wrap break-all">
-                        {tx("Before", "আগে")}: {JSON.stringify(h.old_values)}{"\n"}{tx("After", "পরে")}: {JSON.stringify((({ reason, ...rest }) => rest)(h.new_values || {}))}
-                      </div>
+                      {renderEditDiff(h)}
                     </div>
                   ))}
                 </div>
