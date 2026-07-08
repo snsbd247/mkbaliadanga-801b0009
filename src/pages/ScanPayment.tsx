@@ -327,7 +327,7 @@ export default function ScanPayment() {
                 <Button
                   variant="ghost"
                   onClick={async () => {
-                    const payload = buildReceiptPayload();
+                    const payload = await resolveReceiptData();
                     if (payload) setPreviewUrl(await previewBnReceiptPdf(payload, "both", receiptArgs.options));
                   }}
                 >
@@ -337,7 +337,7 @@ export default function ScanPayment() {
                   size="sm"
                   label="Download receipt"
                   onSelect={async (copy: ReceiptCopy) => {
-                    const payload = buildReceiptPayload();
+                    const payload = await resolveReceiptData();
                     if (payload) await downloadBnReceiptPdf(payload, copy, receiptArgs.options);
                   }}
                 />
