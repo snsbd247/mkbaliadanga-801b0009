@@ -322,7 +322,7 @@ export function PaidLandHistory({ farmerId }: Props) {
               <TableCell>{r.paid_on ? fmtDate(r.paid_on) : "—"}</TableCell>
               <TableCell className={`text-right ${r.cancelled ? "line-through" : ""}`}>{r.amount.toFixed(2)}</TableCell>
               <TableCell className="text-right whitespace-nowrap">
-                <Button size="sm" variant="ghost" title={tx("Preview", "প্রিভিউ")} onClick={() => setPreview(r)}>
+                <Button size="sm" variant="ghost" title={tx("Preview", "প্রিভিউ")} onClick={() => openPreview(r)}>
                   <Eye className="h-4 w-4" />
                 </Button>
                 <Button size="sm" variant="ghost" title={tx("Download", "ডাউনলোড")} onClick={() => downloadReceipt(r)} disabled={r.cancelled}>
