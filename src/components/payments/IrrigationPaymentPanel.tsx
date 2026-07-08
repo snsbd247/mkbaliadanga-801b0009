@@ -29,6 +29,7 @@ import { exceedsDue } from "@/lib/irrigationPaymentMath";
 import { verifyPaymentCoverage } from "@/lib/irrigationPaymentCoverage";
 import { recalcInvoice } from "@/lib/invoiceRecalc";
 import { resolveReceiptPatwari } from "@/lib/receiptPatwari";
+import { verifyInvoiceConsistency } from "@/lib/invoiceBreakdown";
 
 // Shared select for open irrigation invoices (used by both initial load and reload).
 const OPEN_INVOICE_SELECT =
