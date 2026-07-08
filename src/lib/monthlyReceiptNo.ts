@@ -44,7 +44,7 @@ export async function nextUnifiedReceiptNo(
 ): Promise<string> {
   if (officeId) {
     try {
-      const { data, error } = await (supabase as any).rpc("next_unified_receipt_no", {
+      const { data, error } = await (db as any).rpc("next_unified_receipt_no", {
         p_office_id: officeId,
       });
       if (!error && typeof data === "string" && data) return data;
