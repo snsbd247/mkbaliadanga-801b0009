@@ -510,9 +510,7 @@ function copyHtml(d: BnReceiptData, copyLabel: string, signatureUrl: string | nu
       : null;
     const holdingParts = [holdingDesc, patwariText].filter(Boolean).join(" / ");
     rows.push([t.holding, holdingParts || "—"]);
-    // 14. পরিশোধকৃত টাকা — যত টাকা পেমেন্ট করা হয়েছে
-    const paidLabel = lang === "bn" ? "পরিশোধকৃত টাকা:" : "Amount paid:";
-    rows.push([paidLabel, moneyInt(totalIrr, lang, "৳")]);
+    // 14. পরিশোধকৃত টাকা সারি বাদ (client request)
   } else {
     // কৃষকের নাম এবং কৃষক সদস্য নং: name - member_no - owner_type - voter/savings ref
     const memberRefSuffix = d.farmer.member_type_bn || d.farmer.member_ref_no
