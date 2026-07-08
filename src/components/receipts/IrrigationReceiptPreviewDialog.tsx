@@ -46,7 +46,7 @@ export function IrrigationReceiptPreviewDialog({ open, onOpenChange, data, copy 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-3xl">
-        <DialogHeader><DialogTitle>{tx("Irrigation receipt preview (A5 landscape)", "সেচ রসিদ প্রিভিউ (A5 ল্যান্ডস্কেপ)")}</DialogTitle></DialogHeader>
+        <DialogHeader><DialogTitle>{tx("Irrigation receipt preview (A4, 2 copies)", "সেচ রসিদ প্রিভিউ (A4, ২ কপি)")}</DialogTitle></DialogHeader>
         {isReceiptDataDebugEnabled() && data && (
           <Badge variant="outline" className="w-fit">
             {tx("Patwari source", "পাটুয়ারী সোর্স")}:{" "}
@@ -57,7 +57,7 @@ export function IrrigationReceiptPreviewDialog({ open, onOpenChange, data, copy 
                 : tx("none", "নেই")}
           </Badge>
         )}
-        <div className="mx-auto w-full max-w-2xl overflow-hidden rounded-md border bg-muted" style={{ aspectRatio: "210 / 148" }}>
+        <div className="mx-auto w-full max-w-md overflow-hidden rounded-md border bg-muted" style={{ aspectRatio: "210 / 297" }}>
           {loading || !url
             ? <div className="flex h-full items-center justify-center text-muted-foreground"><Loader2 className="h-5 w-5 animate-spin mr-2" />{tx("Rendering…", "তৈরি হচ্ছে…")}</div>
             : <iframe title="receipt-preview" src={url} className="h-full w-full" />}

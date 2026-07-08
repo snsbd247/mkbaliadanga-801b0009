@@ -19,6 +19,9 @@ vi.mock("jspdf", () => ({
     constructor(options: any) { lastPdfOptions = options; }
     internal = { pageSize: { getWidth: () => 210, getHeight: () => 297 } };
     addImage = (...a: any[]) => addImage(...a);
+    setLineDashPattern = () => this;
+    setDrawColor = () => this;
+    line = () => this;
     save = (n: string) => { lastSaveName = n; };
     output = () => "data:application/pdf;base64,xxx";
   },
@@ -110,12 +113,16 @@ describe("Receipt flow E2E (print + download for all kinds)", () => {
     expect(args[4]).toBe(210 - 15 - 15); // inner width
   });
 
-  it("official irrigation receipt always forces A5 landscape, even if user settings are A4 portrait", async () => {
+  it("official irrigation receipt renders A4 portrait with two copies (cut in half → office + farmer)", async () => {
     const rno = autoReceiptNo("IRR", "x", new Date("2026-05-06"));
+    addImage.mockClear();
     await downloadBnReceiptPdf(payload("irrigation", rno), "both", {
-      paper: "a4",
-      orientation: "p",
+      paper: "a5",
+      orientation: "l",
     });
-    expect(lastPdfOptions).toMatchObject({ unit: "mm", format: "a5", orientation: "l" });
+    // A4 portrait page regardless of requested paper/orientation.
+    expect(lastPdfOptions).toMatchObject({ unit: "mm", format: "a4", orientation: "p" });
+    // The same A5 layout is drawn twice (top + bottom halves).
+    expect(addImage).toHaveBeenCalledTimes(2);
   });
 });

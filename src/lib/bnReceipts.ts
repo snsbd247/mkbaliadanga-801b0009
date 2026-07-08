@@ -785,9 +785,10 @@ async function renderPdf(data: BnReceiptData, copy: ReceiptCopy, options?: Recei
   const opts = resolveOpts(options);
   // সেচ চার্জ ও বিবিধ আদায় রশিদ: সবসময় FIXED A5 landscape।
   // User/profile receipt settings (A4/portrait) irrigation official receipt-কে override করতে পারবে না।
-  if (data.kind === "irrigation" && !data.office_income) {
-    opts.paper = IRRIGATION_RECEIPT_PAGE.paper;
-    opts.orientation = IRRIGATION_RECEIPT_PAGE.orientation;
+  const irrigationTwoUp = data.kind === "irrigation" && !data.office_income;
+  if (irrigationTwoUp) {
+    opts.paper = "a4";
+    opts.orientation = "p";
     opts.margins = { ...IRRIGATION_RECEIPT_PAGE.margins };
   }
   let tpl: ReceiptTemplate = { ...DEFAULT_TEMPLATE };
@@ -831,8 +832,30 @@ async function renderPdf(data: BnReceiptData, copy: ReceiptCopy, options?: Recei
       drawH = innerH;
       drawW = innerW * scale;
     }
+    const imgData = canvas.toDataURL("image/jpeg", 0.95);
+    if (irrigationTwoUp) {
+      // A4 পোর্ট্রেটকে দুই সমান অংশে ভাগ করে প্রতিটিতে একটি করে রশিদ বসাই।
+      const halfH = pageH / 2;
+      const slotH = halfH - opts.margins.t - opts.margins.b;
+      let w = innerW;
+      let h = (canvas.height * innerW) / canvas.width;
+      if (h > slotH) {
+        const scale = slotH / h;
+        h = slotH;
+        w = innerW * scale;
+      }
+      const ox = opts.margins.l + (innerW - w) / 2;
+      pdf.addImage(imgData, "JPEG", ox, opts.margins.t, w, h);
+      pdf.addImage(imgData, "JPEG", ox, halfH + opts.margins.t, w, h);
+      // মাঝ বরাবর কাটার গাইড লাইন।
+      pdf.setLineDashPattern([1.5, 1.5], 0);
+      pdf.setDrawColor(150);
+      pdf.line(opts.margins.l, halfH, pageW - opts.margins.r, halfH);
+      pdf.setLineDashPattern([], 0);
+      return pdf;
+    }
     const offsetX = opts.margins.l + (innerW - drawW) / 2;
-    pdf.addImage(canvas.toDataURL("image/jpeg", 0.95), "JPEG", offsetX, opts.margins.t, drawW, drawH);
+    pdf.addImage(imgData, "JPEG", offsetX, opts.margins.t, drawW, drawH);
     return pdf;
   } finally {
     node.remove();
