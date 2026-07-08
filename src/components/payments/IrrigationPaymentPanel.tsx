@@ -25,6 +25,8 @@ import { downloadBnReceiptPdf, normalizeIrrigationRatePerAcre } from "@/lib/bnRe
 import { fetchPaymentReceiptData } from "@/lib/buildPaymentReceiptData";
 import { useBranding } from "@/lib/branding";
 import { useReceiptRenderArgs } from "@/lib/receiptOptions";
+import { IrrigationReceiptPreviewDialog } from "@/components/receipts/IrrigationReceiptPreviewDialog";
+import type { BnReceiptData, ReceiptCopy } from "@/lib/bnReceipts";
 import { resolveFieldTypeLabel } from "@/lib/irrigationLandType";
 import { safeWithRetry } from "@/lib/retryQueue";
 import { logAudit } from "@/lib/audit";
