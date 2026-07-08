@@ -2282,6 +2282,7 @@ export default function FarmerDetail() {
         onOpenChange={(o) => { if (!o) setPaymentPreview(null); }}
         data={paymentPreview?.data ?? null}
         copy={paymentPreview?.copy ?? "both"}
+        options={receiptArgs.options}
       />
     </>
 
