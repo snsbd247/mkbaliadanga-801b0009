@@ -1267,9 +1267,7 @@ export default function Payments() {
                   {editHistory.map((h) => (
                     <div key={h.id} className="text-xs border-b pb-1 last:border-0">
                       <div className="text-muted-foreground">{new Date(h.created_at).toLocaleString()} · {h.new_values?.reason || "—"}</div>
-                      <div className="font-mono whitespace-pre-wrap break-all">
-                        {tx("Before", "আগে")}: {JSON.stringify(h.old_values)}{"\n"}{tx("After", "পরে")}: {JSON.stringify((({ reason, ...rest }) => rest)(h.new_values || {}))}
-                      </div>
+                      {renderEditDiff(h)}
                     </div>
                   ))}
                 </div>
