@@ -82,7 +82,6 @@ export interface IrrigationEnrichInput {
   refIds?: string[];
   paymentAmount?: number;
   paymentNote?: string | null;
-  memberNoFallback?: string | null;
   /** Patwari explicitly saved on the payment/receipt (manual selection or later edit). */
   manualPatwariId?: string | null;
   manualPatwari?: PatwariRow | null;
@@ -126,7 +125,7 @@ export interface IrrigationEnriched {
 export async function buildIrrigationReceiptEnrichment(
   input: IrrigationEnrichInput,
 ): Promise<IrrigationEnriched> {
-  const { farmerId, refIds, paymentAmount, paymentNote, memberNoFallback, manualPatwariId } = input;
+  const { farmerId, refIds, paymentAmount, paymentNote, manualPatwariId } = input;
 
   const collectedFromOutstanding = Number(paymentAmount || 0);
   let invoiceRows: any[] = [];

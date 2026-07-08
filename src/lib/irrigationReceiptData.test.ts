@@ -73,7 +73,6 @@ describe("buildIrrigationReceiptEnrichment", () => {
       farmerId: "cult-1",
       paymentAmount: 4039,
       paymentNote: null,
-      memberNoFallback: "02473",
     });
 
     expect(e.farmerExtras.mouza).toBe("বালিয়াডাঙ্গা");
@@ -99,7 +98,6 @@ describe("buildIrrigationReceiptEnrichment", () => {
       farmerId: "cult-1",
       paymentAmount: 4039,
       paymentNote: "পেমেন্ট নোট",
-      memberNoFallback: "1920",
     });
 
     expect(e.holding_description).toBe("নিজ সেচে আবাদ হয়।");
@@ -142,7 +140,6 @@ describe("buildIrrigationReceiptEnrichment", () => {
       farmerId: "cult-1",
       paymentAmount: 4039,
       paymentNote: null,
-      memberNoFallback: "02473",
     });
 
     expect(e.owner_self).toBe(false);
@@ -157,7 +154,7 @@ describe("buildIrrigationReceiptEnrichment", () => {
   it("returns safe defaults when no invoices exist", async () => {
     resultQueue.push({ data: [] });
     resultQueue.push({ data: [] });
-    const e = await buildIrrigationReceiptEnrichment({ farmerId: "x", memberNoFallback: null });
+    const e = await buildIrrigationReceiptEnrichment({ farmerId: "x" });
     expect(e.farmerExtras.mouza).toBeNull();
     expect(e.bill_info).toBe("সেচ চার্জ");
     expect(e.member_summary).toBe("নাই");
