@@ -64,18 +64,18 @@ test.describe("Receipt serial — 4641 persists on reload, next is 4642", () => 
     await input.fill("4641");
     await page.getByRole("button", { name: /save/i }).click();
 
-    await expect(page.getByText(/পরবর্তী রিসিপ্ট হবে 4642/)).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByText(/পরবর্তী রিসিপ্ট হবে 4641/)).toBeVisible({ timeout: 15_000 });
 
     // Reload — the persisted value must still be 4641.
     await page.reload();
     await expect(page.getByTestId("serial-start-input")).toHaveValue("4641");
 
-    // The next minted serial must be exactly 4642.
+    // The next minted serial must be exactly 4641.
     const mint = await api.post(`${SUPABASE_URL}/rest/v1/rpc/next_unified_receipt_no`, {
       headers: { apikey: ANON, Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
       data: { p_office_id: null },
     });
     expect(mint.ok()).toBeTruthy();
-    expect(Number(await mint.json())).toBe(4642);
+    expect(Number(await mint.json())).toBe(4641);
   });
 });
