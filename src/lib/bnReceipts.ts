@@ -781,6 +781,25 @@ function resolveOpts(o?: ReceiptOptions) {
   };
 }
 
+/** Fetch a remote image and return a data URL so html2canvas can always draw it. */
+async function imageUrlToDataUrl(url?: string | null): Promise<string | null> {
+  if (!url) return null;
+  if (url.startsWith("data:")) return url;
+  try {
+    const res = await fetch(url, { mode: "cors" });
+    if (!res.ok) return null;
+    const blob = await res.blob();
+    return await new Promise<string | null>((resolve) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(typeof reader.result === "string" ? reader.result : null);
+      reader.onerror = () => resolve(null);
+      reader.readAsDataURL(blob);
+    });
+  } catch {
+    return null;
+  }
+}
+
 async function renderPdf(data: BnReceiptData, copy: ReceiptCopy, options?: ReceiptOptions, target?: jsPDF): Promise<jsPDF> {
   const opts = resolveOpts(options);
   // সেচ চার্জ ও বিবিধ আদায় রশিদ: সবসময় FIXED A5 landscape।
