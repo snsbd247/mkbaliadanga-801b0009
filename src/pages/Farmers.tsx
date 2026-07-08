@@ -386,7 +386,9 @@ export default function Farmers() {
     return map;
   }
 
+  const loadSeqRef = useRef(0);
   async function load() {
+    const seq = ++loadSeqRef.current;
     // If the search includes dag-like tokens (comma / newline / whitespace
     // separated), also pull farmer_ids whose lands match ANY token. This lets
     // a search like "123, 124/A" find both single- and multi-dag lands.
