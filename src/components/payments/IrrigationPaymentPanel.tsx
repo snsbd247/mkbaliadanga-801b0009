@@ -30,6 +30,7 @@ import { verifyPaymentCoverage } from "@/lib/irrigationPaymentCoverage";
 import { recalcInvoice } from "@/lib/invoiceRecalc";
 import { resolveReceiptPatwari } from "@/lib/receiptPatwari";
 import { verifyInvoiceConsistency } from "@/lib/invoiceBreakdown";
+import { nextUnifiedReceiptNo } from "@/lib/monthlyReceiptNo";
 
 // Shared select for open irrigation invoices (used by both initial load and reload).
 const OPEN_INVOICE_SELECT =
@@ -429,6 +430,9 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
     try {
       const officeId = (selectedCurrentInvoices[0]?.office_id ?? previousInvoices[0]?.office_id) ?? null;
 
+      // Generate the receipt number client-side (unified serial with offline fallback).
+      const generatedReceiptNo = await nextUnifiedReceiptNo(officeId, "IRR");
+
       // 1) Insert payment row
       const { data: ins, error: payErr } = await db.from("payments").insert({
         farmer_id: farmerId,
@@ -440,10 +444,11 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
         collected_by: user?.id,
         status: "approved",
         office_id: officeId,
+        receipt_no: generatedReceiptNo,
       }).select("id, receipt_no").single();
       if (payErr) throw payErr;
       const paymentId = ins!.id as string;
-      const receiptNo = String((ins as any)?.receipt_no ?? "").trim();
+      const receiptNo = String((ins as any)?.receipt_no ?? generatedReceiptNo ?? "").trim();
       if (!receiptNo) {
         throw new Error(tx("Receipt number was not generated", "রশিদ নম্বর তৈরি হয়নি"));
       }
