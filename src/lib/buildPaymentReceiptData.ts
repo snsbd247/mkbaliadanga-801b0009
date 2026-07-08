@@ -123,6 +123,7 @@ export async function fetchPaymentReceiptData(
   paymentId: string,
   ctx: ReceiptBuildContext,
 ): Promise<BnReceiptData> {
+  if (!paymentId) throw new Error("Payment id is required for receipt");
   const { data, error } = await db
     .from("payments")
     .select(RECEIPT_PAY_SELECT)
@@ -131,5 +132,15 @@ export async function fetchPaymentReceiptData(
     .maybeSingle();
   if (error) throw error;
   if (!data) throw new Error("Payment not found for receipt");
-  return buildPaymentReceiptData(data, ctx);
+  // Guarantee the canonical shape even if some joins came back null so every
+  // entry point (Payments, Farmer profile, Scan) renders identical output.
+  const normalized = {
+    ...data,
+    payment_allocations: Array.isArray((data as any).payment_allocations)
+      ? (data as any).payment_allocations
+      : [],
+    farmers: (data as any).farmers ?? null,
+    patwaris: (data as any).patwaris ?? null,
+  };
+  return buildPaymentReceiptData(normalized, ctx);
 }
