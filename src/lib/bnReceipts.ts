@@ -785,9 +785,10 @@ async function renderPdf(data: BnReceiptData, copy: ReceiptCopy, options?: Recei
   const opts = resolveOpts(options);
   // সেচ চার্জ ও বিবিধ আদায় রশিদ: সবসময় FIXED A5 landscape।
   // User/profile receipt settings (A4/portrait) irrigation official receipt-কে override করতে পারবে না।
-  if (data.kind === "irrigation" && !data.office_income) {
-    opts.paper = IRRIGATION_RECEIPT_PAGE.paper;
-    opts.orientation = IRRIGATION_RECEIPT_PAGE.orientation;
+  const irrigationTwoUp = data.kind === "irrigation" && !data.office_income;
+  if (irrigationTwoUp) {
+    opts.paper = "a4";
+    opts.orientation = "p";
     opts.margins = { ...IRRIGATION_RECEIPT_PAGE.margins };
   }
   let tpl: ReceiptTemplate = { ...DEFAULT_TEMPLATE };
