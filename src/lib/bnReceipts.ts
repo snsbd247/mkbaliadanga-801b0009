@@ -846,6 +846,25 @@ export async function downloadBnReceiptPdf(data: BnReceiptData, copy: ReceiptCop
   pdf.save(`${data.farmer.name.replace(/\s+/g, "_")}_${data.receipt_no}_${data.kind}${copySuffix(copy)}_receipt.pdf`);
 }
 
+/**
+ * Render several receipts into ONE multi-page PDF and download it. Each receipt
+ * keeps its own paper/orientation (e.g. irrigation stays A5 landscape).
+ */
+export async function downloadBnReceiptsPdf(
+  items: { data: BnReceiptData; copy?: ReceiptCopy; options?: ReceiptOptions }[],
+  fileName = `receipts_${new Date().toISOString().slice(0, 10)}.pdf`,
+): Promise<void> {
+  if (!items.length) return;
+  if (items.length === 1) {
+    return downloadBnReceiptPdf(items[0].data, items[0].copy ?? "both", items[0].options);
+  }
+  let pdf: jsPDF | undefined;
+  for (const it of items) {
+    pdf = await renderPdf(it.data, it.copy ?? "both", it.options, pdf);
+  }
+  pdf!.save(fileName);
+}
+
 export async function previewBnReceiptPdf(data: BnReceiptData, copy: ReceiptCopy = "both", options?: ReceiptOptions): Promise<string> {
   const pdf = await renderPdf(data, copy, options);
   return pdf.output("datauristring");
