@@ -69,20 +69,28 @@ describe("Receipt flow E2E (print + download for all kinds)", () => {
         expect(lastHtml).toContain('data-sig="placeholder"'); // no signature provided
       }
 
-      // farmer-only
+      // farmer-only (irrigation always renders the A4 two-up, so no per-copy suffix)
       await downloadBnReceiptPdf(payload(k, rno), "farmer");
-      expect(lastSaveName).toContain("_farmer");
-      expect(lastHtml).toContain("কৃষকের কপি");
-      expect(lastHtml).not.toContain("অফিস কপি");
+      if (k === "irrigation") {
+        expect(lastSaveName).not.toContain("_farmer");
+      } else {
+        expect(lastSaveName).toContain("_farmer");
+        expect(lastHtml).toContain("কৃষকের কপি");
+        expect(lastHtml).not.toContain("অফিস কপি");
+      }
 
       // office-only with separate signature
       await downloadBnReceiptPdf(
         payload(k, rno, { office_collector_signature_url: "https://x/sig-office.png" }),
         "office",
       );
-      expect(lastSaveName).toContain("_office");
-      if (k === "irrigation") expect(lastHtml).not.toContain("sig-office.png");
-      else expect(lastHtml).toContain("sig-office.png");
+      if (k === "irrigation") {
+        // irrigation ignores copy → single two-up file, no _office suffix
+        expect(lastSaveName).not.toContain("_office");
+      } else {
+        expect(lastSaveName).toContain("_office");
+        expect(lastHtml).toContain("sig-office.png");
+      }
       if (k !== "irrigation") expect(lastHtml).not.toContain("কৃষকের কপি");
 
       // org block printed on each copy

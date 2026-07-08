@@ -871,81 +871,93 @@ async function renderPdf(data: BnReceiptData, copy: ReceiptCopy, options?: Recei
     office_collector_signature_url: officeSigData ?? data.office_collector_signature_url,
     logo_url: logoData ?? data.logo_url,
   };
-  const node = buildHtml(data, copy, opts.lang, opts.orgLayout, opts.orgSize, qrDataUrl, opts.showVerifyUrl, tpl);
-  try {
-    await new Promise((r) => setTimeout(r, 60));
-    const canvas = await html2canvas(node, { scale: 2, useCORS: true, backgroundColor: "#ffffff" });
-    let pdf: jsPDF;
-    if (target) {
-      target.addPage(opts.paper, opts.orientation);
-      pdf = target;
-    } else {
-      pdf = new jsPDF({ unit: "mm", format: opts.paper, orientation: opts.orientation });
+  // Render a single receipt copy (office/farmer/both) to a JPEG data URL plus
+  // its aspect ratio (width/height) taken straight from the source canvas.
+  const renderCopyToImage = async (c: ReceiptCopy): Promise<{ img: string; aspect: number }> => {
+    const node = buildHtml(data, c, opts.lang, opts.orgLayout, opts.orgSize, qrDataUrl, opts.showVerifyUrl, tpl);
+    try {
+      await new Promise((r) => setTimeout(r, 60));
+      const canvas = await html2canvas(node, { scale: 2, useCORS: true, backgroundColor: "#ffffff" });
+      const aspect = canvas.width && canvas.height ? canvas.width / canvas.height : 0.7;
+      return { img: canvas.toDataURL("image/jpeg", 0.95), aspect };
+    } finally {
+      node.remove();
     }
-    const pageW = pdf.internal.pageSize.getWidth();
-    const pageH = pdf.internal.pageSize.getHeight();
-    const innerW = pageW - opts.margins.l - opts.margins.r;
-    const innerH = pageH - opts.margins.t - opts.margins.b;
-    // Fit the rendered receipt inside ONE page without distortion. If the
-    // content is taller than the printable area (long text / many dag rows),
-    // scale it down proportionally so it never overflows to a second page.
-    // The fit-to-page toggle keeps the preview and PDF aligned across drivers.
-    let drawW = innerW;
-    let drawH = (canvas.height * innerW) / canvas.width;
-    if (getReceiptFitToPage() && drawH > innerH) {
-      const scale = innerH / drawH;
-      drawH = innerH;
-      drawW = innerW * scale;
-    }
-    const imgData = canvas.toDataURL("image/jpeg", 0.95);
-    if (irrigationTwoUp) {
-      // A4 পোর্ট্রেটকে দুই সমান অংশে ভাগ করি: উপরে "অফিস কপি", নিচে "কৃষক কপি"।
-      // প্রতিটি রশিদ তার অর্ধেকের ভেতরে উল্লম্বভাবে কেন্দ্রীভূত থাকে যাতে প্রিন্টে
-      // মাঝ বরাবর কাটলে দুটি সমান কপি পাওয়া যায়।
-      const midY = pageH / 2;
-      const labelH = 7; // mm reserved for the copy label at each half's top
-      const slotTop = opts.margins.t + labelH;
-      const slotH = midY - slotTop - opts.margins.b;
+  };
+
+
+  let pdf: jsPDF;
+  if (target) {
+    target.addPage(opts.paper, opts.orientation);
+    pdf = target;
+  } else {
+    pdf = new jsPDF({ unit: "mm", format: opts.paper, orientation: opts.orientation });
+  }
+  const pageW = pdf.internal.pageSize.getWidth();
+  const pageH = pdf.internal.pageSize.getHeight();
+  const innerW = pageW - opts.margins.l - opts.margins.r;
+  const innerH = pageH - opts.margins.t - opts.margins.b;
+
+  if (irrigationTwoUp) {
+    // A4 পোর্ট্রেটকে দুই সমান অংশে ভাগ করি: উপরে "অফিস কপি", নিচে "কৃষক কপি"।
+    // প্রতিটি অর্ধে তার নিজের কপি (office / farmer) আলাদা রেন্ডার হয় যাতে প্রিন্টে
+    // মাঝ বরাবর কাটলে একটি অফিস কপি ও একটি কৃষক কপি পাওয়া যায়।
+    const officeImg = await renderCopyToImage("office");
+    const farmerImg = await renderCopyToImage("farmer");
+    const midY = pageH / 2;
+    const labelH = 7; // mm reserved for the copy label at each half's top
+    const slotTop = opts.margins.t + labelH;
+    const slotH = midY - slotTop - opts.margins.b;
+    const officeLabel = await textToDataUrl(opts.lang === "bn" ? "অফিস কপি" : "Office copy");
+    const farmerLabel = await textToDataUrl(opts.lang === "bn" ? "কৃষক কপি" : "Farmer copy");
+    const drawHalf = (top: number, copyImg: { img: string; aspect: number }, label: { data: string; ratio: number } | null) => {
+      if (label) {
+        const lw = labelH * 0.85 * label.ratio;
+        pdf.addImage(label.data, "PNG", opts.margins.l, top + 1, lw, labelH * 0.85);
+      }
       let w = innerW;
-      let h = (canvas.height * innerW) / canvas.width;
+      let h = w / (copyImg.aspect || 0.7);
       if (h > slotH) {
         const scale = slotH / h;
         h = slotH;
         w = innerW * scale;
       }
       const ox = opts.margins.l + (innerW - w) / 2;
-      const officeLabel = await textToDataUrl(opts.lang === "bn" ? "অফিস কপি" : "Office copy");
-      const farmerLabel = await textToDataUrl(opts.lang === "bn" ? "কৃষক কপি" : "Farmer copy");
-      const drawHalf = (top: number, label: { data: string; ratio: number } | null) => {
-        if (label) {
-          const lw = labelH * 0.85 * label.ratio;
-          pdf.addImage(label.data, "PNG", opts.margins.l, top + 1, lw, labelH * 0.85);
-        }
-        const yTop = top + labelH + (slotH - h) / 2;
-        pdf.addImage(imgData, "JPEG", ox, yTop, w, h);
-      };
-      drawHalf(opts.margins.t, officeLabel);
-      drawHalf(midY, farmerLabel);
-      // মাঝ বরাবর কাটার গাইড লাইন — সঠিক মিডপয়েন্টে, সরু ড্যাশড।
-      pdf.setLineDashPattern([2, 2], 0);
-      pdf.setLineWidth(0.2);
-      pdf.setDrawColor(120);
-      pdf.line(opts.margins.l, midY, pageW - opts.margins.r, midY);
-      pdf.setLineDashPattern([], 0);
-      pdf.setLineWidth(0.200025); // jsPDF default
-      return pdf;
-    }
-    const offsetX = opts.margins.l + (innerW - drawW) / 2;
-    pdf.addImage(imgData, "JPEG", offsetX, opts.margins.t, drawW, drawH);
+      const yTop = top + labelH + (slotH - h) / 2;
+      pdf.addImage(copyImg.img, "JPEG", ox, yTop, w, h);
+    };
+    drawHalf(opts.margins.t, officeImg, officeLabel);
+    drawHalf(midY, farmerImg, farmerLabel);
+    // মাঝ বরাবর কাটার গাইড লাইন — সঠিক মিডপয়েন্টে, সরু ড্যাশড।
+    pdf.setLineDashPattern([2, 2], 0);
+    pdf.setLineWidth(0.2);
+    pdf.setDrawColor(120);
+    pdf.line(opts.margins.l, midY, pageW - opts.margins.r, midY);
+    pdf.setLineDashPattern([], 0);
+    pdf.setLineWidth(0.200025); // jsPDF default
     return pdf;
-  } finally {
-    node.remove();
   }
+
+  const single = await renderCopyToImage(copy);
+  let drawW = innerW;
+  let drawH = drawW / (single.aspect || 0.7);
+  if (getReceiptFitToPage() && drawH > innerH) {
+    const scale = innerH / drawH;
+    drawH = innerH;
+    drawW = innerW * scale;
+  }
+  const offsetX = opts.margins.l + (innerW - drawW) / 2;
+  pdf.addImage(single.img, "JPEG", offsetX, opts.margins.t, drawW, drawH);
+  return pdf;
 }
 
 export async function downloadBnReceiptPdf(data: BnReceiptData, copy: ReceiptCopy = "both", options?: ReceiptOptions): Promise<void> {
   const pdf = await renderPdf(data, copy, options);
-  pdf.save(`${data.farmer.name.replace(/\s+/g, "_")}_${data.receipt_no}_${data.kind}${copySuffix(copy)}_receipt.pdf`);
+  // Irrigation receipts always print as a single A4 two-up (office + farmer), so
+  // no per-copy suffix — the one file already contains both copies.
+  const isIrrigationTwoUp = data.kind === "irrigation" && !data.office_income;
+  const suffix = isIrrigationTwoUp ? "" : copySuffix(copy);
+  pdf.save(`${data.farmer.name.replace(/\s+/g, "_")}_${data.receipt_no}_${data.kind}${suffix}_receipt.pdf`);
 }
 
 /**
