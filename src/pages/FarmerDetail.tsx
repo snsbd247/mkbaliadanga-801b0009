@@ -2219,6 +2219,12 @@ export default function FarmerDetail() {
         payable={receiptRow?.amount ?? 0}
         farmerName={farmer?.name_bn ?? farmer?.name_en}
       />
+      <IrrigationReceiptPreviewDialog
+        open={!!paymentPreview}
+        onOpenChange={(o) => { if (!o) setPaymentPreview(null); }}
+        data={paymentPreview?.data ?? null}
+        copy={paymentPreview?.copy ?? "both"}
+      />
     </>
 
   );
