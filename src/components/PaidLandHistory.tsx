@@ -156,6 +156,53 @@ export function PaidLandHistory({ farmerId }: Props) {
   // Cancelled receipts are excluded from collection totals.
   const total = filtered.reduce((s, r) => s + (r.cancelled ? 0 : r.amount), 0);
 
+  // Build the identical সেচ চার্জ রশিদ used on the Payments page. For rows tied
+  // to a real payment we go through the canonical builder; legacy rows without a
+  // payment id fall back to the inline data assembled from the invoice.
+  async function buildReceiptData(r: PaidRow): Promise<BnReceiptData> {
+    if (r.payment_id) {
+      return fetchPaymentReceiptData(r.payment_id, { brand, receiptArgs, tx });
+    }
+    const branding = await loadBranding().catch(() => null as any);
+    return {
+      kind: "irrigation",
+      receipt_no: r.receipt_no,
+      date: r.paid_on ?? new Date().toISOString(),
+      bill_info: r.season,
+      company_name_bn: branding?.company_name_bn ?? office?.name_bn ?? null,
+      company_name: branding?.company_name ?? office?.name ?? undefined,
+      logo_url: branding?.logo_url ?? null,
+      farmer: {
+        name: farmer?.name_bn || farmer?.name_en || "—",
+        member_no: farmer?.member_no ?? farmer?.farmer_code ?? null,
+        father_or_husband: farmer?.father_name ?? null,
+        village: farmer?.village ?? null,
+        mobile: farmer?.mobile ?? null,
+        mouza: r.mouza !== "—" ? r.mouza : null,
+        field_type_bn: r.land_type !== "—" ? r.land_type : null,
+        land_size: r.land_size,
+        dag_no: r.dag_no !== "—" ? r.dag_no : null,
+      },
+      village_union: unionName,
+      rate: r.acre_rate,
+      rate_per_bigha: r.bigha_rate,
+      member_summary: r.member_summary,
+      owner_self: r.owner_self,
+      land_owner_label: r.land_owner_label,
+      current_season_charge: r.irrigation || null,
+      current_penalty: r.delay_fee || null,
+      maintenance_charge: r.maintenance || null,
+      canal_charge: r.canal || null,
+      penalty_amount: r.delay_fee || null,
+      collected_from_outstanding: r.previous_collected || null,
+      holding_description: r.holding_description,
+      patwari_name: r.patwari_name,
+      patwari_mobile: r.patwari_mobile,
+      collected_amount: r.amount,
+      verify_url: r.verify_token ? `${window.location.origin}/r/${r.verify_token}` : `${window.location.origin}/r/legacy-${encodeURIComponent(r.receipt_no)}`,
+    };
+  }
+
   // ১.৯ — receipt download শুধুমাত্র payment হওয়া সারির জন্য (এই তালিকার সব সারিই পরিশোধিত)।
   async function downloadReceipt(r: PaidRow) {
     if (!r.receipt_no || r.receipt_no === "—") {
@@ -163,46 +210,17 @@ export function PaidLandHistory({ farmerId }: Props) {
       return;
     }
     try {
-      const branding = await loadBranding().catch(() => null as any);
-      await downloadBnReceiptPdf({
-        kind: "irrigation",
-        receipt_no: r.receipt_no,
-        date: r.paid_on ?? new Date().toISOString(),
-        bill_info: r.season,
-        company_name_bn: branding?.company_name_bn ?? office?.name_bn ?? null,
-        company_name: branding?.company_name ?? office?.name ?? undefined,
-        logo_url: branding?.logo_url ?? null,
-        farmer: {
-          name: farmer?.name_bn || farmer?.name_en || "—",
-          member_no: farmer?.member_no ?? farmer?.farmer_code ?? null,
-          father_or_husband: farmer?.father_name ?? null,
-          village: farmer?.village ?? null,
-          mobile: farmer?.mobile ?? null,
-          mouza: r.mouza !== "—" ? r.mouza : null,
-          field_type_bn: r.land_type !== "—" ? r.land_type : null,
-          land_size: r.land_size,
-          dag_no: r.dag_no !== "—" ? r.dag_no : null,
-        },
-        village_union: unionName,
-        rate: r.acre_rate,
-        rate_per_bigha: r.bigha_rate,
-        member_summary: r.member_summary,
-        owner_self: r.owner_self,
-        land_owner_label: r.land_owner_label,
-        current_season_charge: r.irrigation || null,
-        current_penalty: r.delay_fee || null,
-        maintenance_charge: r.maintenance || null,
-        canal_charge: r.canal || null,
-        penalty_amount: r.delay_fee || null,
-        collected_from_outstanding: r.previous_collected || null,
-        holding_description: r.holding_description,
-        patwari_name: r.patwari_name,
-        patwari_mobile: r.patwari_mobile,
-        collected_amount: r.amount,
-        verify_url: r.verify_token ? `${window.location.origin}/r/${r.verify_token}` : `${window.location.origin}/r/legacy-${encodeURIComponent(r.receipt_no)}`,
-      }, "farmer");
+      await downloadBnReceiptPdf(await buildReceiptData(r), "farmer", receiptArgs.options);
     } catch (e: any) {
       toast.error(e?.message ?? tx("Receipt download failed", "রসিদ ডাউনলোড ব্যর্থ"));
+    }
+  }
+
+  async function openPreview(r: PaidRow) {
+    try {
+      setPreviewData(await buildReceiptData(r));
+    } catch (e: any) {
+      toast.error(e?.message ?? tx("Receipt preview failed", "রসিদ প্রিভিউ ব্যর্থ"));
     }
   }
 
