@@ -25,3 +25,9 @@ jobs:
           bunx vitest run
           src/lib/__tests__/landTransferIntegrity.test.ts
           src/lib/__tests__/demoPresets.test.ts
+
+      - name: Run irrigation conversion & reconciliation suites
+        run: >-
+          bunx vitest run
+          src/lib/__tests__/irrigationRatePerAcre.test.ts
+          src/lib/__tests__/irrigationReconciliation.test.ts
