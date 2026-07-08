@@ -117,6 +117,8 @@ export default function FarmerDetail() {
   const [receiptRow, setReceiptRow] = useState<PaidHistoryRow | null>(null);
   const [receiptOpen, setReceiptOpen] = useState(false);
   const [paymentPreview, setPaymentPreview] = useState<{ data: BnReceiptData; copy: ReceiptCopy } | null>(null);
+  const [selectedReceipts, setSelectedReceipts] = useState<Set<string>>(new Set());
+  const [bulkExporting, setBulkExporting] = useState(false);
   const [rateMap, setRateMap] = useState<RateRow[]>([]);
   const [activeSeasonName, setActiveSeasonName] = useState<string>("");
   const [activeSeasonId, setActiveSeasonId] = useState<string | null>(null);
