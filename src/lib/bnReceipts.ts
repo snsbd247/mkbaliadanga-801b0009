@@ -796,12 +796,14 @@ async function renderPdf(data: BnReceiptData, copy: ReceiptCopy, options?: Recei
   try { tpl = { ...tpl, ...(await loadReceiptTemplate(true)) }; } catch { /* use defaults */ }
   if (options?.template) tpl = { ...tpl, ...options.template };
   // QR verify link. Always render a QR for scan-to-verify: prefer an explicit
-  // verify_url, otherwise fall back to the canonical `/r/{receipt_no}` route so
-  // reprints and history exports never lose the QR code.
+  // verify_url (contains the payment's verify_token). When absent (e.g. legacy
+  // receipts / reprints without a token), fall back to the legacy verify route
+  // `/r/legacy-{receipt_no}` which the verify page resolves by receipt number —
+  // never `/r/{receipt_no}` which would fail the hex-token check.
   let qrDataUrl: string | null = null;
   const verifyUrl =
     data.verify_url ||
-    (data.receipt_no ? `${window.location.origin}/r/${data.receipt_no}` : null);
+    (data.receipt_no ? `${window.location.origin}/r/legacy-${encodeURIComponent(data.receipt_no)}` : null);
   if (verifyUrl && tpl.qr_placement !== "none") {
     try { qrDataUrl = await QRCode.toDataURL(verifyUrl, { margin: 0, width: 180 }); } catch { /* noop */ }
   }
