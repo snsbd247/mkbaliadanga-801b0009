@@ -16,6 +16,7 @@ import { Loader2, Camera, X, User, CheckCircle2, FileDown, Eye } from "lucide-re
 import { toast } from "sonner";
 import { z } from "zod";
 import { downloadBnReceiptPdf, previewBnReceiptPdf, type BnReceiptData, type ReceiptCopy } from "@/lib/bnReceipts";
+import { fetchPaymentReceiptData } from "@/lib/buildPaymentReceiptData";
 import { autoReceiptNo } from "@/lib/receiptNo";
 import { useBranding } from "@/lib/branding";
 import { useReceiptTemplate } from "@/lib/receiptTemplate";
@@ -48,7 +49,7 @@ async function sha256Hex(s: string): Promise<string> {
 }
 
 export default function ScanPayment() {
-  const { t } = useLang();
+  const { t, tx } = useLang();
   const { user } = useAuth();
   const [scanning, setScanning] = useState(false);
   const [resolving, setResolving] = useState(false);
@@ -95,6 +96,21 @@ export default function ScanPayment() {
       verify_url: done.verifyToken ? `${window.location.origin}/r/${done.verifyToken}` : null,
     };
   }
+
+  // For irrigation, load the full সেচ চার্জ রশিদ identical to the Payments page.
+  // Other kinds keep the lightweight scan payload.
+  async function resolveReceiptData(): Promise<BnReceiptData | null> {
+    if (!done) return null;
+    if (done.kind === "irrigation") {
+      try {
+        return await fetchPaymentReceiptData(done.paymentId, { brand, receiptArgs, tx });
+      } catch {
+        return buildReceiptPayload();
+      }
+    }
+    return buildReceiptPayload();
+  }
+
 
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const containerId = "qr-scan-payment";
@@ -311,7 +327,7 @@ export default function ScanPayment() {
                 <Button
                   variant="ghost"
                   onClick={async () => {
-                    const payload = buildReceiptPayload();
+                    const payload = await resolveReceiptData();
                     if (payload) setPreviewUrl(await previewBnReceiptPdf(payload, "both", receiptArgs.options));
                   }}
                 >
@@ -321,7 +337,7 @@ export default function ScanPayment() {
                   size="sm"
                   label="Download receipt"
                   onSelect={async (copy: ReceiptCopy) => {
-                    const payload = buildReceiptPayload();
+                    const payload = await resolveReceiptData();
                     if (payload) await downloadBnReceiptPdf(payload, copy, receiptArgs.options);
                   }}
                 />

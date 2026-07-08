@@ -6,13 +6,17 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+
 import { Badge } from "@/components/ui/badge";
 import { FileText, FileSpreadsheet, Download, Eye, Search } from "lucide-react";
 import { useLang } from "@/i18n/LanguageProvider";
 import { fmtDate } from "@/lib/format";
 import { toast } from "sonner";
-import { downloadBnReceiptPdf, normalizeIrrigationRatePerAcre, ratePerBighaFromAcre } from "@/lib/bnReceipts";
-import { loadBranding } from "@/lib/branding";
+import { downloadBnReceiptPdf, normalizeIrrigationRatePerAcre, ratePerBighaFromAcre, type BnReceiptData } from "@/lib/bnReceipts";
+import { loadBranding, useBranding } from "@/lib/branding";
+import { useReceiptRenderArgs } from "@/lib/receiptOptions";
+import { fetchPaymentReceiptData } from "@/lib/buildPaymentReceiptData";
+import { IrrigationReceiptPreviewDialog } from "@/components/receipts/IrrigationReceiptPreviewDialog";
 import { buildMemberSummary } from "@/lib/receiptMemberSummary";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -47,12 +51,15 @@ type PaidRow = {
   patwari_name: string | null;
   patwari_mobile: string | null;
   verify_token: string | null;
+  payment_id: string | null;
 };
 
 const money = (v: number) => Number(v || 0).toLocaleString("bn-BD", { maximumFractionDigits: 2 });
 
 export function PaidLandHistory({ farmerId }: Props) {
   const { t, tx } = useLang();
+  const brand = useBranding();
+  const receiptArgs = useReceiptRenderArgs();
   const [rows, setRows] = useState<PaidRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [farmer, setFarmer] = useState<any>(null);
@@ -64,8 +71,8 @@ export function PaidLandHistory({ farmerId }: Props) {
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
 
-  // Preview
-  const [preview, setPreview] = useState<PaidRow | null>(null);
+  // Preview (canonical receipt render, identical to Payments page)
+  const [previewData, setPreviewData] = useState<BnReceiptData | null>(null);
 
   useEffect(() => { load(); /* eslint-disable-next-line */ }, [farmerId]);
 
@@ -77,7 +84,7 @@ export function PaidLandHistory({ farmerId }: Props) {
         .select(
           "collected_amount, irrigation_collected, maintenance_collected, canal_collected, delay_fee_collected, current_invoice_collected, previous_due_collected, created_at, " +
           "invoice:irrigation_invoices!inner(invoice_no, farmer_id, season_rate, irrigation_amount, land_type_name, due_amount, is_borga, lands(dag_no, mouza, land_size, notes, patwaris(name,name_bn,mobile), owner:farmers!lands_owner_farmer_id_fkey(name_bn,name_en,member_no,farmer_code,account_number,voter_number,savings_inactive,is_voter)), seasons(name,year,type)), " +
-          "payment:payments(receipt_no, created_at, status, voided_at, verify_token)"
+          "payment:payments(id, receipt_no, created_at, status, voided_at, verify_token)"
         )
         .eq("invoice.farmer_id", farmerId)
         .order("created_at", { ascending: false }),
@@ -115,6 +122,7 @@ export function PaidLandHistory({ farmerId }: Props) {
         patwari_name: r.invoice?.lands?.patwaris ? (r.invoice.lands.patwaris.name_bn || r.invoice.lands.patwaris.name) : null,
         patwari_mobile: r.invoice?.lands?.patwaris?.mobile ?? null,
         verify_token: r.payment?.verify_token ?? null,
+        payment_id: r.payment?.id ?? null,
       };
     });
     setRows(list);
@@ -149,6 +157,53 @@ export function PaidLandHistory({ farmerId }: Props) {
   // Cancelled receipts are excluded from collection totals.
   const total = filtered.reduce((s, r) => s + (r.cancelled ? 0 : r.amount), 0);
 
+  // Build the identical সেচ চার্জ রশিদ used on the Payments page. For rows tied
+  // to a real payment we go through the canonical builder; legacy rows without a
+  // payment id fall back to the inline data assembled from the invoice.
+  async function buildReceiptData(r: PaidRow): Promise<BnReceiptData> {
+    if (r.payment_id) {
+      return fetchPaymentReceiptData(r.payment_id, { brand, receiptArgs, tx });
+    }
+    const branding = await loadBranding().catch(() => null as any);
+    return {
+      kind: "irrigation",
+      receipt_no: r.receipt_no,
+      date: r.paid_on ?? new Date().toISOString(),
+      bill_info: r.season,
+      company_name_bn: branding?.company_name_bn ?? office?.name_bn ?? null,
+      company_name: branding?.company_name ?? office?.name ?? undefined,
+      logo_url: branding?.logo_url ?? null,
+      farmer: {
+        name: farmer?.name_bn || farmer?.name_en || "—",
+        member_no: farmer?.member_no ?? farmer?.farmer_code ?? null,
+        father_or_husband: farmer?.father_name ?? null,
+        village: farmer?.village ?? null,
+        mobile: farmer?.mobile ?? null,
+        mouza: r.mouza !== "—" ? r.mouza : null,
+        field_type_bn: r.land_type !== "—" ? r.land_type : null,
+        land_size: r.land_size,
+        dag_no: r.dag_no !== "—" ? r.dag_no : null,
+      },
+      village_union: unionName,
+      rate: r.acre_rate,
+      rate_per_bigha: r.bigha_rate,
+      member_summary: r.member_summary,
+      owner_self: r.owner_self,
+      land_owner_label: r.land_owner_label,
+      current_season_charge: r.irrigation || null,
+      current_penalty: r.delay_fee || null,
+      maintenance_charge: r.maintenance || null,
+      canal_charge: r.canal || null,
+      penalty_amount: r.delay_fee || null,
+      collected_from_outstanding: r.previous_collected || null,
+      holding_description: r.holding_description,
+      patwari_name: r.patwari_name,
+      patwari_mobile: r.patwari_mobile,
+      collected_amount: r.amount,
+      verify_url: r.verify_token ? `${window.location.origin}/r/${r.verify_token}` : `${window.location.origin}/r/legacy-${encodeURIComponent(r.receipt_no)}`,
+    };
+  }
+
   // ১.৯ — receipt download শুধুমাত্র payment হওয়া সারির জন্য (এই তালিকার সব সারিই পরিশোধিত)।
   async function downloadReceipt(r: PaidRow) {
     if (!r.receipt_no || r.receipt_no === "—") {
@@ -156,46 +211,17 @@ export function PaidLandHistory({ farmerId }: Props) {
       return;
     }
     try {
-      const branding = await loadBranding().catch(() => null as any);
-      await downloadBnReceiptPdf({
-        kind: "irrigation",
-        receipt_no: r.receipt_no,
-        date: r.paid_on ?? new Date().toISOString(),
-        bill_info: r.season,
-        company_name_bn: branding?.company_name_bn ?? office?.name_bn ?? null,
-        company_name: branding?.company_name ?? office?.name ?? undefined,
-        logo_url: branding?.logo_url ?? null,
-        farmer: {
-          name: farmer?.name_bn || farmer?.name_en || "—",
-          member_no: farmer?.member_no ?? farmer?.farmer_code ?? null,
-          father_or_husband: farmer?.father_name ?? null,
-          village: farmer?.village ?? null,
-          mobile: farmer?.mobile ?? null,
-          mouza: r.mouza !== "—" ? r.mouza : null,
-          field_type_bn: r.land_type !== "—" ? r.land_type : null,
-          land_size: r.land_size,
-          dag_no: r.dag_no !== "—" ? r.dag_no : null,
-        },
-        village_union: unionName,
-        rate: r.acre_rate,
-        rate_per_bigha: r.bigha_rate,
-        member_summary: r.member_summary,
-        owner_self: r.owner_self,
-        land_owner_label: r.land_owner_label,
-        current_season_charge: r.irrigation || null,
-        current_penalty: r.delay_fee || null,
-        maintenance_charge: r.maintenance || null,
-        canal_charge: r.canal || null,
-        penalty_amount: r.delay_fee || null,
-        collected_from_outstanding: r.previous_collected || null,
-        holding_description: r.holding_description,
-        patwari_name: r.patwari_name,
-        patwari_mobile: r.patwari_mobile,
-        collected_amount: r.amount,
-        verify_url: r.verify_token ? `${window.location.origin}/r/${r.verify_token}` : `${window.location.origin}/r/legacy-${encodeURIComponent(r.receipt_no)}`,
-      }, "farmer");
+      await downloadBnReceiptPdf(await buildReceiptData(r), "farmer", receiptArgs.options);
     } catch (e: any) {
       toast.error(e?.message ?? tx("Receipt download failed", "রসিদ ডাউনলোড ব্যর্থ"));
+    }
+  }
+
+  async function openPreview(r: PaidRow) {
+    try {
+      setPreviewData(await buildReceiptData(r));
+    } catch (e: any) {
+      toast.error(e?.message ?? tx("Receipt preview failed", "রসিদ প্রিভিউ ব্যর্থ"));
     }
   }
 
@@ -297,7 +323,7 @@ export function PaidLandHistory({ farmerId }: Props) {
               <TableCell>{r.paid_on ? fmtDate(r.paid_on) : "—"}</TableCell>
               <TableCell className={`text-right ${r.cancelled ? "line-through" : ""}`}>{r.amount.toFixed(2)}</TableCell>
               <TableCell className="text-right whitespace-nowrap">
-                <Button size="sm" variant="ghost" title={tx("Preview", "প্রিভিউ")} onClick={() => setPreview(r)}>
+                <Button size="sm" variant="ghost" title={tx("Preview", "প্রিভিউ")} onClick={() => openPreview(r)}>
                   <Eye className="h-4 w-4" />
                 </Button>
                 <Button size="sm" variant="ghost" title={tx("Download", "ডাউনলোড")} onClick={() => downloadReceipt(r)} disabled={r.cancelled}>
@@ -319,46 +345,13 @@ export function PaidLandHistory({ farmerId }: Props) {
         </TableBody>
       </Table>
 
-      {/* Per-row print preview before download */}
-      <Dialog open={!!preview} onOpenChange={(o) => !o && setPreview(null)}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>{tx("Receipt Preview", "রসিদ প্রিভিউ")}</DialogTitle>
-          </DialogHeader>
-          {preview && (
-            <div className="text-sm space-y-2">
-              <div className="text-center font-semibold">{office?.name_bn || office?.name || branding_fallback()}</div>
-              <div className="text-center text-muted-foreground">{tx("Irrigation Receipt", "সেচ রসিদ")}</div>
-              <div className="flex justify-between"><span>{tx("Receipt No", "রসিদ নং")}</span><span className="font-medium">{preview.receipt_no}</span></div>
-              <div className="flex justify-between"><span>{tx("Date", "তারিখ")}</span><span>{preview.paid_on ? fmtDate(preview.paid_on) : "—"}</span></div>
-              <div className="flex justify-between"><span>{tx("Farmer", "কৃষক")}</span><span>{farmer?.name_bn || farmer?.name_en || "—"}</span></div>
-              <div className="flex justify-between"><span>{tx("Member No", "সদস্য নং")}</span><span>{farmer?.member_no ?? farmer?.farmer_code ?? "—"}</span></div>
-              <div className="flex justify-between"><span>{tx("Season", "সিজন")}</span><span>{preview.season}</span></div>
-              <div className="flex justify-between"><span>{tx("Dag / Mouza", "দাগ / মৌজা")}</span><span>{preview.dag_no} / {preview.mouza}</span></div>
-              <div className="flex justify-between"><span>{tx("Land (shotok)", "জমি (শতক)")}</span><span>{preview.land_size ?? "—"}</span></div>
-              <hr />
-              <div className="font-medium">{tx("Payment breakdown", "পেমেন্ট বিভাজন")}</div>
-              <div className="flex justify-between"><span>{tx("Irrigation", "সেচ")}</span><span>{money(preview.irrigation)}</span></div>
-              <div className="flex justify-between"><span>{tx("Maintenance", "রক্ষণাবেক্ষণ")}</span><span>{money(preview.maintenance)}</span></div>
-              <div className="flex justify-between"><span>{tx("Canal", "নালা")}</span><span>{money(preview.canal)}</span></div>
-              <div className="flex justify-between"><span>{tx("Delay fee", "বিলম্ব ফি")}</span><span>{money(preview.delay_fee)}</span></div>
-              <div className="flex justify-between"><span>{tx("From previous due", "পূর্বের বকেয়া থেকে")}</span><span>{money(preview.previous_collected)}</span></div>
-              <hr />
-              <div className="flex justify-between font-semibold"><span>{tx("Total collected", "মোট আদায়")}</span><span>{money(preview.amount)}</span></div>
-            </div>
-          )}
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setPreview(null)}>{tx("Close", "বন্ধ")}</Button>
-            <Button onClick={() => preview && downloadReceipt(preview)}>
-              <Download className="h-4 w-4 mr-1" />{tx("Download PDF", "পিডিএফ ডাউনলোড")}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* Canonical print-ready preview, identical to the Payments page receipt */}
+      <IrrigationReceiptPreviewDialog
+        open={!!previewData}
+        onOpenChange={(o) => !o && setPreviewData(null)}
+        data={previewData}
+        copy="farmer"
+      />
     </Card>
   );
-
-  function branding_fallback() {
-    return "";
-  }
 }

@@ -22,6 +22,9 @@ import { Loader2, AlertTriangle, ChevronDown, CheckCircle2 } from "lucide-react"
 import { toast } from "sonner";
 import { money, fmtDate } from "@/lib/format";
 import { downloadBnReceiptPdf, normalizeIrrigationRatePerAcre } from "@/lib/bnReceipts";
+import { fetchPaymentReceiptData } from "@/lib/buildPaymentReceiptData";
+import { useBranding } from "@/lib/branding";
+import { useReceiptRenderArgs } from "@/lib/receiptOptions";
 import { resolveFieldTypeLabel } from "@/lib/irrigationLandType";
 import { safeWithRetry } from "@/lib/retryQueue";
 import { logAudit } from "@/lib/audit";
@@ -78,6 +81,8 @@ const roundTk = (n: number) => Math.round(Number(n) || 0);
 
 export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFarmerId?: string; onPaid?: () => void }) {
   const { t, tx, lang } = useLang();
+  const brand = useBranding();
+  const receiptArgs = useReceiptRenderArgs();
   const { user, isAdmin, isSuper, roles } = useAuth();
   const [farmerId, setFarmerId] = useState(initialFarmerId ?? "");
   const [loading, setLoading] = useState(false);
@@ -749,56 +754,18 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
         [landNotes || null, note?.trim() || null].filter(Boolean).join(" || ") || null;
 
 
-      // Receipt — never blocks payment; failure → retry queue
+      // Receipt — never blocks payment; failure → retry queue.
+      // Build the identical সেচ চার্জ রশিদ used on the Payments page by loading
+      // the just-created payment row through the canonical builder.
       const receiptResult = await safeWithRetry(
         "receipt_generation",
-        () => downloadBnReceiptPdf({
-          kind: "irrigation",
-          receipt_no: receiptNo,
-          date: new Date(),
-          bill_info: billInfo,
-          company_name: company?.company_name ?? undefined,
-          company_name_bn: company?.company_name_bn ?? undefined,
-          logo_url: company?.logo_url ?? null,
-          org: company ?? null,
-          farmer: {
-            name: farmerName,
-            member_no: farmer?.member_no ?? farmer?.farmer_code ?? null,
-            father_or_husband: farmer?.father_name ?? null,
-            village: farmer?.village ?? null,
-            mobile: farmer?.mobile ?? null,
-            mouza: receiptMouza,
-            land_size: receiptLandSize,
-            field_type_bn: fieldTypeBn,
-            dag_no: dagAll,
-          },
-          village_union: unionName,
-          rate: ratePerAcre,
-          member_summary: memberSummary,
-          owner_self: !isBorga,
-          land_owner_label: isBorga ? ownerLabel : null,
-          // হাল (চলতি সিজন) চার্জ + জরিমানা
-          current_season_charge: currentChargeBase,
-          current_penalty: currentPenalty,
-          collected_from_outstanding: Number(previousCollected || 0),
-          // বকেয়া (গত সিজন) চার্জ + জরিমানা
-          total_outstanding: dueChargeBase,
-          due_penalty: duePenalty,
-          penalty_amount: totalDelay,
-          maintenance_charge: totalMaint,
-          canal_charge: totalCanal,
-          collected_amount: grandTotal,
-          remark: specialPermission ? `${tx("Special permission until", "বিশেষ অনুমতি — পরিশোধের তারিখ")}: ${promiseDate}${promiseRemarks ? " — " + promiseRemarks : ""}` : (note || null),
-          holding_description: holdingDescription,
-          covered_invoices: coveredInvoices.map((c) => ({ invoice_no: c.invoice_no, due_amount: c.due_amount })),
-          patwari_name: patwari.name,
-          patwari_mobile: patwari.mobile,
-          collector_signature_url: (company as any)?.editor_signature_url ?? null,
-          office_collector_signature_url: (company as any)?.editor_signature_url ?? null,
-          verify_url: `${window.location.origin}/r/${receiptNo}`,
-        }, "farmer"),
+        async () => {
+          const data = await fetchPaymentReceiptData(paymentId, { brand, receiptArgs, tx });
+          await downloadBnReceiptPdf(data, "farmer", receiptArgs.options);
+        },
         { referenceId: paymentId, payload: { kind: "irrigation", receipt_no: receiptNo, farmer_id: farmerId }, officeId: farmer?.office_id ?? null },
       );
+
 
       if (!receiptResult.ok) {
         toast.warning(tx("Receipt generation failed — queued for retry", "রসিদ তৈরি ব্যর্থ — রিট্রাই কিউতে যোগ হয়েছে"));
