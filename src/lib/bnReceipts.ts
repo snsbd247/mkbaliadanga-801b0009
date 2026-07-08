@@ -967,7 +967,11 @@ async function renderPdf(data: BnReceiptData, copy: ReceiptCopy, options?: Recei
 
 export async function downloadBnReceiptPdf(data: BnReceiptData, copy: ReceiptCopy = "both", options?: ReceiptOptions): Promise<void> {
   const pdf = await renderPdf(data, copy, options);
-  pdf.save(`${data.farmer.name.replace(/\s+/g, "_")}_${data.receipt_no}_${data.kind}${copySuffix(copy)}_receipt.pdf`);
+  // Irrigation receipts always print as a single A4 two-up (office + farmer), so
+  // no per-copy suffix — the one file already contains both copies.
+  const isIrrigationTwoUp = data.kind === "irrigation" && !data.office_income;
+  const suffix = isIrrigationTwoUp ? "" : copySuffix(copy);
+  pdf.save(`${data.farmer.name.replace(/\s+/g, "_")}_${data.receipt_no}_${data.kind}${suffix}_receipt.pdf`);
 }
 
 /**
