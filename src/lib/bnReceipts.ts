@@ -938,17 +938,16 @@ async function renderPdf(data: BnReceiptData, copy: ReceiptCopy, options?: Recei
     return pdf;
   }
 
-  const imgData = await renderCopyToImage(copy);
-  const aspect = await imageAspect(imgData);
+  const single = await renderCopyToImage(copy);
   let drawW = innerW;
-  let drawH = drawW / (aspect || 0.7);
+  let drawH = drawW / (single.aspect || 0.7);
   if (getReceiptFitToPage() && drawH > innerH) {
     const scale = innerH / drawH;
     drawH = innerH;
     drawW = innerW * scale;
   }
   const offsetX = opts.margins.l + (innerW - drawW) / 2;
-  pdf.addImage(imgData, "JPEG", offsetX, opts.margins.t, drawW, drawH);
+  pdf.addImage(single.img, "JPEG", offsetX, opts.margins.t, drawW, drawH);
   return pdf;
 }
 
