@@ -224,7 +224,7 @@ export default function ReceiptTemplatePage() {
         // Record the authoritative value returned by the server for audit/debug.
         logAudit({ module: "receipt", action_type: "override", reference_id: "receipt_serial_start", old_data: { serial_start: savedSerialStart }, new_data: { serial_start: persisted, source: res.value != null ? "server" : "db-fallback" } });
         setSavedSerialStart(persisted);
-        toast.success(`ক্রমিক নম্বর সংরক্ষিত — পরবর্তী রিসিপ্ট হবে ${persisted + 1} / Serial saved — the next receipt will be ${persisted + 1}`);
+        toast.success(`ক্রমিক নম্বর সংরক্ষিত — পরবর্তী রিসিপ্ট হবে ${persisted} / Serial saved — the next receipt will be ${persisted}`);
       }
 
       // Re-read the persisted row so the UI reflects exactly what is in the DB.
