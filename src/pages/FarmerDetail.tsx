@@ -784,11 +784,34 @@ export default function FarmerDetail() {
     toast.success(t("pgDeleted" as any)); loadAll();
   }
   async function deletePayment(p: any) {
-    if (!window.confirm("Delete this payment?")) return;
-    const { error } = await db.from("payments").update({ deleted_at: new Date().toISOString() } as any).eq("id", p.id);
+    if (!window.confirm("Delete this payment? এই রসিদ ডাটাবেজ থেকে স্থায়ীভাবে মুছে যাবে এবং সংশ্লিষ্ট ইনভয়েসের বকেয়া পুনঃস্থাপন হবে।")) return;
+
+    // 1. Reverse allocations so invoice dues are restored before removal.
+    const allocs: any[] = (p.payment_allocations ?? []).length
+      ? p.payment_allocations
+      : [{ kind: p.kind, reference_id: p.reference_id, amount: p.amount }];
+    for (const a of allocs) {
+      const amt = Number(a.amount || 0);
+      if (a.kind === "irrigation" && a.reference_id) {
+        if (amt > 0) {
+          const { data: inv } = await db.from("irrigation_invoices").select("paid_amount,payable_amount").eq("id", a.reference_id).maybeSingle();
+          if (inv) {
+            const st = computeInvoiceDue(inv.payable_amount, Number(inv.paid_amount || 0) - amt);
+            await db.from("irrigation_invoices").update({ paid_amount: st.paid, due_amount: st.due, invoice_status: st.status } as any).eq("id", a.reference_id);
+          }
+        }
+        await db.from("irrigation_invoice_payments").delete().eq("invoice_id", a.reference_id).eq("payment_id", p.id);
+      }
+    }
+
+    // 2. Remove any remaining link rows for this payment, then hard-delete.
+    await db.from("irrigation_invoice_payments").delete().eq("payment_id", p.id);
+    await db.from("payment_allocations").delete().eq("payment_id", p.id);
+    const { error } = await db.from("payments").delete().eq("id", p.id);
     if (error) return toast.error(error.message);
     toast.success(t("pgDeleted" as any)); loadAll();
   }
+
 
   async function addLand() {
     setLandLocErr(null);
