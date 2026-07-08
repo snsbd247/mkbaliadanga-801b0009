@@ -105,3 +105,31 @@ export async function buildPaymentReceiptData(p: any, ctx: ReceiptBuildContext):
   };
   return rd;
 }
+
+/**
+ * Canonical select used to load a payment row with everything the receipt
+ * builder needs. Keep in sync with the Payments/Receipts pages so every
+ * module renders the identical সেচ চার্জ ও বিবিধ আদায় রশিদ.
+ */
+export const RECEIPT_PAY_SELECT =
+  "*, farmers(name_en,name_bn,farmer_code,member_no,mobile,village,father_name,voter_number,account_number,is_voter,union_id), patwaris(name,name_bn,mobile), payment_allocations(*)";
+
+/**
+ * Fetch a payment row by id and build the identical receipt payload used on the
+ * Payments page. Use this everywhere a সেচ চার্জ রশিদ must be downloaded or
+ * previewed so the output is consistent across the whole app.
+ */
+export async function fetchPaymentReceiptData(
+  paymentId: string,
+  ctx: ReceiptBuildContext,
+): Promise<BnReceiptData> {
+  const { data, error } = await db
+    .from("payments")
+    .select(RECEIPT_PAY_SELECT)
+    .eq("id", paymentId)
+    .is("deleted_at", null)
+    .maybeSingle();
+  if (error) throw error;
+  if (!data) throw new Error("Payment not found for receipt");
+  return buildPaymentReceiptData(data, ctx);
+}
