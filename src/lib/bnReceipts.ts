@@ -866,9 +866,13 @@ async function renderPdf(data: BnReceiptData, copy: ReceiptCopy, options?: Recei
     }
     const imgData = canvas.toDataURL("image/jpeg", 0.95);
     if (irrigationTwoUp) {
-      // A4 পোর্ট্রেটকে দুই সমান অংশে ভাগ করে প্রতিটিতে একটি করে রশিদ বসাই।
-      const halfH = pageH / 2;
-      const slotH = halfH - opts.margins.t - opts.margins.b;
+      // A4 পোর্ট্রেটকে দুই সমান অংশে ভাগ করি: উপরে "অফিস কপি", নিচে "কৃষক কপি"।
+      // প্রতিটি রশিদ তার অর্ধেকের ভেতরে উল্লম্বভাবে কেন্দ্রীভূত থাকে যাতে প্রিন্টে
+      // মাঝ বরাবর কাটলে দুটি সমান কপি পাওয়া যায়।
+      const midY = pageH / 2;
+      const labelH = 7; // mm reserved for the copy label at each half's top
+      const slotTop = opts.margins.t + labelH;
+      const slotH = midY - slotTop - opts.margins.b;
       let w = innerW;
       let h = (canvas.height * innerW) / canvas.width;
       if (h > slotH) {
@@ -877,13 +881,25 @@ async function renderPdf(data: BnReceiptData, copy: ReceiptCopy, options?: Recei
         w = innerW * scale;
       }
       const ox = opts.margins.l + (innerW - w) / 2;
-      pdf.addImage(imgData, "JPEG", ox, opts.margins.t, w, h);
-      pdf.addImage(imgData, "JPEG", ox, halfH + opts.margins.t, w, h);
-      // মাঝ বরাবর কাটার গাইড লাইন।
-      pdf.setLineDashPattern([1.5, 1.5], 0);
-      pdf.setDrawColor(150);
-      pdf.line(opts.margins.l, halfH, pageW - opts.margins.r, halfH);
+      const officeLabel = await textToDataUrl(opts.lang === "bn" ? "অফিস কপি" : "Office copy");
+      const farmerLabel = await textToDataUrl(opts.lang === "bn" ? "কৃষক কপি" : "Farmer copy");
+      const drawHalf = (top: number, label: { data: string; ratio: number } | null) => {
+        if (label) {
+          const lw = labelH * 0.85 * label.ratio;
+          pdf.addImage(label.data, "PNG", opts.margins.l, top + 1, lw, labelH * 0.85);
+        }
+        const yTop = top + labelH + (slotH - h) / 2;
+        pdf.addImage(imgData, "JPEG", ox, yTop, w, h);
+      };
+      drawHalf(opts.margins.t, officeLabel);
+      drawHalf(midY, farmerLabel);
+      // মাঝ বরাবর কাটার গাইড লাইন — সঠিক মিডপয়েন্টে, সরু ড্যাশড।
+      pdf.setLineDashPattern([2, 2], 0);
+      pdf.setLineWidth(0.2);
+      pdf.setDrawColor(120);
+      pdf.line(opts.margins.l, midY, pageW - opts.margins.r, midY);
       pdf.setLineDashPattern([], 0);
+      pdf.setLineWidth(0.200025); // jsPDF default
       return pdf;
     }
     const offsetX = opts.margins.l + (innerW - drawW) / 2;
