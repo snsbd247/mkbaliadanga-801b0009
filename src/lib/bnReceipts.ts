@@ -910,14 +910,13 @@ async function renderPdf(data: BnReceiptData, copy: ReceiptCopy, options?: Recei
     const slotH = midY - slotTop - opts.margins.b;
     const officeLabel = await textToDataUrl(opts.lang === "bn" ? "অফিস কপি" : "Office copy");
     const farmerLabel = await textToDataUrl(opts.lang === "bn" ? "কৃষক কপি" : "Farmer copy");
-    const drawHalf = async (top: number, img: string, label: { data: string; ratio: number } | null) => {
+    const drawHalf = (top: number, copyImg: { img: string; aspect: number }, label: { data: string; ratio: number } | null) => {
       if (label) {
         const lw = labelH * 0.85 * label.ratio;
         pdf.addImage(label.data, "PNG", opts.margins.l, top + 1, lw, labelH * 0.85);
       }
-      const aspect = await imageAspect(img);
       let w = innerW;
-      let h = w / (aspect || 0.7);
+      let h = w / (copyImg.aspect || 0.7);
       if (h > slotH) {
         const scale = slotH / h;
         h = slotH;
@@ -925,10 +924,10 @@ async function renderPdf(data: BnReceiptData, copy: ReceiptCopy, options?: Recei
       }
       const ox = opts.margins.l + (innerW - w) / 2;
       const yTop = top + labelH + (slotH - h) / 2;
-      pdf.addImage(img, "JPEG", ox, yTop, w, h);
+      pdf.addImage(copyImg.img, "JPEG", ox, yTop, w, h);
     };
-    await drawHalf(opts.margins.t, officeImg, officeLabel);
-    await drawHalf(midY, farmerImg, farmerLabel);
+    drawHalf(opts.margins.t, officeImg, officeLabel);
+    drawHalf(midY, farmerImg, farmerLabel);
     // মাঝ বরাবর কাটার গাইড লাইন — সঠিক মিডপয়েন্টে, সরু ড্যাশড।
     pdf.setLineDashPattern([2, 2], 0);
     pdf.setLineWidth(0.2);
