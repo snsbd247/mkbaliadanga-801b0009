@@ -21,6 +21,7 @@ vi.mock("jspdf", () => ({
     addImage = (...a: any[]) => addImage(...a);
     setLineDashPattern = () => this;
     setDrawColor = () => this;
+    setLineWidth = () => this;
     line = () => this;
     save = (n: string) => { lastSaveName = n; };
     output = () => "data:application/pdf;base64,xxx";
