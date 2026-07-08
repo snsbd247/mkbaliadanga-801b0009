@@ -50,7 +50,35 @@ Deno.serve(async (req) => {
 
     // Highest ACTUALLY used numeric receipt number across payments and receipts.
     let maxUsed = 0
-    for (const tbl of ['payments', 'receipts']) {
+    const { data: paymentRows } = await svc
+      .from('payments')
+      .select('receipt_no')
+      .not('receipt_no', 'is', null)
+      .is('deleted_at', null)
+      .is('voided_at', null)
+      .neq('status', 'voided')
+    for (const r of (paymentRows ?? []) as Array<{ receipt_no: string | null }>) {
+      const raw = String(r.receipt_no ?? '')
+      if (/^[0-9]+$/.test(raw)) {
+        const n = Number(raw)
+        if (Number.isSafeInteger(n) && n > maxUsed) maxUsed = n
+      }
+    }
+
+    const { data: receiptRows } = await svc
+      .from('receipts')
+      .select('receipt_no')
+      .not('receipt_no', 'is', null)
+      .is('voided_at', null)
+    for (const r of (receiptRows ?? []) as Array<{ receipt_no: string | null }>) {
+      const raw = String(r.receipt_no ?? '')
+      if (/^[0-9]+$/.test(raw)) {
+        const n = Number(raw)
+        if (Number.isSafeInteger(n) && n > maxUsed) maxUsed = n
+      }
+    }
+
+    /* for (const tbl of ['payments', 'receipts']) {
       const { data: rows } = await svc
         .from(tbl)
         .select('receipt_no')
@@ -62,7 +90,7 @@ Deno.serve(async (req) => {
           if (Number.isSafeInteger(n) && n > maxUsed) maxUsed = n
         }
       }
-    }
+    } */
 
     if (start < maxUsed) {
       return json({
