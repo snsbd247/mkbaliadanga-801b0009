@@ -45,6 +45,20 @@ export function savingsNoOf(farmer: ReceiptFarmer): string | null {
 }
 
 /**
+ * Admin validation: true when the farmer's account_number/voter_number is really
+ * just the Farmer ID (member_no/farmer_code) after stripping leading zeros —
+ * i.e. a fake savings number that must not be trusted in receipts or reports.
+ */
+export function isFakeSavingsNumber(farmer: ReceiptFarmer): boolean {
+  if (!farmer) return false;
+  const anyFarmer = farmer as Record<string, unknown>;
+  const raw = farmer.account_number ?? farmer.voter_number ?? null;
+  if (raw == null || raw === "") return false;
+  const farmerIdNorm = normId(anyFarmer.member_no) ?? normId(anyFarmer.farmer_code);
+  return farmerIdNorm != null && farmerIdNorm === normId(String(raw));
+}
+
+/**
  * Member-summary shown on the receipt.
  * - Borga (sharecropped) land: "{cultivator savings no}/{owner savings no}"
  *   (cultivator = বর্গাদার first, then জমির মালিক), each falling back to "নাই".
