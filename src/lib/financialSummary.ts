@@ -34,6 +34,8 @@ export type FinancialSummaryInput = {
   savings: FsSaving[];
   loanPayments: FsAmount[];
   loans: FsLoan[];               // active loans (not deleted)
+  openingIrrigationCash?: number; // fiscal-year starting irrigation cash on hand
+  openingSavingsCash?: number;    // fiscal-year starting savings/society cash on hand
 };
 
 // Bank stream buckets: "sech" = irrigation, everything else = society/savings side.
