@@ -60,6 +60,19 @@ export default function FinancialSummary() {
           range(db.from("loan_payments").select("amount,office_id,created_at").limit(50000) as any),
           range(db.from("loans").select("principal,total_due,office_id,created_at").is("deleted_at", null).limit(20000) as any),
         ]);
+
+      // Fiscal-year opening cash on hand (irrigation + savings) for the viewed period.
+      const fyStart = await getFiscalStartMonth().catch(() => 7);
+      const anchor = from ? new Date(from) : new Date();
+      let fyStartYear = anchor.getFullYear();
+      if (anchor.getMonth() + 1 < fyStart) fyStartYear -= 1;
+      const fyLabel = fiscalYearLabel(fyStartYear, fyStart);
+      const openingRes = await db.from("opening_balances").select("office_id,fiscal_year,irrigation_cash,savings_cash").eq("fiscal_year", fyLabel);
+      const openingRows = (openingRes.data ?? []).filter((r: any) =>
+        officeId === "all" ? true : (r.office_id === officeId || r.office_id == null));
+      const openingIrrigationCash = openingRows.reduce((s: number, r: any) => s + Number(r.irrigation_cash || 0), 0);
+      const openingSavingsCash = openingRows.reduce((s: number, r: any) => s + Number(r.savings_cash || 0), 0);
+
       setS(computeFinancialSummary({
         bankAccounts: bankAcc.data ?? [],
         bankTx: bankTx.data ?? [],
@@ -70,6 +83,8 @@ export default function FinancialSummary() {
         savings: savings.data ?? [],
         loanPayments: loanPayments.data ?? [],
         loans: loans.data ?? [],
+        openingIrrigationCash,
+        openingSavingsCash,
       }));
       setLoading(false);
     })();
