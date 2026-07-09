@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { db } from "@/lib/db";
+import { isFakeSavingsNumber } from "@/lib/receiptMemberSummary";
 import { computeIrrigationDueByFarmer } from "@/lib/dues";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/button";
@@ -111,6 +112,14 @@ function VoterSavingsField({ f, setF, disabled, isSuper }: { f: any; setF: (n: a
       <p className="mt-1 text-xs text-muted-foreground">
         {hasNumber ? `✓ ${t("voterSavingsActive")}` : tx("If a number is set, will be auto-treated as a Savings Member", "নম্বর থাকলেই স্বয়ংক্রিয়ভাবে সেভিং সদস্য হিসেবে গণ্য হবে")}
       </p>
+      {hasNumber && isFakeSavingsNumber({ account_number: f.voter_number, member_no: f.member_no, farmer_code: f.member_no }) && (
+        <p className="mt-1 text-xs font-medium text-destructive">
+          {tx(
+            "⚠ This Savings A/C No. is the same as the Farmer ID (after removing leading zeros). This is not a valid savings number — set the real one or leave it blank.",
+            "⚠ এই সেভিং A/C নম্বরটি Farmer ID এর সমান (শুরুর শূন্য বাদে)। এটি বৈধ সেভিং নম্বর নয় — সঠিক নম্বর দিন অথবা খালি রাখুন।",
+          )}
+        </p>
+      )}
       <VoterHistoryDialog farmerId={f.id ?? null} open={historyOpen} onOpenChange={setHistoryOpen} />
     </div>
   );

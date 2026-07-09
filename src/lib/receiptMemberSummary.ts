@@ -7,6 +7,8 @@ export type ReceiptFarmer = {
   voter_number?: string | number | null;
   savings_inactive?: boolean | number | string | null;
   is_voter?: boolean | number | string | null;
+  member_no?: string | number | null;
+  farmer_code?: string | number | null;
 } | null | undefined;
 
 // Shown when a farmer has no active savings account number.
@@ -42,6 +44,20 @@ export function savingsNoOf(farmer: ReceiptFarmer): string | null {
   const farmerIdNorm = normId(anyFarmer.member_no) ?? normId(anyFarmer.farmer_code);
   if (farmerIdNorm != null && farmerIdNorm === normId(value)) return null;
   return value;
+}
+
+/**
+ * Admin validation: true when the farmer's account_number/voter_number is really
+ * just the Farmer ID (member_no/farmer_code) after stripping leading zeros —
+ * i.e. a fake savings number that must not be trusted in receipts or reports.
+ */
+export function isFakeSavingsNumber(farmer: ReceiptFarmer): boolean {
+  if (!farmer) return false;
+  const anyFarmer = farmer as Record<string, unknown>;
+  const raw = farmer.account_number ?? farmer.voter_number ?? null;
+  if (raw == null || raw === "") return false;
+  const farmerIdNorm = normId(anyFarmer.member_no) ?? normId(anyFarmer.farmer_code);
+  return farmerIdNorm != null && farmerIdNorm === normId(String(raw));
 }
 
 /**

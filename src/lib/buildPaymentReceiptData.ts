@@ -2,6 +2,7 @@ import { db } from "@/lib/db";
 import { autoReceiptNo } from "@/lib/receiptNo";
 import { buildIrrigationReceiptEnrichment } from "@/lib/irrigationReceiptData";
 import type { BnReceiptData } from "@/lib/bnReceipts";
+import { savingsNoOf } from "@/lib/receiptMemberSummary";
 
 type Tx = (en: string, bn: string) => string;
 
@@ -26,8 +27,11 @@ export async function buildPaymentReceiptData(p: any, ctx: ReceiptBuildContext):
       : kind === "savings" ? tx("Savings deposit received", "সঞ্চয় জমা গ্রহণ")
         : tx("Irrigation charge received", "সেচ চার্জ গ্রহণ"));
 
-  const memberTypeBn = (f: any) => (f?.is_voter ? "ভোটার নং" : f?.account_number ? "সঞ্চয়ী নং" : null);
-  const memberRefNo = (f: any) => f?.voter_number ?? f?.account_number ?? null;
+  // Guarded savings/voter number: rejects a Farmer ID accidentally stored in
+  // account_number/voter_number, incl. leading-zero variants (e.g. 02933 vs 2933).
+  const memberRefNo = (f: any) => savingsNoOf(f);
+  const memberTypeBn = (f: any) =>
+    savingsNoOf(f) == null ? null : f?.is_voter ? "ভোটার নং" : "সঞ্চয়ী নং";
 
   let irrEnriched: any = {};
   if (kind === "irrigation") {

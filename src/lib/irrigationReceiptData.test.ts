@@ -151,6 +151,27 @@ describe("buildIrrigationReceiptEnrichment", () => {
     expect(e.member_summary).not.toContain("1687");
   });
 
+  // Regression: Farmer ID 02933 has no real savings A/C. account_number "2933"
+  // is the Farmer ID with the leading zero stripped, so member_summary must be
+  // "নাই" — never the stripped fake value.
+  it("receipt for farmer 02933 shows নাই, not the leading-zero-stripped id", async () => {
+    resultQueue.push({ data: [baseInvoice] });
+    resultQueue.push({ data: [baseLand] });
+    resultQueue.push({ data: [patwariRow] });
+    resultQueue.push({ data: [{ due_amount: 0 }] });
+    resultQueue.push({ data: { id: "cult-1", name_bn: "মোঃ সুজাউর", member_no: "02933", farmer_code: "02933", account_number: "2933", savings_inactive: false, is_voter: false } });
+
+    const e = await buildIrrigationReceiptEnrichment({
+      farmerId: "cult-1",
+      paymentAmount: 4039,
+      paymentNote: null,
+    });
+
+    expect(e.cultivator_label).toBe("মোঃ সুজাউর-02933");
+    expect(e.member_summary).toBe("নাই");
+    expect(e.member_summary).not.toContain("2933");
+  });
+
   it("returns safe defaults when no invoices exist", async () => {
     resultQueue.push({ data: [] });
     resultQueue.push({ data: [] });
