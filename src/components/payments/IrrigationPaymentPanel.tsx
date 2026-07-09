@@ -726,14 +726,12 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
       // invoices. Never blocks the payment/receipt; only warns on failure.
       if (manualPatwariId) {
         try {
-          const landIds = Array.from(
-            new Set(chargeItems.map((c) => c.inv.land_id).filter((id): id is string => !!id)),
+          const targets = computePatwariUpdateTargets(
+            chargeItems.map((c) => c.inv),
+            manualPatwariId,
           );
-          const targetLands = landIds.filter((id) => {
-            const inv = chargeItems.find((c) => c.inv.land_id === id)?.inv;
-            return (inv?.lands as any)?.patwari_id !== manualPatwariId;
-          });
-          if (targetLands.length > 0) {
+          if (targets.length > 0) {
+            const targetLands = targets.map((t) => t.land_id);
             const { error: landErr } = await db
               .from("lands")
               .update({ patwari_id: manualPatwariId })
@@ -744,8 +742,11 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
               action_type: "update",
               office_id: farmer?.office_id ?? null,
               reference_id: farmerId,
-              new_data: { patwari_id: manualPatwariId, land_ids: targetLands, source: "irrigation_payment" },
+              new_data: { patwari_id: manualPatwariId, patwari_name: selectedPatwariName, land_ids: targetLands, targets, source: "irrigation_payment" },
             });
+            setPatwariUpdatedLands(targets.map((t) => ({ ...t, patwari_name: selectedPatwariName })));
+          } else {
+            setPatwariUpdatedLands([]);
           }
         } catch (patErr) {
           console.warn("[irrigation-pay] land patwari update failed", patErr);
@@ -754,6 +755,8 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
             "জমির পাটুয়ারী আপডেট করা যায়নি",
           ));
         }
+      } else {
+        setPatwariUpdatedLands([]);
       }
 
       // SMS summary — one message listing every receipt generated.
