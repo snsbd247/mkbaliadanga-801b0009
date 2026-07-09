@@ -355,6 +355,8 @@ const App = () => (
                 <Route path="/ledger-integrity" element={<RequirePerm module="accounting"><LedgerIntegrity /></RequirePerm>} />
                 <Route path="/approvals" element={<RequirePerm module="approvals"><Approvals /></RequirePerm>} />
                 <Route path="/period-close" element={<RequirePerm module="accounting" action="can_edit"><PeriodClose /></RequirePerm>} />
+                <Route path="/opening-balances" element={<RequireRole roles={["admin","super_admin"]}><RequirePerm module="accounting" action="can_edit"><OpeningBalances /></RequirePerm></RequireRole>} />
+                <Route path="/reports/source-vs-ledger" element={<RequirePerm module="accounting"><SourceVsLedger /></RequirePerm>} />
                 <Route path="/finance-summary" element={<RequirePerm module="accounting"><FinanceSummary /></RequirePerm>} />
                 <Route path="/land-history" element={<RequirePerm module="farmers"><LandHistory /></RequirePerm>} />
                 
