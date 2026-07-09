@@ -837,6 +837,24 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
                 </Badge>
               ))}
             </div>
+            {patwariUpdatedLands.length > 0 && (
+              <div className="mt-3 rounded-md border bg-muted/40 p-2">
+                <div className="mb-1 text-xs font-medium">
+                  {tx("Patwari updated on these lands", "এই জমিগুলোতে পাটুয়ারী আপডেট হয়েছে")}
+                  {patwariUpdatedLands[0]?.patwari_name ? ` → ${patwariUpdatedLands[0].patwari_name}` : ""}
+                </div>
+                <div className="flex flex-col gap-1">
+                  {patwariUpdatedLands.map((l) => (
+                    <div key={l.land_id} className="flex items-center justify-between gap-2 text-xs">
+                      <span className="font-mono">{l.invoice_no}</span>
+                      <span className="text-muted-foreground">
+                        {tx("Mouza", "মৌজা")}: {l.mouza || "—"} • {tx("Dag", "দাগ")}: {l.dag_no || "—"}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
             {lastPaymentId && (
               <div className="mt-3 flex flex-wrap gap-2">
                 <Button
