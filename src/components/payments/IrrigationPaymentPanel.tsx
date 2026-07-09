@@ -389,6 +389,11 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
     if (exceedsDue(Number(previousCollected), previousDueTotal)) {
       return toast.error(tx("Previous due collected exceeds previous due", "পূর্বের বকেয়া থেকে সংগৃহীত পূর্বের মোট বকেয়ার চেয়ে বেশি"));
     }
+    // Received current amount must not exceed the sum of the selected current
+    // invoices — each receipt maps to exactly one invoice's payable.
+    if (Number(currentCollected || 0) - roundTk(currentPayable) > 0.5) {
+      return toast.error(tx("Current collected exceeds the selected invoices total", "সংগৃহীত চলতি টাকা নির্বাচিত ইনভয়েসের মোটের চেয়ে বেশি"));
+    }
     // Full-clearance rule: only roles allowed in settings (or super admins) may
     // accept a partial payment. Everyone else must fully clear all dues
     // (previous + current) before a receipt can be generated.
