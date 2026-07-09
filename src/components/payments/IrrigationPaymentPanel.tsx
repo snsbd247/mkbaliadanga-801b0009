@@ -520,6 +520,7 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
 
       const touchedStatuses: Array<{ invoice_no: string; cleared: boolean }> = [];
       const createdReceipts: Array<{ paymentId: string; receiptNo: string; invoice_no: string }> = [];
+      const postingResults: Array<{ receiptNo: string; cashbook: boolean; journal: boolean }> = [];
 
       // Account codes for the split-ledger journal (looked up once, reused per payment).
       const codes = ["1010", "IRR-INCOME", "IRR-PREV-DUE", "IRR-DELAY", "IRR-MAINT", "IRR-CANAL"];
