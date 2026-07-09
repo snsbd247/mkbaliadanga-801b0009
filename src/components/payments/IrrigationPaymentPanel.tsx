@@ -133,6 +133,9 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
   const [patwariConfirmOpen, setPatwariConfirmOpen] = useState(false);
   // Lands whose patwari was updated by the last successful payment (audit view).
   const [patwariUpdatedLands, setPatwariUpdatedLands] = useState<Array<{ land_id: string; mouza: string | null; dag_no: string | null; invoice_no: string; patwari_name: string }>>([]);
+  // Per-payment posting status shown after save: did Cash Book & Journal succeed?
+  const [postingStatus, setPostingStatus] = useState<Array<{ receiptNo: string; cashbook: boolean; journal: boolean }>>([]);
+
 
 
 
@@ -517,6 +520,7 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
 
       const touchedStatuses: Array<{ invoice_no: string; cleared: boolean }> = [];
       const createdReceipts: Array<{ paymentId: string; receiptNo: string; invoice_no: string }> = [];
+      const postingResults: Array<{ receiptNo: string; cashbook: boolean; journal: boolean }> = [];
 
       // Account codes for the split-ledger journal (looked up once, reused per payment).
       const codes = ["1010", "IRR-INCOME", "IRR-PREV-DUE", "IRR-DELAY", "IRR-MAINT", "IRR-CANAL"];
@@ -598,22 +602,38 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
         });
 
         // 4b) Cash book income row (feeds the Irrigation cash stream in Cash Book).
-        try {
-          await db.from("receipts").insert({
-            kind: "irrigation",
-            farmer_id: farmerId,
-            reference_id: inv.id,
-            amount: take,
-            method,
-            note: note || null,
-            receipt_no: receiptNo,
-            receipt_date: new Date().toISOString().slice(0, 10),
-            office_id: officeId,
-            collected_by: user?.id,
-          });
-        } catch (rErr) {
-          console.warn("[irrigation-pay] cash book receipt insert failed", rErr);
-        }
+        //     Wrapped in safeWithRetry: a failure enqueues a background retry
+        //     job and is recorded in the audit trail instead of being lost.
+        const cashbookResult = await safeWithRetry(
+          "cashbook_write",
+          async () => {
+            const { error } = await db.from("receipts").insert({
+              kind: "irrigation",
+              farmer_id: farmerId,
+              reference_id: inv.id,
+              amount: take,
+              method,
+              note: note || null,
+              receipt_no: receiptNo,
+              receipt_date: new Date().toISOString().slice(0, 10),
+              office_id: officeId,
+              collected_by: user?.id,
+            });
+            if (error) throw error;
+          },
+          {
+            referenceId: paymentId,
+            payload: { kind: "irrigation", reference_id: inv.id, amount: take, method, receipt_no: receiptNo, farmer_id: farmerId, office_id: officeId },
+            officeId,
+          },
+        );
+        logAudit({
+          module: "irrigation_payment",
+          action_type: cashbookResult.ok ? "create" : "fail",
+          office_id: officeId,
+          reference_id: paymentId,
+          new_data: { step: "cashbook_write", ok: cashbookResult.ok, receipt_no: receiptNo, amount: take, error: cashbookResult.error ?? null, retry_job_id: cashbookResult.jobId ?? null },
+        });
 
 
         // 5) Verify the persisted coverage for this single invoice
@@ -633,23 +653,25 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
           });
         }
 
-        // 6) Split-ledger journal posting for this payment
-        try {
-          let irrPart = 0, delayPart = 0, maintPart = 0, canalPart = 0, prevPart = 0;
-          if (isCurrent) {
-            const delayCollected = newFee;
-            const maintCollected = Number(inv.maintenance_amount || 0);
-            const canalCollected = Number(inv.canal_amount || 0);
-            const overheadTotal = delayCollected + maintCollected + canalCollected;
-            const scale = overheadTotal > 0 ? Math.min(1, take / overheadTotal) : 0;
-            delayPart = +(delayCollected * scale).toFixed(2);
-            maintPart = +(maintCollected * scale).toFixed(2);
-            canalPart = +(canalCollected * scale).toFixed(2);
-            irrPart = +(take - delayPart - maintPart - canalPart).toFixed(2);
-          } else {
-            prevPart = +take.toFixed(2);
-          }
-          if (byCode["1010"]) {
+        // 6) Split-ledger journal posting for this payment (retry + audit).
+        const journalResult = await safeWithRetry(
+          "journal_post",
+          async () => {
+            let irrPart = 0, delayPart = 0, maintPart = 0, canalPart = 0, prevPart = 0;
+            if (isCurrent) {
+              const delayCollected = newFee;
+              const maintCollected = Number(inv.maintenance_amount || 0);
+              const canalCollected = Number(inv.canal_amount || 0);
+              const overheadTotal = delayCollected + maintCollected + canalCollected;
+              const scale = overheadTotal > 0 ? Math.min(1, take / overheadTotal) : 0;
+              delayPart = +(delayCollected * scale).toFixed(2);
+              maintPart = +(maintCollected * scale).toFixed(2);
+              canalPart = +(canalCollected * scale).toFixed(2);
+              irrPart = +(take - delayPart - maintPart - canalPart).toFixed(2);
+            } else {
+              prevPart = +take.toFixed(2);
+            }
+            if (!byCode["1010"]) throw new Error("Cash account (1010) missing from chart of accounts");
             const { data: je, error: jeErr } = await db.from("journal_entries").insert({
               entry_date: new Date().toISOString().slice(0, 10),
               reference: `IRR-PAY-${paymentId.slice(0, 8)}`,
@@ -659,29 +681,41 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
               posted_at: new Date().toISOString(),
               created_by: user?.id,
             }).select("id").single();
-            if (!jeErr && je) {
-              const lines: any[] = [
-                { journal_id: je.id, account_id: byCode["1010"], debit: take, credit: 0, position: 0, description: "Cash received" },
-              ];
-              let pos = 1;
-              const credits: Array<[string, number]> = [
-                ["IRR-INCOME", irrPart],
-                ["IRR-DELAY", delayPart],
-                ["IRR-MAINT", maintPart],
-                ["IRR-CANAL", canalPart],
-                ["IRR-PREV-DUE", prevPart],
-              ];
-              for (const [code, amt] of credits) {
-                if (amt > 0 && byCode[code]) {
-                  lines.push({ journal_id: je.id, account_id: byCode[code], debit: 0, credit: amt, position: pos++, description: code });
-                }
+            if (jeErr || !je) throw jeErr ?? new Error("Journal entry insert failed");
+            const lines: any[] = [
+              { journal_id: je.id, account_id: byCode["1010"], debit: take, credit: 0, position: 0, description: "Cash received" },
+            ];
+            let pos = 1;
+            const credits: Array<[string, number]> = [
+              ["IRR-INCOME", irrPart],
+              ["IRR-DELAY", delayPart],
+              ["IRR-MAINT", maintPart],
+              ["IRR-CANAL", canalPart],
+              ["IRR-PREV-DUE", prevPart],
+            ];
+            for (const [code, amt] of credits) {
+              if (amt > 0 && byCode[code]) {
+                lines.push({ journal_id: je.id, account_id: byCode[code], debit: 0, credit: amt, position: pos++, description: code });
               }
-              await db.from("journal_entry_lines").insert(lines);
             }
-          }
-        } catch (jErr) {
-          console.warn("[irrigation-pay] journal posting failed", jErr);
-        }
+            const { error: lineErr } = await db.from("journal_entry_lines").insert(lines);
+            if (lineErr) throw lineErr;
+          },
+          {
+            referenceId: paymentId,
+            payload: { reference: `IRR-PAY-${paymentId.slice(0, 8)}`, invoice_id: inv.id, invoice_no: inv.invoice_no, amount: take, is_current: isCurrent, office_id: officeId },
+            officeId,
+          },
+        );
+        logAudit({
+          module: "irrigation_payment",
+          action_type: journalResult.ok ? "create" : "fail",
+          office_id: officeId,
+          reference_id: paymentId,
+          new_data: { step: "journal_post", ok: journalResult.ok, reference: `IRR-PAY-${paymentId.slice(0, 8)}`, amount: take, error: journalResult.error ?? null, retry_job_id: journalResult.jobId ?? null },
+        });
+
+        postingResults.push({ receiptNo, cashbook: cashbookResult.ok, journal: journalResult.ok });
 
         // 7) Central audit log
         logAudit({
@@ -810,6 +844,7 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
           : { description: tx(`${createdReceipts.length} receipts generated`, `${createdReceipts.length}টি রসিদ তৈরি হয়েছে`) },
       );
       setPaidStatuses(touchedStatuses);
+      setPostingStatus(postingResults);
       setLastPaymentId(lastPayment?.paymentId ?? null);
       // refresh
       setFarmerId(farmerId);
@@ -856,6 +891,31 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
                 </Badge>
               ))}
             </div>
+            {postingStatus.length > 0 && (
+              <div className="mt-3 rounded-md border bg-muted/40 p-2">
+                <div className="mb-1 text-xs font-medium">{tx("Transaction posting status", "লেনদেন পোস্টিং স্ট্যাটাস")}</div>
+                <div className="flex flex-col gap-1">
+                  {postingStatus.map((s) => (
+                    <div key={s.receiptNo} className="flex items-center justify-between gap-2 text-xs">
+                      <span className="font-mono">{s.receiptNo}</span>
+                      <span className="flex gap-3">
+                        <span className={s.cashbook ? "text-green-600" : "text-destructive"}>
+                          {tx("Cash Book", "ক্যাশবুক")}: {s.cashbook ? "✓" : "✗"}
+                        </span>
+                        <span className={s.journal ? "text-green-600" : "text-destructive"}>
+                          {tx("Accounts", "একাউন্টস")}: {s.journal ? "✓" : "✗"}
+                        </span>
+                      </span>
+                    </div>
+                  ))}
+                </div>
+                {postingStatus.some((s) => !s.cashbook || !s.journal) && (
+                  <div className="mt-1 text-xs text-muted-foreground">
+                    {tx("Failed steps were queued for automatic retry.", "ব্যর্থ ধাপগুলো স্বয়ংক্রিয় রিট্রাই কিউতে যোগ হয়েছে।")}
+                  </div>
+                )}
+              </div>
+            )}
             {patwariUpdatedLands.length > 0 && (
               <div className="mt-3 rounded-md border bg-muted/40 p-2">
                 <div className="mb-1 text-xs font-medium">

@@ -3,7 +3,9 @@ export type RetryJobType =
   | "receipt_generation"
   | "sms_send"
   | "sms_delivery_check"
-  | "report_export";
+  | "report_export"
+  | "cashbook_write"
+  | "journal_post";
 
 export type RetryJobStatus =
   | "pending"
