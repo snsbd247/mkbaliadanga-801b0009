@@ -13,6 +13,8 @@ import { useLang } from "@/i18n/LanguageProvider";
 import { downloadCsv } from "@/lib/csvExport";
 import * as XLSX from "xlsx";
 import { computeFinancialSummary, type FinancialSummary } from "@/lib/financialSummary";
+import { getFiscalStartMonth, fiscalYearLabel } from "@/lib/accounting";
+import { Link as RLink } from "react-router-dom";
 import { Landmark, Droplets, PiggyBank, HandCoins, AlertCircle, TrendingUp, Wallet, FileDown, Printer, FileSpreadsheet } from "lucide-react";
 
 type Office = { id: string; name: string };
