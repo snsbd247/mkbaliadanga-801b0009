@@ -129,6 +129,9 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
   // Validation modal for unpaid dues.
   const [dueDialogOpen, setDueDialogOpen] = useState(false);
   const [dueDialogRows, setDueDialogRows] = useState<{ label: string; missing: number }[]>([]);
+  const [patwariConfirmOpen, setPatwariConfirmOpen] = useState(false);
+
+
 
   const canDoPartial = isSuper || roles.some(r => allowedRoles.includes(r));
 
