@@ -53,11 +53,12 @@ export function savingsNoOf(farmer: ReceiptFarmer): string | null {
  */
 export function isFakeSavingsNumber(farmer: ReceiptFarmer): boolean {
   if (!farmer) return false;
-  const anyFarmer = farmer as Record<string, unknown>;
-  const raw = farmer.account_number ?? farmer.voter_number ?? null;
-  if (raw == null || raw === "") return false;
-  const farmerIdNorm = normId(anyFarmer.member_no) ?? normId(anyFarmer.farmer_code);
-  return farmerIdNorm != null && farmerIdNorm === normId(String(raw));
+  const hasAny = [farmer.account_number, farmer.voter_number].some((v) => v != null && v !== "");
+  // No usable number exists → nothing to warn about here.
+  if (!hasAny) return false;
+  // Fake only when a value is present but savingsNoOf can't extract a valid one
+  // (i.e. every candidate reduces to the Farmer ID after zero-stripping).
+  return savingsNoOf(farmer) == null && !flagIsTrue(farmer.savings_inactive);
 }
 
 /**
