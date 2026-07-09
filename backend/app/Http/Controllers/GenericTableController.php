@@ -778,6 +778,12 @@ class GenericTableController extends Controller
             }
         }
 
+        if ($table === 'expenses') {
+            foreach ($inserted as $row) {
+                $this->ensureExpensePostings($request, $row);
+            }
+        }
+
         $this->recordAudit($request, 'create', $table, $ids, ['count' => count($prepared)]);
 
         return response()->json($inserted, 201);
