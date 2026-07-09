@@ -36,8 +36,27 @@ export async function buildPaymentReceiptData(p: any, ctx: ReceiptBuildContext):
   let irrEnriched: any = {};
   if (kind === "irrigation") {
     const irrAllocs = (p.payment_allocations ?? []).filter((a: any) => a.kind === "irrigation");
-    const refIds = irrAllocs.map((a: any) => a.reference_id).filter(Boolean);
-    const collectedFromOutstanding = irrAllocs.reduce((s: number, a: any) => s + Number(a.amount || 0), 0) || Number(p.amount || 0);
+    let refIds = irrAllocs.map((a: any) => a.reference_id).filter(Boolean);
+    let collectedFromOutstanding = irrAllocs.reduce((s: number, a: any) => s + Number(a.amount || 0), 0) || Number(p.amount || 0);
+
+    // Irrigation payments link their specific invoice(s) through
+    // irrigation_invoice_payments (one payment row per invoice), NOT
+    // payment_allocations. Without this, refIds stays empty and the receipt
+    // falls back to the farmer's FIRST invoice — making every receipt show the
+    // same mouza/dag/owner even when each invoice is for a different land.
+    if (refIds.length === 0 && p.id) {
+      const { data: iip } = await db
+        .from("irrigation_invoice_payments")
+        .select("invoice_id,collected_amount")
+        .eq("payment_id", p.id);
+      const invRefs = (iip ?? []).map((r: any) => r.invoice_id).filter(Boolean);
+      if (invRefs.length) {
+        refIds = invRefs;
+        const sum = (iip ?? []).reduce((s: number, r: any) => s + Number(r.collected_amount || 0), 0);
+        if (sum > 0) collectedFromOutstanding = sum;
+      }
+    }
+
     irrEnriched = await buildIrrigationReceiptEnrichment({
       farmerId: p.farmer_id ?? null,
       refIds,
@@ -47,6 +66,7 @@ export async function buildPaymentReceiptData(p: any, ctx: ReceiptBuildContext):
       manualPatwari: p.patwaris ?? null,
     });
   }
+
 
   const miscLabels: Record<string, string> = {
     hawlat: "হাওলাত গ্রহণ", bank: "ভাংড়ী বিক্রি", donation: "অনুদান", misc: "বিবিধ",
