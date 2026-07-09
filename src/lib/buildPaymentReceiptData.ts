@@ -2,6 +2,7 @@ import { db } from "@/lib/db";
 import { autoReceiptNo } from "@/lib/receiptNo";
 import { buildIrrigationReceiptEnrichment } from "@/lib/irrigationReceiptData";
 import type { BnReceiptData } from "@/lib/bnReceipts";
+import { savingsNoOf } from "@/lib/receiptMemberSummary";
 
 type Tx = (en: string, bn: string) => string;
 
