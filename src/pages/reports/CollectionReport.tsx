@@ -298,10 +298,17 @@ export default function CollectionReport() {
   // ---- Aggregations ----
   // Collection-kind filter merged with the report. Voided/cancelled rows are
   // kept visible for transparency but excluded from every total.
-  const filtered = useMemo(
-    () => rows.filter((r) => kind === ALL || r.source === kind),
-    [rows, kind],
-  );
+  const filtered = useMemo(() => {
+    const q = refQuery.trim().toLowerCase();
+    return rows.filter((r) => {
+      if (kind !== ALL && r.source !== kind) return false;
+      if (q) {
+        const hay = `${r.receipt_no ?? ""} ${r.invoice_no ?? ""} ${r.ref_id ?? ""}`.toLowerCase();
+        if (!hay.includes(q)) return false;
+      }
+      return true;
+    });
+  }, [rows, kind, refQuery]);
 
   const liveRows = useMemo(() => filtered.filter((r) => !r.voided), [filtered]);
 
