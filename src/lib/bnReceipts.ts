@@ -899,7 +899,7 @@ async function renderPdf(data: BnReceiptData, copy: ReceiptCopy, options?: Recei
   const innerH = pageH - opts.margins.t - opts.margins.b;
 
   if (irrigationTwoUp) {
-    // A4 পোর্ট্রেটকে দুই সমান অংশে ভাগ করি: উপরে "অফিস কপি", নিচে "কৃষক কপি"।
+    // A4 পোর্ট্রেটকে দুই সমান অংশে ভাগ করি: উপরে "কৃষক কপি", নিচে "অফিস কপি"।
     // প্রতিটি অর্ধে তার নিজের কপি (office / farmer) আলাদা রেন্ডার হয় যাতে প্রিন্টে
     // মাঝ বরাবর কাটলে একটি অফিস কপি ও একটি কৃষক কপি পাওয়া যায়।
     const officeImg = await renderCopyToImage("office");
@@ -926,8 +926,8 @@ async function renderPdf(data: BnReceiptData, copy: ReceiptCopy, options?: Recei
       const yTop = top + labelH + (slotH - h) / 2;
       pdf.addImage(copyImg.img, "JPEG", ox, yTop, w, h);
     };
-    drawHalf(opts.margins.t, officeImg, officeLabel);
-    drawHalf(midY, farmerImg, farmerLabel);
+    drawHalf(opts.margins.t, farmerImg, farmerLabel);
+    drawHalf(midY, officeImg, officeLabel);
     // মাঝ বরাবর কাটার গাইড লাইন — সঠিক মিডপয়েন্টে, সরু ড্যাশড।
     pdf.setLineDashPattern([2, 2], 0);
     pdf.setLineWidth(0.2);
