@@ -602,22 +602,38 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
         });
 
         // 4b) Cash book income row (feeds the Irrigation cash stream in Cash Book).
-        try {
-          await db.from("receipts").insert({
-            kind: "irrigation",
-            farmer_id: farmerId,
-            reference_id: inv.id,
-            amount: take,
-            method,
-            note: note || null,
-            receipt_no: receiptNo,
-            receipt_date: new Date().toISOString().slice(0, 10),
-            office_id: officeId,
-            collected_by: user?.id,
-          });
-        } catch (rErr) {
-          console.warn("[irrigation-pay] cash book receipt insert failed", rErr);
-        }
+        //     Wrapped in safeWithRetry: a failure enqueues a background retry
+        //     job and is recorded in the audit trail instead of being lost.
+        const cashbookResult = await safeWithRetry(
+          "cashbook_write",
+          async () => {
+            const { error } = await db.from("receipts").insert({
+              kind: "irrigation",
+              farmer_id: farmerId,
+              reference_id: inv.id,
+              amount: take,
+              method,
+              note: note || null,
+              receipt_no: receiptNo,
+              receipt_date: new Date().toISOString().slice(0, 10),
+              office_id: officeId,
+              collected_by: user?.id,
+            });
+            if (error) throw error;
+          },
+          {
+            referenceId: paymentId,
+            payload: { kind: "irrigation", reference_id: inv.id, amount: take, method, receipt_no: receiptNo, farmer_id: farmerId, office_id: officeId },
+            officeId,
+          },
+        );
+        logAudit({
+          module: "irrigation_payment",
+          action_type: cashbookResult.ok ? "create" : "fail",
+          office_id: officeId,
+          reference_id: paymentId,
+          new_data: { step: "cashbook_write", ok: cashbookResult.ok, receipt_no: receiptNo, amount: take, error: cashbookResult.error ?? null, retry_job_id: cashbookResult.jobId ?? null },
+        });
 
 
         // 5) Verify the persisted coverage for this single invoice
