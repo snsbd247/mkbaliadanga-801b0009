@@ -67,6 +67,15 @@ describe("buildMemberSummary", () => {
     expect(savingsNoOf({ account_number: "01711", member_no: "02933", farmer_code: "02933" } as any)).toBe("01711");
   });
 
+  // Regression: farmer 02473 — fake account_number "2473" (=Farmer ID) but a
+  // real voter_number "1711". Must fall back to the valid voter_number, not নাই.
+  it("falls back to voter_number when account_number is the farmer id (02473→1711)", () => {
+    expect(savingsNoOf({
+      account_number: "2473", voter_number: "1711", member_no: "02473", farmer_code: "02473", is_voter: true,
+    } as any)).toBe("1711");
+  });
+
+
 
   it("borga land shows বর্গাদার savings / মালিক savings when both exist", () => {
     expect(buildMemberSummary({
