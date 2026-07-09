@@ -695,6 +695,40 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
         });
       }
 
+      // Manual patwari → update the patwari on every land tied to the paid
+      // invoices. Never blocks the payment/receipt; only warns on failure.
+      if (manualPatwariId) {
+        try {
+          const landIds = Array.from(
+            new Set(chargeItems.map((c) => c.inv.land_id).filter((id): id is string => !!id)),
+          );
+          const targetLands = landIds.filter((id) => {
+            const inv = chargeItems.find((c) => c.inv.land_id === id)?.inv;
+            return (inv?.lands as any)?.patwari_id !== manualPatwariId;
+          });
+          if (targetLands.length > 0) {
+            const { error: landErr } = await db
+              .from("lands")
+              .update({ patwari_id: manualPatwariId })
+              .in("id", targetLands);
+            if (landErr) throw landErr;
+            logAudit({
+              module: "land_patwari_update",
+              action_type: "update",
+              office_id: farmer?.office_id ?? null,
+              reference_id: farmerId,
+              new_data: { patwari_id: manualPatwariId, land_ids: targetLands, source: "irrigation_payment" },
+            });
+          }
+        } catch (patErr) {
+          console.warn("[irrigation-pay] land patwari update failed", patErr);
+          toast.warning(tx(
+            "Land patwari could not be updated",
+            "জমির পাটুয়ারী আপডেট করা যায়নি",
+          ));
+        }
+      }
+
       // SMS summary — one message listing every receipt generated.
       if (farmer?.mobile) {
         const remaining = Math.max(0, previousDueTotal - Number(previousCollected || 0));
