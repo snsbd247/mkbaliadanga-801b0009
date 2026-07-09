@@ -597,6 +597,25 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
           created_by: user?.id,
         });
 
+        // 4b) Cash book income row (feeds the Irrigation cash stream in Cash Book).
+        try {
+          await db.from("receipts").insert({
+            kind: "irrigation",
+            farmer_id: farmerId,
+            reference_id: inv.id,
+            amount: take,
+            method,
+            note: note || null,
+            receipt_no: receiptNo,
+            receipt_date: new Date().toISOString().slice(0, 10),
+            office_id: officeId,
+            collected_by: user?.id,
+          });
+        } catch (rErr) {
+          console.warn("[irrigation-pay] cash book receipt insert failed", rErr);
+        }
+
+
         // 5) Verify the persisted coverage for this single invoice
         const coverage = await verifyPaymentCoverage(paymentId, [inv.id], take);
         if (!coverage.ok) {
