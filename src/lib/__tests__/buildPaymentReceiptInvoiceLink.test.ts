@@ -1,38 +1,42 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 // Capture the args passed into the enrichment so we can assert which invoice
-// (refIds) each receipt resolves to.
-const enrichSpy = vi.fn(async (input: any) => ({
-  bill_info: "সেচ চার্জ",
-  owner_self: false,
-  cultivator_label: null,
-  land_owner_label: null,
-  rate: 150,
-  member_summary: "",
-  current_season_charge: 0,
-  penalty_amount: 0,
-  maintenance_charge: 0,
-  canal_charge: 0,
-  discount_amount: 0,
-  total_outstanding: 0,
-  collected_from_outstanding: input.paymentAmount ?? 0,
-  remark: null,
-  holding_description: null,
-  patwari_name: null,
-  patwari_mobile: null,
-  // Echo the resolved invoice so the receipt "land data" is invoice-specific.
-  farmerExtras: {
-    mouza: `মৌজা-${input.refIds?.[0] ?? "none"}`,
-    dag_no: `দাগ-${input.refIds?.[0] ?? "none"}`,
-    land_size: 10,
-    field_type_bn: null,
-    owner_type_bn: "",
-  },
+// (refIds) each receipt resolves to. vi.hoisted keeps the spy available inside
+// the hoisted vi.mock factory.
+const { enrichSpy } = vi.hoisted(() => ({
+  enrichSpy: vi.fn(async (input: any) => ({
+    bill_info: "সেচ চার্জ",
+    owner_self: false,
+    cultivator_label: null,
+    land_owner_label: null,
+    rate: 150,
+    member_summary: "",
+    current_season_charge: 0,
+    penalty_amount: 0,
+    maintenance_charge: 0,
+    canal_charge: 0,
+    discount_amount: 0,
+    total_outstanding: 0,
+    collected_from_outstanding: input?.paymentAmount ?? 0,
+    remark: null,
+    holding_description: null,
+    patwari_name: null,
+    patwari_mobile: null,
+    // Echo the resolved invoice so the receipt "land data" is invoice-specific.
+    farmerExtras: {
+      mouza: `মৌজা-${input?.refIds?.[0] ?? "none"}`,
+      dag_no: `দাগ-${input?.refIds?.[0] ?? "none"}`,
+      land_size: 10,
+      field_type_bn: null,
+      owner_type_bn: "",
+    },
+  })),
 }));
 
 vi.mock("@/lib/irrigationReceiptData", () => ({
-  buildIrrigationReceiptEnrichment: (input: any) => enrichSpy(input),
+  buildIrrigationReceiptEnrichment: enrichSpy,
 }));
+
 
 // Per-payment link rows keyed by payment_id, mirroring irrigation_invoice_payments.
 const invoiceLinks: Record<string, Array<{ invoice_id: string; collected_amount: number }>> = {
