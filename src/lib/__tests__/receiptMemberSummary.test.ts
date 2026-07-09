@@ -57,6 +57,17 @@ describe("buildMemberSummary", () => {
     expect(savingsNoOf({ account_number: "2933", member_no: "02933", farmer_code: "02933", is_voter: false } as any)).toBeNull();
   });
 
+  // Additional leading-zero variations must never surface a fake savings number.
+  it("rejects all leading-zero variations of the farmer id", () => {
+    expect(savingsNoOf({ account_number: "29", member_no: "00029", farmer_code: "00029" } as any)).toBeNull();
+    expect(savingsNoOf({ account_number: "0029", member_no: "29", farmer_code: "29" } as any)).toBeNull();
+    expect(savingsNoOf({ account_number: 2933, member_no: "02933" } as any)).toBeNull();
+    expect(savingsNoOf({ voter_number: "5", member_no: "0005", farmer_code: "0005" } as any)).toBeNull();
+    // A genuinely different savings number is still returned unchanged.
+    expect(savingsNoOf({ account_number: "01711", member_no: "02933", farmer_code: "02933" } as any)).toBe("01711");
+  });
+
+
   it("borga land shows বর্গাদার savings / মালিক savings when both exist", () => {
     expect(buildMemberSummary({
       cultivator: { account_number: "01711" },
