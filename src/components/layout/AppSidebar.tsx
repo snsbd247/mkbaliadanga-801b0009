@@ -164,6 +164,8 @@ export function AppSidebar() {
         { url: "/journal-entry", icon: BookKey, label: t("journalEntry"), permKey: "accounting" },
         { url: "/financial-reports", icon: TrendingUp, label: t("financialReports"), permKey: "accounting" },
         { url: "/period-close", icon: Lock, label: t("periodClose"), permKey: "accounting" },
+        { url: "/opening-balances", icon: Wallet, label: lang === "bn" ? "প্রারম্ভিক ক্যাশ ব্যালেন্স" : "Opening Cash Balances", permKey: "accounting" },
+        { url: "/reports/source-vs-ledger", icon: ShieldAlert, label: lang === "bn" ? "উৎস বনাম লেজার" : "Source vs Ledger", permKey: "accounting" },
         { url: "/admin/reconciliation", icon: ClipboardCheck, label: t("monthlyReconciliation"), permKey: "accounting" },
         { url: "/admin/share-capital-reconciliation", icon: ClipboardCheck, label: t("shareCapitalReconciliation"), permKey: "accounting" },
         { url: "/ledger-integrity", icon: ShieldAlert, label: t("ledgerIntegrity"), permKey: "accounting" },
