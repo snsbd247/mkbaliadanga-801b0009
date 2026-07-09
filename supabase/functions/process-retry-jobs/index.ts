@@ -16,6 +16,10 @@ function nextRetryAt(attempt: number) {
   return new Date(Date.now() + SCHEDULE_MS[idx]).toISOString();
 }
 
+function journalRef(paymentId: string) {
+  return `IRR-PAY-${String(paymentId).slice(0, 8)}`;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -65,6 +69,8 @@ Deno.serve(async (req) => {
         // Idempotent: skip if a journal with this reference already exists.
         const { data: existing } = await supabase
           .from("journal_entries").select("id").eq("reference", p.reference).maybeSingle();
+        const { data: existingLedger } = await supabase
+          .from("ledger_entries").select("id").eq("reference_type", "irrigation_payment").eq("reference_id", p.payment_id ?? job.reference_id).limit(1);
         if (!existing) {
           const { data: accs } = await supabase.from("accounts").select("id,code").in("code", ["1010", "IRR-INCOME", "4010"]);
           const byCode: Record<string, string> = Object.fromEntries((accs ?? []).map((a: any) => [a.code, a.id]));
@@ -72,10 +78,11 @@ Deno.serve(async (req) => {
           const income = byCode["IRR-INCOME"] ?? byCode["4010"];
           if (!cash || !income) throw new Error("Required accounts (1010 / income) missing");
           const amount = Number(p.amount || 0);
+          const ref = p.reference ?? journalRef(p.payment_id ?? job.reference_id ?? "");
           const { data: je, error: jeErr } = await supabase.from("journal_entries").insert({
             entry_date: new Date().toISOString().slice(0, 10),
-            reference: p.reference, description: `Irrigation payment retry (${p.invoice_no ?? ""})`,
-            office_id: p.office_id, posted: true, posted_at: new Date().toISOString(),
+            reference: ref, description: `Irrigation payment retry (${p.invoice_no ?? ""})`,
+            office_id: p.office_id, posted: false,
           }).select("id").single();
           if (jeErr || !je) throw jeErr ?? new Error("Journal insert failed");
           const { error: lErr } = await supabase.from("journal_entry_lines").insert([
@@ -83,6 +90,22 @@ Deno.serve(async (req) => {
             { journal_id: je.id, account_id: income, debit: 0, credit: amount, position: 1, description: "Irrigation income" },
           ]);
           if (lErr) throw lErr;
+          await supabase.from("journal_entries").update({ posted: true, posted_at: new Date().toISOString() }).eq("id", je.id);
+        }
+        if (!existingLedger || existingLedger.length === 0) {
+          const { data: accs } = await supabase.from("accounts").select("id,code").in("code", ["1010", "IRR-INCOME", "4010"]);
+          const byCode: Record<string, string> = Object.fromEntries((accs ?? []).map((a: any) => [a.code, a.id]));
+          const cash = byCode["1010"];
+          const income = byCode["IRR-INCOME"] ?? byCode["4010"];
+          if (!cash || !income) throw new Error("Required accounts (1010 / income) missing");
+          const amount = Number(p.amount || 0);
+          const paymentId = p.payment_id ?? job.reference_id;
+          const entryDate = new Date().toISOString().slice(0, 10);
+          const { error: ledgerErr } = await supabase.from("ledger_entries").insert([
+            { entry_date: entryDate, account_id: cash, debit: amount, credit: 0, reference_type: "irrigation_payment", reference_id: paymentId, description: "Cash received", office_id: p.office_id, created_by: p.created_by ?? null },
+            { entry_date: entryDate, account_id: income, debit: 0, credit: amount, reference_type: "irrigation_payment", reference_id: paymentId, description: "Irrigation income", office_id: p.office_id, created_by: p.created_by ?? null },
+          ]);
+          if (ledgerErr) throw ledgerErr;
         }
       } else {
         // Unknown / browser-only job type — skip (will be retried manually)

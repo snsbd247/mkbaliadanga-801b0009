@@ -38,6 +38,7 @@ import { verifyInvoiceConsistency } from "@/lib/invoiceBreakdown";
 import { nextUnifiedReceiptNo } from "@/lib/monthlyReceiptNo";
 import { buildMemberSummary } from "@/lib/receiptMemberSummary";
 import { computePatwariUpdateTargets } from "@/lib/patwariUpdate";
+import { buildIrrigationLedgerRows, buildIrrigationPostingLines, irrigationJournalRef } from "@/lib/irrigationPaymentPostings";
 
 // Shared select for open irrigation invoices (used by both initial load and reload).
 const OPEN_INVOICE_SELECT =
@@ -523,7 +524,7 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
       const postingResults: Array<{ receiptNo: string; cashbook: boolean; journal: boolean }> = [];
 
       // Account codes for the split-ledger journal (looked up once, reused per payment).
-      const codes = ["1010", "IRR-INCOME", "IRR-PREV-DUE", "IRR-DELAY", "IRR-MAINT", "IRR-CANAL"];
+      const codes = ["1010", "4010", "IRR-INCOME", "IRR-PREV-DUE", "IRR-DELAY", "IRR-MAINT", "IRR-CANAL"];
       const { data: accs } = await db.from("accounts").select("id,code").in("code", codes);
       const byCode = Object.fromEntries((accs ?? []).map((a: any) => [a.code, a.id]));
 
@@ -607,6 +608,12 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
         const cashbookResult = await safeWithRetry(
           "cashbook_write",
           async () => {
+            const { data: existingReceipt } = await db.from("receipts")
+              .select("id")
+              .eq("kind", "irrigation")
+              .eq("receipt_no", receiptNo)
+              .maybeSingle();
+            if (existingReceipt?.id) return;
             const { error } = await db.from("receipts").insert({
               kind: "irrigation",
               farmer_id: farmerId,
@@ -657,53 +664,43 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
         const journalResult = await safeWithRetry(
           "journal_post",
           async () => {
-            let irrPart = 0, delayPart = 0, maintPart = 0, canalPart = 0, prevPart = 0;
-            if (isCurrent) {
-              const delayCollected = newFee;
-              const maintCollected = Number(inv.maintenance_amount || 0);
-              const canalCollected = Number(inv.canal_amount || 0);
-              const overheadTotal = delayCollected + maintCollected + canalCollected;
-              const scale = overheadTotal > 0 ? Math.min(1, take / overheadTotal) : 0;
-              delayPart = +(delayCollected * scale).toFixed(2);
-              maintPart = +(maintCollected * scale).toFixed(2);
-              canalPart = +(canalCollected * scale).toFixed(2);
-              irrPart = +(take - delayPart - maintPart - canalPart).toFixed(2);
-            } else {
-              prevPart = +take.toFixed(2);
-            }
-            if (!byCode["1010"]) throw new Error("Cash account (1010) missing from chart of accounts");
+            const entryDate = new Date().toISOString().slice(0, 10);
+            const reference = irrigationJournalRef(paymentId);
+            const lines = buildIrrigationPostingLines({
+              amount: take,
+              isCurrent,
+              delayFee: newFee,
+              maintenanceAmount: inv.maintenance_amount,
+              canalAmount: inv.canal_amount,
+            }, byCode);
             const { data: je, error: jeErr } = await db.from("journal_entries").insert({
-              entry_date: new Date().toISOString().slice(0, 10),
-              reference: `IRR-PAY-${paymentId.slice(0, 8)}`,
+              entry_date: entryDate,
+              reference,
               description: `Irrigation payment ${paymentId.slice(0, 8)} (${inv.invoice_no})`,
               office_id: officeId,
-              posted: true,
-              posted_at: new Date().toISOString(),
+              posted: false,
               created_by: user?.id,
             }).select("id").single();
             if (jeErr || !je) throw jeErr ?? new Error("Journal entry insert failed");
-            const lines: any[] = [
-              { journal_id: je.id, account_id: byCode["1010"], debit: take, credit: 0, position: 0, description: "Cash received" },
-            ];
-            let pos = 1;
-            const credits: Array<[string, number]> = [
-              ["IRR-INCOME", irrPart],
-              ["IRR-DELAY", delayPart],
-              ["IRR-MAINT", maintPart],
-              ["IRR-CANAL", canalPart],
-              ["IRR-PREV-DUE", prevPart],
-            ];
-            for (const [code, amt] of credits) {
-              if (amt > 0 && byCode[code]) {
-                lines.push({ journal_id: je.id, account_id: byCode[code], debit: 0, credit: amt, position: pos++, description: code });
-              }
-            }
-            const { error: lineErr } = await db.from("journal_entry_lines").insert(lines);
+            const { error: lineErr } = await db.from("journal_entry_lines").insert(lines.map((line) => ({ ...line, journal_id: je.id })));
             if (lineErr) throw lineErr;
+            await db.from("journal_entries")
+              .update({ posted: true, posted_at: new Date().toISOString() })
+              .eq("id", je.id);
+
+            const ledgerRows = buildIrrigationLedgerRows({
+              paymentId,
+              entryDate,
+              officeId,
+              createdBy: user?.id,
+              lines,
+            });
+            const { error: ledgerErr } = await db.from("ledger_entries").insert(ledgerRows);
+            if (ledgerErr) throw ledgerErr;
           },
           {
             referenceId: paymentId,
-            payload: { reference: `IRR-PAY-${paymentId.slice(0, 8)}`, invoice_id: inv.id, invoice_no: inv.invoice_no, amount: take, is_current: isCurrent, office_id: officeId },
+            payload: { reference: irrigationJournalRef(paymentId), payment_id: paymentId, invoice_id: inv.id, invoice_no: inv.invoice_no, amount: take, is_current: isCurrent, office_id: officeId, created_by: user?.id },
             officeId,
           },
         );
@@ -712,7 +709,7 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
           action_type: journalResult.ok ? "create" : "fail",
           office_id: officeId,
           reference_id: paymentId,
-          new_data: { step: "journal_post", ok: journalResult.ok, reference: `IRR-PAY-${paymentId.slice(0, 8)}`, amount: take, error: journalResult.error ?? null, retry_job_id: journalResult.jobId ?? null },
+          new_data: { step: "journal_post", ok: journalResult.ok, reference: irrigationJournalRef(paymentId), amount: take, error: journalResult.error ?? null, retry_job_id: journalResult.jobId ?? null },
         });
 
         postingResults.push({ receiptNo, cashbook: cashbookResult.ok, journal: journalResult.ok });

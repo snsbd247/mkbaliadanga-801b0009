@@ -69,13 +69,45 @@ export default function IrrigationPostingReconciliation() {
       for (let i = 0; i < refs.length; i += 200) {
         const chunk = refs.slice(i, i + 200);
         const { data: jes } = await sb.from("journal_entries")
-          .select("reference,journal_entry_lines(debit,credit)").in("reference", chunk);
+          .select("id,reference").in("reference", chunk);
+        const journalIds = ((jes ?? []) as any[]).map((je) => je.id).filter(Boolean);
+        const lineMap = new Map<string, any[]>();
+        if (journalIds.length > 0) {
+          const { data: lines } = await sb.from("journal_entry_lines")
+            .select("journal_id,debit,credit").in("journal_id", journalIds);
+          for (const line of (lines ?? []) as any[]) {
+            if (!lineMap.has(line.journal_id)) lineMap.set(line.journal_id, []);
+            lineMap.get(line.journal_id)!.push(line);
+          }
+        }
         for (const je of (jes ?? []) as any[]) {
-          const lines = je.journal_entry_lines ?? [];
+          const lines = lineMap.get(je.id) ?? [];
           jrows.push({
             reference: je.reference,
             total_debit: lines.reduce((s: number, l: any) => s + Number(l.debit || 0), 0),
             total_credit: lines.reduce((s: number, l: any) => s + Number(l.credit || 0), 0),
+          });
+        }
+      }
+
+      const postedPaymentIds = new Set(jrows.map((j) => String(j.reference || "").replace(/^IRR-PAY-/, "")));
+      const missingLedgerPayments = payRows.filter((p) => !postedPaymentIds.has(p.id.slice(0, 8)));
+      for (let i = 0; i < missingLedgerPayments.length; i += 200) {
+        const chunk = missingLedgerPayments.slice(i, i + 200).map((p) => p.id);
+        const { data: lines } = await sb.from("ledger_entries")
+          .select("reference_id,debit,credit").eq("reference_type", "irrigation_payment").in("reference_id", chunk);
+        const byPayment = new Map<string, any[]>();
+        for (const line of (lines ?? []) as any[]) {
+          if (!byPayment.has(line.reference_id)) byPayment.set(line.reference_id, []);
+          byPayment.get(line.reference_id)!.push(line);
+        }
+        for (const paymentId of chunk) {
+          const ledgerLines = byPayment.get(paymentId) ?? [];
+          if (ledgerLines.length === 0) continue;
+          jrows.push({
+            reference: journalRefForPayment(paymentId),
+            total_debit: ledgerLines.reduce((s: number, l: any) => s + Number(l.debit || 0), 0),
+            total_credit: ledgerLines.reduce((s: number, l: any) => s + Number(l.credit || 0), 0),
           });
         }
       }

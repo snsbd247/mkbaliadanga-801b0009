@@ -93,6 +93,101 @@ class GenericTableController extends Controller
         }
     }
 
+    private function accountId(array $codes): ?string
+    {
+        $row = DB::table('accounts')
+            ->whereIn('code', $codes)
+            ->orderByRaw('FIELD(code, '.implode(',', array_fill(0, count($codes), '?')).')', $codes)
+            ->first(['id']);
+
+        return $row?->id;
+    }
+
+    /**
+     * Server-side safety net for the React generic gateway payment flow.
+     *
+     * The browser still writes detailed invoice links and receipt PDFs, but a
+     * saved approved irrigation payment must never be missing from Cash Book or
+     * the accounting ledger if any later client-side step fails/stops.
+     */
+    private function ensureIrrigationPaymentPostings(Request $request, array $payment): void
+    {
+        if (($payment['kind'] ?? null) !== 'irrigation' || (($payment['status'] ?? 'approved') !== 'approved')) {
+            return;
+        }
+
+        $paymentId = $payment['id'] ?? null;
+        $receiptNo = $payment['receipt_no'] ?? null;
+        $amount = round((float) ($payment['amount'] ?? 0), 2);
+        if (! $paymentId || ! $receiptNo || $amount <= 0) {
+            return;
+        }
+
+        $officeId = $payment['office_id'] ?? $request->attributes->get('scope_office_id');
+        $createdBy = $payment['collected_by'] ?? $payment['created_by'] ?? optional($request->user())->id;
+        $paymentDate = substr((string) ($payment['occurred_at'] ?? $payment['created_at'] ?? now()->format('Y-m-d')), 0, 10);
+        $now = now();
+
+        DB::transaction(function () use ($payment, $paymentId, $receiptNo, $amount, $officeId, $createdBy, $paymentDate, $now) {
+            if (Schema::hasTable('receipts') && ! DB::table('receipts')->where('kind', 'irrigation')->where('receipt_no', $receiptNo)->exists()) {
+                $receipt = [
+                    'id' => (string) Str::uuid(),
+                    'receipt_no' => $receiptNo,
+                    'kind' => 'irrigation',
+                    'farmer_id' => $payment['farmer_id'] ?? null,
+                    'reference_id' => $paymentId,
+                    'amount' => $amount,
+                    'method' => $payment['method'] ?? 'cash',
+                    'note' => $payment['note'] ?? null,
+                    'receipt_date' => $paymentDate,
+                    'office_id' => $officeId,
+                    'collected_by' => $createdBy,
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ];
+                foreach (array_keys($receipt) as $col) {
+                    if (! Schema::hasColumn('receipts', $col)) unset($receipt[$col]);
+                }
+                DB::table('receipts')->insert($receipt);
+            }
+
+            if (Schema::hasTable('ledger_entries') && ! DB::table('ledger_entries')->where('reference_type', 'irrigation_payment')->where('reference_id', $paymentId)->exists()) {
+                $cashId = $this->accountId(['1010']);
+                $incomeId = $this->accountId(['IRR-INCOME', '4010']);
+                if ($cashId && $incomeId) {
+                    DB::table('ledger_entries')->insert([
+                        [
+                            'id' => (string) Str::uuid(),
+                            'entry_date' => $paymentDate,
+                            'account_id' => $cashId,
+                            'debit' => $amount,
+                            'credit' => 0,
+                            'reference_type' => 'irrigation_payment',
+                            'reference_id' => $paymentId,
+                            'description' => "সেচ পেমেন্ট {$receiptNo} — Cash received",
+                            'office_id' => $officeId,
+                            'created_by' => $createdBy,
+                            'created_at' => $now,
+                        ],
+                        [
+                            'id' => (string) Str::uuid(),
+                            'entry_date' => $paymentDate,
+                            'account_id' => $incomeId,
+                            'debit' => 0,
+                            'credit' => $amount,
+                            'reference_type' => 'irrigation_payment',
+                            'reference_id' => $paymentId,
+                            'description' => "সেচ পেমেন্ট {$receiptNo} — Irrigation income",
+                            'office_id' => $officeId,
+                            'created_by' => $createdBy,
+                            'created_at' => $now,
+                        ],
+                    ]);
+                }
+            }
+        });
+    }
+
 
     private function table(string $table): string
     {
@@ -605,6 +700,12 @@ class GenericTableController extends Controller
         $inserted = ! empty($ids)
             ? array_map(fn ($r) => (array) $r, DB::table($table)->whereIn('id', $ids)->get()->all())
             : $prepared;
+
+        if ($table === 'payments') {
+            foreach ($inserted as $row) {
+                $this->ensureIrrigationPaymentPostings($request, $row);
+            }
+        }
 
         $this->recordAudit($request, 'create', $table, $ids, ['count' => count($prepared)]);
 

@@ -123,12 +123,35 @@ export default function Cashbook() {
   }
 
   async function load() {
-    const [rec, exp, subs] = await Promise.all([
+    const [rec, exp, subs, pay] = await Promise.all([
       sb.from("receipts").select("*, farmers(name_en,farmer_code,member_no)").gte("receipt_date", mFrom).lte("receipt_date", mTo).order("receipt_date", { ascending: false }),
       sb.from("expenses").select("*").is("deleted_at", null).gte("expense_date", mFrom).lte("expense_date", mTo).order("expense_date", { ascending: false }),
       sb.from("cashbook_submissions").select("*").order("year", { ascending: false }).order("month", { ascending: false }).limit(48),
+      sb.from("payments").select("id,kind,status,receipt_no,amount,method,note,created_at,occurred_at,office_id,farmer_id,farmers(name_en,farmer_code,member_no)")
+        .eq("kind", "irrigation")
+        .eq("status", "approved")
+        .gte("created_at", `${mFrom} 00:00:00`)
+        .lte("created_at", `${mTo} 23:59:59`)
+        .order("created_at", { ascending: false }),
     ]);
-    setReceipts(rec.data ?? []); setExpenses(exp.data ?? []); setSubmissions(subs.data ?? []);
+    const realReceipts = rec.data ?? [];
+    const existingNos = new Set(realReceipts.map((r: any) => String(r.receipt_no ?? "")).filter(Boolean));
+    const paymentFallbackReceipts = (pay.data ?? [])
+      .filter((p: any) => p.receipt_no && !existingNos.has(String(p.receipt_no)))
+      .map((p: any) => ({
+        id: `payment-${p.id}`,
+        kind: "irrigation",
+        receipt_no: p.receipt_no,
+        farmer_id: p.farmer_id,
+        amount: p.amount,
+        method: p.method,
+        note: p.note || tx("Irrigation payment", "সেচ পেমেন্ট"),
+        receipt_date: String(p.occurred_at || p.created_at || mFrom).slice(0, 10),
+        office_id: p.office_id,
+        farmers: p.farmers,
+        _from_payment: true,
+      }));
+    setReceipts([...realReceipts, ...paymentFallbackReceipts]); setExpenses(exp.data ?? []); setSubmissions(subs.data ?? []);
   }
 
   function isLocked(stream: Stream) {
