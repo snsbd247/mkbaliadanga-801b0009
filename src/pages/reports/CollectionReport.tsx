@@ -55,7 +55,7 @@ type CollectionRow = {
 type ProfileLite = { id: string; full_name: string | null; email: string | null; office_id: string | null };
 
 export default function CollectionReport() {
-  const { t } = useLang();
+  const { t, tx } = useLang();
   const { user, isAdmin, isSuper, rolesLoaded } = useAuth();
 
   const [from, setFrom] = useState("");
