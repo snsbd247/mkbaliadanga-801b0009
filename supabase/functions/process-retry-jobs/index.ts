@@ -47,6 +47,43 @@ Deno.serve(async (req) => {
         const body = job.payload ?? {};
         const { error: sErr } = await supabase.functions.invoke("send-sms", { body });
         if (sErr) throw sErr;
+      } else if (job.job_type === "cashbook_write") {
+        const p = job.payload ?? {};
+        // Idempotent: skip if a Cash Book receipt already exists for this receipt_no.
+        const { data: existing } = await supabase
+          .from("receipts").select("id").eq("kind", "irrigation").eq("receipt_no", p.receipt_no).maybeSingle();
+        if (!existing) {
+          const { error: rErr } = await supabase.from("receipts").insert({
+            kind: "irrigation", farmer_id: p.farmer_id, reference_id: p.reference_id,
+            amount: p.amount, method: p.method, receipt_no: p.receipt_no,
+            receipt_date: new Date().toISOString().slice(0, 10), office_id: p.office_id,
+          });
+          if (rErr) throw rErr;
+        }
+      } else if (job.job_type === "journal_post") {
+        const p = job.payload ?? {};
+        // Idempotent: skip if a journal with this reference already exists.
+        const { data: existing } = await supabase
+          .from("journal_entries").select("id").eq("reference", p.reference).maybeSingle();
+        if (!existing) {
+          const { data: accs } = await supabase.from("accounts").select("id,code").in("code", ["1010", "IRR-INCOME", "4010"]);
+          const byCode: Record<string, string> = Object.fromEntries((accs ?? []).map((a: any) => [a.code, a.id]));
+          const cash = byCode["1010"];
+          const income = byCode["IRR-INCOME"] ?? byCode["4010"];
+          if (!cash || !income) throw new Error("Required accounts (1010 / income) missing");
+          const amount = Number(p.amount || 0);
+          const { data: je, error: jeErr } = await supabase.from("journal_entries").insert({
+            entry_date: new Date().toISOString().slice(0, 10),
+            reference: p.reference, description: `Irrigation payment retry (${p.invoice_no ?? ""})`,
+            office_id: p.office_id, posted: true, posted_at: new Date().toISOString(),
+          }).select("id").single();
+          if (jeErr || !je) throw jeErr ?? new Error("Journal insert failed");
+          const { error: lErr } = await supabase.from("journal_entry_lines").insert([
+            { journal_id: je.id, account_id: cash, debit: amount, credit: 0, position: 0, description: "Cash received" },
+            { journal_id: je.id, account_id: income, debit: 0, credit: amount, position: 1, description: "Irrigation income" },
+          ]);
+          if (lErr) throw lErr;
+        }
       } else {
         // Unknown / browser-only job type — skip (will be retried manually)
         continue;
