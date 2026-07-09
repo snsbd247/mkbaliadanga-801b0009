@@ -37,6 +37,7 @@ import { resolveReceiptPatwari } from "@/lib/receiptPatwari";
 import { verifyInvoiceConsistency } from "@/lib/invoiceBreakdown";
 import { nextUnifiedReceiptNo } from "@/lib/monthlyReceiptNo";
 import { buildMemberSummary } from "@/lib/receiptMemberSummary";
+import { computePatwariUpdateTargets } from "@/lib/patwariUpdate";
 
 // Shared select for open irrigation invoices (used by both initial load and reload).
 const OPEN_INVOICE_SELECT =
