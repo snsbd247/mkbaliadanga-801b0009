@@ -844,6 +844,7 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
           : { description: tx(`${createdReceipts.length} receipts generated`, `${createdReceipts.length}টি রসিদ তৈরি হয়েছে`) },
       );
       setPaidStatuses(touchedStatuses);
+      setPostingStatus(postingResults);
       setLastPaymentId(lastPayment?.paymentId ?? null);
       // refresh
       setFarmerId(farmerId);
