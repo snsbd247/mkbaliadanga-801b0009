@@ -144,6 +144,7 @@ export default function CollectionReport() {
           user_name: nameForUser(r.created_by),
           ref_id: r.id,
           receipt_no: (r as any).payments?.receipt_no ?? null,
+          invoice_no: inv?.invoice_no ?? null,
           sech: Number(r.irrigation_collected || 0) + Number(r.maintenance_collected || 0) + Number(r.canal_collected || 0),
           jorimana: Number(r.delay_fee_collected || 0),
           hal: Number(r.current_invoice_collected || 0),
