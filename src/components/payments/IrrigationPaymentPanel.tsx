@@ -729,7 +729,7 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
         }
       }
 
-
+      // SMS summary — one message listing every receipt generated.
       if (farmer?.mobile) {
         const remaining = Math.max(0, previousDueTotal - Number(previousCollected || 0));
         const promiseLine = specialPermission && promiseDate
