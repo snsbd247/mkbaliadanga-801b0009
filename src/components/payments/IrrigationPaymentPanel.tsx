@@ -439,139 +439,132 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
 
     setSubmitting(true);
     try {
-      const officeId = (selectedCurrentInvoices[0]?.office_id ?? previousInvoices[0]?.office_id) ?? null;
+      // Build the list of invoices that will actually receive money, allocating
+      // the collected amounts oldest-first. EACH invoice becomes its OWN payment
+      // record with its OWN receipt number so every invoice is tracked and
+      // printed separately (even when multiple invoices are selected at once).
+      const byDueDate = (a: Invoice, b: Invoice) =>
+        new Date(a.due_date).getTime() - new Date(b.due_date).getTime();
+      const chargeItems: Array<{ inv: Invoice; take: number; isCurrent: boolean; newFee: number; originalFee: number }> = [];
 
-      // Generate the receipt number client-side (unified serial with offline fallback).
-      const generatedReceiptNo = await nextUnifiedReceiptNo(officeId, "IRR");
-
-      // 1) Insert payment row
-      const { data: ins, error: payErr } = await db.from("payments").insert({
-        farmer_id: farmerId,
-        kind: "irrigation",
-        amount: grandTotal,
-        method,
-        note: note || null,
-        patwari_id: manualPatwariId || null,
-        collected_by: user?.id,
-        status: "approved",
-        office_id: officeId,
-        receipt_no: generatedReceiptNo,
-      }).select("id, receipt_no").single();
-      if (payErr) throw payErr;
-      const paymentId = ins!.id as string;
-      const receiptNo = String((ins as any)?.receipt_no ?? generatedReceiptNo ?? "").trim();
-      if (!receiptNo) {
-        throw new Error(tx("Receipt number was not generated", "রশিদ নম্বর তৈরি হয়নি"));
-      }
-
-      // 2) Allocate currentCollected across selected current invoices (oldest first)
-      // Track exactly which invoices this payment covered (id + amount) so we can
-      // persist, verify against the backend, and print them on the receipt.
-      const coveredInvoices: Array<{ id: string; invoice_no: string; due_amount: number }> = [];
-      const touchedStatuses: Array<{ invoice_no: string; cleared: boolean }> = [];
       let remainingCurrent = Number(currentCollected || 0);
-      const sorted = [...selectedCurrentInvoices].sort((a, b) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime());
-      for (const inv of sorted) {
+      for (const inv of [...selectedCurrentInvoices].sort(byDueDate)) {
         if (remainingCurrent <= 0) break;
         const originalFee = Number(inv.delay_fee || 0);
         const newFee = delayFee[inv.id] ?? originalFee;
         const adjustedDue = Math.max(0, Number(inv.due_amount) + (newFee - originalFee));
         const take = Math.min(remainingCurrent, adjustedDue);
         if (take <= 0) continue;
+        chargeItems.push({ inv, take, isCurrent: true, newFee, originalFee });
+        remainingCurrent -= take;
+      }
 
-        // delay-fee override audit
-        if (newFee !== originalFee) {
+      let remainingPrev = Number(previousCollected || 0);
+      for (const inv of [...selectedPreviousInvoices].sort(byDueDate)) {
+        if (remainingPrev <= 0) break;
+        const take = Math.min(remainingPrev, Number(inv.due_amount));
+        if (take <= 0) continue;
+        const fee = Number(inv.delay_fee || 0);
+        chargeItems.push({ inv, take, isCurrent: false, newFee: fee, originalFee: fee });
+        remainingPrev -= take;
+      }
+
+      if (chargeItems.length === 0) {
+        toast.error(tx("Nothing to collect", "সংগ্রহের কিছু নেই"));
+        setSubmitting(false);
+        return;
+      }
+
+      const { data: farmer } = await db
+        .from("farmers")
+        .select("mobile,office_id")
+        .eq("id", farmerId)
+        .maybeSingle();
+
+      const touchedStatuses: Array<{ invoice_no: string; cleared: boolean }> = [];
+      const createdReceipts: Array<{ paymentId: string; receiptNo: string; invoice_no: string }> = [];
+
+      // Account codes for the split-ledger journal (looked up once, reused per payment).
+      const codes = ["1010", "IRR-INCOME", "IRR-PREV-DUE", "IRR-DELAY", "IRR-MAINT", "IRR-CANAL"];
+      const { data: accs } = await db.from("accounts").select("id,code").in("code", codes);
+      const byCode = Object.fromEntries((accs ?? []).map((a: any) => [a.code, a.id]));
+
+      for (const item of chargeItems) {
+        const { inv, take, isCurrent, newFee, originalFee } = item;
+        const officeId = inv.office_id ?? null;
+
+        // Per-invoice receipt number (unified serial with offline fallback).
+        const generatedReceiptNo = await nextUnifiedReceiptNo(officeId, "IRR");
+
+        // 1) One payment row per invoice
+        const { data: ins, error: payErr } = await db.from("payments").insert({
+          farmer_id: farmerId,
+          kind: "irrigation",
+          amount: take,
+          method,
+          note: note || null,
+          patwari_id: manualPatwariId || null,
+          collected_by: user?.id,
+          status: "approved",
+          office_id: officeId,
+          receipt_no: generatedReceiptNo,
+        }).select("id, receipt_no").single();
+        if (payErr) throw payErr;
+        const paymentId = ins!.id as string;
+        const receiptNo = String((ins as any)?.receipt_no ?? generatedReceiptNo ?? "").trim();
+        if (!receiptNo) {
+          throw new Error(tx("Receipt number was not generated", "রশিদ নম্বর তৈরি হয়নি"));
+        }
+
+        // 2) delay-fee override audit (current invoices only)
+        if (isCurrent && newFee !== originalFee) {
           await db.from("irrigation_delay_fee_audit").insert({
             invoice_id: inv.id, payment_id: paymentId,
             original_amount: originalFee, modified_amount: newFee,
             reason: delayFeeReason[inv.id] || null,
-            changed_by: user?.id, office_id: inv.office_id,
+            changed_by: user?.id, office_id: officeId,
           });
-          // also update the invoice's delay_fee snapshot
-          await db.from("irrigation_invoices")
-            .update({ delay_fee: newFee, payable_amount: Number(inv.payable_amount) + (newFee - originalFee), due_amount: Number(inv.due_amount) + (newFee - originalFee) })
-            .eq("id", inv.id);
-          // central audit log for delay-fee override
           logAudit({
             module: "delay_fee_override",
             action_type: "override",
-            office_id: inv.office_id,
+            office_id: officeId,
             reference_id: inv.id,
             old_data: { delay_fee: originalFee },
             new_data: { delay_fee: newFee, reason: delayFeeReason[inv.id] || null, payment_id: paymentId },
           });
         }
 
-        // update paid amount — also recompute due_amount/status explicitly so
-        // this works on backends without the Postgres recalc trigger (VPS/MySQL).
+        // 3) Update the invoice paid/due/status snapshot
         const newPaid = Number(inv.paid_amount) + take;
-        const effectivePayable = Number(inv.payable_amount) + (newFee - originalFee);
+        const effectivePayable = isCurrent
+          ? Number(inv.payable_amount) + (newFee - originalFee)
+          : Number(inv.payable_amount);
         const newDue = Math.max(0, effectivePayable - newPaid);
         await db.from("irrigation_invoices")
           .update({
             paid_amount: newPaid,
             due_amount: newDue,
             invoice_status: newDue <= 0 ? "paid" : "partial_paid",
+            ...(isCurrent && newFee !== originalFee ? { delay_fee: newFee, payable_amount: effectivePayable } : {}),
           })
           .eq("id", inv.id);
 
-        // split allocation row
+        // 4) Allocation row linking this payment to this invoice
         await db.from("irrigation_invoice_payments").insert({
           invoice_id: inv.id,
           payment_id: paymentId,
-          office_id: inv.office_id,
+          office_id: officeId,
           collected_amount: take,
           irrigation_collected: take,
-          current_invoice_collected: take,
-          previous_due_collected: 0,
-          delay_fee_original: newFee !== originalFee ? originalFee : null,
-          delay_fee_override_reason: newFee !== originalFee ? (delayFeeReason[inv.id] || null) : null,
+          current_invoice_collected: isCurrent ? take : 0,
+          previous_due_collected: isCurrent ? 0 : take,
+          delay_fee_original: isCurrent && newFee !== originalFee ? originalFee : null,
+          delay_fee_override_reason: isCurrent && newFee !== originalFee ? (delayFeeReason[inv.id] || null) : null,
           created_by: user?.id,
         });
-        coveredInvoices.push({ id: inv.id, invoice_no: inv.invoice_no, due_amount: take });
-        touchedStatuses.push({ invoice_no: inv.invoice_no, cleared: recalcInvoice(effectivePayable, newPaid, { currentStatus: inv.invoice_status, dueDate: inv.due_date }).cleared });
-        remainingCurrent -= take;
-      }
 
-      // 3) Allocate previousCollected across previous invoices (oldest first)
-      let remainingPrev = Number(previousCollected || 0);
-      const sortedPrev = [...selectedPreviousInvoices].sort((a, b) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime());
-      for (const inv of sortedPrev) {
-        if (remainingPrev <= 0) break;
-        const take = Math.min(remainingPrev, Number(inv.due_amount));
-        if (take <= 0) continue;
-        const newPaid = Number(inv.paid_amount) + take;
-        const newDue = Math.max(0, Number(inv.payable_amount) - newPaid);
-        await db.from("irrigation_invoices")
-          .update({
-            paid_amount: newPaid,
-            due_amount: newDue,
-            invoice_status: newDue <= 0 ? "paid" : "partial_paid",
-          })
-          .eq("id", inv.id);
-        await db.from("irrigation_invoice_payments").insert({
-          invoice_id: inv.id,
-          payment_id: paymentId,
-          office_id: inv.office_id,
-          collected_amount: take,
-          irrigation_collected: take,
-          current_invoice_collected: 0,
-          previous_due_collected: take,
-          created_by: user?.id,
-        });
-        coveredInvoices.push({ id: inv.id, invoice_no: inv.invoice_no, due_amount: take });
-        touchedStatuses.push({ invoice_no: inv.invoice_no, cleared: recalcInvoice(Number(inv.payable_amount), newPaid, { currentStatus: inv.invoice_status, dueDate: inv.due_date }).cleared });
-        remainingPrev -= take;
-      }
-
-      // 3b) Verify the persisted coverage matches what we intended to pay:
-      // re-fetch the saved allocation rows and compare invoice ids + total.
-      if (coveredInvoices.length > 0) {
-        const coverage = await verifyPaymentCoverage(
-          paymentId,
-          coveredInvoices.map((c) => c.id),
-          coveredInvoices.reduce((s, c) => s + c.due_amount, 0),
-        );
+        // 5) Verify the persisted coverage for this single invoice
+        const coverage = await verifyPaymentCoverage(paymentId, [inv.id], take);
         if (!coverage.ok) {
           console.warn("[irrigation-payment] coverage verification failed", coverage);
           toast.warning(tx(
@@ -586,14 +579,102 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
             new_data: coverage as unknown as Record<string, unknown>,
           });
         }
+
+        // 6) Split-ledger journal posting for this payment
+        try {
+          let irrPart = 0, delayPart = 0, maintPart = 0, canalPart = 0, prevPart = 0;
+          if (isCurrent) {
+            const delayCollected = newFee;
+            const maintCollected = Number(inv.maintenance_amount || 0);
+            const canalCollected = Number(inv.canal_amount || 0);
+            const overheadTotal = delayCollected + maintCollected + canalCollected;
+            const scale = overheadTotal > 0 ? Math.min(1, take / overheadTotal) : 0;
+            delayPart = +(delayCollected * scale).toFixed(2);
+            maintPart = +(maintCollected * scale).toFixed(2);
+            canalPart = +(canalCollected * scale).toFixed(2);
+            irrPart = +(take - delayPart - maintPart - canalPart).toFixed(2);
+          } else {
+            prevPart = +take.toFixed(2);
+          }
+          if (byCode["1010"]) {
+            const { data: je, error: jeErr } = await db.from("journal_entries").insert({
+              entry_date: new Date().toISOString().slice(0, 10),
+              reference: `IRR-PAY-${paymentId.slice(0, 8)}`,
+              description: `Irrigation payment ${paymentId.slice(0, 8)} (${inv.invoice_no})`,
+              office_id: officeId,
+              posted: true,
+              posted_at: new Date().toISOString(),
+              created_by: user?.id,
+            }).select("id").single();
+            if (!jeErr && je) {
+              const lines: any[] = [
+                { journal_id: je.id, account_id: byCode["1010"], debit: take, credit: 0, position: 0, description: "Cash received" },
+              ];
+              let pos = 1;
+              const credits: Array<[string, number]> = [
+                ["IRR-INCOME", irrPart],
+                ["IRR-DELAY", delayPart],
+                ["IRR-MAINT", maintPart],
+                ["IRR-CANAL", canalPart],
+                ["IRR-PREV-DUE", prevPart],
+              ];
+              for (const [code, amt] of credits) {
+                if (amt > 0 && byCode[code]) {
+                  lines.push({ journal_id: je.id, account_id: byCode[code], debit: 0, credit: amt, position: pos++, description: code });
+                }
+              }
+              await db.from("journal_entry_lines").insert(lines);
+            }
+          }
+        } catch (jErr) {
+          console.warn("[irrigation-pay] journal posting failed", jErr);
+        }
+
+        // 7) Central audit log
+        logAudit({
+          module: "irrigation_payment",
+          action_type: "create",
+          office_id: officeId,
+          reference_id: paymentId,
+          new_data: {
+            farmer_id: farmerId,
+            amount: take,
+            method,
+            invoice_id: inv.id,
+            invoice_no: inv.invoice_no,
+            is_current: isCurrent,
+            receipt_no: receiptNo,
+          },
+        });
+
+        const cleared = recalcInvoice(effectivePayable, newPaid, { currentStatus: inv.invoice_status, dueDate: inv.due_date }).cleared;
+        touchedStatuses.push({ invoice_no: inv.invoice_no, cleared });
+        createdReceipts.push({ paymentId, receiptNo, invoice_no: inv.invoice_no });
+
+        // 8) Separate receipt PDF per invoice — never blocks payment.
+        const receiptResult = await safeWithRetry(
+          "receipt_generation",
+          async () => {
+            const data = await fetchPaymentReceiptData(paymentId, { brand, receiptArgs, tx });
+            await downloadBnReceiptPdf(data, "farmer", receiptArgs.options);
+          },
+          { referenceId: paymentId, payload: { kind: "irrigation", receipt_no: receiptNo, farmer_id: farmerId }, officeId: farmer?.office_id ?? null },
+        );
+        if (!receiptResult.ok) {
+          toast.warning(tx(
+            `Receipt generation failed for ${inv.invoice_no} — queued for retry`,
+            `${inv.invoice_no} এর রসিদ তৈরি ব্যর্থ — রিট্রাই কিউতে যোগ হয়েছে`,
+          ));
+        }
       }
 
-      // 4) Promise record
-      if (specialPermission) {
+      // Promise record (special permission) — attach to the last created payment.
+      const lastPayment = createdReceipts[createdReceipts.length - 1];
+      if (specialPermission && lastPayment) {
         await db.from("irrigation_due_promises").insert({
-          office_id: officeId,
+          office_id: farmer?.office_id ?? null,
           farmer_id: farmerId,
-          payment_id: paymentId,
+          payment_id: lastPayment.paymentId,
           previous_due_amount: previousRemainingAfter,
           promise_date: promiseDate,
           remarks: promiseRemarks,
@@ -603,187 +684,21 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
         logAudit({
           module: "promise_date",
           action_type: "create",
-          office_id: officeId,
-          reference_id: paymentId,
+          office_id: farmer?.office_id ?? null,
+          reference_id: lastPayment.paymentId,
           new_data: { farmer_id: farmerId, promise_date: promiseDate, previous_due_amount: previousRemainingAfter, remarks: promiseRemarks },
         });
       }
 
-      // central audit log for payment creation
-      logAudit({
-        module: "irrigation_payment",
-        action_type: "create",
-        office_id: officeId,
-        reference_id: paymentId,
-        new_data: {
-          farmer_id: farmerId,
-          amount: grandTotal,
-          method,
-          current_collected: Number(currentCollected || 0),
-          previous_collected: Number(previousCollected || 0),
-         invoice_ids: coveredInvoices.map(i => i.id),
-          covered_invoices: coveredInvoices,
-        },
-      });
-
-      // 4b) Split-ledger journal posting (Dr Cash / Cr 5 income heads)
-      try {
-        const totalDelayCollected = sorted.reduce((s, inv) => {
-          const fee = delayFee[inv.id] ?? Number(inv.delay_fee || 0);
-          return s + fee;
-        }, 0);
-        const totalMaintCollected = sorted.reduce((s, inv) => s + Number(inv.maintenance_amount || 0), 0);
-        const totalCanalCollected = sorted.reduce((s, inv) => s + Number(inv.canal_amount || 0), 0);
-        // Irrigation portion = current_collected − (delay+maint+canal portions, capped)
-        const cur = Number(currentCollected || 0);
-        const overhead = Math.min(cur, totalDelayCollected + totalMaintCollected + totalCanalCollected);
-        const scale = overhead > 0 ? Math.min(1, cur / (totalDelayCollected + totalMaintCollected + totalCanalCollected)) : 0;
-        const delayPart = +(totalDelayCollected * scale).toFixed(2);
-        const maintPart = +(totalMaintCollected * scale).toFixed(2);
-        const canalPart = +(totalCanalCollected * scale).toFixed(2);
-        const irrPart = +(cur - delayPart - maintPart - canalPart).toFixed(2);
-        const prevPart = +Number(previousCollected || 0).toFixed(2);
-
-        const codes = ["1010", "IRR-INCOME", "IRR-PREV-DUE", "IRR-DELAY", "IRR-MAINT", "IRR-CANAL"];
-        const { data: accs } = await db.from("accounts").select("id,code").in("code", codes);
-        const byCode = Object.fromEntries((accs ?? []).map((a: any) => [a.code, a.id]));
-
-        if (byCode["1010"]) {
-          const { data: je, error: jeErr } = await db.from("journal_entries").insert({
-            entry_date: new Date().toISOString().slice(0, 10),
-            reference: `IRR-PAY-${paymentId.slice(0, 8)}`,
-            description: `Irrigation payment ${paymentId.slice(0, 8)}`,
-            office_id: officeId,
-            posted: true,
-            posted_at: new Date().toISOString(),
-            created_by: user?.id,
-          }).select("id").single();
-          if (!jeErr && je) {
-            const lines: any[] = [
-              { journal_id: je.id, account_id: byCode["1010"], debit: grandTotal, credit: 0, position: 0, description: "Cash received" },
-            ];
-            let pos = 1;
-            const credits: Array<[string, number]> = [
-              ["IRR-INCOME", irrPart],
-              ["IRR-DELAY", delayPart],
-              ["IRR-MAINT", maintPart],
-              ["IRR-CANAL", canalPart],
-              ["IRR-PREV-DUE", prevPart],
-            ];
-            for (const [code, amt] of credits) {
-              if (amt > 0 && byCode[code]) {
-                lines.push({ journal_id: je.id, account_id: byCode[code], debit: 0, credit: amt, position: pos++, description: code });
-              }
-            }
-            await db.from("journal_entry_lines").insert(lines);
-          }
-        }
-      } catch (jErr) {
-        console.warn("[irrigation-pay] journal posting failed", jErr);
-      }
-
-      const [{ data: farmer }, { data: company }] = await Promise.all([
-        db.from("farmers").select("name_bn,name_en,member_no,farmer_code,account_number,voter_number,savings_inactive,is_voter,father_name,village,mobile,office_id,union_id").eq("id", farmerId).maybeSingle(),
-        db.from("company_settings").select("company_name,company_name_bn,address,mobile,email,registration_no,logo_url,editor_signature_url").eq("id", 1).maybeSingle(),
-      ]);
-      // ইউনিয়ন: farmers.union_id থেকে unions লুকআপ টেবিল হতে নাম স্বয়ংক্রিয়ভাবে আনা
-      let unionName: string | null = null;
-      if (farmer?.union_id) {
-        const { data: u } = await db.from("unions").select("name_bn,name").eq("id", farmer.union_id).maybeSingle();
-        unionName = (lang === "bn" ? u?.name_bn : u?.name) || u?.name_bn || u?.name || null;
-      }
-      const farmerName = (farmer?.name_bn || farmer?.name_en || "").trim();
-      const totalDelay = sorted.reduce((s, inv) => s + (delayFee[inv.id] ?? Number(inv.delay_fee || 0)), 0);
-      const totalMaint = sorted.reduce((s, inv) => s + Number(inv.maintenance_amount || 0), 0);
-      const totalCanal = sorted.reduce((s, inv) => s + Number(inv.canal_amount || 0), 0);
-      const allReceiptInvoices = [...sorted, ...selectedPreviousInvoices];
-      const receiptMouza = allReceiptInvoices.find((inv: any) => inv.lands?.mouza)?.lands?.mouza ?? null;
-      const receiptLandSize = allReceiptInvoices.reduce((s, inv: any) => s + Number(inv.lands?.land_size || 0), 0) || null;
-
-      // ---- Official রশিদ enriched fields ----
-      const rep = (sorted[0] ?? previousInvoices[0]) as Invoice | undefined;
-      const ownerRep = (allReceiptInvoices.find((inv) => inv.is_borga && inv.owner) ?? rep) as Invoice | undefined;
-      // জমির ধরন: ধান হলে উচু/নিচু/মাঝারি, নাহলে ক্যাটেগরি (পুকুর/সবজি/ভর্তি ফি ইত্যাদি)
-      const fieldTypeBn = Array.from(new Set(
-        allReceiptInvoices
-          .map((inv) => resolveFieldTypeLabel({
-            categoryName: inv.irrigation_category_name,
-            landTypeName: inv.land_type_name,
-            seasonName: inv.seasons?.name,
-          }) || (({ high_land: tx("High land", "উঁচু জমি"), medium_land: tx("Medium land", "মাঝারি জমি"), low_land: tx("Low land", "নিচু জমি"), other: tx("Other", "অন্যান্য") } as Record<string, string>)[inv.lands?.field_type as string] ?? null))
-          .filter(Boolean) as string[],
-      )).join("/") || null;
-      // চার্জ রেট (একর); বিঘা রেট lib-এ acre × 33/100 হিসেবে অটো হবে।
-      const ratePerAcre = normalizeIrrigationRatePerAcre(rep?.season_rate, rep?.irrigation_amount, rep?.lands?.land_size);
-      // দাগ নং — সব সংশ্লিষ্ট জমির দাগ একত্রে
-      const dagAll = Array.from(new Set(
-        allReceiptInvoices
-          .map((inv) => (inv.lands?.dag_no ?? "").trim())
-          .filter(Boolean)
-          .flatMap((s) => s.split(/[,;\s]+/))
-          .filter(Boolean),
-      )).join(", ") || null;
-      // জরিমানা আলাদা: হাল (চলতি) ও বকেয়া (গত সিজন)
-      const currentPenalty = totalDelay;
-      const currentChargeBase = sorted.reduce((s, inv) => s + Number(inv.irrigation_amount || 0), 0);
-      const duePenalty = previousInvoices.reduce((s, inv) => s + Number(inv.delay_fee || 0), 0);
-      const dueChargeBase = Math.max(0, previousDueTotal - duePenalty);
-      // মালিক নিজে কিনা (বর্গা না হলে নিজ)
-      const isBorga = allReceiptInvoices.some((inv) => inv.is_borga);
-      const ownerName = ownerRep?.owner ? (lang === "bn" ? ownerRep.owner.name_bn : ownerRep.owner.name_en) || ownerRep.owner.name_bn || ownerRep.owner.name_en : null;
-      const ownerMember = ownerRep?.owner?.member_no || ownerRep?.owner?.farmer_code || null;
-      const ownerLabel = ownerName ? `${ownerName}${ownerMember ? "-" + ownerMember : ""}` : null;
-      const memberSummary = buildMemberSummary({
-        cultivator: farmer,
-        owner: ownerRep?.owner,
-        isBorga,
-      });
-      const billInfo = Array.from(new Set(
-        allReceiptInvoices
-          .map((inv) => {
-            return inv.seasons?.name || inv.irrigation_category_name || inv.land_type_name || null;
-          })
-          .filter(Boolean),
-      )).join("/") || tx("Irrigation charge", "সেচ চার্জ");
-      const landPatwari = allReceiptInvoices.find((inv) => inv.lands?.patwaris)?.lands?.patwaris ?? null;
-      // Fall back to the manually selected patwari when the land has none linked.
-      const manualPatwari = !landPatwari && manualPatwariId
-        ? (patwariList.find((p) => p.id === manualPatwariId) ?? null)
-        : null;
-      const patwari = resolveReceiptPatwari(landPatwari, manualPatwari);
-      const landNotes = allReceiptInvoices
-        .map((inv) => (inv.lands?.notes ?? "").trim())
-        .filter(Boolean)
-        .join(" || ");
-      const holdingDescription =
-        [landNotes || null, note?.trim() || null].filter(Boolean).join(" || ") || null;
-
-
-      // Receipt — never blocks payment; failure → retry queue.
-      // Build the identical সেচ চার্জ রশিদ used on the Payments page by loading
-      // the just-created payment row through the canonical builder.
-      const receiptResult = await safeWithRetry(
-        "receipt_generation",
-        async () => {
-          const data = await fetchPaymentReceiptData(paymentId, { brand, receiptArgs, tx });
-          await downloadBnReceiptPdf(data, "farmer", receiptArgs.options);
-        },
-        { referenceId: paymentId, payload: { kind: "irrigation", receipt_no: receiptNo, farmer_id: farmerId }, officeId: farmer?.office_id ?? null },
-      );
-
-
-      if (!receiptResult.ok) {
-        toast.warning(tx("Receipt generation failed — queued for retry", "রসিদ তৈরি ব্যর্থ — রিট্রাই কিউতে যোগ হয়েছে"));
-      }
-
-      // SMS — never blocks payment; failure → retry queue
+      // SMS summary — one message listing every receipt generated.
       if (farmer?.mobile) {
         const remaining = Math.max(0, previousDueTotal - Number(previousCollected || 0));
         const promiseLine = specialPermission && promiseDate
           ? `\n${tx("Promise date", "প্রতিশ্রুতির তারিখ")}: ${promiseDate}` : "";
+        const receiptList = createdReceipts.map((r) => `${r.invoice_no}: ${r.receiptNo}`).join("\n");
         const message = tx(
-          `Irrigation payment received.\nCurrent: BDT ${Number(currentCollected || 0).toLocaleString()}\nPrevious due: BDT ${Number(previousCollected || 0).toLocaleString()}\nRemaining previous due: BDT ${remaining.toLocaleString()}${promiseLine}\nReceipt: ${receiptNo}`,
-          `সেচের পেমেন্ট গ্রহণ করা হয়েছে।\nবর্তমান: ৳${Number(currentCollected || 0).toLocaleString()}\nপূর্বের বকেয়া: ৳${Number(previousCollected || 0).toLocaleString()}\nঅবশিষ্ট পূর্বের বকেয়া: ৳${remaining.toLocaleString()}${promiseLine}\nরসিদ: ${receiptNo}`,
+          `Irrigation payment received.\nCurrent: BDT ${Number(currentCollected || 0).toLocaleString()}\nPrevious due: BDT ${Number(previousCollected || 0).toLocaleString()}\nRemaining previous due: BDT ${remaining.toLocaleString()}${promiseLine}\nReceipts:\n${receiptList}`,
+          `সেচের পেমেন্ট গ্রহণ করা হয়েছে।\nবর্তমান: ৳${Number(currentCollected || 0).toLocaleString()}\nপূর্বের বকেয়া: ৳${Number(previousCollected || 0).toLocaleString()}\nঅবশিষ্ট পূর্বের বকেয়া: ৳${remaining.toLocaleString()}${promiseLine}\nরসিদসমূহ:\n${receiptList}`,
         );
         const smsResult = await safeWithRetry(
           "sms_send",
@@ -791,7 +706,7 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
             const { error } = await db.functions.invoke("send-sms", { body: { mobile: farmer.mobile, message, event_type: "irrigation_payment", farmer_id: farmerId } });
             if (error) throw error;
           },
-          { referenceId: paymentId, payload: { mobile: farmer.mobile, message, event_type: "irrigation_payment", farmer_id: farmerId }, officeId: farmer?.office_id ?? null },
+          { referenceId: lastPayment?.paymentId ?? farmerId, payload: { mobile: farmer.mobile, message, event_type: "irrigation_payment", farmer_id: farmerId }, officeId: farmer?.office_id ?? null },
         );
         if (!smsResult.ok) {
           toast.warning(tx("SMS send failed — queued for retry", "SMS পাঠানো ব্যর্থ — রিট্রাই কিউতে যোগ হয়েছে"));
@@ -800,10 +715,12 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
 
       toast.success(
         tx("Payment recorded", "পেমেন্ট সংরক্ষিত হয়েছে"),
-        receiptNo ? { description: tx(`Receipt #: ${receiptNo}`, `রসিদ নং: ${receiptNo}`) } : undefined,
+        createdReceipts.length === 1
+          ? { description: tx(`Receipt #: ${createdReceipts[0].receiptNo}`, `রসিদ নং: ${createdReceipts[0].receiptNo}`) }
+          : { description: tx(`${createdReceipts.length} receipts generated`, `${createdReceipts.length}টি রসিদ তৈরি হয়েছে`) },
       );
       setPaidStatuses(touchedStatuses);
-      setLastPaymentId(paymentId);
+      setLastPaymentId(lastPayment?.paymentId ?? null);
       // refresh
       setFarmerId(farmerId);
       setCurrentCollected(0);
