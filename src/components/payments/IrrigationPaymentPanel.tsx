@@ -891,6 +891,31 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
                 </Badge>
               ))}
             </div>
+            {postingStatus.length > 0 && (
+              <div className="mt-3 rounded-md border bg-muted/40 p-2">
+                <div className="mb-1 text-xs font-medium">{tx("Transaction posting status", "লেনদেন পোস্টিং স্ট্যাটাস")}</div>
+                <div className="flex flex-col gap-1">
+                  {postingStatus.map((s) => (
+                    <div key={s.receiptNo} className="flex items-center justify-between gap-2 text-xs">
+                      <span className="font-mono">{s.receiptNo}</span>
+                      <span className="flex gap-3">
+                        <span className={s.cashbook ? "text-green-600" : "text-destructive"}>
+                          {tx("Cash Book", "ক্যাশবুক")}: {s.cashbook ? "✓" : "✗"}
+                        </span>
+                        <span className={s.journal ? "text-green-600" : "text-destructive"}>
+                          {tx("Accounts", "একাউন্টস")}: {s.journal ? "✓" : "✗"}
+                        </span>
+                      </span>
+                    </div>
+                  ))}
+                </div>
+                {postingStatus.some((s) => !s.cashbook || !s.journal) && (
+                  <div className="mt-1 text-xs text-muted-foreground">
+                    {tx("Failed steps were queued for automatic retry.", "ব্যর্থ ধাপগুলো স্বয়ংক্রিয় রিট্রাই কিউতে যোগ হয়েছে।")}
+                  </div>
+                )}
+              </div>
+            )}
             {patwariUpdatedLands.length > 0 && (
               <div className="mt-3 rounded-md border bg-muted/40 p-2">
                 <div className="mb-1 text-xs font-medium">
