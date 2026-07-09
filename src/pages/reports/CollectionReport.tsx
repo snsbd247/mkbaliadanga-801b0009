@@ -122,7 +122,7 @@ export default function CollectionReport() {
       // 1) Irrigation collections (from irrigation_invoice_payments)
       let irrQ: any = db
         .from("irrigation_invoice_payments")
-        .select("id,created_at,collected_amount,delay_fee_collected,maintenance_collected,canal_collected,irrigation_collected,current_invoice_collected,previous_due_collected,created_by,invoice_id,payments(receipt_no),irrigation_invoices!inner(farmer_id,farmers!irrigation_invoices_farmer_id_fkey(name_en,farmer_code,member_no))")
+        .select("id,created_at,collected_amount,delay_fee_collected,maintenance_collected,canal_collected,irrigation_collected,current_invoice_collected,previous_due_collected,created_by,invoice_id,payments(receipt_no),irrigation_invoices!inner(invoice_no,farmer_id,farmers!irrigation_invoices_farmer_id_fkey(name_en,farmer_code,member_no))")
         .gt("collected_amount", 0)
         .order("created_at", { ascending: false });
       if (from) irrQ = irrQ.gte("created_at", from);
