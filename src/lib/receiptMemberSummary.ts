@@ -31,19 +31,19 @@ function normId(value: unknown): string | null {
 export function savingsNoOf(farmer: ReceiptFarmer): string | null {
   if (!farmer) return null;
   if (flagIsTrue(farmer.savings_inactive)) return null;
-  // This receipt field must show the Savings Number only. Never fall back to
-  // member_no/farmer_code/Farmer ID here; if no savings number exists, the
-  // caller shows "নাই" for that side.
-  const savingsNo = farmer.account_number ?? farmer.voter_number ?? null;
-  if (savingsNo == null || savingsNo === "") return null;
-  const value = String(savingsNo);
-  // Validation guard: reject the Farmer ID (member_no/farmer_code) even if a
-  // caller accidentally routed it into account_number/voter_number. Compared
-  // numerically so "02933" (Farmer ID) also blocks "2933" (leading zero stripped).
+  // Validation guard: reject any candidate that is really the Farmer ID
+  // (member_no/farmer_code), compared numerically so leading-zero variants like
+  // "02473" also block "2473". Try each candidate so a fake account_number does
+  // not hide a valid voter_number (and vice versa).
   const anyFarmer = farmer as Record<string, unknown>;
   const farmerIdNorm = normId(anyFarmer.member_no) ?? normId(anyFarmer.farmer_code);
-  if (farmerIdNorm != null && farmerIdNorm === normId(value)) return null;
-  return value;
+  for (const candidate of [farmer.account_number, farmer.voter_number]) {
+    if (candidate == null || candidate === "") continue;
+    const value = String(candidate);
+    if (farmerIdNorm != null && farmerIdNorm === normId(value)) continue;
+    return value;
+  }
+  return null;
 }
 
 /**
@@ -53,11 +53,12 @@ export function savingsNoOf(farmer: ReceiptFarmer): string | null {
  */
 export function isFakeSavingsNumber(farmer: ReceiptFarmer): boolean {
   if (!farmer) return false;
-  const anyFarmer = farmer as Record<string, unknown>;
-  const raw = farmer.account_number ?? farmer.voter_number ?? null;
-  if (raw == null || raw === "") return false;
-  const farmerIdNorm = normId(anyFarmer.member_no) ?? normId(anyFarmer.farmer_code);
-  return farmerIdNorm != null && farmerIdNorm === normId(String(raw));
+  const hasAny = [farmer.account_number, farmer.voter_number].some((v) => v != null && v !== "");
+  // No usable number exists → nothing to warn about here.
+  if (!hasAny) return false;
+  // Fake only when a value is present but savingsNoOf can't extract a valid one
+  // (i.e. every candidate reduces to the Farmer ID after zero-stripping).
+  return savingsNoOf(farmer) == null && !flagIsTrue(farmer.savings_inactive);
 }
 
 /**
