@@ -133,6 +133,9 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
   const [patwariConfirmOpen, setPatwariConfirmOpen] = useState(false);
   // Lands whose patwari was updated by the last successful payment (audit view).
   const [patwariUpdatedLands, setPatwariUpdatedLands] = useState<Array<{ land_id: string; mouza: string | null; dag_no: string | null; invoice_no: string; patwari_name: string }>>([]);
+  // Per-payment posting status shown after save: did Cash Book & Journal succeed?
+  const [postingStatus, setPostingStatus] = useState<Array<{ receiptNo: string; cashbook: boolean; journal: boolean }>>([]);
+
 
 
 
