@@ -1210,6 +1210,41 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
         </Card>
       )}
 
+      <Dialog open={patwariConfirmOpen} onOpenChange={setPatwariConfirmOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{tx("Confirm patwari update", "পাটুয়ারী আপডেট নিশ্চিত করুন")}</DialogTitle>
+            <DialogDescription>
+              {tx(
+                `The following land(s) will have their patwari set to "${selectedPatwariName}" after payment.`,
+                `পেমেন্টের পর নিচের জমি(গুলো)র পাটুয়ারী "${selectedPatwariName}" হিসেবে সেট হবে।`,
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="max-h-64 overflow-auto rounded-md border divide-y">
+            {patwariUpdateTargets.map((r) => (
+              <div key={r.land_id} className="flex items-center justify-between gap-2 px-3 py-2 text-sm">
+                <span className="font-mono">{r.invoice_no}</span>
+                <span className="text-muted-foreground">
+                  {tx("Mouza", "মৌজা")}: {r.mouza || "—"} • {tx("Dag", "দাগ")}: {r.dag_no || "—"}
+                </span>
+              </div>
+            ))}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setPatwariConfirmOpen(false)}>{tx("Cancel", "বাতিল")}</Button>
+            <Button
+              onClick={() => {
+                setPatwariConfirmOpen(false);
+                void submit();
+              }}
+            >
+              {tx("Confirm & receive", "নিশ্চিত করে গ্রহণ")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <Dialog open={dueDialogOpen} onOpenChange={setDueDialogOpen}>
         <DialogContent>
           <DialogHeader>
