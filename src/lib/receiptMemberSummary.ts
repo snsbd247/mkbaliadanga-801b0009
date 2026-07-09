@@ -7,6 +7,8 @@ export type ReceiptFarmer = {
   voter_number?: string | number | null;
   savings_inactive?: boolean | number | string | null;
   is_voter?: boolean | number | string | null;
+  member_no?: string | number | null;
+  farmer_code?: string | number | null;
 } | null | undefined;
 
 // Shown when a farmer has no active savings account number.
