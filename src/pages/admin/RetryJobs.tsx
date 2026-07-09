@@ -104,6 +104,8 @@ export default function RetryJobs() {
               <SelectItem value="sms_send">sms_send</SelectItem>
               <SelectItem value="sms_delivery_check">sms_delivery_check</SelectItem>
               <SelectItem value="report_export">report_export</SelectItem>
+              <SelectItem value="cashbook_write">cashbook_write</SelectItem>
+              <SelectItem value="journal_post">journal_post</SelectItem>
             </SelectContent>
           </Select>
         </div>
