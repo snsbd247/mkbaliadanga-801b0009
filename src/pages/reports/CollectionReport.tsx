@@ -31,6 +31,7 @@ type CollectionRow = {
   user_name: string;
   ref_id: string;
   receipt_no: string | null;
+  invoice_no?: string | null;
   voided?: boolean;
   void_reason?: string | null;
   // breakdown columns
@@ -54,7 +55,7 @@ type CollectionRow = {
 type ProfileLite = { id: string; full_name: string | null; email: string | null; office_id: string | null };
 
 export default function CollectionReport() {
-  const { t } = useLang();
+  const { t, tx } = useLang();
   const { user, isAdmin, isSuper, rolesLoaded } = useAuth();
 
   const [from, setFrom] = useState("");
@@ -62,6 +63,7 @@ export default function CollectionReport() {
   const [farmerId, setFarmerId] = useState(ALL);
   const [userId, setUserId] = useState<string>(ALL);
   const [kind, setKind] = useState<string>(ALL);
+  const [refQuery, setRefQuery] = useState("");
   const [onlyMine, setOnlyMine] = useState<boolean>(!isAdmin);
 
   const [farmers, setFarmers] = useState<any[]>([]);
@@ -120,7 +122,7 @@ export default function CollectionReport() {
       // 1) Irrigation collections (from irrigation_invoice_payments)
       let irrQ: any = db
         .from("irrigation_invoice_payments")
-        .select("id,created_at,collected_amount,delay_fee_collected,maintenance_collected,canal_collected,irrigation_collected,current_invoice_collected,previous_due_collected,created_by,invoice_id,payments(receipt_no),irrigation_invoices!inner(farmer_id,farmers!irrigation_invoices_farmer_id_fkey(name_en,farmer_code,member_no))")
+        .select("id,created_at,collected_amount,delay_fee_collected,maintenance_collected,canal_collected,irrigation_collected,current_invoice_collected,previous_due_collected,created_by,invoice_id,payments(receipt_no),irrigation_invoices!inner(invoice_no,farmer_id,farmers!irrigation_invoices_farmer_id_fkey(name_en,farmer_code,member_no))")
         .gt("collected_amount", 0)
         .order("created_at", { ascending: false });
       if (from) irrQ = irrQ.gte("created_at", from);
@@ -142,6 +144,7 @@ export default function CollectionReport() {
           user_name: nameForUser(r.created_by),
           ref_id: r.id,
           receipt_no: (r as any).payments?.receipt_no ?? null,
+          invoice_no: inv?.invoice_no ?? null,
           sech: Number(r.irrigation_collected || 0) + Number(r.maintenance_collected || 0) + Number(r.canal_collected || 0),
           jorimana: Number(r.delay_fee_collected || 0),
           hal: Number(r.current_invoice_collected || 0),
@@ -295,10 +298,17 @@ export default function CollectionReport() {
   // ---- Aggregations ----
   // Collection-kind filter merged with the report. Voided/cancelled rows are
   // kept visible for transparency but excluded from every total.
-  const filtered = useMemo(
-    () => rows.filter((r) => kind === ALL || r.source === kind),
-    [rows, kind],
-  );
+  const filtered = useMemo(() => {
+    const q = refQuery.trim().toLowerCase();
+    return rows.filter((r) => {
+      if (kind !== ALL && r.source !== kind) return false;
+      if (q) {
+        const hay = `${r.receipt_no ?? ""} ${r.invoice_no ?? ""} ${r.ref_id ?? ""}`.toLowerCase();
+        if (!hay.includes(q)) return false;
+      }
+      return true;
+    });
+  }, [rows, kind, refQuery]);
 
   const liveRows = useMemo(() => filtered.filter((r) => !r.voided), [filtered]);
 
@@ -378,6 +388,14 @@ export default function CollectionReport() {
           <div>
             <Label>{t("to")}</Label>
             <Input type="date" value={to} onChange={(e) => setTo(e.target.value)} />
+          </div>
+          <div>
+            <Label>{tx("Receipt / Invoice #", "রশিদ/ইনভয়েস নং")}</Label>
+            <Input
+              value={refQuery}
+              onChange={(e) => setRefQuery(e.target.value)}
+              placeholder={tx("receipt or invoice no", "রশিদ বা ইনভয়েস নং")}
+            />
           </div>
           <div>
             <Label>{t("farmerName")}</Label>
@@ -509,6 +527,7 @@ export default function CollectionReport() {
                     <TableCell>{fmtDate(r.date)}</TableCell>
                     <TableCell className="font-mono text-xs">
                       {r.receipt_no ?? "—"}
+                      {r.invoice_no && <span className="block text-muted-foreground">{r.invoice_no}</span>}
                       {r.voided && <span className="ml-1 text-destructive font-semibold">— বাতিল</span>}
                     </TableCell>
                     <TableCell className="text-xs">{r.farmer_code} — {r.farmer_name}</TableCell>
