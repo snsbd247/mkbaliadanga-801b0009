@@ -483,9 +483,9 @@ function copyHtml(d: BnReceiptData, copyLabel: string, signatureUrl: string | nu
     const dagTokens = parseDagNumbers(d.farmer.dag_no);
     const dagFormatted = digits(dagTokens.join("."), lang);
     rows.push([dagLabel, `<span data-receipt-row="dag">${dagFormatted || "—"}</span>`]);
-    // 8. জমির পরিমাণ — একর (শতক ÷ ১০০), . এর পর ৪ ডিজিট
-    const acre = d.farmer.land_size != null ? Number(d.farmer.land_size) / 100 : null;
-    rows.push([t.landSize, acre != null ? `${fixed4Text(acre, lang)} ${lang === "bn" ? "একর" : "acre"}` : "—"]);
+    // 8. জমির পরিমাণ — ফার্মার প্রোফাইলের মতোই ডেসিমেল (শতক) মান, . এর পর ৪ ডিজিট
+    const landDecimal = d.farmer.land_size != null ? Number(d.farmer.land_size) : null;
+    rows.push([t.landSize, landDecimal != null ? `${fixed4Text(landDecimal, lang)} ${lang === "bn" ? "শতক" : "decimal"}` : "—"]);
     // 9. চার্জের পরিমাণ (হাল)/জরিমানা — চলতি সিজনের জমি
     const halCharge = Number(d.current_season_charge ?? 0);
     const halPenalty = Number(d.current_penalty ?? d.penalty_amount ?? 0);
