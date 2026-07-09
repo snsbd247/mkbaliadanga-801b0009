@@ -695,8 +695,15 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
               createdBy: user?.id,
               lines,
             });
-            const { error: ledgerErr } = await db.from("ledger_entries").insert(ledgerRows);
-            if (ledgerErr) throw ledgerErr;
+            const { data: existingLedger } = await db.from("ledger_entries")
+              .select("id")
+              .eq("reference_type", "irrigation_payment")
+              .eq("reference_id", paymentId)
+              .limit(1);
+            if (!existingLedger || existingLedger.length === 0) {
+              const { error: ledgerErr } = await db.from("ledger_entries").insert(ledgerRows);
+              if (ledgerErr) throw ledgerErr;
+            }
           },
           {
             referenceId: paymentId,
