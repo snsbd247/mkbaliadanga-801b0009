@@ -25,6 +25,8 @@ class AccountsSeeder extends Seeder
             ['code' => '3020', 'name' => 'Share Capital',            'name_bn' => 'শেয়ার মূলধন',          'type' => 'equity',    'is_system' => true],
             ['code' => '4010', 'name' => 'Irrigation Income',        'name_bn' => 'সেচ আয়',              'type' => 'income',    'is_system' => true],
             ['code' => '4020', 'name' => 'Loan Interest Income',     'name_bn' => 'ঋণ সুদ আয়',           'type' => 'income',    'is_system' => false],
+            ['code' => '5100', 'name' => 'Irrigation Expense',       'name_bn' => 'সেচ খরচ',              'type' => 'expense',   'is_system' => true],
+            ['code' => '5200', 'name' => 'Society Expense',          'name_bn' => 'সমিতি খরচ',            'type' => 'expense',   'is_system' => true],
             ['code' => '5010', 'name' => 'Maintenance',              'name_bn' => 'রক্ষণাবেক্ষণ',          'type' => 'expense',   'is_system' => true],
             ['code' => '5020', 'name' => 'Electricity',              'name_bn' => 'বিদ্যুৎ',               'type' => 'expense',   'is_system' => true],
             ['code' => '5030', 'name' => 'Salary',                   'name_bn' => 'বেতন',                 'type' => 'expense',   'is_system' => true],
