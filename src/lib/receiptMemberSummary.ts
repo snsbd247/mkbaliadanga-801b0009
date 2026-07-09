@@ -16,6 +16,15 @@ function flagIsTrue(value: unknown): boolean {
   return value === true || value === 1 || value === "1" || value === "true" || value === "TRUE";
 }
 
+/** Normalise an id/number for comparison: trim and strip leading zeros. */
+function normId(value: unknown): string | null {
+  if (value == null) return null;
+  const s = String(value).trim();
+  if (s === "") return null;
+  const stripped = s.replace(/^0+/, "");
+  return stripped === "" ? "0" : stripped;
+}
+
 /** A farmer's usable savings account number, or null if not an active member. */
 export function savingsNoOf(farmer: ReceiptFarmer): string | null {
   if (!farmer) return null;
@@ -27,11 +36,11 @@ export function savingsNoOf(farmer: ReceiptFarmer): string | null {
   if (savingsNo == null || savingsNo === "") return null;
   const value = String(savingsNo);
   // Validation guard: reject the Farmer ID (member_no/farmer_code) even if a
-  // caller accidentally routed it into account_number/voter_number. The savings
-  // number field must never display the Farmer ID.
+  // caller accidentally routed it into account_number/voter_number. Compared
+  // numerically so "02933" (Farmer ID) also blocks "2933" (leading zero stripped).
   const anyFarmer = farmer as Record<string, unknown>;
-  const farmerId = anyFarmer.member_no ?? anyFarmer.farmer_code;
-  if (farmerId != null && farmerId !== "" && String(farmerId) === value) return null;
+  const farmerIdNorm = normId(anyFarmer.member_no) ?? normId(anyFarmer.farmer_code);
+  if (farmerIdNorm != null && farmerIdNorm === normId(value)) return null;
   return value;
 }
 

@@ -51,6 +51,12 @@ describe("buildMemberSummary", () => {
     expect(savingsNoOf({ account_number: "02473", member_no: "02473", farmer_code: "02473" } as any)).toBeNull();
   });
 
+  // Regression: farmer 02933 has no real savings A/C. account_number "2933" is
+  // just the Farmer ID with the leading zero stripped, so it must be rejected.
+  it("rejects farmer id when only leading zeros differ (02933 vs 2933)", () => {
+    expect(savingsNoOf({ account_number: "2933", member_no: "02933", farmer_code: "02933", is_voter: false } as any)).toBeNull();
+  });
+
   it("borga land shows বর্গাদার savings / মালিক savings when both exist", () => {
     expect(buildMemberSummary({
       cultivator: { account_number: "01711" },
