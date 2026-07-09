@@ -382,6 +382,38 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
     });
   }
 
+  // Lands whose patwari will change if we proceed with the manually-selected
+  // patwari — shown in the pre-payment confirmation dialog.
+  const patwariUpdateTargets = useMemo(() => {
+    if (!manualPatwariId) return [] as Array<{ land_id: string; mouza: string | null; dag_no: string | null; invoice_no: string }>;
+    const seen = new Set<string>();
+    const rows: Array<{ land_id: string; mouza: string | null; dag_no: string | null; invoice_no: string }> = [];
+    for (const inv of [...selectedCurrentInvoices, ...selectedPreviousInvoices]) {
+      const landId = inv.land_id;
+      if (!landId || seen.has(landId)) continue;
+      if ((inv.lands as any)?.patwari_id === manualPatwariId) continue;
+      seen.add(landId);
+      rows.push({ land_id: landId, mouza: inv.lands?.mouza ?? null, dag_no: inv.lands?.dag_no ?? null, invoice_no: inv.invoice_no });
+    }
+    return rows;
+  }, [manualPatwariId, selectedCurrentInvoices, selectedPreviousInvoices]);
+
+  const selectedPatwariName = useMemo(() => {
+    const p = patwariList.find((x) => x.id === manualPatwariId);
+    return p ? (lang === "bn" ? p.name_bn : p.name) || p.name_bn || p.name || "" : "";
+  }, [patwariList, manualPatwariId, lang]);
+
+  // Gate the Receive button: if the manual patwari will change lands, confirm first.
+  function handleReceiveClick() {
+    if (patwariUpdateTargets.length > 0) {
+      setPatwariConfirmOpen(true);
+      return;
+    }
+    void submit();
+  }
+
+
+
   async function submit() {
     if (submitting) return;
     if (!farmerId) return toast.error(t("pickFarmer") || "Pick a farmer");
