@@ -95,12 +95,15 @@ class GenericTableController extends Controller
 
     private function accountId(array $codes): ?string
     {
-        $row = DB::table('accounts')
+        $rows = DB::table('accounts')
             ->whereIn('code', $codes)
-            ->orderByRaw('FIELD(code, '.implode(',', array_fill(0, count($codes), '?')).')', $codes)
-            ->first(['id']);
+            ->get(['id', 'code'])
+            ->keyBy('code');
 
-        return $row?->id;
+        foreach ($codes as $code) {
+            if (isset($rows[$code])) return $rows[$code]->id;
+        }
+        return null;
     }
 
     /**

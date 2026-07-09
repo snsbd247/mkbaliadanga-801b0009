@@ -9,23 +9,24 @@ return new class extends Migration
 {
     public function up(): void
     {
-        if (! Schema::hasTable('payments')) {
+        if (! Schema::hasTable('payments')
+            || ! Schema::hasColumn('payments', 'kind')
+            || ! Schema::hasColumn('payments', 'status')) {
             return;
         }
 
-        $cashId = Schema::hasTable('accounts')
-            ? DB::table('accounts')->where('code', '1010')->value('id')
-            : null;
-        $incomeId = Schema::hasTable('accounts')
-            ? DB::table('accounts')->whereIn('code', ['IRR-INCOME', '4010'])->orderByRaw("FIELD(code, 'IRR-INCOME', '4010')")->value('id')
-            : null;
+        $accounts = Schema::hasTable('accounts')
+            ? DB::table('accounts')->whereIn('code', ['1010', 'IRR-INCOME', '4010'])->get(['id', 'code'])->keyBy('code')
+            : collect();
+        $cashId = $accounts['1010']->id ?? null;
+        $incomeId = $accounts['IRR-INCOME']->id ?? $accounts['4010']->id ?? null;
 
         DB::table('payments')
             ->where('kind', 'irrigation')
             ->where('status', 'approved')
             ->whereNotNull('receipt_no')
             ->orderBy('created_at')
-            ->chunkById(100, function ($payments) use ($cashId, $incomeId) {
+            ->chunk(100, function ($payments) use ($cashId, $incomeId) {
                 foreach ($payments as $payment) {
                     $amount = round((float) $payment->amount, 2);
                     if ($amount <= 0) continue;
