@@ -90,6 +90,7 @@ import FileManager from "./pages/admin/FileManager";
 import SystemUpdate from "./pages/admin/SystemUpdate";
 import IrrigationDueReport from "./pages/reports/IrrigationDueReport";
 import IrrigationReconciliationReport from "./pages/reports/IrrigationReconciliationReport";
+import IrrigationPostingReconciliation from "./pages/reports/IrrigationPostingReconciliation";
 import OpeningDueReport from "./pages/reports/OpeningDueReport";
 import InvoiceReport from "./pages/reports/InvoiceReport";
 import CollectionReport from "./pages/reports/CollectionReport";
