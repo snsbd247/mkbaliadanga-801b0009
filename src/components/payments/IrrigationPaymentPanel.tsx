@@ -37,6 +37,7 @@ import { resolveReceiptPatwari } from "@/lib/receiptPatwari";
 import { verifyInvoiceConsistency } from "@/lib/invoiceBreakdown";
 import { nextUnifiedReceiptNo } from "@/lib/monthlyReceiptNo";
 import { buildMemberSummary } from "@/lib/receiptMemberSummary";
+import { computePatwariUpdateTargets } from "@/lib/patwariUpdate";
 
 // Shared select for open irrigation invoices (used by both initial load and reload).
 const OPEN_INVOICE_SELECT =
@@ -130,6 +131,8 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
   const [dueDialogOpen, setDueDialogOpen] = useState(false);
   const [dueDialogRows, setDueDialogRows] = useState<{ label: string; missing: number }[]>([]);
   const [patwariConfirmOpen, setPatwariConfirmOpen] = useState(false);
+  // Lands whose patwari was updated by the last successful payment (audit view).
+  const [patwariUpdatedLands, setPatwariUpdatedLands] = useState<Array<{ land_id: string; mouza: string | null; dag_no: string | null; invoice_no: string; patwari_name: string }>>([]);
 
 
 
@@ -384,19 +387,10 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
 
   // Lands whose patwari will change if we proceed with the manually-selected
   // patwari — shown in the pre-payment confirmation dialog.
-  const patwariUpdateTargets = useMemo(() => {
-    if (!manualPatwariId) return [] as Array<{ land_id: string; mouza: string | null; dag_no: string | null; invoice_no: string }>;
-    const seen = new Set<string>();
-    const rows: Array<{ land_id: string; mouza: string | null; dag_no: string | null; invoice_no: string }> = [];
-    for (const inv of [...selectedCurrentInvoices, ...selectedPreviousInvoices]) {
-      const landId = inv.land_id;
-      if (!landId || seen.has(landId)) continue;
-      if ((inv.lands as any)?.patwari_id === manualPatwariId) continue;
-      seen.add(landId);
-      rows.push({ land_id: landId, mouza: inv.lands?.mouza ?? null, dag_no: inv.lands?.dag_no ?? null, invoice_no: inv.invoice_no });
-    }
-    return rows;
-  }, [manualPatwariId, selectedCurrentInvoices, selectedPreviousInvoices]);
+  const patwariUpdateTargets = useMemo(
+    () => computePatwariUpdateTargets([...selectedCurrentInvoices, ...selectedPreviousInvoices], manualPatwariId),
+    [manualPatwariId, selectedCurrentInvoices, selectedPreviousInvoices],
+  );
 
   const selectedPatwariName = useMemo(() => {
     const p = patwariList.find((x) => x.id === manualPatwariId);
@@ -734,14 +728,12 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
       // invoices. Never blocks the payment/receipt; only warns on failure.
       if (manualPatwariId) {
         try {
-          const landIds = Array.from(
-            new Set(chargeItems.map((c) => c.inv.land_id).filter((id): id is string => !!id)),
+          const targets = computePatwariUpdateTargets(
+            chargeItems.map((c) => c.inv),
+            manualPatwariId,
           );
-          const targetLands = landIds.filter((id) => {
-            const inv = chargeItems.find((c) => c.inv.land_id === id)?.inv;
-            return (inv?.lands as any)?.patwari_id !== manualPatwariId;
-          });
-          if (targetLands.length > 0) {
+          if (targets.length > 0) {
+            const targetLands = targets.map((t) => t.land_id);
             const { error: landErr } = await db
               .from("lands")
               .update({ patwari_id: manualPatwariId })
@@ -752,8 +744,11 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
               action_type: "update",
               office_id: farmer?.office_id ?? null,
               reference_id: farmerId,
-              new_data: { patwari_id: manualPatwariId, land_ids: targetLands, source: "irrigation_payment" },
+              new_data: { patwari_id: manualPatwariId, patwari_name: selectedPatwariName, land_ids: targetLands, targets, source: "irrigation_payment" },
             });
+            setPatwariUpdatedLands(targets.map((t) => ({ ...t, patwari_name: selectedPatwariName })));
+          } else {
+            setPatwariUpdatedLands([]);
           }
         } catch (patErr) {
           console.warn("[irrigation-pay] land patwari update failed", patErr);
@@ -762,6 +757,8 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
             "জমির পাটুয়ারী আপডেট করা যায়নি",
           ));
         }
+      } else {
+        setPatwariUpdatedLands([]);
       }
 
       // SMS summary — one message listing every receipt generated.
@@ -840,6 +837,24 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
                 </Badge>
               ))}
             </div>
+            {patwariUpdatedLands.length > 0 && (
+              <div className="mt-3 rounded-md border bg-muted/40 p-2">
+                <div className="mb-1 text-xs font-medium">
+                  {tx("Patwari updated on these lands", "এই জমিগুলোতে পাটুয়ারী আপডেট হয়েছে")}
+                  {patwariUpdatedLands[0]?.patwari_name ? ` → ${patwariUpdatedLands[0].patwari_name}` : ""}
+                </div>
+                <div className="flex flex-col gap-1">
+                  {patwariUpdatedLands.map((l) => (
+                    <div key={l.land_id} className="flex items-center justify-between gap-2 text-xs">
+                      <span className="font-mono">{l.invoice_no}</span>
+                      <span className="text-muted-foreground">
+                        {tx("Mouza", "মৌজা")}: {l.mouza || "—"} • {tx("Dag", "দাগ")}: {l.dag_no || "—"}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
             {lastPaymentId && (
               <div className="mt-3 flex flex-wrap gap-2">
                 <Button
