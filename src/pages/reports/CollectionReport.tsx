@@ -390,6 +390,14 @@ export default function CollectionReport() {
             <Input type="date" value={to} onChange={(e) => setTo(e.target.value)} />
           </div>
           <div>
+            <Label>{t("lang") === "bn" ? "রশিদ/ইনভয়েস নং" : "Receipt / Invoice #"}</Label>
+            <Input
+              value={refQuery}
+              onChange={(e) => setRefQuery(e.target.value)}
+              placeholder={t("lang") === "bn" ? "রশিদ বা ইনভয়েস নং" : "receipt or invoice no"}
+            />
+          </div>
+          <div>
             <Label>{t("farmerName")}</Label>
             <Select value={farmerId} onValueChange={setFarmerId}>
               <SelectTrigger><SelectValue /></SelectTrigger>
