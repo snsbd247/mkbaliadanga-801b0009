@@ -29,12 +29,6 @@ function normId(value: unknown): string | null {
 export function savingsNoOf(farmer: ReceiptFarmer): string | null {
   if (!farmer) return null;
   if (flagIsTrue(farmer.savings_inactive)) return null;
-  // A savings number only exists for voter / savings-enabled members. If the
-  // farmer is not enabled as Voter/Savings A/C there is no savings account, so
-  // the receipt must show "নাই" — never a value derived from the Farmer ID.
-  if ("is_voter" in (farmer as object) && !flagIsTrue((farmer as { is_voter?: unknown }).is_voter)) {
-    return null;
-  }
   // This receipt field must show the Savings Number only. Never fall back to
   // member_no/farmer_code/Farmer ID here; if no savings number exists, the
   // caller shows "নাই" for that side.
