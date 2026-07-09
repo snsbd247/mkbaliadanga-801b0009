@@ -129,6 +129,9 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
   // Validation modal for unpaid dues.
   const [dueDialogOpen, setDueDialogOpen] = useState(false);
   const [dueDialogRows, setDueDialogRows] = useState<{ label: string; missing: number }[]>([]);
+  const [patwariConfirmOpen, setPatwariConfirmOpen] = useState(false);
+
+
 
   const canDoPartial = isSuper || roles.some(r => allowedRoles.includes(r));
 
@@ -378,6 +381,38 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
       return n;
     });
   }
+
+  // Lands whose patwari will change if we proceed with the manually-selected
+  // patwari — shown in the pre-payment confirmation dialog.
+  const patwariUpdateTargets = useMemo(() => {
+    if (!manualPatwariId) return [] as Array<{ land_id: string; mouza: string | null; dag_no: string | null; invoice_no: string }>;
+    const seen = new Set<string>();
+    const rows: Array<{ land_id: string; mouza: string | null; dag_no: string | null; invoice_no: string }> = [];
+    for (const inv of [...selectedCurrentInvoices, ...selectedPreviousInvoices]) {
+      const landId = inv.land_id;
+      if (!landId || seen.has(landId)) continue;
+      if ((inv.lands as any)?.patwari_id === manualPatwariId) continue;
+      seen.add(landId);
+      rows.push({ land_id: landId, mouza: inv.lands?.mouza ?? null, dag_no: inv.lands?.dag_no ?? null, invoice_no: inv.invoice_no });
+    }
+    return rows;
+  }, [manualPatwariId, selectedCurrentInvoices, selectedPreviousInvoices]);
+
+  const selectedPatwariName = useMemo(() => {
+    const p = patwariList.find((x) => x.id === manualPatwariId);
+    return p ? (lang === "bn" ? p.name_bn : p.name) || p.name_bn || p.name || "" : "";
+  }, [patwariList, manualPatwariId, lang]);
+
+  // Gate the Receive button: if the manual patwari will change lands, confirm first.
+  function handleReceiveClick() {
+    if (patwariUpdateTargets.length > 0) {
+      setPatwariConfirmOpen(true);
+      return;
+    }
+    void submit();
+  }
+
+
 
   async function submit() {
     if (submitting) return;
@@ -1143,7 +1178,7 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
               <div className="text-xs text-muted-foreground">{tx("Grand total received", "মোট গ্রহণ")}</div>
               <div className="text-2xl font-mono font-bold">{money(grandTotal)}</div>
             </div>
-            <Button size="lg" onClick={submit} disabled={submitting || grandTotal <= 0 || (blockedByPreviousDue && canDoPartial)}>
+            <Button size="lg" onClick={handleReceiveClick} disabled={submitting || grandTotal <= 0 || (blockedByPreviousDue && canDoPartial)}>
               {submitting ? <><Loader2 className="h-4 w-4 animate-spin mr-2" />{tx("Saving…", "সংরক্ষণ…")}</> : <><CheckCircle2 className="h-4 w-4 mr-2" />{tx("Receive Payment", "পেমেন্ট গ্রহণ")}</>}
             </Button>
           </div>
@@ -1174,6 +1209,41 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
           </div>
         </Card>
       )}
+
+      <Dialog open={patwariConfirmOpen} onOpenChange={setPatwariConfirmOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{tx("Confirm patwari update", "পাটুয়ারী আপডেট নিশ্চিত করুন")}</DialogTitle>
+            <DialogDescription>
+              {tx(
+                `The following land(s) will have their patwari set to "${selectedPatwariName}" after payment.`,
+                `পেমেন্টের পর নিচের জমি(গুলো)র পাটুয়ারী "${selectedPatwariName}" হিসেবে সেট হবে।`,
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="max-h-64 overflow-auto rounded-md border divide-y">
+            {patwariUpdateTargets.map((r) => (
+              <div key={r.land_id} className="flex items-center justify-between gap-2 px-3 py-2 text-sm">
+                <span className="font-mono">{r.invoice_no}</span>
+                <span className="text-muted-foreground">
+                  {tx("Mouza", "মৌজা")}: {r.mouza || "—"} • {tx("Dag", "দাগ")}: {r.dag_no || "—"}
+                </span>
+              </div>
+            ))}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setPatwariConfirmOpen(false)}>{tx("Cancel", "বাতিল")}</Button>
+            <Button
+              onClick={() => {
+                setPatwariConfirmOpen(false);
+                void submit();
+              }}
+            >
+              {tx("Confirm & receive", "নিশ্চিত করে গ্রহণ")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={dueDialogOpen} onOpenChange={setDueDialogOpen}>
         <DialogContent>
