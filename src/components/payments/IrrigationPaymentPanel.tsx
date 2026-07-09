@@ -1178,7 +1178,7 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
               <div className="text-xs text-muted-foreground">{tx("Grand total received", "মোট গ্রহণ")}</div>
               <div className="text-2xl font-mono font-bold">{money(grandTotal)}</div>
             </div>
-            <Button size="lg" onClick={submit} disabled={submitting || grandTotal <= 0 || (blockedByPreviousDue && canDoPartial)}>
+            <Button size="lg" onClick={handleReceiveClick} disabled={submitting || grandTotal <= 0 || (blockedByPreviousDue && canDoPartial)}>
               {submitting ? <><Loader2 className="h-4 w-4 animate-spin mr-2" />{tx("Saving…", "সংরক্ষণ…")}</> : <><CheckCircle2 className="h-4 w-4 mr-2" />{tx("Receive Payment", "পেমেন্ট গ্রহণ")}</>}
             </Button>
           </div>
