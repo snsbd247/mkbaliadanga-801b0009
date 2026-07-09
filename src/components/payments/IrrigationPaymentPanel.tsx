@@ -653,23 +653,25 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
           });
         }
 
-        // 6) Split-ledger journal posting for this payment
-        try {
-          let irrPart = 0, delayPart = 0, maintPart = 0, canalPart = 0, prevPart = 0;
-          if (isCurrent) {
-            const delayCollected = newFee;
-            const maintCollected = Number(inv.maintenance_amount || 0);
-            const canalCollected = Number(inv.canal_amount || 0);
-            const overheadTotal = delayCollected + maintCollected + canalCollected;
-            const scale = overheadTotal > 0 ? Math.min(1, take / overheadTotal) : 0;
-            delayPart = +(delayCollected * scale).toFixed(2);
-            maintPart = +(maintCollected * scale).toFixed(2);
-            canalPart = +(canalCollected * scale).toFixed(2);
-            irrPart = +(take - delayPart - maintPart - canalPart).toFixed(2);
-          } else {
-            prevPart = +take.toFixed(2);
-          }
-          if (byCode["1010"]) {
+        // 6) Split-ledger journal posting for this payment (retry + audit).
+        const journalResult = await safeWithRetry(
+          "journal_post",
+          async () => {
+            let irrPart = 0, delayPart = 0, maintPart = 0, canalPart = 0, prevPart = 0;
+            if (isCurrent) {
+              const delayCollected = newFee;
+              const maintCollected = Number(inv.maintenance_amount || 0);
+              const canalCollected = Number(inv.canal_amount || 0);
+              const overheadTotal = delayCollected + maintCollected + canalCollected;
+              const scale = overheadTotal > 0 ? Math.min(1, take / overheadTotal) : 0;
+              delayPart = +(delayCollected * scale).toFixed(2);
+              maintPart = +(maintCollected * scale).toFixed(2);
+              canalPart = +(canalCollected * scale).toFixed(2);
+              irrPart = +(take - delayPart - maintPart - canalPart).toFixed(2);
+            } else {
+              prevPart = +take.toFixed(2);
+            }
+            if (!byCode["1010"]) throw new Error("Cash account (1010) missing from chart of accounts");
             const { data: je, error: jeErr } = await db.from("journal_entries").insert({
               entry_date: new Date().toISOString().slice(0, 10),
               reference: `IRR-PAY-${paymentId.slice(0, 8)}`,
@@ -679,29 +681,41 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
               posted_at: new Date().toISOString(),
               created_by: user?.id,
             }).select("id").single();
-            if (!jeErr && je) {
-              const lines: any[] = [
-                { journal_id: je.id, account_id: byCode["1010"], debit: take, credit: 0, position: 0, description: "Cash received" },
-              ];
-              let pos = 1;
-              const credits: Array<[string, number]> = [
-                ["IRR-INCOME", irrPart],
-                ["IRR-DELAY", delayPart],
-                ["IRR-MAINT", maintPart],
-                ["IRR-CANAL", canalPart],
-                ["IRR-PREV-DUE", prevPart],
-              ];
-              for (const [code, amt] of credits) {
-                if (amt > 0 && byCode[code]) {
-                  lines.push({ journal_id: je.id, account_id: byCode[code], debit: 0, credit: amt, position: pos++, description: code });
-                }
+            if (jeErr || !je) throw jeErr ?? new Error("Journal entry insert failed");
+            const lines: any[] = [
+              { journal_id: je.id, account_id: byCode["1010"], debit: take, credit: 0, position: 0, description: "Cash received" },
+            ];
+            let pos = 1;
+            const credits: Array<[string, number]> = [
+              ["IRR-INCOME", irrPart],
+              ["IRR-DELAY", delayPart],
+              ["IRR-MAINT", maintPart],
+              ["IRR-CANAL", canalPart],
+              ["IRR-PREV-DUE", prevPart],
+            ];
+            for (const [code, amt] of credits) {
+              if (amt > 0 && byCode[code]) {
+                lines.push({ journal_id: je.id, account_id: byCode[code], debit: 0, credit: amt, position: pos++, description: code });
               }
-              await db.from("journal_entry_lines").insert(lines);
             }
-          }
-        } catch (jErr) {
-          console.warn("[irrigation-pay] journal posting failed", jErr);
-        }
+            const { error: lineErr } = await db.from("journal_entry_lines").insert(lines);
+            if (lineErr) throw lineErr;
+          },
+          {
+            referenceId: paymentId,
+            payload: { reference: `IRR-PAY-${paymentId.slice(0, 8)}`, invoice_id: inv.id, invoice_no: inv.invoice_no, amount: take, is_current: isCurrent, office_id: officeId },
+            officeId,
+          },
+        );
+        logAudit({
+          module: "irrigation_payment",
+          action_type: journalResult.ok ? "create" : "fail",
+          office_id: officeId,
+          reference_id: paymentId,
+          new_data: { step: "journal_post", ok: journalResult.ok, reference: `IRR-PAY-${paymentId.slice(0, 8)}`, amount: take, error: journalResult.error ?? null, retry_job_id: journalResult.jobId ?? null },
+        });
+
+        postingResults.push({ receiptNo, cashbook: cashbookResult.ok, journal: journalResult.ok });
 
         // 7) Central audit log
         logAudit({
