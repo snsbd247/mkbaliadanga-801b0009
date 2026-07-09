@@ -926,8 +926,8 @@ async function renderPdf(data: BnReceiptData, copy: ReceiptCopy, options?: Recei
       const yTop = top + labelH + (slotH - h) / 2;
       pdf.addImage(copyImg.img, "JPEG", ox, yTop, w, h);
     };
-    drawHalf(opts.margins.t, officeImg, officeLabel);
-    drawHalf(midY, farmerImg, farmerLabel);
+    drawHalf(opts.margins.t, farmerImg, farmerLabel);
+    drawHalf(midY, officeImg, officeLabel);
     // মাঝ বরাবর কাটার গাইড লাইন — সঠিক মিডপয়েন্টে, সরু ড্যাশড।
     pdf.setLineDashPattern([2, 2], 0);
     pdf.setLineWidth(0.2);
