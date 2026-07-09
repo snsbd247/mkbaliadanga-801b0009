@@ -16,10 +16,25 @@ function flagIsTrue(value: unknown): boolean {
   return value === true || value === 1 || value === "1" || value === "true" || value === "TRUE";
 }
 
+/** Normalise an id/number for comparison: trim and strip leading zeros. */
+function normId(value: unknown): string | null {
+  if (value == null) return null;
+  const s = String(value).trim();
+  if (s === "") return null;
+  const stripped = s.replace(/^0+/, "");
+  return stripped === "" ? "0" : stripped;
+}
+
 /** A farmer's usable savings account number, or null if not an active member. */
 export function savingsNoOf(farmer: ReceiptFarmer): string | null {
   if (!farmer) return null;
   if (flagIsTrue(farmer.savings_inactive)) return null;
+  // A savings number only exists for voter / savings-enabled members. If the
+  // farmer is not enabled as Voter/Savings A/C there is no savings account, so
+  // the receipt must show "নাই" — never a value derived from the Farmer ID.
+  if ("is_voter" in (farmer as object) && !flagIsTrue((farmer as { is_voter?: unknown }).is_voter)) {
+    return null;
+  }
   // This receipt field must show the Savings Number only. Never fall back to
   // member_no/farmer_code/Farmer ID here; if no savings number exists, the
   // caller shows "নাই" for that side.
@@ -27,11 +42,11 @@ export function savingsNoOf(farmer: ReceiptFarmer): string | null {
   if (savingsNo == null || savingsNo === "") return null;
   const value = String(savingsNo);
   // Validation guard: reject the Farmer ID (member_no/farmer_code) even if a
-  // caller accidentally routed it into account_number/voter_number. The savings
-  // number field must never display the Farmer ID.
+  // caller accidentally routed it into account_number/voter_number. Compared
+  // numerically so "02933" (Farmer ID) also blocks "2933" (leading zero stripped).
   const anyFarmer = farmer as Record<string, unknown>;
-  const farmerId = anyFarmer.member_no ?? anyFarmer.farmer_code;
-  if (farmerId != null && farmerId !== "" && String(farmerId) === value) return null;
+  const farmerIdNorm = normId(anyFarmer.member_no) ?? normId(anyFarmer.farmer_code);
+  if (farmerIdNorm != null && farmerIdNorm === normId(value)) return null;
   return value;
 }
 
