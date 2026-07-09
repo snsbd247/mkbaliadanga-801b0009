@@ -84,12 +84,14 @@ export function computeFinancialSummary(input: FinancialSummaryInput): Financial
   const netToBankSech = sechDeposit - sechWithdraw;
 
   // ---- Irrigation (সেচ) ----
+  const openingIrrigationCash = num(input.openingIrrigationCash);
+  const openingSavingsCash = num(input.openingSavingsCash);
   const invoiceCollected = sum(collections, (c) => c.collected_amount);
   const sechOfficeIncome = sum(officeIncomes.filter((o) => isSech(o.stream)), (o) => o.amount);
   const irrigationIncome = invoiceCollected + sechOfficeIncome;
   const irrigationExpense = sum(expenses.filter((e) => (e.stream ?? "").toLowerCase() === "irrigation"), (e) => e.amount);
   const irrigationDue = sum(invoices, (inv) => inv.due_amount);
-  const irrigationCashInHand = irrigationIncome - irrigationExpense - netToBankSech;
+  const irrigationCashInHand = openingIrrigationCash + irrigationIncome - irrigationExpense - netToBankSech;
 
   // ---- Savings / society (সমিতি) — reuse the audited society statement engine ----
   const society = computeSocietyStatement({
@@ -99,7 +101,7 @@ export function computeFinancialSummary(input: FinancialSummaryInput): Financial
     officeIncomes: officeIncomes.filter((o) => !isSech(o.stream)),
     expenses: expenses.filter((e) => (e.stream ?? "").toLowerCase() !== "irrigation"),
     loansIssued: loans.map((l) => ({ principal: num(l.principal) })),
-    opening: 0,
+    opening: openingSavingsCash,
   });
   const savingsCashInHand = society.closingFund;
 
