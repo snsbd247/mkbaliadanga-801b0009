@@ -191,6 +191,74 @@ class GenericTableController extends Controller
         });
     }
 
+    /**
+     * Server-side safety net: every saved expense must appear in the accounting
+     * ledger as a balanced Dr Expense / Cr Cash journal so the Trial Balance,
+     * Chart of Accounts and Financial Reports reflect real spending. Idempotent
+     * on (reference_type='expense', reference_id).
+     */
+    private function ensureExpensePostings(Request $request, array $expense): void
+    {
+        $expenseId = $expense['id'] ?? null;
+        $amount = round((float) ($expense['amount'] ?? 0), 2);
+        if (! $expenseId || $amount <= 0 || ! empty($expense['deleted_at'])) {
+            return;
+        }
+        if (! Schema::hasTable('ledger_entries')) {
+            return;
+        }
+
+        $stream = (string) ($expense['stream'] ?? 'irrigation');
+        $expenseCode = $stream === 'irrigation' ? '5100' : '5200';
+        $expenseAccount = $this->accountId([$expenseCode, '5090']);
+        $cashId = $this->accountId(['1010']);
+        if (! $expenseAccount || ! $cashId) {
+            return;
+        }
+
+        $officeId = $expense['office_id'] ?? $request->attributes->get('scope_office_id');
+        $createdBy = $expense['created_by'] ?? optional($request->user())->id;
+        $date = substr((string) ($expense['expense_date'] ?? now()->format('Y-m-d')), 0, 10);
+        $desc = 'খরচ — ' . (string) ($expense['head'] ?? '');
+        $now = now();
+
+        DB::transaction(function () use ($expenseId, $amount, $expenseAccount, $cashId, $officeId, $createdBy, $date, $desc, $now) {
+            $exists = DB::table('ledger_entries')
+                ->where('reference_type', 'expense')
+                ->where('reference_id', $expenseId)
+                ->exists();
+            if ($exists) return;
+            DB::table('ledger_entries')->insert([
+                [
+                    'id' => (string) Str::uuid(),
+                    'entry_date' => $date,
+                    'account_id' => $expenseAccount,
+                    'debit' => $amount,
+                    'credit' => 0,
+                    'reference_type' => 'expense',
+                    'reference_id' => $expenseId,
+                    'description' => $desc,
+                    'office_id' => $officeId,
+                    'created_by' => $createdBy,
+                    'created_at' => $now,
+                ],
+                [
+                    'id' => (string) Str::uuid(),
+                    'entry_date' => $date,
+                    'account_id' => $cashId,
+                    'debit' => 0,
+                    'credit' => $amount,
+                    'reference_type' => 'expense',
+                    'reference_id' => $expenseId,
+                    'description' => $desc . ' — নগদ পরিশোধ',
+                    'office_id' => $officeId,
+                    'created_by' => $createdBy,
+                    'created_at' => $now,
+                ],
+            ]);
+        });
+    }
+
 
     private function table(string $table): string
     {
