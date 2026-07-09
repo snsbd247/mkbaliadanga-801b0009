@@ -131,6 +131,8 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
   const [dueDialogOpen, setDueDialogOpen] = useState(false);
   const [dueDialogRows, setDueDialogRows] = useState<{ label: string; missing: number }[]>([]);
   const [patwariConfirmOpen, setPatwariConfirmOpen] = useState(false);
+  // Lands whose patwari was updated by the last successful payment (audit view).
+  const [patwariUpdatedLands, setPatwariUpdatedLands] = useState<Array<{ land_id: string; mouza: string | null; dag_no: string | null; invoice_no: string; patwari_name: string }>>([]);
 
 
 
