@@ -527,6 +527,7 @@ export default function CollectionReport() {
                     <TableCell>{fmtDate(r.date)}</TableCell>
                     <TableCell className="font-mono text-xs">
                       {r.receipt_no ?? "—"}
+                      {r.invoice_no && <span className="block text-muted-foreground">{r.invoice_no}</span>}
                       {r.voided && <span className="ml-1 text-destructive font-semibold">— বাতিল</span>}
                     </TableCell>
                     <TableCell className="text-xs">{r.farmer_code} — {r.farmer_name}</TableCell>
