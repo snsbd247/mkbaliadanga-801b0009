@@ -4827,6 +4827,39 @@ export type Database = {
         }
         Relationships: []
       }
+      opening_balances: {
+        Row: {
+          created_at: string
+          fiscal_year: string
+          id: string
+          irrigation_cash: number
+          note: string | null
+          office_id: string | null
+          savings_cash: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          fiscal_year: string
+          id?: string
+          irrigation_cash?: number
+          note?: string | null
+          office_id?: string | null
+          savings_cash?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          fiscal_year?: string
+          id?: string
+          irrigation_cash?: number
+          note?: string | null
+          office_id?: string | null
+          savings_cash?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       patwaris: {
         Row: {
           address: string | null

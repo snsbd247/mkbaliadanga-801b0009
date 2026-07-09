@@ -56,6 +56,8 @@ import Accounts from "./pages/Accounts";
 import Ledger from "./pages/Ledger";
 import FinancialReports from "./pages/FinancialReports";
 import FinancialSummary from "./pages/FinancialSummary";
+import OpeningBalances from "./pages/OpeningBalances";
+import SourceVsLedger from "./pages/reports/SourceVsLedger";
 import JournalEntry from "./pages/JournalEntry";
 import LedgerIntegrity from "./pages/LedgerIntegrity";
 import Approvals from "./pages/Approvals";
@@ -353,6 +355,8 @@ const App = () => (
                 <Route path="/ledger-integrity" element={<RequirePerm module="accounting"><LedgerIntegrity /></RequirePerm>} />
                 <Route path="/approvals" element={<RequirePerm module="approvals"><Approvals /></RequirePerm>} />
                 <Route path="/period-close" element={<RequirePerm module="accounting" action="can_edit"><PeriodClose /></RequirePerm>} />
+                <Route path="/opening-balances" element={<RequireRole roles={["admin","super_admin"]}><RequirePerm module="accounting" action="can_edit"><OpeningBalances /></RequirePerm></RequireRole>} />
+                <Route path="/reports/source-vs-ledger" element={<RequirePerm module="accounting"><SourceVsLedger /></RequirePerm>} />
                 <Route path="/finance-summary" element={<RequirePerm module="accounting"><FinanceSummary /></RequirePerm>} />
                 <Route path="/land-history" element={<RequirePerm module="farmers"><LandHistory /></RequirePerm>} />
                 
