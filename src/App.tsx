@@ -58,6 +58,7 @@ import FinancialReports from "./pages/FinancialReports";
 import FinancialSummary from "./pages/FinancialSummary";
 import OpeningBalances from "./pages/OpeningBalances";
 import SourceVsLedger from "./pages/reports/SourceVsLedger";
+import SechCashBankMovements from "./pages/reports/SechCashBankMovements";
 import JournalEntry from "./pages/JournalEntry";
 import LedgerIntegrity from "./pages/LedgerIntegrity";
 import Approvals from "./pages/Approvals";
