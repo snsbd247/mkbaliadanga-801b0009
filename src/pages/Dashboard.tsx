@@ -143,18 +143,17 @@ export default function Dashboard() {
     // (income = irrigation-kind receipts + approved irrigation payments not yet
     // receipted; expense = irrigation-stream vouchers). The old ledger_entries
     // computation mixed streams and diverged from the Cash Book.
-    const IRR_INCOME_KINDS = new Set(["irrigation", "bigha_rent", "pond", "crop_sale", "scrap"]);
-    const [{ data: hcReceiptsAll }, { data: hcIrrExpenses }] = await Promise.all([
+    const [{ data: hcReceiptsAll }, { data: hcIrrExpenses }, { data: irrPayFallback }] = await Promise.all([
       db.from("receipts").select("kind,amount,receipt_no"),
       db.from("expenses").select("amount").eq("stream", "irrigation").is("deleted_at", null),
+      db.from("payments").select("amount,receipt_no,kind,status").eq("kind", "irrigation").eq("status", "approved").is("deleted_at", null),
     ]);
-    const receiptNos = new Set((hcReceiptsAll ?? []).map((r: any) => String(r.receipt_no ?? "")).filter(Boolean));
-    const irrReceiptIncome = sum((hcReceiptsAll ?? []).filter((r: any) => IRR_INCOME_KINDS.has(r.kind)), "amount");
-    const { data: irrPayFallback } = await db.from("payments")
-      .select("amount,receipt_no").eq("kind", "irrigation").eq("status", "approved").is("deleted_at", null);
-    const irrPayIncome = sum((irrPayFallback ?? []).filter((p: any) => p.receipt_no && !receiptNos.has(String(p.receipt_no))), "amount");
-    const irrExpenseTotal = sum(hcIrrExpenses ?? [], "amount");
-    const handCashBalance = irrReceiptIncome + irrPayIncome - irrExpenseTotal;
+    const handCash = computeHandCash({
+      receipts: hcReceiptsAll ?? [],
+      payments: irrPayFallback ?? [],
+      expenses: hcIrrExpenses ?? [],
+    });
+    const handCashBalance = handCash.closing;
 
 
     // Hand Cash module month-end: use the latest submitted closing if present;
