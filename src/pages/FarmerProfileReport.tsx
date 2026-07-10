@@ -1,3 +1,4 @@
+import { resolveMouzaName } from "@/lib/mouzaQuery";
 import { useEffect, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { ArrowLeft, Download, Printer } from "lucide-react";
@@ -50,7 +51,7 @@ export default function FarmerProfileReport() {
         db.from("loans").select("*, loan_payments(amount)").eq("farmer_id", id).is("deleted_at", null).order("issued_on", { ascending: false }),
         db
           .from("irrigation_invoices")
-          .select("id, payable_amount, paid_amount, due_amount, irrigation_amount, canal_amount, maintenance_amount, other_charge, season_id, land_id, is_borga, calculation_snapshot, seasons(name,year,type), lands(id, mouza, dag_no, land_size, owner_type, field_type, land_type_id, patwari_id, patwaris(name,name_bn))")
+          .select("id, payable_amount, paid_amount, due_amount, irrigation_amount, canal_amount, maintenance_amount, other_charge, season_id, land_id, is_borga, calculation_snapshot, seasons(name,year,type), lands(id, mouza, mouzas(name_bn,name), dag_no, land_size, owner_type, field_type, land_type_id, patwari_id, patwaris(name,name_bn))")
           .eq("farmer_id", id)
           .is("deleted_at", null)
           .order("generated_at", { ascending: false }),
@@ -112,7 +113,7 @@ export default function FarmerProfileReport() {
         const billedArea = Number(snap?.billed_area_shotok ?? snap?.land_size_shotok ?? row.lands?.land_size ?? 0);
         return {
           id: row.id,
-          mouza: safeText(row.lands?.mouza),
+          mouza: safeText(resolveMouzaName(row.lands) || row.lands?.mouza),
           season: row.seasons?.name ? `${safeText(row.seasons.name)}, ${safeText(row.seasons.year)}` : "",
           dag_no: safeText(row.lands?.dag_no),
           owner_type: ownerTypeText,

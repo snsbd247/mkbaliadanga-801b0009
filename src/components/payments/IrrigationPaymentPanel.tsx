@@ -1,3 +1,4 @@
+import { resolveMouzaName } from "@/lib/mouzaQuery";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { db } from "@/lib/db";
@@ -42,7 +43,7 @@ import { buildIrrigationLedgerRows, buildIrrigationPostingLines, irrigationJourn
 
 // Shared select for open irrigation invoices (used by both initial load and reload).
 const OPEN_INVOICE_SELECT =
-  "id,invoice_no,season_id,office_id,land_id,owner_farmer_id,is_borga,due_date,due_amount,paid_amount,payable_amount,irrigation_amount,delay_fee,maintenance_amount,canal_amount,other_charge,season_rate,land_type_name,irrigation_category_name,invoice_status,deleted_at,seasons(name,year,status),lands(mouza,land_size,dag_no,field_type,notes,patwari_id),owner:farmers!irrigation_invoices_owner_farmer_id_fkey(name_bn,name_en,member_no,farmer_code,account_number,voter_number,savings_inactive,is_voter)";
+  "id,invoice_no,season_id,office_id,land_id,owner_farmer_id,is_borga,due_date,due_amount,paid_amount,payable_amount,irrigation_amount,delay_fee,maintenance_amount,canal_amount,other_charge,season_rate,land_type_name,irrigation_category_name,invoice_status,deleted_at,seasons(name,year,status),lands(mouza,mouzas(name_bn,name),land_size,dag_no,field_type,notes,patwari_id),owner:farmers!irrigation_invoices_owner_farmer_id_fkey(name_bn,name_en,member_no,farmer_code,account_number,voter_number,savings_inactive,is_voter)";
 
 
 type Invoice = {
@@ -1096,7 +1097,7 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
                         {(inv.owner?.name_bn || inv.owner?.name_en || "—")}
                         {inv.is_borga && <Badge variant="outline" className="ml-1 text-[9px] px-1 py-0">{tx("Borga", "বর্গা")}</Badge>}
                       </TableCell>
-                      <TableCell className="text-xs">{inv.lands?.mouza || "—"}</TableCell>
+                      <TableCell className="text-xs">{resolveMouzaName(inv.lands) || "—"}</TableCell>
                       <TableCell className="text-right font-mono text-xs">{inv.lands?.land_size ?? "—"}</TableCell>
                       <TableCell className="text-xs">{inv.seasons?.name} {inv.seasons?.year}</TableCell>
                       <TableCell className="text-right font-mono text-xs">{money(inv.irrigation_amount)}</TableCell>

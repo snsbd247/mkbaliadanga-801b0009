@@ -1,3 +1,4 @@
+import { resolveMouzaName } from "@/lib/mouzaQuery";
 import { useEffect, useMemo, useState } from "react";
 import { db } from "@/lib/db";
 import { PageHeader } from "@/components/layout/PageHeader";
@@ -86,7 +87,7 @@ export default function IrrigationDueReport() {
       let q = db.from("irrigation_invoices").select(
         "farmer_id,land_id,season_id,payable_amount,paid_amount,due_amount,office_id,generated_at,due_date," +
         "farmers!irrigation_invoices_farmer_id_fkey(name_en,name_bn,farmer_code,father_name,village,mobile)," +
-        "lands(mouza,dag_no,dag_numbers,land_size,patwari_id,patwaris(name,name_bn),owner:farmers!lands_owner_farmer_id_fkey(name_en,name_bn,farmer_code,father_name,village,mobile))," +
+        "lands(mouza,mouzas(name_bn,name),dag_no,dag_numbers,land_size,patwari_id,patwaris(name,name_bn),owner:farmers!lands_owner_farmer_id_fkey(name_en,name_bn,farmer_code,father_name,village,mobile))," +
         "seasons(name,year,type)"
       ).is("deleted_at", null).neq("invoice_status", "cancelled").limit(10000);
       if (officeId !== "all") q = q.eq("office_id", officeId);
@@ -116,8 +117,8 @@ export default function IrrigationDueReport() {
           village: r.farmers?.village ?? "",
           mobile: r.farmers?.mobile ?? "",
           land_id: r.land_id,
-          land_label: [r.lands?.mouza, dag ? `Dag ${dag}` : null, r.lands?.land_size != null ? formatLandSize(r.lands.land_size, "short") : null].filter(Boolean).join(" • ") || "—",
-          mouza: r.lands?.mouza ?? "",
+          land_label: [resolveMouzaName(r.lands) || r.lands?.mouza, dag ? `Dag ${dag}` : null, r.lands?.land_size != null ? formatLandSize(r.lands.land_size, "short") : null].filter(Boolean).join(" • ") || "—",
+          mouza: resolveMouzaName(r.lands) || "",
           dag,
           patwari_id: r.lands?.patwari_id ?? null,
           patwari_name: pw ? (pw.name_bn || pw.name) : "—",
