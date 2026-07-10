@@ -262,6 +262,7 @@ const App = () => (
                 <Route path="/farmers" element={<RequirePerm module="farmers"><Farmers /></RequirePerm>} />
                 <Route path="/admin/farmer-merge" element={<RequireRole roles={["admin","super_admin"]}><FarmerMerge /></RequireRole>} />
                 <Route path="/admin/deleted-farmers" element={<RequireRole roles={["super_admin"]}><DeletedFarmers /></RequireRole>} />
+                <Route path="/admin/mouza-data-health" element={<RequireRole roles={["admin","super_admin"]}><MouzaDataHealth /></RequireRole>} />
                 <Route path="/voters" element={<RequirePerm module="farmers"><VoterList /></RequirePerm>} />
                 <Route path="/farmers/:id" element={<RequirePerm module="farmers"><FarmerDetail /></RequirePerm>} />
                 <Route path="/farmers/:id/report" element={<RequirePerm module="farmers"><FarmerProfileReport /></RequirePerm>} />
