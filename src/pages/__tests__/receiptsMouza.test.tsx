@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
+import { TooltipProvider } from "@/components/ui/tooltip";
 
 /**
  * Integration test: Mouza names must appear on the Receipts page,
@@ -60,7 +61,7 @@ describe("Receipts page mouza rendering", () => {
   beforeEach(() => vi.clearAllMocks());
 
   it("shows the mouza name resolved through lands.mouza_id -> mouzas", async () => {
-    render(<Receipts />);
+    render(<TooltipProvider><Receipts /></TooltipProvider>);
     await waitFor(() => expect(screen.getByText("চরপাড়া")).toBeInTheDocument());
   });
 });
