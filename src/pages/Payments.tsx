@@ -44,6 +44,7 @@ import { useReceiptRenderArgs } from "@/lib/receiptOptions";
 import { useBranding } from "@/lib/branding";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { IrrigationPaymentPanel } from "@/components/payments/IrrigationPaymentPanel";
+import { SechBankDepositButton } from "@/components/payments/SechBankDepositButton";
 import { findRecentDuplicatePayment } from "@/lib/duplicatePaymentCheck";
 import { buildIrrigationReceiptEnrichment } from "@/lib/irrigationReceiptData";
 import { buildPaymentReceiptData } from "@/lib/buildPaymentReceiptData";
