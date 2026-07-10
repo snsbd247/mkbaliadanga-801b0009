@@ -9,9 +9,11 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { FileDown, RefreshCw, Droplets } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { FileDown, RefreshCw, Droplets, FileSpreadsheet, Printer, ExternalLink } from "lucide-react";
+import { Link } from "react-router-dom";
 import { money, fmtDate } from "@/lib/format";
-import { exportTablePDF } from "@/lib/exports";
+import { exportTablePDF, exportExcel } from "@/lib/exports";
 import { useLang } from "@/i18n/LanguageProvider";
 import { isSechStream } from "@/lib/cashStreamGuard";
 
