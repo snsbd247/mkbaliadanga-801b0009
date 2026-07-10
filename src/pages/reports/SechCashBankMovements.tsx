@@ -76,7 +76,7 @@ export default function SechCashBankMovements() {
         sb.from("system_audit_logs").select("*").eq("module", "bank_transaction").order("created_at", { ascending: false }).limit(500),
         sb.from("journal_entries").select("id,entry_date,reference,description,journal_entry_lines(debit,credit,description,account:accounts(code,name,name_bn))").like("reference", "BANK-CASH-%").is("deleted_at", null).order("entry_date", { ascending: false }).limit(300),
         sb.from("offices").select("id,name"),
-        sb.from("profiles").select("id,full_name,user_id"),
+        sb.from("profiles").select("id,full_name"),
       ]);
       setAudit(audRes.data ?? []);
       setJournals(jRes.data ?? []);
