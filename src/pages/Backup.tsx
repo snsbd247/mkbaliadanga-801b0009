@@ -358,18 +358,22 @@ export default function Backup() {
     setProgress(0);
     try {
       const wb = XLSX.utils.book_new();
+      const used = new Set<string>();
+      const names = await fetchAllTableNames();
+      const labelByName = new Map(TABLES.map((t) => [t.name, t.label] as const));
       let i = 0;
-      for (const t of TABLES) {
+      for (const name of names) {
         try {
-          const rows = await fetchAll(t.name);
+          const rows = await fetchAll(name);
           const ws = XLSX.utils.json_to_sheet(rows.length ? rows : [{ note: "empty" }]);
-          XLSX.utils.book_append_sheet(wb, ws, t.label.slice(0, 31));
+          const sheet = uniqueSheetName(labelByName.get(name) ?? name, used);
+          XLSX.utils.book_append_sheet(wb, ws, sheet);
         } catch (e: any) {
           // skip restricted tables silently
-          console.warn("skip", t.name, e.message);
+          console.warn("skip", name, e.message);
         }
         i++;
-        setProgress(Math.round((i / TABLES.length) * 100));
+        setProgress(Math.round((i / names.length) * 100));
       }
       XLSX.writeFile(wb, `cooperative-backup-${new Date().toISOString().slice(0, 10)}.xlsx`);
       toast.success(t("fullBackupDownloaded"));
@@ -380,6 +384,7 @@ export default function Backup() {
       setProgress(0);
     }
   }
+
 
   return (
     <>
