@@ -16,12 +16,13 @@ import { db } from "@/lib/db";
  */
 
 /** Embed fragment for selecting a land row together with its mouza name. */
-export const LAND_MOUZA_FIELDS = "dag_no,land_size,mouza,notes,mouzas(name)";
+export const LAND_MOUZA_FIELDS = "dag_no,land_size,mouza,notes,mouzas(name_bn,name)";
 
 /** Full `lands(...)` embed for invoice/payment queries. */
 export const LANDS_EMBED = `lands(${LAND_MOUZA_FIELDS})`;
 
-type MouzaRelation = { name?: string | null } | { name?: string | null }[] | null | undefined;
+type MouzaObj = { name?: string | null; name_bn?: string | null };
+type MouzaRelation = MouzaObj | MouzaObj[] | null | undefined;
 
 export type LandLike = {
   mouza?: string | null;
@@ -34,7 +35,7 @@ export type RowWithLand = { lands?: LandLike } | null | undefined;
 function relationName(rel: MouzaRelation): string {
   if (!rel) return "";
   const obj = Array.isArray(rel) ? rel[0] : rel;
-  return (obj?.name ?? "").toString().trim();
+  return ((obj?.name_bn ?? "") || (obj?.name ?? "")).toString().trim();
 }
 
 /** Resolve a mouza name from a land row, preferring the joined relation. */
