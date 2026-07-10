@@ -203,9 +203,8 @@ Deno.serve(async (req) => {
       totalRows += rows.length;
     }
 
-    sql += `COMMIT;\n`;
-    sql += `SET session_replication_role = 'origin';\n`;
     sql += `-- Done. Total rows: ${totalRows}\n`;
+
 
     const filename = `lovable-backup-${
       new Date().toISOString().replace(/[:.]/g, "-")
