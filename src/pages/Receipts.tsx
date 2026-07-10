@@ -43,6 +43,7 @@ export default function Receipts() {
   const [loading, setLoading] = useState(true);
   const [list, setList] = useState<any[]>([]);
   const [mouzaByPayment, setMouzaByPayment] = useState<Record<string, string>>({});
+  const [mouzaNamesByPayment, setMouzaNamesByPayment] = useState<Record<string, string[]>>({});
   const [preview, setPreview] = useState<{ data: BnReceiptData; copy: ReceiptCopy } | null>(null);
   const [editPayment, setEditPayment] = useState<any | null>(null);
 
