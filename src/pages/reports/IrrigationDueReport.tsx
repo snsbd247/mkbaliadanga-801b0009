@@ -17,6 +17,7 @@ import { formatDagNumbers } from "@/lib/dagNumbers";
 import { useAuth } from "@/auth/AuthProvider";
 import { useLang } from "@/i18n/LanguageProvider";
 import { isLaravelBackend } from "@/lib/backend";
+import { SearchableSelect } from "@/components/SearchableSelect";
 
 type Row = {
   farmer_id: string;
@@ -294,49 +295,42 @@ export default function IrrigationDueReport() {
           {isSuper && (
             <div>
               <Label>{t("office")}</Label>
-              <Select value={officeId} onValueChange={setOfficeId}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">{t("allOffices")}</SelectItem>
-                  {offices.map((o) => <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>)}
-                </SelectContent>
-              </Select>
+              <SearchableSelect
+                value={officeId}
+                onChange={setOfficeId}
+                placeholder={t("allOffices")}
+                options={[{ value: "all", label: t("allOffices") }, ...offices.map((o) => ({ value: o.id, label: o.name }))]}
+              />
             </div>
           )}
           <div>
             <Label>{t("season")}</Label>
-            <Select value={seasonId} onValueChange={setSeasonId}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">{t("allSeasons")}</SelectItem>
-                {seasons.map((s) => (
-                  <SelectItem key={s.id} value={s.id}>{s.name ?? s.type} {s.year}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <SearchableSelect
+              value={seasonId}
+              onChange={setSeasonId}
+              placeholder={t("allSeasons")}
+              options={[{ value: "all", label: t("allSeasons") }, ...seasons.map((s) => ({ value: s.id, label: `${s.name ?? s.type} ${s.year}` }))]}
+            />
           </div>
           <div>
             <Label>{tx("Patwari", "পাটুয়ারি")}</Label>
-            <Select value={patwariId} onValueChange={setPatwariId}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">{tx("All patwaris", "সকল পাটুয়ারি")}</SelectItem>
-                {patwaris.map((p) => <SelectItem key={p.id} value={p.id}>{p.name_bn || p.name}</SelectItem>)}
-              </SelectContent>
-            </Select>
+            <SearchableSelect
+              value={patwariId}
+              onChange={setPatwariId}
+              placeholder={tx("All patwaris", "সকল পাটুয়ারি")}
+              options={[{ value: "all", label: tx("All patwaris", "সকল পাটুয়ারি") }, ...patwaris.map((p) => ({ value: p.id, label: p.name_bn || p.name }))]}
+            />
           </div>
           <div>
             <Label>{tx("Farmer", "কৃষক")}</Label>
-            <Select value={farmerId} onValueChange={setFarmerId}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent className="max-h-72">
-                <SelectItem value="all">{tx("All farmers", "সকল কৃষক")}</SelectItem>
-                {farmers.map((f) => (
-                  <SelectItem key={f.id} value={f.id}>{f.farmer_code} — {f.name_bn || f.name_en}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <SearchableSelect
+              value={farmerId}
+              onChange={setFarmerId}
+              placeholder={tx("All farmers", "সকল কৃষক")}
+              options={[{ value: "all", label: tx("All farmers", "সকল কৃষক") }, ...farmers.map((f) => ({ value: f.id, label: `${f.farmer_code} — ${f.name_bn || f.name_en}` }))]}
+            />
           </div>
+
           <div>
             <Label>{tx("Generated from", "তৈরি হয়েছে (থেকে)")}</Label>
             <Input type="date" value={genFrom} onChange={(e) => setGenFrom(e.target.value)} />
