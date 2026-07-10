@@ -22,6 +22,7 @@ import { EditReceiptDialog } from "@/components/receipts/EditReceiptDialog";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 import { downloadBnReceiptPdf, type ReceiptCopy, type BnReceiptData } from "@/lib/bnReceipts";
 import { buildPaymentReceiptData } from "@/lib/buildPaymentReceiptData";
+import { resolveMouzaName } from "@/lib/mouzaQuery";
 import { useReceiptRenderArgs } from "@/lib/receiptOptions";
 import { useBranding } from "@/lib/branding";
 import { logAudit } from "@/lib/audit";
