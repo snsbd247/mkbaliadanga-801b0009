@@ -17,10 +17,14 @@ Deno.serve(async (req) => {
   const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
   const CRON_SECRET = Deno.env.get("CRON_SECRET");
 
-  // Authorize: cron secret header only (server-to-server).
-  if (!CRON_SECRET || req.headers.get("x-cron-secret") !== CRON_SECRET) {
-    return new Response(JSON.stringify({ error: "Unauthorized" }), {
-      status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+  // Inbound is unauthenticated (called by pg_cron with the anon key). This is
+  // safe because the function only ever CREATES a retention-pruned backup, and
+  // only when a schedule is enabled AND the configured interval has elapsed
+  // (see the enabled + not_due gating below). The internal db-export call is
+  // still authorized server-side via CRON_SECRET from this function's own env.
+  if (!CRON_SECRET) {
+    return new Response(JSON.stringify({ error: "CRON_SECRET not configured" }), {
+      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
 
