@@ -105,23 +105,23 @@ export default function ReceiptMouzaDebug() {
             <TableBody>
               {loading ? (
                 Array.from({ length: 6 }).map((_, i) => (
-                  <TableRow key={i}><TableCell colSpan={6}><Skeleton className="h-6 w-full" /></TableCell></TableRow>
+                  <TableRow key={i}><TableCell colSpan={7}><Skeleton className="h-6 w-full" /></TableCell></TableRow>
                 ))
               ) : filtered.length === 0 ? (
-                <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-6">{tx("No irrigation receipts", "কোনো সেচ রশিদ নেই")}</TableCell></TableRow>
+                <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-6">{tx("No irrigation receipts", "কোনো সেচ রশিদ নেই")}</TableCell></TableRow>
               ) : (
                 filtered.map((r) => (
                   <TableRow key={r.id} className={mouza && !r.matches ? "opacity-50" : ""}>
                     <TableCell>{r.receipt_no ?? "—"}</TableCell>
                     <TableCell>{r.farmer}</TableCell>
                     <TableCell>{r.resolved || "—"}</TableCell>
+                    <TableCell className="font-mono text-xs">{r.mouzaId ?? "—"}</TableCell>
                     <TableCell className="text-xs">{r.variants.join(" · ") || "—"}</TableCell>
                     <TableCell>
                       <Badge variant={r.source === "none" ? "destructive" : r.source === "farmer-land" || r.source === "farmer-invoice" ? "secondary" : "outline"}>
                         {r.source}
                       </Badge>
                     </TableCell>
-                    <TableCell className="font-mono text-xs">{r.mouzaId ?? "—"}</TableCell>
                     <TableCell>{mouza ? (r.matches ? "✅" : "—") : "—"}</TableCell>
                   </TableRow>
                 ))
