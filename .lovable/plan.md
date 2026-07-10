@@ -1,34 +1,40 @@
-# সেচ ক্যাশ ↔ ব্যাংক ট্রান্সফার — Plan
+# সেচ ক্যাশ↔ব্যাংক + ব্যাকআপ/রিস্টোর উন্নয়ন
 
-বর্তমান সিস্টেমে ইতিমধ্যে যা আছে: `bank_transactions`-এ deposit/withdraw, স্ট্রিম-ভিত্তিক ক্যাশবুক লিংকিং (`cashbookStreamForAccount`), স্ট্রিম-লক, এবং `logAudit`। এই ভিত্তির উপর ৪টি ফিচার যোগ করা হবে।
+Eight features, built in order. Group A = Sech cash↔bank (items 1–4), Group B = backup/restore (items 5–8). All changes stay additive so no existing module breaks.
 
-## 1. দ্রুত ব্যাংক জমা/উত্তোলন বাটন
-- **কোথায়:** `src/pages/BankAccounts.tsx`-এ একটি নতুন "সেচ ক্যাশ ব্যাংকে জমা" কুইক-অ্যাকশন কার্ড/বাটন। (ইনভয়েস পেমেন্ট স্ক্রিনে প্রতি-পেমেন্ট অটো-ট্রান্সফার করলে প্রতিটি ছোট নগদ আলাদা ব্যাংক লেনদেন তৈরি করবে যা বাস্তবে অবাঞ্ছিত — তাই একত্রে "আজকের সেচ নগদ ব্যাংকে জমা" বাটন বেশি উপযোগী।)
-- একটি হেল্পার (`buildSechDepositTx`) যা নির্বাচিত সেচ ব্যাংক অ্যাকাউন্ট + পরিমাণ নিয়ে বিদ্যমান `saveTxn` লজিক পুনঃব্যবহার করে deposit/withdraw সারি ও মিরর করা ক্যাশবুক সারি তৈরি করবে।
+## Group A — Sech cash ↔ bank
 
-## 2. স্ট্রিম ভ্যালিডেশন
-- নতুন pure হেল্পার `src/lib/cashStreamGuard.ts`: `assertSechTransfer(account)` — অ্যাকাউন্টের `stream` `sech`/`sech_small` না হলে ব্লক করে বাংলা এরর ফেরত দেয়।
-- কুইক-জমা/উত্তোলন ও (ঐচ্ছিকভাবে) ট্রান্সফারে এই গার্ড প্রয়োগ; ভুল স্ট্রিম হলে toast এরর ও সেভ বন্ধ।
-- Unit test দিয়ে গার্ড যাচাই।
+**1. One-click Sech deposit/withdraw from payment**
+- On the irrigation payment surface (`IrrigationInvoices.tsx` / `Payments.tsx`), add a "সেচ নগদ ব্যাংকে জমা" button that opens a small confirm dialog (amount + target Sech bank account, pre-filled from the day's collected cash).
+- On confirm, reuse the existing `saveTxn` + `postBankCashTransfer` path in `BankAccounts.tsx` — extract that logic into a shared helper `src/lib/sechBankTransfer.ts` so both pages call the same guarded flow (`assertSechTransfer`). No auto-post without confirmation.
 
-## 3. সেচ ক্যাশ ও ব্যাংক মুভমেন্ট রিপোর্ট (তারিখ রেঞ্জ + PDF)
-- নতুন পেজ `src/pages/reports/SechCashBankMovements.tsx` (route `/reports/sech-cash-bank`)।
-- ইনপুট: from/to তারিখ (ডিফল্ট চলতি অর্থবছর)।
-- দেখাবে: সেচ ওপেনিং ক্যাশ, সেচ আয়/খরচ, ব্যাংকে জমা, ব্যাংক থেকে উত্তোলন, ক্লোজিং ক্যাশ-ইন-হ্যান্ড (সেচ), এবং সেচ ব্যাংক ব্যালেন্স — বিদ্যমান `computeFinancialSummary`/`financialSummary.ts` লজিক পুনঃব্যবহার করে।
-- লেনদেন তালিকা: তারিখভিত্তিক deposit/withdraw সারি।
-- বিদ্যমান `exportTablePDF` (থেকে `@/lib/exports`) দিয়ে প্রিন্টেবল PDF এক্সপোর্ট বাটন।
-- সাইডবারে Accounting সেকশনে লিংক + পারমিশন গার্ড।
+**2. Excel export for Sech Cash & Bank Movements report**
+- In `SechCashBankMovements.tsx` add an "Excel" button next to the PDF button, using `exportExcel` from `src/lib/exports.ts`.
+- Same date-range filter, same rows, and the same four total lines (deposits, withdrawals, cash-in-hand, bank balance) appended as in `exportPdf`.
 
-## 4. ট্রান্সফার অডিট ট্রেইল + জার্নাল ভিউ
-- ট্রান্সফার/জমা/উত্তোলন ইতিমধ্যে `logAudit` দিয়ে `system_audit_logs`-এ যায়; নিশ্চিত করা হবে প্রতিটি cash↔bank মুভমেন্ট লগ হয়।
-- একই রিপোর্ট পেজে একটি "অডিট ও জার্নাল" ট্যাব: `system_audit_logs` (module `bank_transaction`) + সংশ্লিষ্ট `ledger_entries`/`journal_entries` (Dr/Cr) দেখাবে যাতে reconciliation সহজ হয়।
-- জার্নাল পোস্টিং: deposit → Dr Bank(1020)/Cr Cash(1010); withdraw → উল্টো। বিদ্যমান `accountingPosting.ts` প্যাটার্ন অনুসরণ করে একটি হেল্পার যোগ; ব্যাকফিল ঐচ্ছিক।
+**3. Audit-trail filtering + printable export**
+- Add filters to the Audit tab: date range (reuse `from`/`to`), office, user, and stream (dropdowns populated from loaded data).
+- Add a "প্রিন্ট / PDF" export for the filtered audit rows via `exportTablePDF`.
 
-## টেকনিক্যাল নোট
-- ফ্রন্টএন্ড-কেন্দ্রিক; নতুন DB টেবিল লাগবে না (বিদ্যমান `bank_transactions`, `system_audit_logs`, `ledger_entries` ব্যবহার)।
-- সব নতুন গণনা লজিক pure ফাংশনে রেখে unit test যোগ করা হবে।
-- বাংলা UI, বিদ্যমান ডিজাইন টোকেন ও কম্পোনেন্ট ব্যবহার।
+**4. Improved journal view**
+- Show a per-transfer Dr/Cr summary line (Dr Bank / Cr Cash or reverse) for each journal entry.
+- Make each row link to its source: parse the `reference` (`BANK-CASH-<txnId>`) to jump to the related bank transaction / invoice payment.
 
-## ফাইল
-- নতুন: `src/lib/cashStreamGuard.ts`, `src/pages/reports/SechCashBankMovements.tsx`, টেস্ট।
-- সম্পাদনা: `src/pages/BankAccounts.tsx`, `src/App.tsx`, `src/components/layout/AppSidebar.tsx`, প্রয়োজনে `src/lib/accountingPosting.ts`।
+## Group B — Backup / restore
+
+**5. Post-restore verification**
+- After a restore, call a new lightweight edge action that returns row counts per table (via `pg_tables_public_list` + `count`). Show a table in `Backup.tsx` comparing expected vs actual counts, flagging mismatches red.
+
+**6. Automatic pre-restore snapshot**
+- Before running a restore, `Backup.tsx` first calls `db-export` and downloads/stores the current full SQL as an auto-snapshot ("rollback point"), surfaced with a restore-this-snapshot action.
+
+**7. Real-time restore progress + per-table logs**
+- Split the restore payload table-by-table on the client, send each table's SQL sequentially to `db-restore`, and render a progress bar + per-table status log (ok / rows / error) so a failure shows exactly which table stopped.
+
+**8. Scheduled full SQL backups**
+- Add a `backup_schedules` settings row (frequency + retention) and a `scheduled-backup` edge function invoked by pg_cron; it runs `db-export`, stores the file, and prunes older-than-retention backups.
+
+## Technical notes
+- New files: `src/lib/sechBankTransfer.ts`, `supabase/functions/scheduled-backup/index.ts`; edits to `IrrigationInvoices.tsx`/`Payments.tsx`, `SechCashBankMovements.tsx`, `Backup.tsx`, `db-restore`, `db-export`.
+- DB: one migration for `backup_schedules` (with GRANTs + RLS, developer-only) and a `table_row_counts()` RPC for verification; pg_cron scheduling inserted via the insert tool (contains project URL/anon key).
+- Reuse existing `exports.ts`, `accountingPosting.ts`, `cashStreamGuard.ts`, `exec_sql_admin` — no rewrites of working logic.
