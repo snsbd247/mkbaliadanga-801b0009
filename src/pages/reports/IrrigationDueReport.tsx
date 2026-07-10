@@ -207,6 +207,7 @@ export default function IrrigationDueReport() {
           land_label: [resolvedMouza, dag ? `Dag ${dag}` : null, shatak ? formatLandSize(shatak, "short") : null].filter(Boolean).join(" • ") || "—",
           mouza: resolvedMouza,
           dag,
+          land_type: (() => { const lt = land?.land_type_id ? landTypeById[land.land_type_id] : null; return lt ? (lt.name_bn || lt.name || "") : ""; })(),
           patwari_id: land?.patwari_id ?? null,
           patwari_name: pw ? (pw.name_bn || pw.name) : "—",
           owner_name: own ? (own.name_bn || own.name_en || own.name || "") : "",
