@@ -460,6 +460,30 @@ export default function IrrigationDueReport() {
               <div>{t("dueAmount")}: <span className="font-semibold text-destructive">{money(totals.due)}</span></div>
             </div>
           )}
+          {filtered.length > 0 && (
+            <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <Label className="text-sm">{tx("Rows per page", "প্রতি পেজে")}</Label>
+                <Select value={String(pageSize)} onValueChange={(v) => setPageSize(Number(v))}>
+                  <SelectTrigger className="w-24"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {[100, 200, 500, 1000].map((n) => <SelectItem key={n} value={String(n)}>{n}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex items-center gap-2 text-sm">
+                <span className="text-muted-foreground">
+                  {tx("Page", "পেজ")} {currentPage} / {totalPages}
+                </span>
+                <Button variant="outline" size="sm" disabled={currentPage <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))}>
+                  {tx("Previous", "পূর্ববর্তী")}
+                </Button>
+                <Button variant="outline" size="sm" disabled={currentPage >= totalPages} onClick={() => setPage((p) => Math.min(totalPages, p + 1))}>
+                  {tx("Next", "পরবর্তী")}
+                </Button>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
