@@ -108,6 +108,8 @@ export default function IrrigationDueReport() {
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string>("");
+  const [pageSize, setPageSize] = useState<number>(100);
+  const [page, setPage] = useState<number>(1);
 
   useEffect(() => {
     document.title = t("irrigationDueReport");
@@ -256,6 +258,15 @@ export default function IrrigationDueReport() {
     (a, r) => ({ total: a.total + r.total, paid: a.paid + r.paid, due: a.due + r.due }),
     { total: 0, paid: 0, due: 0 },
   ), [filtered]);
+
+  useEffect(() => { setPage(1); }, [search, onlyDue, pageSize, officeId, seasonId, patwariId, farmerId, genFrom, genTo, dueFrom, dueTo]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+  const currentPage = Math.min(page, totalPages);
+  const paged = useMemo(
+    () => filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize),
+    [filtered, currentPage, pageSize],
+  );
 
   const head = [
     tx("Farmer ID", "কৃষক আইডি"), t("farmer"), tx("Father", "পিতার নাম"), tx("Village", "গ্রাম"), tx("Mobile", "মোবাইল"),
@@ -414,7 +425,7 @@ export default function IrrigationDueReport() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filtered.map((r, i) => (
+              {paged.map((r, i) => (
                 <TableRow key={i}>
                   <TableCell className="text-xs">{r.farmer_code}</TableCell>
                   <TableCell>{r.farmer_name}</TableCell>
@@ -447,6 +458,30 @@ export default function IrrigationDueReport() {
               <div>{t("total")}: <span className="font-semibold">{money(totals.total)}</span></div>
               <div>{t("paid")}: <span className="font-semibold text-success">{money(totals.paid)}</span></div>
               <div>{t("dueAmount")}: <span className="font-semibold text-destructive">{money(totals.due)}</span></div>
+            </div>
+          )}
+          {filtered.length > 0 && (
+            <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <Label className="text-sm">{tx("Rows per page", "প্রতি পেজে")}</Label>
+                <Select value={String(pageSize)} onValueChange={(v) => setPageSize(Number(v))}>
+                  <SelectTrigger className="w-24"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {[100, 200, 500, 1000].map((n) => <SelectItem key={n} value={String(n)}>{n}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex items-center gap-2 text-sm">
+                <span className="text-muted-foreground">
+                  {tx("Page", "পেজ")} {currentPage} / {totalPages}
+                </span>
+                <Button variant="outline" size="sm" disabled={currentPage <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))}>
+                  {tx("Previous", "পূর্ববর্তী")}
+                </Button>
+                <Button variant="outline" size="sm" disabled={currentPage >= totalPages} onClick={() => setPage((p) => Math.min(totalPages, p + 1))}>
+                  {tx("Next", "পরবর্তী")}
+                </Button>
+              </div>
             </div>
           )}
         </CardContent>
