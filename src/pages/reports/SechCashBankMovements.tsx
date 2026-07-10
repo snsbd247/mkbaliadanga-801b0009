@@ -38,6 +38,11 @@ export default function SechCashBankMovements() {
   const [openingCash, setOpeningCash] = useState(0);
   const [audit, setAudit] = useState<any[]>([]);
   const [journals, setJournals] = useState<any[]>([]);
+  const [offices, setOffices] = useState<any[]>([]);
+  const [profiles, setProfiles] = useState<any[]>([]);
+  const [auOffice, setAuOffice] = useState("__all__");
+  const [auUser, setAuUser] = useState("__all__");
+  const [auAction, setAuAction] = useState("__all__");
 
   useEffect(() => { document.title = tx("Sech Cash & Bank Movements", "সেচ নগদ ও ব্যাংক মুভমেন্ট"); }, [lang]);
   useEffect(() => { void load(); /* eslint-disable-next-line */ }, [from, to]);
