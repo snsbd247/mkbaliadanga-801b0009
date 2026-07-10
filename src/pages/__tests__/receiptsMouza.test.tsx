@@ -55,6 +55,8 @@ vi.mock("@/i18n/LanguageProvider", () => ({
   useLang: () => ({ t: (k: string) => k, tx: (_en: string, bn: string) => bn }),
 }));
 
+globalThis.ResizeObserver = class { observe() {} unobserve() {} disconnect() {} } as any;
+
 import Receipts from "../Receipts";
 
 describe("Receipts page mouza rendering", () => {
