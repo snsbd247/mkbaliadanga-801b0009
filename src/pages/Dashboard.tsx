@@ -144,9 +144,11 @@ export default function Dashboard() {
 
     // Hand Cash module month-end: use the latest submitted closing if present;
     // otherwise mirror /hand-cash's current-month closing from receipts-expenses.
+    const prevMonthNo = now.getMonth() === 0 ? 12 : now.getMonth();
+    const prevMonthYear = now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear();
     const [hcLatest, hcPrev, hcReceipts, hcExpenses] = await Promise.all([
       db.from("hand_cash_submissions").select("closing_cash,year,month").order("year", { ascending: false }).order("month", { ascending: false }).limit(1).maybeSingle(),
-      db.from("hand_cash_submissions").select("closing_cash").lt("year", now.getFullYear() + 1).order("year", { ascending: false }).order("month", { ascending: false }).limit(1).maybeSingle(),
+      db.from("hand_cash_submissions").select("closing_cash").eq("year", prevMonthYear).eq("month", prevMonthNo).maybeSingle(),
       db.from("receipts").select("amount,receipt_date").gte("receipt_date", monthStart).lte("receipt_date", today),
       db.from("expenses").select("amount,expense_date").is("deleted_at", null).gte("expense_date", monthStart).lte("expense_date", today),
     ]);
