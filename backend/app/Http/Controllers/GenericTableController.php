@@ -259,6 +259,141 @@ class GenericTableController extends Controller
         });
     }
 
+    /**
+     * Server-side safety net: a bank account's opening balance must appear in the
+     * accounting ledger so the Bank account (1020) shows a real balance in the
+     * Chart of Accounts / Trial Balance. Posts a balanced Dr Bank / Cr Opening
+     * Balance Equity entry. Idempotent on (reference_type='bank_opening', reference_id).
+     */
+    private function ensureBankOpeningPostings(Request $request, array $account): void
+    {
+        $accountRowId = $account['id'] ?? null;
+        $opening = round((float) ($account['opening_balance'] ?? 0), 2);
+        if (! $accountRowId || $opening == 0.0) {
+            return;
+        }
+        if (! Schema::hasTable('ledger_entries')) {
+            return;
+        }
+
+        $bankId = $this->accountId(['1020']);
+        $equityId = $this->accountId(['3000', '3020']);
+        if (! $bankId || ! $equityId) {
+            return;
+        }
+
+        $officeId = $account['office_id'] ?? $request->attributes->get('scope_office_id');
+        $createdBy = optional($request->user())->id;
+        $date = substr((string) ($account['created_at'] ?? now()->format('Y-m-d')), 0, 10);
+        $desc = 'ব্যাংক প্রারম্ভিক জের — ' . (string) ($account['bank_name'] ?? '') . ' ' . (string) ($account['account_no'] ?? '');
+        $now = now();
+
+        DB::transaction(function () use ($accountRowId, $opening, $bankId, $equityId, $officeId, $createdBy, $date, $desc, $now) {
+            $exists = DB::table('ledger_entries')
+                ->where('reference_type', 'bank_opening')
+                ->where('reference_id', $accountRowId)
+                ->exists();
+            if ($exists) return;
+            $debit = $opening >= 0 ? $opening : 0;
+            $credit = $opening >= 0 ? 0 : abs($opening);
+            DB::table('ledger_entries')->insert([
+                [
+                    'id' => (string) Str::uuid(),
+                    'entry_date' => $date,
+                    'account_id' => $bankId,
+                    'debit' => $debit,
+                    'credit' => $credit,
+                    'reference_type' => 'bank_opening',
+                    'reference_id' => $accountRowId,
+                    'description' => $desc,
+                    'office_id' => $officeId,
+                    'created_by' => $createdBy,
+                    'created_at' => $now,
+                ],
+                [
+                    'id' => (string) Str::uuid(),
+                    'entry_date' => $date,
+                    'account_id' => $equityId,
+                    'debit' => $credit,
+                    'credit' => $debit,
+                    'reference_type' => 'bank_opening',
+                    'reference_id' => $accountRowId,
+                    'description' => $desc . ' — মূলধন',
+                    'office_id' => $officeId,
+                    'created_by' => $createdBy,
+                    'created_at' => $now,
+                ],
+            ]);
+        });
+    }
+
+    /**
+     * Post bank transactions to the ledger so the Bank account balance stays in
+     * sync in the Chart of Accounts. Money in = Dr Bank / Cr Cash; money out =
+     * Dr Cash / Cr Bank. Idempotent on (reference_type='bank_transaction', reference_id).
+     */
+    private function ensureBankTransactionPostings(Request $request, array $txn): void
+    {
+        $txnId = $txn['id'] ?? null;
+        $amount = round((float) ($txn['amount'] ?? 0), 2);
+        if (! $txnId || $amount <= 0 || ! Schema::hasTable('ledger_entries')) {
+            return;
+        }
+
+        $bankId = $this->accountId(['1020']);
+        $cashId = $this->accountId(['1010']);
+        if (! $bankId || ! $cashId) {
+            return;
+        }
+
+        $isIn = in_array((string) ($txn['txn_type'] ?? ''), ['deposit', 'transfer_in', 'interest'], true);
+        $officeId = $txn['office_id'] ?? $request->attributes->get('scope_office_id');
+        $createdBy = $txn['created_by'] ?? optional($request->user())->id;
+        $date = substr((string) ($txn['txn_date'] ?? now()->format('Y-m-d')), 0, 10);
+        $desc = 'ব্যাংক লেনদেন — ' . (string) ($txn['txn_type'] ?? '');
+        $now = now();
+
+        DB::transaction(function () use ($txnId, $amount, $bankId, $cashId, $isIn, $officeId, $createdBy, $date, $desc, $now) {
+            $exists = DB::table('ledger_entries')
+                ->where('reference_type', 'bank_transaction')
+                ->where('reference_id', $txnId)
+                ->exists();
+            if ($exists) return;
+            $bankDebit = $isIn ? $amount : 0;
+            $bankCredit = $isIn ? 0 : $amount;
+            DB::table('ledger_entries')->insert([
+                [
+                    'id' => (string) Str::uuid(),
+                    'entry_date' => $date,
+                    'account_id' => $bankId,
+                    'debit' => $bankDebit,
+                    'credit' => $bankCredit,
+                    'reference_type' => 'bank_transaction',
+                    'reference_id' => $txnId,
+                    'description' => $desc,
+                    'office_id' => $officeId,
+                    'created_by' => $createdBy,
+                    'created_at' => $now,
+                ],
+                [
+                    'id' => (string) Str::uuid(),
+                    'entry_date' => $date,
+                    'account_id' => $cashId,
+                    'debit' => $bankCredit,
+                    'credit' => $bankDebit,
+                    'reference_type' => 'bank_transaction',
+                    'reference_id' => $txnId,
+                    'description' => $desc . ' — নগদ',
+                    'office_id' => $officeId,
+                    'created_by' => $createdBy,
+                    'created_at' => $now,
+                ],
+            ]);
+        });
+    }
+
+
+
 
     private function table(string $table): string
     {
