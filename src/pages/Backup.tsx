@@ -138,6 +138,12 @@ export default function Backup() {
   const [sqlRestoreFile, setSqlRestoreFile] = useState<File | null>(null);
   const [sqlConfirmOpen, setSqlConfirmOpen] = useState(false);
   const [sqlResult, setSqlResult] = useState<{ ok: boolean; message: string; durationMs?: number } | null>(null);
+  const [sqlProgress, setSqlProgress] = useState(0);
+  const [restoreLog, setRestoreLog] = useState<{ table: string; status: "ok" | "error" | "running"; rows?: number; error?: string }[]>([]);
+  const [verifyRows, setVerifyRows] = useState<{ tablename: string; expected: number; actual: number }[]>([]);
+  const [autoSnapshot, setAutoSnapshot] = useState<{ url: string; name: string } | null>(null);
+  const [schedule, setSchedule] = useState<any | null>(null);
+  const [schedLoaded, setSchedLoaded] = useState(false);
 
   // ---- Full SQL backup / restore (developer only) ----
   async function downloadFullSql() {
