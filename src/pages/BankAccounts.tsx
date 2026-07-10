@@ -309,14 +309,13 @@ export default function BankAccounts() {
     const acc = accounts.find(x => x.id === sm.bank_account_id);
     const guard = assertSechTransfer(acc);
     if (!guard.ok) return toast.error(guard.message ?? "ভুল স্ট্রিম");
-    setTx({
+    setOpenS(false);
+    await saveTxn({
       bank_account_id: sm.bank_account_id, txn_type: sm.direction, amount: Number(sm.amount),
-      txn_date: sm.txn_date, reference_no: "", note: sm.note || (sm.direction === "deposit" ? "সেচ নগদ ব্যাংকে জমা" : "ব্যাংক থেকে সেচ নগদ উত্তোলন"),
+      txn_date: sm.txn_date, reference_no: "",
+      note: sm.note || (sm.direction === "deposit" ? "সেচ নগদ ব্যাংকে জমা" : "ব্যাংক থেকে সেচ নগদ উত্তোলন"),
       post_cashbook: true,
     });
-    setOpenS(false);
-    // saveTxn reads from `tx`; defer one tick so state is applied.
-    setTimeout(() => { void saveTxn(); }, 0);
     setSm({ bank_account_id: "", direction: "deposit", amount: 0, txn_date: new Date().toISOString().slice(0, 10), note: "" });
   }
 
