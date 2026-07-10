@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
 import { db } from "@/lib/db";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card } from "@/components/ui/card";
@@ -44,8 +43,40 @@ export default function Dashboard() {
 
   const sum = (rows: any[], f: string) => rows.reduce((a, r) => a + Number(r[f] || 0), 0);
 
+  const businessTimeZone = "Asia/Dhaka";
+  const dateKey = (d: Date) => {
+    const parts = new Intl.DateTimeFormat("en-GB", {
+      timeZone: businessTimeZone,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }).formatToParts(d);
+    const y = parts.find((p) => p.type === "year")?.value ?? String(d.getFullYear());
+    const m = parts.find((p) => p.type === "month")?.value ?? String(d.getMonth() + 1).padStart(2, "0");
+    const day = parts.find((p) => p.type === "day")?.value ?? String(d.getDate()).padStart(2, "0");
+    return `${y}-${m}-${day}`;
+  };
+  const paymentDateKey = (p: any) => {
+    const raw = p?.occurred_at ?? p?.created_at;
+    if (!raw) return "";
+    const s = String(raw);
+    // VPS/MySQL stores UTC timestamps as "YYYY-MM-DD HH:mm:ss" without TZ.
+    // Treat that form as UTC, then compare by the user's local calendar day.
+    if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}/.test(s)) {
+      const dt = new Date(`${s.replace(" ", "T")}Z`);
+      if (!Number.isNaN(dt.getTime())) return dateKey(dt);
+    }
+    if (/^\d{4}-\d{2}-\d{2}T/.test(s)) {
+      const dt = new Date(s);
+      if (!Number.isNaN(dt.getTime())) return dateKey(dt);
+    }
+    return s.slice(0, 10);
+  };
+  const isApprovedPayment = (p: any) => (p?.status ?? "approved") === "approved";
+
   async function load() {
-    const today = new Date().toISOString().slice(0, 10);
+    const now = new Date();
+    const today = dateKey(now);
     let voterIds: string[] | null = null;
     if (votersOnly) {
       const { data: vf } = await db.from("farmers").select("id").eq("is_voter", true).is("deleted_at", null);
@@ -72,26 +103,32 @@ export default function Dashboard() {
     const irrData = irrigations.data ?? [];
     const paymentsData = payments.data ?? [];
 
+    const { data: allPaymentsRaw } = await inV(
+      db.from("payments")
+        .select("amount,kind,created_at,occurred_at,status,farmer_id,farmers(name_en,farmer_code)")
+        .is("deleted_at", null),
+    );
+    const allPayments = (allPaymentsRaw ?? []).filter(isApprovedPayment);
+
     const totalSavings = sum(savingsData.filter(s => s.status === "approved" && s.type === "deposit"), "amount") -
                          sum(savingsData.filter(s => s.status === "approved" && s.type === "withdraw"), "amount");
     const loanPaid = (l: any) => (l.loan_payments ?? []).reduce((s: number, p: any) => s + Number(p.amount || 0), 0);
     const loanOutstanding = (l: any) => Math.max(0, Number(l.total_payable || 0) - loanPaid(l));
     const totalLoan = loansData.filter(l => l.status === "approved").reduce((s, l) => s + loanOutstanding(l), 0);
-    const irrCollection = sum(irrData, "paid_amount");
+    const irrCollection = sum(allPayments.filter((p: any) => p.kind === "irrigation"), "amount");
     const irrigationDue = sum(irrData, "due_amount");
     const loanDue = totalLoan;
-    const todayCollect = sum(paymentsData.filter(p => p.created_at?.slice(0, 10) === today), "amount");
+    const todayCollect = sum(allPayments.filter((p: any) => paymentDateKey(p) === today), "amount");
     const monthStart = today.slice(0, 7) + "-01";
-    const now = new Date();
     const prevMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1).toISOString().slice(0, 10);
     const day30Start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 29).toISOString().slice(0, 10);
     const [{ data: monthPayAll }, { data: prevMonthPay }, { data: pay30 }] = await Promise.all([
-      db.from("payments").select("amount,created_at").is("deleted_at", null).gte("created_at", monthStart),
-      db.from("payments").select("amount,created_at").is("deleted_at", null).gte("created_at", prevMonthStart).lt("created_at", monthStart),
-      db.from("payments").select("amount,created_at").is("deleted_at", null).gte("created_at", day30Start),
+      db.from("payments").select("amount,created_at,occurred_at,status").is("deleted_at", null).gte("created_at", monthStart),
+      db.from("payments").select("amount,created_at,occurred_at,status").is("deleted_at", null).gte("created_at", prevMonthStart).lt("created_at", monthStart),
+      db.from("payments").select("amount,created_at,occurred_at,status").is("deleted_at", null).gte("created_at", day30Start),
     ]);
-    const monthCollect = sum(monthPayAll ?? [], "amount");
-    const prevMonthCollect = sum(prevMonthPay ?? [], "amount");
+    const monthCollect = sum((monthPayAll ?? []).filter(isApprovedPayment), "amount");
+    const prevMonthCollect = sum((prevMonthPay ?? []).filter(isApprovedPayment), "amount");
     const momDelta = prevMonthCollect > 0 ? ((monthCollect - prevMonthCollect) / prevMonthCollect) * 100 : null;
     const pendingCount = (pendingW.data?.length ?? 0) + (pendingL.data?.length ?? 0);
 
@@ -101,26 +138,29 @@ export default function Dashboard() {
       .is("deleted_at", null).gte("created_at", monthStart);
     const activeLoanCount = loansData.filter((l: any) => l.status === "approved").length;
 
-    // Hand Cash — Irrigation (1011) & Savings (1012) running balance from ledger
-    const { data: cashAccts } = await db.from("accounts").select("id,code").in("code", ["1011", "1012"]);
-    const irrAcctId = cashAccts?.find((a: any) => a.code === "1011")?.id;
-    const savAcctId = cashAccts?.find((a: any) => a.code === "1012")?.id;
-    const [irrLedger, savLedger] = await Promise.all([
-      irrAcctId ? db.from("ledger_entries").select("debit,credit").eq("account_id", irrAcctId) : Promise.resolve({ data: [] as any[] }),
-      savAcctId ? db.from("ledger_entries").select("debit,credit").eq("account_id", savAcctId) : Promise.resolve({ data: [] as any[] }),
-    ]);
-    const irrCashBal = (irrLedger.data ?? []).reduce((a: number, r: any) => a + Number(r.debit || 0) - Number(r.credit || 0), 0);
-    const savCashBal = (savLedger.data ?? []).reduce((a: number, r: any) => a + Number(r.debit || 0) - Number(r.credit || 0), 0);
+    // Hand Cash — prefer split cash accounts (1011/1012); older installs only
+    // have 1010, so fall back to it instead of showing a misleading zero.
+    const { data: cashAccts } = await db.from("accounts").select("id,code").in("code", ["1010", "1011", "1012"]);
+    const splitIds = (cashAccts ?? []).filter((a: any) => a.code === "1011" || a.code === "1012").map((a: any) => a.id);
+    const fallbackId = (cashAccts ?? []).find((a: any) => a.code === "1010")?.id;
+    const cashAccountIds = splitIds.length ? splitIds : (fallbackId ? [fallbackId] : []);
+    const { data: cashLedger } = cashAccountIds.length
+      ? await db.from("ledger_entries").select("debit,credit,account_id").in("account_id", cashAccountIds)
+      : { data: [] as any[] };
+    const handCashBalance = (cashLedger ?? []).reduce((a: number, r: any) => a + Number(r.debit || 0) - Number(r.credit || 0), 0);
 
-    // Hand Cash module — latest submitted month's closing cash
-    const { data: hcSub } = await (supabase as any)
-      .from("hand_cash_submissions")
-      .select("closing_cash,year,month")
-      .order("year", { ascending: false })
-      .order("month", { ascending: false })
-      .limit(1)
-      .maybeSingle();
-    const handCashClosing = hcSub ? Number(hcSub.closing_cash || 0) : 0;
+    // Hand Cash module month-end: use the latest submitted closing if present;
+    // otherwise mirror /hand-cash's current-month closing from receipts-expenses.
+    const prevMonthNo = now.getMonth() === 0 ? 12 : now.getMonth();
+    const prevMonthYear = now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear();
+    const [hcLatest, hcPrev, hcReceipts, hcExpenses] = await Promise.all([
+      db.from("hand_cash_submissions").select("closing_cash,year,month").order("year", { ascending: false }).order("month", { ascending: false }).limit(1).maybeSingle(),
+      db.from("hand_cash_submissions").select("closing_cash").eq("year", prevMonthYear).eq("month", prevMonthNo).maybeSingle(),
+      db.from("receipts").select("amount,receipt_date").gte("receipt_date", monthStart).lte("receipt_date", today),
+      db.from("expenses").select("amount,expense_date").is("deleted_at", null).gte("expense_date", monthStart).lte("expense_date", today),
+    ]);
+    const computedMonthClosing = Number((hcPrev.data as any)?.closing_cash || 0) + sum(hcReceipts.data ?? [], "amount") - sum(hcExpenses.data ?? [], "amount");
+    const handCashClosing = hcLatest.data ? Number((hcLatest.data as any).closing_cash || 0) : computedMonthClosing;
 
     const farmersList = votersOnly ? farmersData.filter((f: any) => f.is_voter) : farmersData;
     setStats([
@@ -137,8 +177,8 @@ export default function Dashboard() {
       { label: t("thisMonthCollection"), value: money(monthCollect), icon: CalendarClock, delta: momDelta, href: "/payments?period=this_month" },
       { label: lang === "bn" ? "সেচের বাকি" : "Irrigation Due", value: money(irrigationDue), icon: Droplets, tone: "danger", href: "/reports/irrigation-due" },
       
-      { label: lang === "bn" ? "হাতে নগদ" : "Hand Cash", value: money(irrCashBal + savCashBal), icon: Banknote, tone: "success", href: "/hand-cash" },
-      { label: lang === "bn" ? "হ্যান্ড ক্যাশ (মাস শেষ)" : "Hand Cash (Month-end)", value: money(handCashClosing), icon: Banknote, tone: "success", href: "/hand-cash" },
+      { label: lang === "bn" ? "হাতে নগদ" : "Hand Cash", value: money(handCashBalance), icon: Banknote, tone: handCashBalance < 0 ? "danger" : "success", href: "/hand-cash" },
+      { label: lang === "bn" ? "হ্যান্ড ক্যাশ (মাস শেষ)" : "Hand Cash (Month-end)", value: money(handCashClosing), icon: Banknote, tone: handCashClosing < 0 ? "danger" : "success", href: "/hand-cash" },
       { label: t("pendingApprovals"), value: String(pendingCount), icon: AlertTriangle, tone: pendingCount > 0 ? "warn" : "default", href: "/approvals" },
     ]);
 
@@ -146,11 +186,11 @@ export default function Dashboard() {
     const days: { label: string; key: string; value: number }[] = [];
     for (let i = 29; i >= 0; i--) {
       const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() - i);
-      const key = d.toISOString().slice(0, 10);
+      const key = dateKey(d);
       days.push({ key, label: `${d.getDate()}/${d.getMonth() + 1}`, value: 0 });
     }
-    (pay30 ?? []).forEach((p: any) => {
-      const k = (p.created_at as string).slice(0, 10);
+    ((pay30 ?? []).filter(isApprovedPayment)).forEach((p: any) => {
+      const k = paymentDateKey(p);
       const d = days.find(x => x.key === k); if (d) d.value += Number(p.amount || 0);
     });
     setDaily30(days);
@@ -172,12 +212,12 @@ export default function Dashboard() {
     }
     const fromIso = new Date(now.getFullYear(), now.getMonth() - 5, 1).toISOString().slice(0, 10);
     const [pAll, eAll, sAll] = await Promise.all([
-      db.from("payments").select("amount,created_at").is("deleted_at", null).gte("created_at", fromIso),
+      db.from("payments").select("amount,created_at,occurred_at,status").is("deleted_at", null).gte("created_at", fromIso),
       db.from("expenses").select("amount,expense_date").is("deleted_at", null).gte("expense_date", fromIso),
       db.from("savings_transactions").select("type,amount,txn_date,status").is("deleted_at", null).eq("status", "approved").gte("txn_date", fromIso),
     ]);
-    (pAll.data ?? []).forEach((p: any) => {
-      const m = months.find(x => x.key === p.created_at.slice(0, 7)); if (m) m.income += Number(p.amount || 0);
+    (pAll.data ?? []).filter(isApprovedPayment).forEach((p: any) => {
+      const m = months.find(x => x.key === paymentDateKey(p).slice(0, 7)); if (m) m.income += Number(p.amount || 0);
     });
     (eAll.data ?? []).forEach((e: any) => {
       const m = months.find(x => x.key === e.expense_date.slice(0, 7)); if (m) m.expense += Number(e.amount || 0);
@@ -218,7 +258,7 @@ export default function Dashboard() {
         .is("deleted_at", null).eq("status", "approved").eq("type", "deposit")
         .gte("txn_date", monthIso),
       db.from("payments")
-        .select("farmer_id,farmers(name_en,farmer_code)")
+        .select("farmer_id,status,farmers(name_en,farmer_code)")
         .is("deleted_at", null).gte("created_at", monthIso),
     ]);
     const depMap = new Map<string, { name: string; code: string; total: number }>();
@@ -231,7 +271,7 @@ export default function Dashboard() {
     setTopDepositor(topDep);
 
     const txCountMap = new Map<string, { name: string; code: string; count: number }>();
-    (mPays ?? []).forEach((r: any) => {
+    ((mPays ?? []).filter(isApprovedPayment)).forEach((r: any) => {
       if (!r.farmer_id) return;
       const cur = txCountMap.get(r.farmer_id) ?? { name: r.farmers?.name_en ?? "—", code: r.farmers?.farmer_code ?? "—", count: 0 };
       cur.count += 1; txCountMap.set(r.farmer_id, cur);
