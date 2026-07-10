@@ -60,7 +60,7 @@ export default function OpeningDueReport() {
     (async () => {
       let q = db.from("irrigation_invoices").select(
         "invoice_no,season_id,land_id,previous_due_amount,delay_fee,payable_amount,paid_amount,due_amount," +
-        "lands(mouza,dag_no,dag_numbers,land_size,owner:farmers!lands_owner_farmer_id_fkey(name_en,name_bn,farmer_code))," +
+        "lands(mouza,mouzas(name_bn,name),dag_no,dag_numbers,land_size,owner:farmers!lands_owner_farmer_id_fkey(name_en,name_bn,farmer_code))," +
         "seasons(name,year)"
       ).like("invoice_no", "OPEN-%").is("deleted_at", null);
       if (seasonId !== "all") q = q.eq("season_id", seasonId);

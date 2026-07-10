@@ -379,7 +379,7 @@ export default function FarmerDetail() {
     // Outstanding from new irrigation_invoices (replaces legacy irrigation_charges total)
     const inv = await db
       .from("irrigation_invoices")
-      .select("*, farmers!irrigation_invoices_farmer_id_fkey(name_bn,name_en,farmer_code,mobile,village), lands(mouza,dag_no,land_size), seasons(name,year,type)")
+      .select("*, farmers!irrigation_invoices_farmer_id_fkey(name_bn,name_en,farmer_code,mobile,village), lands(mouza,mouzas(name_bn,name),dag_no,land_size), seasons(name,year,type)")
       .eq("farmer_id", id!)
       .is("deleted_at", null);
     if (inv.error) console.error("irrigation_invoices fetch error:", inv.error);
@@ -552,7 +552,7 @@ export default function FarmerDetail() {
       if (allocIds.length) {
         const { data } = await db
           .from("irrigation_invoices")
-          .select("id,invoice_no,irrigation_amount,maintenance_amount,canal_amount,delay_fee,due_amount,discount_amount,season_rate,is_borga,note,seasons(name,year,status),land_type_name,irrigation_category_name,lands(mouza,dag_no,land_size,field_type,land_type_id,owner_type,owner_farmer_id,notes,patwaris(name,name_bn,mobile),owner:farmers!lands_owner_farmer_id_fkey(name_bn,name_en,member_no,farmer_code,account_number,voter_number,savings_inactive,is_voter))")
+          .select("id,invoice_no,irrigation_amount,maintenance_amount,canal_amount,delay_fee,due_amount,discount_amount,season_rate,is_borga,note,seasons(name,year,status),land_type_name,irrigation_category_name,lands(mouza,mouzas(name_bn,name),dag_no,land_size,field_type,land_type_id,owner_type,owner_farmer_id,notes,patwaris(name,name_bn,mobile),owner:farmers!lands_owner_farmer_id_fkey(name_bn,name_en,member_no,farmer_code,account_number,voter_number,savings_inactive,is_voter))")
           .in("id", allocIds);
         invoiceRows = data ?? [];
       }

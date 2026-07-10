@@ -43,7 +43,7 @@ export default function IrrigationReports() {
     setLoading(true);
     let q = db
       .from("irrigation_invoices" as any)
-      .select("*, farmers!irrigation_invoices_farmer_id_fkey(name_en,name_bn,farmer_code,mobile,father_name,village), owner:farmers!irrigation_invoices_owner_farmer_id_fkey(name_en,name_bn,farmer_code,mobile,father_name,village), lands(dag_no,land_size,mouza,patwaris(name,name_bn)), seasons(name,year,type)")
+      .select("*, farmers!irrigation_invoices_farmer_id_fkey(name_en,name_bn,farmer_code,mobile,father_name,village), owner:farmers!irrigation_invoices_owner_farmer_id_fkey(name_en,name_bn,farmer_code,mobile,father_name,village), lands(dag_no,land_size,mouza,mouzas(name_bn,name),patwaris(name,name_bn)), seasons(name,year,type)")
       .is("deleted_at", null)
       .neq("invoice_status", "cancelled")
       .limit(2000);

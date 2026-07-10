@@ -86,7 +86,7 @@ export default function IrrigationDueReport() {
       let q = db.from("irrigation_invoices").select(
         "farmer_id,land_id,season_id,payable_amount,paid_amount,due_amount,office_id,generated_at,due_date," +
         "farmers!irrigation_invoices_farmer_id_fkey(name_en,name_bn,farmer_code,father_name,village,mobile)," +
-        "lands(mouza,dag_no,dag_numbers,land_size,patwari_id,patwaris(name,name_bn),owner:farmers!lands_owner_farmer_id_fkey(name_en,name_bn,farmer_code,father_name,village,mobile))," +
+        "lands(mouza,mouzas(name_bn,name),dag_no,dag_numbers,land_size,patwari_id,patwaris(name,name_bn),owner:farmers!lands_owner_farmer_id_fkey(name_en,name_bn,farmer_code,father_name,village,mobile))," +
         "seasons(name,year,type)"
       ).is("deleted_at", null).neq("invoice_status", "cancelled").limit(10000);
       if (officeId !== "all") q = q.eq("office_id", officeId);

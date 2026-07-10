@@ -83,7 +83,7 @@ export function PaidLandHistory({ farmerId }: Props) {
         .from("irrigation_invoice_payments")
         .select(
           "collected_amount, irrigation_collected, maintenance_collected, canal_collected, delay_fee_collected, current_invoice_collected, previous_due_collected, created_at, " +
-          "invoice:irrigation_invoices!inner(invoice_no, farmer_id, season_rate, irrigation_amount, land_type_name, due_amount, is_borga, lands(dag_no, mouza, land_size, notes, patwaris(name,name_bn,mobile), owner:farmers!lands_owner_farmer_id_fkey(name_bn,name_en,member_no,farmer_code,account_number,voter_number,savings_inactive,is_voter)), seasons(name,year,type)), " +
+          "invoice:irrigation_invoices!inner(invoice_no, farmer_id, season_rate, irrigation_amount, land_type_name, due_amount, is_borga, lands(dag_no, mouza, mouzas(name_bn,name), land_size, notes, patwaris(name,name_bn,mobile), owner:farmers!lands_owner_farmer_id_fkey(name_bn,name_en,member_no,farmer_code,account_number,voter_number,savings_inactive,is_voter)), seasons(name,year,type)), " +
           "payment:payments(id, receipt_no, created_at, status, voided_at, verify_token)"
         )
         .eq("invoice.farmer_id", farmerId)
