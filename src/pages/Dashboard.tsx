@@ -43,10 +43,17 @@ export default function Dashboard() {
 
   const sum = (rows: any[], f: string) => rows.reduce((a, r) => a + Number(r[f] || 0), 0);
 
+  const businessTimeZone = "Asia/Dhaka";
   const dateKey = (d: Date) => {
-    const y = d.getFullYear();
-    const m = String(d.getMonth() + 1).padStart(2, "0");
-    const day = String(d.getDate()).padStart(2, "0");
+    const parts = new Intl.DateTimeFormat("en-GB", {
+      timeZone: businessTimeZone,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }).formatToParts(d);
+    const y = parts.find((p) => p.type === "year")?.value ?? String(d.getFullYear());
+    const m = parts.find((p) => p.type === "month")?.value ?? String(d.getMonth() + 1).padStart(2, "0");
+    const day = parts.find((p) => p.type === "day")?.value ?? String(d.getDate()).padStart(2, "0");
     return `${y}-${m}-${day}`;
   };
   const paymentDateKey = (p: any) => {
