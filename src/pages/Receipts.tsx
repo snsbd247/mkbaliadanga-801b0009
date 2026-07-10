@@ -76,15 +76,18 @@ export default function Receipts() {
     setLoading(false);
   }
 
-  // Resolve each payment's mouza via irrigation_invoice_payments → invoice → land → mouza.
+  // Resolve each payment's mouza via irrigation_invoice_payments → invoice → land → mouza,
+  // falling back to the farmer's own land(s) when a payment has no invoice link.
   async function resolveMouzas(rows: any[]) {
-    const payIds = rows.filter((p) => p.kind === "irrigation").map((p) => p.id);
+    const irrRows = rows.filter((p) => p.kind === "irrigation");
+    const payIds = irrRows.map((p) => p.id);
     if (payIds.length === 0) { setMouzaByPayment({}); return; }
+    const map: Record<string, string> = {};
+
     const { data: iips } = await db
       .from("irrigation_invoice_payments")
       .select("payment_id, irrigation_invoices(land_id, lands(mouza, mouzas(name_bn, name)))")
       .in("payment_id", payIds);
-    const map: Record<string, string> = {};
     for (const iip of iips ?? []) {
       const pid = (iip as any).payment_id;
       if (!pid || map[pid]) continue;
@@ -92,6 +95,29 @@ export default function Receipts() {
       const name = resolveMouzaName(land);
       if (name) map[pid] = name;
     }
+
+    // Fallback: for any irrigation payment still unresolved, use the farmer's land mouza.
+    const unresolved = irrRows.filter((p) => !map[p.id] && p.farmer_id);
+    const farmerIds = Array.from(new Set(unresolved.map((p) => p.farmer_id)));
+    if (farmerIds.length) {
+      const { data: lands } = await db
+        .from("lands")
+        .select("farmer_id, mouza, mouzas(name_bn, name)")
+        .in("farmer_id", farmerIds)
+        .is("deleted_at", null);
+      const byFarmer: Record<string, string> = {};
+      for (const l of lands ?? []) {
+        const fid = (l as any).farmer_id;
+        if (!fid || byFarmer[fid]) continue;
+        const name = resolveMouzaName(l as any);
+        if (name) byFarmer[fid] = name;
+      }
+      for (const p of unresolved) {
+        const name = byFarmer[p.farmer_id];
+        if (name) map[p.id] = name;
+      }
+    }
+
     setMouzaByPayment(map);
   }
 
