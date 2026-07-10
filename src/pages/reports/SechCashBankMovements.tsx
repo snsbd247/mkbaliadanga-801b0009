@@ -239,24 +239,38 @@ export default function SechCashBankMovements() {
               <TableHeader><TableRow>
                 <TableHead>{bn ? "তারিখ" : "Date"}</TableHead>
                 <TableHead>{bn ? "বিবরণ" : "Description"}</TableHead>
-                <TableHead>{bn ? "হিসাব (ডেবিট / ক্রেডিট)" : "Accounts (Dr / Cr)"}</TableHead>
+                <TableHead>{bn ? "ডেবিট / ক্রেডিট সারাংশ" : "Dr / Cr Summary"}</TableHead>
+                <TableHead>{bn ? "উৎস" : "Source"}</TableHead>
               </TableRow></TableHeader>
               <TableBody>
-                {journals.map(j => (
-                  <TableRow key={j.id}>
-                    <TableCell>{fmtDate(j.entry_date)}</TableCell>
-                    <TableCell>{j.description}</TableCell>
-                    <TableCell className="text-xs">
-                      {(j.journal_entry_lines ?? []).map((l: any, i: number) => (
-                        <div key={i}>
-                          {(bn ? l.account?.name_bn : l.account?.name) ?? l.account?.code}: {l.debit > 0 ? `Dr ${money(num(l.debit))}` : `Cr ${money(num(l.credit))}`}
-                        </div>
-                      ))}
-                    </TableCell>
-                  </TableRow>
-                ))}
+                {journals.map(j => {
+                  const lines = j.journal_entry_lines ?? [];
+                  const dr = lines.find((l: any) => num(l.debit) > 0);
+                  const cr = lines.find((l: any) => num(l.credit) > 0);
+                  const amt = lines.reduce((s: number, l: any) => s + num(l.debit), 0);
+                  const drName = (bn ? dr?.account?.name_bn : dr?.account?.name) ?? dr?.account?.code ?? "-";
+                  const crName = (bn ? cr?.account?.name_bn : cr?.account?.name) ?? cr?.account?.code ?? "-";
+                  const txnId = String(j.reference ?? "").replace(/^BANK-CASH-/, "");
+                  return (
+                    <TableRow key={j.id}>
+                      <TableCell>{fmtDate(j.entry_date)}</TableCell>
+                      <TableCell>{j.description}</TableCell>
+                      <TableCell className="text-xs">
+                        <div><span className="font-medium">Dr</span> {drName} — {money(amt)}</div>
+                        <div><span className="font-medium">Cr</span> {crName} — {money(amt)}</div>
+                      </TableCell>
+                      <TableCell className="text-xs">
+                        {txnId ? (
+                          <Link to={`/bank-accounts?txn=${txnId}`} className="inline-flex items-center gap-1 text-primary hover:underline">
+                            <ExternalLink className="h-3 w-3" />{bn ? "ব্যাংক লেনদেন" : "Bank txn"}
+                          </Link>
+                        ) : "-"}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
                 {journals.length === 0 && (
-                  <TableRow><TableCell colSpan={3} className="text-center text-muted-foreground py-6">{bn ? "কোন জার্নাল নেই" : "No journal entries"}</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground py-6">{bn ? "কোন জার্নাল নেই" : "No journal entries"}</TableCell></TableRow>
                 )}
               </TableBody>
             </Table>
@@ -264,23 +278,61 @@ export default function SechCashBankMovements() {
         </TabsContent>
 
         <TabsContent value="audit">
+          <Card className="p-3 mb-3 flex flex-wrap items-end gap-3">
+            <div className="min-w-[9rem]">
+              <Label>{bn ? "অফিস" : "Office"}</Label>
+              <Select value={auOffice} onValueChange={setAuOffice}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__all__">{bn ? "সব" : "All"}</SelectItem>
+                  {auditOffices.map(id => <SelectItem key={id} value={id}>{officeName(id)}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="min-w-[9rem]">
+              <Label>{bn ? "ব্যবহারকারী" : "User"}</Label>
+              <Select value={auUser} onValueChange={setAuUser}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__all__">{bn ? "সব" : "All"}</SelectItem>
+                  {auditUsers.map(id => <SelectItem key={id} value={id}>{userName(id)}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="min-w-[9rem]">
+              <Label>{bn ? "অ্যাকশন" : "Action"}</Label>
+              <Select value={auAction} onValueChange={setAuAction}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__all__">{bn ? "সব" : "All"}</SelectItem>
+                  {auditActions.map(a => <SelectItem key={a} value={a}>{a}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="ml-auto"><Badge variant="secondary">{bn ? "স্ট্রিম: সেচ" : "Stream: Sech"}</Badge></div>
+            <Button size="sm" variant="outline" onClick={exportAuditPdf}><Printer className="h-4 w-4 mr-1" />{bn ? "প্রিন্ট / PDF" : "Print / PDF"}</Button>
+          </Card>
           <Card className="p-0 overflow-auto">
             <Table>
               <TableHeader><TableRow>
                 <TableHead>{bn ? "সময়" : "Time"}</TableHead>
+                <TableHead>{bn ? "অফিস" : "Office"}</TableHead>
+                <TableHead>{bn ? "ব্যবহারকারী" : "User"}</TableHead>
                 <TableHead>{bn ? "অ্যাকশন" : "Action"}</TableHead>
                 <TableHead>{bn ? "বিবরণ" : "Details"}</TableHead>
               </TableRow></TableHeader>
               <TableBody>
-                {audit.map(a => (
+                {filteredAudit.map(a => (
                   <TableRow key={a.id}>
                     <TableCell className="whitespace-nowrap">{fmtDate(a.created_at)} {new Date(a.created_at).toLocaleTimeString()}</TableCell>
+                    <TableCell>{officeName(a.office_id)}</TableCell>
+                    <TableCell>{userName(a.user_id)}</TableCell>
                     <TableCell><Badge variant="outline">{a.action_type}</Badge></TableCell>
                     <TableCell className="text-xs text-muted-foreground max-w-md truncate">{typeof a.new_data === "string" ? a.new_data : JSON.stringify(a.new_data)}</TableCell>
                   </TableRow>
                 ))}
-                {audit.length === 0 && (
-                  <TableRow><TableCell colSpan={3} className="text-center text-muted-foreground py-6">{bn ? "কোন অডিট রেকর্ড নেই" : "No audit records"}</TableCell></TableRow>
+                {filteredAudit.length === 0 && (
+                  <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-6">{bn ? "কোন অডিট রেকর্ড নেই" : "No audit records"}</TableCell></TableRow>
                 )}
               </TableBody>
             </Table>
