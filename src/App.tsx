@@ -358,6 +358,7 @@ const App = () => (
                 <Route path="/period-close" element={<RequirePerm module="accounting" action="can_edit"><PeriodClose /></RequirePerm>} />
                 <Route path="/opening-balances" element={<RequireRole roles={["admin","super_admin"]}><RequirePerm module="accounting" action="can_edit"><OpeningBalances /></RequirePerm></RequireRole>} />
                 <Route path="/reports/source-vs-ledger" element={<RequirePerm module="accounting"><SourceVsLedger /></RequirePerm>} />
+                <Route path="/reports/sech-cash-bank" element={<RequirePerm module="accounting"><SechCashBankMovements /></RequirePerm>} />
                 <Route path="/finance-summary" element={<RequirePerm module="accounting"><FinanceSummary /></RequirePerm>} />
                 <Route path="/land-history" element={<RequirePerm module="farmers"><LandHistory /></RequirePerm>} />
                 
