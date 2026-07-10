@@ -249,26 +249,27 @@ export default function BankAccounts() {
     return (data?.length ?? 0) > 0;
   }
 
-  async function saveTxn() {
-    if (!tx.bank_account_id || tx.amount <= 0) return toast.error("Account and amount required");
-    const acc = accounts.find(a => a.id === tx.bank_account_id);
+  async function saveTxn(override?: any) {
+    const cur = override ?? tx;
+    if (!cur.bank_account_id || cur.amount <= 0) return toast.error("Account and amount required");
+    const acc = accounts.find(a => a.id === cur.bank_account_id);
     const cbStream = cashbookStreamForAccount(acc?.stream);
-    if (await isCashbookLocked(tx.txn_date, cbStream)) return toast.error("এই মাসের ক্যাশবুক লক করা — ব্যাংক লেনদেন করা যাবে না");
-    const { post_cashbook, ...txnRow } = tx;
+    if (await isCashbookLocked(cur.txn_date, cbStream)) return toast.error("এই মাসের ক্যাশবুক লক করা — ব্যাংক লেনদেন করা যাবে না");
+    const { post_cashbook, ...txnRow } = cur;
     // Link the bank row with its mirrored cashbook row so edits/deletes stay paired.
-    const linkId = (post_cashbook && (tx.txn_type === "deposit" || tx.txn_type === "withdraw"))
+    const linkId = (post_cashbook && (cur.txn_type === "deposit" || cur.txn_type === "withdraw"))
       ? crypto.randomUUID() : null;
     const { data: insData, error } = await sb.from("bank_transactions").insert({ ...txnRow, created_by: user?.id, link_id: linkId }).select();
     if (error) return toast.error("লেনদেন সংরক্ষণ ব্যর্থ: " + error.message);
     const insertedTxn = Array.isArray(insData) ? insData[0] : insData;
-    void logAudit({ office_id: acc?.office_id ?? null, module: "bank_transaction", action_type: "create", reference_id: tx.bank_account_id, new_data: { ...txnRow, id: insertedTxn?.id, link_id: linkId } });
+    void logAudit({ office_id: acc?.office_id ?? null, module: "bank_transaction", action_type: "create", reference_id: cur.bank_account_id, new_data: { ...txnRow, id: insertedTxn?.id, link_id: linkId } });
 
     // Auto-generate a balanced Dr/Cr journal entry for the cash ↔ bank movement.
-    if (insertedTxn?.id && (tx.txn_type === "deposit" || tx.txn_type === "withdraw")) {
+    if (insertedTxn?.id && (cur.txn_type === "deposit" || cur.txn_type === "withdraw")) {
       void postBankCashTransfer({
-        bankTxnId: insertedTxn.id, direction: tx.txn_type, amount: Number(tx.amount),
+        bankTxnId: insertedTxn.id, direction: cur.txn_type, amount: Number(cur.amount),
         bankLabel: acc ? `${acc.bank_name} — ${acc.account_no}` : null,
-        entryDate: tx.txn_date, officeId: acc?.office_id ?? null, createdBy: user?.id,
+        entryDate: cur.txn_date, officeId: acc?.office_id ?? null, createdBy: user?.id,
       });
     }
 
@@ -276,23 +277,23 @@ export default function BankAccounts() {
     // Routed to the correct cash stream based on the bank account's stream.
     if (linkId) {
       const bankLabel = acc ? `${acc.bank_name} — ${acc.account_no}` : "Bank";
-      const ref = tx.reference_no ? ` (Ref: ${tx.reference_no})` : "";
-      const noteSuffix = tx.note ? ` · ${tx.note}` : "";
-      if (tx.txn_type === "deposit") {
+      const ref = cur.reference_no ? ` (Ref: ${cur.reference_no})` : "";
+      const noteSuffix = cur.note ? ` · ${cur.note}` : "";
+      if (cur.txn_type === "deposit") {
         const { error: eErr } = await db.from("expenses").insert({
-          head: "Bank Deposit", payee: bankLabel, amount: tx.amount, method: "bank",
+          head: "Bank Deposit", payee: bankLabel, amount: cur.amount, method: "bank",
           note: `Cash deposited to ${bankLabel}${ref}${noteSuffix}`,
-          expense_date: tx.txn_date, created_by: user?.id, stream: cbStream, link_id: linkId,
-          is_bank_deposit: true, bank_account_id: tx.bank_account_id,
+          expense_date: cur.txn_date, created_by: user?.id, stream: cbStream, link_id: linkId,
+          is_bank_deposit: true, bank_account_id: cur.bank_account_id,
         } as any);
         if (eErr) toast.error("Saved bank txn but cashbook expense failed: " + eErr.message);
       } else {
         // irrigation accounts feed irrigation cash ("irrigation" kind); others feed savings ("other").
         const wKind = cbStream === "irrigation" ? "irrigation" : "other";
         const { error: rErr } = await db.from("receipts").insert({
-          kind: wKind, amount: tx.amount, method: "bank",
+          kind: wKind, amount: cur.amount, method: "bank",
           note: `Cash withdrawn from ${bankLabel}${ref}${noteSuffix}`,
-          receipt_date: tx.txn_date, collected_by: user?.id, link_id: linkId,
+          receipt_date: cur.txn_date, collected_by: user?.id, link_id: linkId,
         } as any);
         if (rErr) toast.error("Saved bank txn but cashbook receipt failed: " + rErr.message);
       }
