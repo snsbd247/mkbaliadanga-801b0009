@@ -122,6 +122,7 @@ import LegacyIrrigationSearch from "./pages/LegacyIrrigationSearch";
 import PaymentsImport from "./pages/PaymentsImport";
 import FarmerMerge from "./pages/admin/FarmerMerge";
 import MouzaDataHealth from "./pages/admin/MouzaDataHealth";
+import ReceiptMouzaDebug from "./pages/admin/ReceiptMouzaDebug";
 
 import VoterList from "./pages/VoterList";
 import VoterAudit from "./pages/VoterAudit";
@@ -263,6 +264,7 @@ const App = () => (
                 <Route path="/admin/farmer-merge" element={<RequireRole roles={["admin","super_admin"]}><FarmerMerge /></RequireRole>} />
                 <Route path="/admin/deleted-farmers" element={<RequireRole roles={["super_admin"]}><DeletedFarmers /></RequireRole>} />
                 <Route path="/admin/mouza-data-health" element={<RequireRole roles={["admin","super_admin"]}><MouzaDataHealth /></RequireRole>} />
+                <Route path="/admin/receipt-mouza-debug" element={<RequireRole roles={["admin","super_admin"]}><ReceiptMouzaDebug /></RequireRole>} />
                 <Route path="/voters" element={<RequirePerm module="farmers"><VoterList /></RequirePerm>} />
                 <Route path="/farmers/:id" element={<RequirePerm module="farmers"><FarmerDetail /></RequirePerm>} />
                 <Route path="/farmers/:id/report" element={<RequirePerm module="farmers"><FarmerProfileReport /></RequirePerm>} />
