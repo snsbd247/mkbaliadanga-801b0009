@@ -77,5 +77,50 @@ describe("mouzaQuery shared helpers", () => {
       { lands: { mouza: "চরপাড়া" } },
     ];
     expect(buildMouzaOptions(rows, resolveRowMouzaName)).toHaveLength(2);
+});
+
+describe("mouza filter helpers (name / name_bn / text variants)", () => {
+  it("collects all unique name variants from a land relation", () => {
+    const land = { mouza: "কোচলাপাড়া", mouzas: { name: "Kochlapara", name_bn: "কোচলাপাড়া" } };
+    const names = resolveMouzaAllNames(land);
+    expect(names).toContain("কোচলাপাড়া");
+    expect(names).toContain("Kochlapara");
+    expect(new Set(names).size).toBe(names.length); // de-duped
   });
+
+  it("returns the text fallback variant when no relation exists", () => {
+    expect(resolveMouzaAllNames({ mouza: "কোচলাপাড়া" })).toEqual(["কোচলাপাড়া"]);
+    expect(resolveMouzaAllNames(null)).toEqual([]);
+    expect(resolveMouzaAllNames({})).toEqual([]);
+  });
+
+  it("matches when the filter equals the Bengali name (MouzaSelect emits name_bn)", () => {
+    const names = resolveMouzaAllNames({ mouzas: { name: "Kochlapara", name_bn: "কোচলাপাড়া" } });
+    expect(namesMatchMouza(names, "কোচলাপাড়া")).toBe(true);
+  });
+
+  it("matches when the filter equals the English name variant", () => {
+    const names = resolveMouzaAllNames({ mouzas: { name: "Kochlapara", name_bn: "কোচলাপাড়া" } });
+    expect(namesMatchMouza(names, "Kochlapara")).toBe(true);
+    expect(namesMatchMouza(names, "kochlapara")).toBe(true); // case-insensitive
+  });
+
+  it("matches on the legacy text column variant only", () => {
+    const names = resolveMouzaAllNames({ mouza: "কোচলাপাড়া" });
+    expect(namesMatchMouza(names, "কোচলাপাড়া")).toBe(true);
+  });
+
+  it("treats 'all' and empty filter as a wildcard", () => {
+    const names = resolveMouzaAllNames({ mouzas: { name_bn: "কোচলাপাড়া" } });
+    expect(namesMatchMouza(names, "all")).toBe(true);
+    expect(namesMatchMouza(names, "")).toBe(true);
+    expect(namesMatchMouza([], "all")).toBe(true);
+  });
+
+  it("does not match an unrelated mouza filter", () => {
+    const names = resolveMouzaAllNames({ mouzas: { name_bn: "কোচলাপাড়া" } });
+    expect(namesMatchMouza(names, "চরপাড়া")).toBe(false);
+    expect(namesMatchMouza([], "চরপাড়া")).toBe(false);
+  });
+});
 });
