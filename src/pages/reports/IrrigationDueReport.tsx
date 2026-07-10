@@ -377,14 +377,13 @@ export default function IrrigationDueReport() {
               <Button variant="outline" size="sm" onClick={() => exportExcel(
                 "Irrigation-Due", "Due",
                 filtered.map((r) => ({
-                  "Farmer Code": r.farmer_code, "Farmer": r.farmer_name,
+                  "Farmer ID": r.farmer_code, "Farmer": r.farmer_name,
                   "Father": r.father_name, "Village": r.village, "Mobile": r.mobile,
-                  "Mouza": r.mouza, "Dag": r.dag, "Type": r.season_type, "Season": r.season_label,
-                  "Bigha": Number(r.land_size_bigha.toFixed(2)),
-                  "Shatak": Number(r.land_size_shatak.toFixed(2)),
-                  "Total": r.total, "Paid": r.paid, "Due": r.due,
-                  "Owner": r.owner_name, "Owner ID": r.owner_code, "Owner Father": r.owner_father,
-                  "Owner Village": r.owner_village, "Owner Mobile": r.owner_mobile, "Patwari": r.patwari_name,
+                  "Mouza": r.mouza, "Dag No": r.dag, "Land Type": r.land_type, "Season": r.season_label,
+                  "Land Size (Decimal)": Number(r.land_size_shatak.toFixed(2)),
+                  "Land Owner": r.owner_name, "Owner ID": r.owner_code, "Owner Father": r.owner_father,
+                  "Owner Mobile": r.owner_mobile, "Patwari": r.patwari_name,
+                  "Total Amount": r.total, "Paid Amount": r.paid, "Due Amount": r.due,
                 })),
               )}>
                 <FileSpreadsheet className="mr-1 h-4 w-4" /> Excel
