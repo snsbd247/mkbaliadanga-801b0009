@@ -710,7 +710,110 @@ export default function Backup() {
                     {sqlResult.durationMs !== undefined && ` (${(sqlResult.durationMs / 1000).toFixed(1)}s)`}
                   </div>
                 )}
+
+                {autoSnapshot && (
+                  <div className="mt-3 rounded p-2 text-xs bg-amber-50 text-amber-900 border border-amber-300 flex items-center justify-between gap-2">
+                    <span>Pre-restore snapshot (rollback point): <strong>{autoSnapshot.name}</strong></span>
+                    <a href={autoSnapshot.url} download={autoSnapshot.name} className="underline font-medium">আবার ডাউনলোড</a>
+                  </div>
+                )}
+
+                {busy === "__sql_restore__" && (
+                  <div className="mt-3">
+                    <div className="flex justify-between text-xs mb-1"><span>Restore চলছে… (table-by-table)</span><span>{sqlProgress}%</span></div>
+                    <Progress value={sqlProgress} />
+                  </div>
+                )}
+
+                {restoreLog.length > 0 && (
+                  <div className="mt-3 max-h-56 overflow-auto rounded border">
+                    <Table>
+                      <TableHeader><TableRow>
+                        <TableHead className="h-8">Table</TableHead>
+                        <TableHead className="h-8 text-right">Rows</TableHead>
+                        <TableHead className="h-8">Status</TableHead>
+                      </TableRow></TableHeader>
+                      <TableBody>
+                        {restoreLog.map((r) => (
+                          <TableRow key={r.table}>
+                            <TableCell className="py-1 font-mono text-xs">{r.table}</TableCell>
+                            <TableCell className="py-1 text-right text-xs">{r.rows ?? "-"}</TableCell>
+                            <TableCell className="py-1 text-xs">
+                              {r.status === "running" && <span className="inline-flex items-center gap-1 text-muted-foreground"><Loader2 className="h-3 w-3 animate-spin" />running</span>}
+                              {r.status === "ok" && <span className="inline-flex items-center gap-1 text-emerald-600"><CheckCircle2 className="h-3 w-3" />ok</span>}
+                              {r.status === "error" && <span className="inline-flex items-center gap-1 text-destructive" title={r.error}><XCircle className="h-3 w-3" />error</span>}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
+
+                {verifyRows.length > 0 && (
+                  <div className="mt-4">
+                    <div className="text-sm font-medium mb-2 flex items-center gap-2"><ShieldCheck className="h-4 w-4" />Post-restore verification (row counts)</div>
+                    <div className="max-h-64 overflow-auto rounded border">
+                      <Table>
+                        <TableHeader><TableRow>
+                          <TableHead className="h-8">Table</TableHead>
+                          <TableHead className="h-8 text-right">Expected</TableHead>
+                          <TableHead className="h-8 text-right">Actual</TableHead>
+                          <TableHead className="h-8">Match</TableHead>
+                        </TableRow></TableHeader>
+                        <TableBody>
+                          {verifyRows.map((r) => {
+                            const match = r.expected === r.actual;
+                            return (
+                              <TableRow key={r.tablename} className={match ? "" : "bg-destructive/5"}>
+                                <TableCell className="py-1 font-mono text-xs">{r.tablename}</TableCell>
+                                <TableCell className="py-1 text-right text-xs">{r.expected}</TableCell>
+                                <TableCell className="py-1 text-right text-xs">{r.actual}</TableCell>
+                                <TableCell className="py-1 text-xs">{match ? <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" /> : <XCircle className="h-3.5 w-3.5 text-destructive" />}</TableCell>
+                              </TableRow>
+                            );
+                          })}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </div>
+                )}
               </div>
+
+              {/* Scheduled backups */}
+              {schedLoaded && schedule && (
+                <div className="rounded-md border p-3 bg-background/60">
+                  <div className="text-sm font-medium mb-2 flex items-center gap-2"><CalendarClock className="h-4 w-4" />৩. Scheduled Full SQL Backups</div>
+                  <div className="flex flex-wrap items-end gap-4">
+                    <div className="flex items-center gap-2">
+                      <Switch checked={!!schedule.enabled} onCheckedChange={(v) => setSchedule({ ...schedule, enabled: v })} id="sched-en" />
+                      <Label htmlFor="sched-en" className="cursor-pointer">সক্রিয়</Label>
+                    </div>
+                    <div className="w-40">
+                      <Label className="text-xs">Frequency</Label>
+                      <Select value={schedule.frequency ?? "daily"} onValueChange={(v) => setSchedule({ ...schedule, frequency: v })}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="daily">দৈনিক (Daily)</SelectItem>
+                          <SelectItem value="weekly">সাপ্তাহিক (Weekly)</SelectItem>
+                          <SelectItem value="monthly">মাসিক (Monthly)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="w-32">
+                      <Label className="text-xs">Retention (কয়টি রাখবে)</Label>
+                      <Input type="number" min={1} value={schedule.retention_count ?? 7} onChange={(e) => setSchedule({ ...schedule, retention_count: e.target.value })} />
+                    </div>
+                    <Button onClick={saveSchedule} disabled={busy === "__sched__"}>
+                      {busy === "__sched__" ? <Loader2 className="h-4 w-4 animate-spin" /> : "সংরক্ষণ"}
+                    </Button>
+                  </div>
+                  {schedule.last_run_at && (
+                    <p className="text-xs text-muted-foreground mt-2">সর্বশেষ রান: {new Date(schedule.last_run_at).toLocaleString()} — {schedule.last_status ?? "-"}</p>
+                  )}
+                  <p className="text-xs text-muted-foreground mt-1">স্বয়ংক্রিয় ব্যাকআপ প্রতিদিন রাত ২টায় চেক হয় এবং frequency অনুযায়ী সংরক্ষণ করা হয় (private storage-এ)।</p>
+                </div>
+              )}
             </div>
           </div>
         </Card>
