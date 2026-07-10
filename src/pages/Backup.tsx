@@ -149,6 +149,31 @@ export default function Backup() {
   const [schedule, setSchedule] = useState<any | null>(null);
   const [schedLoaded, setSchedLoaded] = useState(false);
 
+  // ---- Scheduled backups (developer only) ----
+  useEffect(() => {
+    if (!isDeveloper) return;
+    void (async () => {
+      const { data } = await (supabase as any).from("backup_schedules").select("*").limit(1).maybeSingle();
+      setSchedule(data ?? { enabled: false, frequency: "daily", retention_count: 7 });
+      setSchedLoaded(true);
+    })();
+  }, [isDeveloper]);
+
+  async function saveSchedule() {
+    setBusy("__sched__");
+    try {
+      const payload = { enabled: !!schedule.enabled, frequency: schedule.frequency ?? "daily", retention_count: Number(schedule.retention_count) || 7 };
+      let res;
+      if (schedule.id) res = await (supabase as any).from("backup_schedules").update(payload).eq("id", schedule.id).select().maybeSingle();
+      else res = await (supabase as any).from("backup_schedules").insert(payload).select().maybeSingle();
+      if (res.error) throw res.error;
+      setSchedule(res.data);
+      toast.success("Backup schedule সংরক্ষিত হয়েছে");
+    } catch (e: any) {
+      toast.error("Schedule save failed: " + e.message);
+    } finally { setBusy(null); }
+  }
+
   // ---- Full SQL backup / restore (developer only) ----
   async function downloadFullSql() {
     if (!session?.access_token) return toast.error("Not authenticated");
