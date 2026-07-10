@@ -14,6 +14,24 @@ export type Database = {
   }
   public: {
     Tables: {
+      _restore_fk_stash: {
+        Row: {
+          created_at: string
+          ddl: string
+          id: number
+        }
+        Insert: {
+          created_at?: string
+          ddl: string
+          id?: never
+        }
+        Update: {
+          created_at?: string
+          ddl?: string
+          id?: never
+        }
+        Relationships: []
+      }
       accounting_periods: {
         Row: {
           cash_in: number
@@ -1048,6 +1066,39 @@ export type Database = {
           reference_id?: string | null
           retry_count?: number
           status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      backup_schedules: {
+        Row: {
+          created_at: string
+          enabled: boolean
+          frequency: string
+          id: string
+          last_run_at: string | null
+          last_status: string | null
+          retention_count: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          enabled?: boolean
+          frequency?: string
+          id?: string
+          last_run_at?: string | null
+          last_status?: string | null
+          retention_count?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          enabled?: boolean
+          frequency?: string
+          id?: string
+          last_run_at?: string | null
+          last_status?: string | null
+          retention_count?: number
           updated_at?: string
         }
         Relationships: []
@@ -6519,6 +6570,9 @@ export type Database = {
       _sms_render: { Args: { _tpl: string; _vars: Json }; Returns: string }
       _sms_savings_balance: { Args: { _farmer: string }; Returns: number }
       activate_sms_token: { Args: { _id: string }; Returns: undefined }
+      admin_restore_begin: { Args: never; Returns: number }
+      admin_restore_commit: { Args: never; Returns: number }
+      admin_restore_exec: { Args: { sql: string }; Returns: undefined }
       admin_set_receipt_serial_start: {
         Args: { p_start: number }
         Returns: number
@@ -6772,6 +6826,13 @@ export type Database = {
       post_asset_depreciation_journal: {
         Args: { _schedule_id: string }
         Returns: string
+      }
+      public_table_row_counts: {
+        Args: never
+        Returns: {
+          row_count: number
+          tablename: string
+        }[]
       }
       reactivate_voter_membership: {
         Args: { _farmer_id: string; _reason: string }
