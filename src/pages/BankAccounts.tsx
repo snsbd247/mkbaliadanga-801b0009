@@ -413,7 +413,41 @@ export default function BankAccounts() {
               </DialogContent>
             </Dialog>
 
+            <Dialog open={openS} onOpenChange={setOpenS}>
+              <DialogTrigger asChild><Button size="sm" variant="secondary"><Droplets className="h-4 w-4 mr-1" />সেচ নগদ ↔ ব্যাংক</Button></DialogTrigger>
+              <DialogContent>
+                <DialogHeader><DialogTitle>সেচ নগদ ব্যাংকে জমা / উত্তোলন</DialogTitle></DialogHeader>
+                <p className="text-xs text-muted-foreground -mt-2">শুধুমাত্র সেচ-স্ট্রিমের ব্যাংক অ্যাকাউন্ট দেখানো হচ্ছে। জমা = নগদ কমে ব্যাংক বাড়ে; উত্তোলন = ব্যাংক কমে নগদ বাড়ে।</p>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="col-span-2"><Label>সেচ ব্যাংক অ্যাকাউন্ট</Label>
+                    <Select value={sm.bank_account_id} onValueChange={v => setSm({ ...sm, bank_account_id: v })}>
+                      <SelectTrigger><SelectValue placeholder="নির্বাচন করুন" /></SelectTrigger>
+                      <SelectContent>
+                        {accounts.filter(x => isSechStream(x.stream)).map(x => (
+                          <SelectItem key={x.id} value={x.id}>{x.bank_name} — {x.account_no} ({money(balances.get(x.id) ?? 0)})</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div><Label>ধরন</Label>
+                    <Select value={sm.direction} onValueChange={v => setSm({ ...sm, direction: v })}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="deposit">নগদ → ব্যাংকে জমা</SelectItem>
+                        <SelectItem value="withdraw">ব্যাংক → নগদ উত্তোলন</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div><Label>পরিমাণ</Label><Input type="number" value={sm.amount || ""} onChange={e => setSm({ ...sm, amount: +e.target.value })} /></div>
+                  <div><Label>তারিখ</Label><Input type="date" value={sm.txn_date} onChange={e => setSm({ ...sm, txn_date: e.target.value })} /></div>
+                  <div className="col-span-2"><Label>নোট (ঐচ্ছিক)</Label><Input value={sm.note} onChange={e => setSm({ ...sm, note: e.target.value })} /></div>
+                </div>
+                <DialogFooter><Button variant="outline" onClick={() => setOpenS(false)}>বাতিল</Button><Button onClick={saveSechMove}>সংরক্ষণ</Button></DialogFooter>
+              </DialogContent>
+            </Dialog>
+
             <Dialog open={openX} onOpenChange={setOpenX}>
+
               <DialogTrigger asChild><Button size="sm"><ArrowRightLeft className="h-4 w-4 mr-1" />Transfer</Button></DialogTrigger>
               <DialogContent>
                 <DialogHeader><DialogTitle>Bank-to-Bank Transfer</DialogTitle></DialogHeader>
