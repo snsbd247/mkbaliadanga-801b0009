@@ -29,6 +29,7 @@ type Row = {
   land_label: string;
   mouza: string;
   dag: string;
+  land_type: string;
   patwari_id: string | null;
   patwari_name: string;
   owner_name: string;
