@@ -49,6 +49,28 @@ export function resolveRowMouzaName(row: RowWithLand): string {
   return resolveMouzaName(row?.lands);
 }
 
+/**
+ * All name variants (name_bn, name, text fallback) for a land row.
+ * Used for filtering, since a MouzaSelect may emit the English `name` while
+ * display uses `name_bn` — matching on any variant keeps them in sync.
+ */
+export function resolveMouzaAllNames(land: LandLike): string[] {
+  if (!land) return [];
+  const rel = land.mouzas;
+  const obj = Array.isArray(rel) ? rel[0] : rel;
+  const names = [obj?.name_bn, obj?.name, land.mouza]
+    .map((n) => (n ?? "").toString().trim())
+    .filter(Boolean);
+  return Array.from(new Set(names));
+}
+
+/** True when any name variant matches the filter (case-insensitive substring). */
+export function namesMatchMouza(names: string[], filter: string): boolean {
+  if (!filter || filter === "all") return true;
+  const f = filter.trim().toLowerCase();
+  return names.some((n) => n.toLowerCase().includes(f));
+}
+
 /** True when a row matches the selected mouza filter ("all" matches everything). */
 export function rowMatchesMouza(row: RowWithLand, filter: string): boolean {
   if (!filter || filter === "all") return true;
