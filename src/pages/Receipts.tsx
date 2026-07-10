@@ -278,7 +278,7 @@ export default function Receipts() {
                 ) : displayList.length === 0 ? (
                   <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-6">{t("noData")}</TableCell></TableRow>
                 ) : (
-                  displayList.map((p) => {
+                  pagedList.map((p) => {
                     const kind = kindOf(p);
                     const buildReceiptData = () => buildPaymentReceiptData(p, { brand, receiptArgs, tx });
                     const doDownload = async (copy: ReceiptCopy) => downloadBnReceiptPdf(await buildReceiptData(), copy, receiptArgs.options);
