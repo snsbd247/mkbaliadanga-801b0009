@@ -134,6 +134,16 @@ export default function Receipts() {
     });
   }, [list, farmerCode, mouza, mouzaNamesByPayment]);
 
+  // Client-side pagination keeps rendering fast when the (mouza-)filtered set is large.
+  const PAGE_SIZE = 50;
+  const [page, setPage] = useState(1);
+  const pageCount = Math.max(1, Math.ceil(displayList.length / PAGE_SIZE));
+  useEffect(() => { setPage(1); }, [farmerCode, mouza, receiptNo, from, to, farmerId, list]);
+  const pagedList = useMemo(
+    () => displayList.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE),
+    [displayList, page],
+  );
+
   function clearFilters() {
     setReceiptNo(""); setFrom(""); setTo(""); setFarmerId(null); setFarmerCode(""); setMouza("");
   }
