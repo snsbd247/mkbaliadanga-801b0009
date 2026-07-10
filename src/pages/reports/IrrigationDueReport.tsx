@@ -425,7 +425,7 @@ export default function IrrigationDueReport() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filtered.map((r, i) => (
+              {paged.map((r, i) => (
                 <TableRow key={i}>
                   <TableCell className="text-xs">{r.farmer_code}</TableCell>
                   <TableCell>{r.farmer_name}</TableCell>
