@@ -52,7 +52,7 @@ function getKindLabel(t: (k: any) => string, k: Kind): string {
 
 // Which receipt kinds feed which cash stream (income side).
 const STREAM_INCOME_KINDS: Record<Stream, Set<string>> = {
-  irrigation: new Set(["irrigation", "bigha_rent", "pond", "crop_sale", "scrap"]),
+  irrigation: IRRIGATION_INCOME_KINDS,
   savings: new Set(["savings_deposit", "share", "loan_taken", "donation", "other"]),
 };
 
