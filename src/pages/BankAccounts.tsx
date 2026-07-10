@@ -62,6 +62,7 @@ export default function BankAccounts() {
   const [a, setA] = useState<any>({ bank_name: "", branch: "", account_no: "", account_title: "", account_type: "savings", stream: "other", opening_balance: 0, is_active: true });
   const [tx, setTx] = useState<any>({ bank_account_id: "", txn_type: "deposit", amount: 0, txn_date: new Date().toISOString().slice(0, 10), reference_no: "", note: "", post_cashbook: true });
   const [xf, setXf] = useState<any>({ from_id: "", to_id: "", amount: 0, txn_date: new Date().toISOString().slice(0, 10), note: "" });
+  const [sm, setSm] = useState<any>({ bank_account_id: "", direction: "deposit", amount: 0, txn_date: new Date().toISOString().slice(0, 10), note: "" });
 
   const [dFrom, setDFrom] = useState("");
   const [dTo, setDTo] = useState("");
