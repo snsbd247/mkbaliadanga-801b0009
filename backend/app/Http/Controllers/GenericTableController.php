@@ -919,6 +919,19 @@ class GenericTableController extends Controller
             }
         }
 
+        if ($table === 'bank_accounts') {
+            foreach ($inserted as $row) {
+                $this->ensureBankOpeningPostings($request, $row);
+            }
+        }
+
+        if ($table === 'bank_transactions') {
+            foreach ($inserted as $row) {
+                $this->ensureBankTransactionPostings($request, $row);
+            }
+        }
+
+
         $this->recordAudit($request, 'create', $table, $ids, ['count' => count($prepared)]);
 
         return response()->json($inserted, 201);
