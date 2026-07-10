@@ -22,7 +22,7 @@ import { EditReceiptDialog } from "@/components/receipts/EditReceiptDialog";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 import { downloadBnReceiptPdf, type ReceiptCopy, type BnReceiptData } from "@/lib/bnReceipts";
 import { buildPaymentReceiptData } from "@/lib/buildPaymentReceiptData";
-import { resolveMouzaName, resolveMouzaAllNames, namesMatchMouza } from "@/lib/mouzaQuery";
+import { namesMatchMouza, resolvePaymentMouzas } from "@/lib/mouzaQuery";
 import { useReceiptRenderArgs } from "@/lib/receiptOptions";
 import { useBranding } from "@/lib/branding";
 import { logAudit } from "@/lib/audit";
@@ -77,52 +77,16 @@ export default function Receipts() {
     setLoading(false);
   }
 
-  // Resolve each payment's mouza via irrigation_invoice_payments → invoice → land → mouza,
-  // falling back to the farmer's own land(s) when a payment has no invoice link.
+  // Resolve each receipt's mouza with the same robust lookup chain used by the
+  // receipt preview, so the list/filter and preview cannot disagree.
   async function resolveMouzas(rows: any[]) {
-    const irrRows = rows.filter((p) => p.kind === "irrigation");
-    const payIds = irrRows.map((p) => p.id);
-    if (payIds.length === 0) { setMouzaByPayment({}); setMouzaNamesByPayment({}); return; }
-    const map: Record<string, string> = {};
-    const namesMap: Record<string, string[]> = {};
-
-    const { data: iips } = await db
-      .from("irrigation_invoice_payments")
-      .select("payment_id, irrigation_invoices(land_id, lands(mouza, mouzas(name_bn, name)))")
-      .in("payment_id", payIds);
-    for (const iip of iips ?? []) {
-      const pid = (iip as any).payment_id;
-      if (!pid || map[pid]) continue;
-      const land = (iip as any).irrigation_invoices?.lands;
-      const name = resolveMouzaName(land);
-      if (name) { map[pid] = name; namesMap[pid] = resolveMouzaAllNames(land); }
-    }
-
-    // Fallback: for any irrigation payment still unresolved, use the farmer's land mouza.
-    const unresolved = irrRows.filter((p) => !map[p.id] && p.farmer_id);
-    const farmerIds = Array.from(new Set(unresolved.map((p) => p.farmer_id)));
-    if (farmerIds.length) {
-      const { data: lands } = await db
-        .from("lands")
-        .select("farmer_id, mouza, mouzas(name_bn, name)")
-        .in("farmer_id", farmerIds)
-        .is("deleted_at", null);
-      const byFarmer: Record<string, string> = {};
-      const namesByFarmer: Record<string, string[]> = {};
-      for (const l of lands ?? []) {
-        const fid = (l as any).farmer_id;
-        if (!fid || byFarmer[fid]) continue;
-        const name = resolveMouzaName(l as any);
-        if (name) { byFarmer[fid] = name; namesByFarmer[fid] = resolveMouzaAllNames(l as any); }
-      }
-      for (const p of unresolved) {
-        const name = byFarmer[p.farmer_id];
-        if (name) { map[p.id] = name; namesMap[p.id] = namesByFarmer[p.farmer_id]; }
-      }
-    }
-
-    setMouzaByPayment(map);
-    setMouzaNamesByPayment(namesMap);
+    const resolved = await resolvePaymentMouzas(rows);
+    setMouzaByPayment(
+      Object.fromEntries(Object.entries(resolved).map(([id, r]) => [id, r.name])),
+    );
+    setMouzaNamesByPayment(
+      Object.fromEntries(Object.entries(resolved).map(([id, r]) => [id, r.variants])),
+    );
   }
 
   const displayList = useMemo(() => {
