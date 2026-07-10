@@ -122,6 +122,7 @@ import LegacyIrrigationSearch from "./pages/LegacyIrrigationSearch";
 import PaymentsImport from "./pages/PaymentsImport";
 import FarmerMerge from "./pages/admin/FarmerMerge";
 import MouzaDataHealth from "./pages/admin/MouzaDataHealth";
+import ReceiptMouzaDebug from "./pages/admin/ReceiptMouzaDebug";
 
 import VoterList from "./pages/VoterList";
 import VoterAudit from "./pages/VoterAudit";
