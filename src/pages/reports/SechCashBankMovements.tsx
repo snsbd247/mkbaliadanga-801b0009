@@ -123,7 +123,7 @@ export default function SechCashBankMovements() {
   return (
     <>
       <PageHeader
-        title={<span className="flex items-center gap-2"><Droplets className="h-5 w-5" />{bn ? "সেচ নগদ ও ব্যাংক মুভমেন্ট" : "Sech Cash & Bank Movements"}</span> as any}
+        title={bn ? "সেচ নগদ ও ব্যাংক মুভমেন্ট" : "Sech Cash & Bank Movements"}
         description={bn ? "সেচ নগদ, ব্যাংক জমা/উত্তোলন ও জার্নাল — তারিখ রেঞ্জ অনুযায়ী।" : "Sech cash-in-hand, bank deposits/withdrawals and journals by date range."}
         actions={<Button size="sm" onClick={exportPdf}><FileDown className="h-4 w-4 mr-1" />PDF</Button>}
       />
