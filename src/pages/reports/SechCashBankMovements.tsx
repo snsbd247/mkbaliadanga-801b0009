@@ -128,6 +128,49 @@ export default function SechCashBankMovements() {
     );
   }
 
+  // Excel export — same rows + totals as the PDF.
+  function exportXlsx() {
+    const rows = rangeTxns.map(t => ({
+      [bn ? "তারিখ" : "Date"]: fmtDate(t.txn_date),
+      [bn ? "ব্যাংক" : "Bank"]: `${t.account?.bank_name ?? ""} ${t.account?.account_no ?? ""}`.trim(),
+      [bn ? "ধরন" : "Type"]: typeLabel(t.txn_type),
+      [bn ? "পরিমাণ" : "Amount"]: num(t.amount),
+      [bn ? "নোট" : "Note"]: t.note ?? "",
+    }));
+    const T = bn ? "সারসংক্ষেপ" : "Summary";
+    rows.push({ [bn ? "তারিখ" : "Date"]: "", [bn ? "ব্যাংক" : "Bank"]: "", [bn ? "ধরন" : "Type"]: bn ? "মোট জমা" : "Total Deposit", [bn ? "পরিমাণ" : "Amount"]: totals.deposits, [bn ? "নোট" : "Note"]: T } as any);
+    rows.push({ [bn ? "তারিখ" : "Date"]: "", [bn ? "ব্যাংক" : "Bank"]: "", [bn ? "ধরন" : "Type"]: bn ? "মোট উত্তোলন" : "Total Withdraw", [bn ? "পরিমাণ" : "Amount"]: totals.withdrawals, [bn ? "নোট" : "Note"]: T } as any);
+    rows.push({ [bn ? "তারিখ" : "Date"]: "", [bn ? "ব্যাংক" : "Bank"]: "", [bn ? "ধরন" : "Type"]: bn ? "ক্যাশ ইন হ্যান্ড (সেচ)" : "Cash in Hand (Sech)", [bn ? "পরিমাণ" : "Amount"]: totals.cashInHand, [bn ? "নোট" : "Note"]: T } as any);
+    rows.push({ [bn ? "তারিখ" : "Date"]: "", [bn ? "ব্যাংক" : "Bank"]: "", [bn ? "ধরন" : "Type"]: bn ? "ব্যাংক ব্যালেন্স (সেচ)" : "Bank Balance (Sech)", [bn ? "পরিমাণ" : "Amount"]: bankBalance, [bn ? "নোট" : "Note"]: T } as any);
+    exportExcel("sech-cash-bank", bn ? "সেচ মুভমেন্ট" : "Sech Movements", rows, { from, to });
+  }
+
+  const officeName = (id?: string | null) => offices.find(o => o.id === id)?.name ?? (id ? String(id).slice(0, 8) : "-");
+  const userName = (id?: string | null) => profiles.find(p => p.id === id)?.full_name ?? (id ? String(id).slice(0, 8) : "-");
+
+  const auditActions = useMemo(() => Array.from(new Set(audit.map(a => a.action_type).filter(Boolean))), [audit]);
+  const auditUsers = useMemo(() => Array.from(new Set(audit.map(a => a.user_id).filter(Boolean))), [audit]);
+  const auditOffices = useMemo(() => Array.from(new Set(audit.map(a => a.office_id).filter(Boolean))), [audit]);
+
+  const filteredAudit = useMemo(() => audit.filter(a => {
+    const d = (a.created_at ?? "").slice(0, 10);
+    if (d && (d < from || d > to)) return false;
+    if (auOffice !== "__all__" && a.office_id !== auOffice) return false;
+    if (auUser !== "__all__" && a.user_id !== auUser) return false;
+    if (auAction !== "__all__" && a.action_type !== auAction) return false;
+    return true;
+  }), [audit, from, to, auOffice, auUser, auAction]);
+
+  async function exportAuditPdf() {
+    const head = [bn ? "সময়" : "Time", bn ? "অফিস" : "Office", bn ? "ব্যবহারকারী" : "User", bn ? "অ্যাকশন" : "Action", bn ? "বিবরণ" : "Details"];
+    const rows = filteredAudit.map(a => [
+      `${fmtDate(a.created_at)} ${new Date(a.created_at).toLocaleTimeString()}`,
+      officeName(a.office_id), userName(a.user_id), a.action_type,
+      typeof a.new_data === "string" ? a.new_data : JSON.stringify(a.new_data),
+    ]);
+    await exportTablePDF(bn ? "সেচ ব্যাংক অডিট ট্রেইল" : "Sech Bank Audit Trail", head, rows, { from, to }, { landscape: true });
+  }
+
   const typeLabel = (t: string) =>
     t === "deposit" ? (bn ? "জমা" : "Deposit") : t === "withdraw" ? (bn ? "উত্তোলন" : "Withdraw") : t;
 
