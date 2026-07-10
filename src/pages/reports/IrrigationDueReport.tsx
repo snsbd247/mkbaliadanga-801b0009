@@ -393,18 +393,24 @@ export default function IrrigationDueReport() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>{t("code")}</TableHead>
+                <TableHead>{tx("Farmer ID", "কৃষক আইডি")}</TableHead>
                 <TableHead>{t("farmer")}</TableHead>
                 <TableHead>{tx("Father", "পিতার নাম")}</TableHead>
                 <TableHead>{tx("Village", "গ্রাম")}</TableHead>
                 <TableHead>{tx("Mobile", "মোবাইল")}</TableHead>
-                <TableHead>{t("land")}</TableHead>
-                <TableHead>{tx("Owner", "মালিক")}</TableHead>
-                <TableHead>{tx("Patwari", "পাটুয়ারি")}</TableHead>
+                <TableHead>{tx("Mouza", "মৌজা")}</TableHead>
+                <TableHead>{tx("Dag No", "দাগ নং")}</TableHead>
+                <TableHead>{tx("Land Type", "জমির ধরন")}</TableHead>
                 <TableHead>{t("season")}</TableHead>
-                <TableHead className="text-right">{t("total")}</TableHead>
-                <TableHead className="text-right">{t("paid")}</TableHead>
-                <TableHead className="text-right">{t("dueAmount")}</TableHead>
+                <TableHead className="text-right">{tx("Land Size (Decimal)", "জমির পরিমাণ (শতক)")}</TableHead>
+                <TableHead>{tx("Land Owner", "জমির মালিক")}</TableHead>
+                <TableHead>{tx("Owner ID", "মালিক আইডি")}</TableHead>
+                <TableHead>{tx("Owner father", "মালিকের পিতা")}</TableHead>
+                <TableHead>{tx("Owner mobile", "মালিকের মোবাইল")}</TableHead>
+                <TableHead>{tx("Patwari", "পাটুয়ারি")}</TableHead>
+                <TableHead className="text-right">{tx("Total Amount", "মোট")}</TableHead>
+                <TableHead className="text-right">{tx("Paid Amount", "পরিশোধ")}</TableHead>
+                <TableHead className="text-right">{tx("Due Amount", "বকেয়া")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -415,17 +421,23 @@ export default function IrrigationDueReport() {
                   <TableCell className="text-xs">{r.father_name || "—"}</TableCell>
                   <TableCell className="text-xs">{r.village || "—"}</TableCell>
                   <TableCell className="text-xs">{r.mobile || "—"}</TableCell>
-                  <TableCell className="text-xs">{r.land_label}</TableCell>
-                  <TableCell className="text-xs">{r.owner_name || "—"}</TableCell>
-                  <TableCell className="text-xs">{r.patwari_name}</TableCell>
+                  <TableCell className="text-xs">{r.mouza || "—"}</TableCell>
+                  <TableCell className="text-xs">{r.dag || "—"}</TableCell>
+                  <TableCell className="text-xs">{r.land_type || "—"}</TableCell>
                   <TableCell className="text-xs">{r.season_label}</TableCell>
+                  <TableCell className="text-right text-xs">{r.land_size_shatak.toFixed(2)}</TableCell>
+                  <TableCell className="text-xs">{r.owner_name || "—"}</TableCell>
+                  <TableCell className="text-xs">{r.owner_code || "—"}</TableCell>
+                  <TableCell className="text-xs">{r.owner_father || "—"}</TableCell>
+                  <TableCell className="text-xs">{r.owner_mobile || "—"}</TableCell>
+                  <TableCell className="text-xs">{r.patwari_name}</TableCell>
                   <TableCell className="text-right">{money(r.total)}</TableCell>
                   <TableCell className="text-right">{money(r.paid)}</TableCell>
                   <TableCell className="text-right font-semibold text-destructive">{money(r.due)}</TableCell>
                 </TableRow>
               ))}
               {!filtered.length && (
-                <TableRow><TableCell colSpan={12} className="text-center text-muted-foreground py-6">{t("noData")}</TableCell></TableRow>
+                <TableRow><TableCell colSpan={18} className="text-center text-muted-foreground py-6">{t("noData")}</TableCell></TableRow>
               )}
             </TableBody>
 
