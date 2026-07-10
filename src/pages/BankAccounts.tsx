@@ -302,6 +302,25 @@ export default function BankAccounts() {
     setTx({ bank_account_id: "", txn_type: "deposit", amount: 0, txn_date: new Date().toISOString().slice(0, 10), reference_no: "", note: "", post_cashbook: true });
   }
 
+  // সেচ নগদ ↔ ব্যাংক কুইক অ্যাকশন — শুধুমাত্র সেচ-স্ট্রিমের অ্যাকাউন্ট অনুমোদিত।
+  async function saveSechMove() {
+    if (!sm.bank_account_id || Number(sm.amount) <= 0) return toast.error("অ্যাকাউন্ট ও পরিমাণ দিন");
+    const acc = accounts.find(x => x.id === sm.bank_account_id);
+    const guard = assertSechTransfer(acc);
+    if (!guard.ok) return toast.error(guard.message ?? "ভুল স্ট্রিম");
+    setTx({
+      bank_account_id: sm.bank_account_id, txn_type: sm.direction, amount: Number(sm.amount),
+      txn_date: sm.txn_date, reference_no: "", note: sm.note || (sm.direction === "deposit" ? "সেচ নগদ ব্যাংকে জমা" : "ব্যাংক থেকে সেচ নগদ উত্তোলন"),
+      post_cashbook: true,
+    });
+    setOpenS(false);
+    // saveTxn reads from `tx`; defer one tick so state is applied.
+    setTimeout(() => { void saveTxn(); }, 0);
+    setSm({ bank_account_id: "", direction: "deposit", amount: 0, txn_date: new Date().toISOString().slice(0, 10), note: "" });
+  }
+
+
+
   async function saveTransfer() {
     if (!xf.from_id || !xf.to_id || xf.from_id === xf.to_id) return toast.error("Pick two different accounts");
     if (xf.amount <= 0) return toast.error("Amount required");
