@@ -11,15 +11,16 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Plus, ArrowRightLeft, Banknote, FileDown, FileSpreadsheet, Pencil, Trash2 } from "lucide-react";
+import { Plus, ArrowRightLeft, Banknote, FileDown, FileSpreadsheet, Pencil, Trash2, Droplets } from "lucide-react";
 import { toast } from "sonner";
 import { money, fmtDate } from "@/lib/format";
 import { useAuth } from "@/auth/AuthProvider";
 import { exportTablePDF, exportExcel } from "@/lib/exports";
 import { useLang } from "@/i18n/LanguageProvider";
 import { logAudit } from "@/lib/audit";
-import { postBankOpening } from "@/lib/accountingPosting";
+import { postBankOpening, postBankCashTransfer } from "@/lib/accountingPosting";
 import { partitionOpenings, summarizeBackfill } from "@/lib/bankOpening";
+import { assertSechTransfer, isSechStream } from "@/lib/cashStreamGuard";
 
 
 const sb = db as any;
@@ -48,6 +49,7 @@ export default function BankAccounts() {
   const [openA, setOpenA] = useState(false);
   const [openT, setOpenT] = useState(false);
   const [openX, setOpenX] = useState(false); // transfer
+  const [openS, setOpenS] = useState(false); // sech quick cash↔bank
   const [editAccId, setEditAccId] = useState<string | null>(null);
   const [editTxn, setEditTxn] = useState<any | null>(null);
   const [pendingDelete, setPendingDelete] = useState<
@@ -60,6 +62,7 @@ export default function BankAccounts() {
   const [a, setA] = useState<any>({ bank_name: "", branch: "", account_no: "", account_title: "", account_type: "savings", stream: "other", opening_balance: 0, is_active: true });
   const [tx, setTx] = useState<any>({ bank_account_id: "", txn_type: "deposit", amount: 0, txn_date: new Date().toISOString().slice(0, 10), reference_no: "", note: "", post_cashbook: true });
   const [xf, setXf] = useState<any>({ from_id: "", to_id: "", amount: 0, txn_date: new Date().toISOString().slice(0, 10), note: "" });
+  const [sm, setSm] = useState<any>({ bank_account_id: "", direction: "deposit", amount: 0, txn_date: new Date().toISOString().slice(0, 10), note: "" });
 
   const [dFrom, setDFrom] = useState("");
   const [dTo, setDTo] = useState("");
@@ -246,40 +249,51 @@ export default function BankAccounts() {
     return (data?.length ?? 0) > 0;
   }
 
-  async function saveTxn() {
-    if (!tx.bank_account_id || tx.amount <= 0) return toast.error("Account and amount required");
-    const acc = accounts.find(a => a.id === tx.bank_account_id);
+  async function saveTxn(override?: any) {
+    const cur = override ?? tx;
+    if (!cur.bank_account_id || cur.amount <= 0) return toast.error("Account and amount required");
+    const acc = accounts.find(a => a.id === cur.bank_account_id);
     const cbStream = cashbookStreamForAccount(acc?.stream);
-    if (await isCashbookLocked(tx.txn_date, cbStream)) return toast.error("এই মাসের ক্যাশবুক লক করা — ব্যাংক লেনদেন করা যাবে না");
-    const { post_cashbook, ...txnRow } = tx;
+    if (await isCashbookLocked(cur.txn_date, cbStream)) return toast.error("এই মাসের ক্যাশবুক লক করা — ব্যাংক লেনদেন করা যাবে না");
+    const { post_cashbook, ...txnRow } = cur;
     // Link the bank row with its mirrored cashbook row so edits/deletes stay paired.
-    const linkId = (post_cashbook && (tx.txn_type === "deposit" || tx.txn_type === "withdraw"))
+    const linkId = (post_cashbook && (cur.txn_type === "deposit" || cur.txn_type === "withdraw"))
       ? crypto.randomUUID() : null;
-    const { error } = await sb.from("bank_transactions").insert({ ...txnRow, created_by: user?.id, link_id: linkId });
+    const { data: insData, error } = await sb.from("bank_transactions").insert({ ...txnRow, created_by: user?.id, link_id: linkId }).select();
     if (error) return toast.error("লেনদেন সংরক্ষণ ব্যর্থ: " + error.message);
-    void logAudit({ office_id: acc?.office_id ?? null, module: "bank_transaction", action_type: "create", reference_id: tx.bank_account_id, new_data: { ...txnRow, link_id: linkId } });
+    const insertedTxn = Array.isArray(insData) ? insData[0] : insData;
+    void logAudit({ office_id: acc?.office_id ?? null, module: "bank_transaction", action_type: "create", reference_id: cur.bank_account_id, new_data: { ...txnRow, id: insertedTxn?.id, link_id: linkId } });
+
+    // Auto-generate a balanced Dr/Cr journal entry for the cash ↔ bank movement.
+    if (insertedTxn?.id && (cur.txn_type === "deposit" || cur.txn_type === "withdraw")) {
+      void postBankCashTransfer({
+        bankTxnId: insertedTxn.id, direction: cur.txn_type, amount: Number(cur.amount),
+        bankLabel: acc ? `${acc.bank_name} — ${acc.account_no}` : null,
+        entryDate: cur.txn_date, officeId: acc?.office_id ?? null, createdBy: user?.id,
+      });
+    }
 
     // Auto-link to Cashbook: deposit (cash→bank) = expense; withdraw (bank→cash) = receipt.
     // Routed to the correct cash stream based on the bank account's stream.
     if (linkId) {
       const bankLabel = acc ? `${acc.bank_name} — ${acc.account_no}` : "Bank";
-      const ref = tx.reference_no ? ` (Ref: ${tx.reference_no})` : "";
-      const noteSuffix = tx.note ? ` · ${tx.note}` : "";
-      if (tx.txn_type === "deposit") {
+      const ref = cur.reference_no ? ` (Ref: ${cur.reference_no})` : "";
+      const noteSuffix = cur.note ? ` · ${cur.note}` : "";
+      if (cur.txn_type === "deposit") {
         const { error: eErr } = await db.from("expenses").insert({
-          head: "Bank Deposit", payee: bankLabel, amount: tx.amount, method: "bank",
+          head: "Bank Deposit", payee: bankLabel, amount: cur.amount, method: "bank",
           note: `Cash deposited to ${bankLabel}${ref}${noteSuffix}`,
-          expense_date: tx.txn_date, created_by: user?.id, stream: cbStream, link_id: linkId,
-          is_bank_deposit: true, bank_account_id: tx.bank_account_id,
+          expense_date: cur.txn_date, created_by: user?.id, stream: cbStream, link_id: linkId,
+          is_bank_deposit: true, bank_account_id: cur.bank_account_id,
         } as any);
         if (eErr) toast.error("Saved bank txn but cashbook expense failed: " + eErr.message);
       } else {
         // irrigation accounts feed irrigation cash ("irrigation" kind); others feed savings ("other").
         const wKind = cbStream === "irrigation" ? "irrigation" : "other";
         const { error: rErr } = await db.from("receipts").insert({
-          kind: wKind, amount: tx.amount, method: "bank",
+          kind: wKind, amount: cur.amount, method: "bank",
           note: `Cash withdrawn from ${bankLabel}${ref}${noteSuffix}`,
-          receipt_date: tx.txn_date, collected_by: user?.id, link_id: linkId,
+          receipt_date: cur.txn_date, collected_by: user?.id, link_id: linkId,
         } as any);
         if (rErr) toast.error("Saved bank txn but cashbook receipt failed: " + rErr.message);
       }
@@ -288,6 +302,24 @@ export default function BankAccounts() {
     toast.success("Saved"); setOpenT(false); load();
     setTx({ bank_account_id: "", txn_type: "deposit", amount: 0, txn_date: new Date().toISOString().slice(0, 10), reference_no: "", note: "", post_cashbook: true });
   }
+
+  // সেচ নগদ ↔ ব্যাংক কুইক অ্যাকশন — শুধুমাত্র সেচ-স্ট্রিমের অ্যাকাউন্ট অনুমোদিত।
+  async function saveSechMove() {
+    if (!sm.bank_account_id || Number(sm.amount) <= 0) return toast.error("অ্যাকাউন্ট ও পরিমাণ দিন");
+    const acc = accounts.find(x => x.id === sm.bank_account_id);
+    const guard = assertSechTransfer(acc);
+    if (!guard.ok) return toast.error(guard.message ?? "ভুল স্ট্রিম");
+    setOpenS(false);
+    await saveTxn({
+      bank_account_id: sm.bank_account_id, txn_type: sm.direction, amount: Number(sm.amount),
+      txn_date: sm.txn_date, reference_no: "",
+      note: sm.note || (sm.direction === "deposit" ? "সেচ নগদ ব্যাংকে জমা" : "ব্যাংক থেকে সেচ নগদ উত্তোলন"),
+      post_cashbook: true,
+    });
+    setSm({ bank_account_id: "", direction: "deposit", amount: 0, txn_date: new Date().toISOString().slice(0, 10), note: "" });
+  }
+
+
 
   async function saveTransfer() {
     if (!xf.from_id || !xf.to_id || xf.from_id === xf.to_id) return toast.error("Pick two different accounts");
@@ -381,7 +413,41 @@ export default function BankAccounts() {
               </DialogContent>
             </Dialog>
 
+            <Dialog open={openS} onOpenChange={setOpenS}>
+              <DialogTrigger asChild><Button size="sm" variant="secondary"><Droplets className="h-4 w-4 mr-1" />সেচ নগদ ↔ ব্যাংক</Button></DialogTrigger>
+              <DialogContent>
+                <DialogHeader><DialogTitle>সেচ নগদ ব্যাংকে জমা / উত্তোলন</DialogTitle></DialogHeader>
+                <p className="text-xs text-muted-foreground -mt-2">শুধুমাত্র সেচ-স্ট্রিমের ব্যাংক অ্যাকাউন্ট দেখানো হচ্ছে। জমা = নগদ কমে ব্যাংক বাড়ে; উত্তোলন = ব্যাংক কমে নগদ বাড়ে।</p>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="col-span-2"><Label>সেচ ব্যাংক অ্যাকাউন্ট</Label>
+                    <Select value={sm.bank_account_id} onValueChange={v => setSm({ ...sm, bank_account_id: v })}>
+                      <SelectTrigger><SelectValue placeholder="নির্বাচন করুন" /></SelectTrigger>
+                      <SelectContent>
+                        {accounts.filter(x => isSechStream(x.stream)).map(x => (
+                          <SelectItem key={x.id} value={x.id}>{x.bank_name} — {x.account_no} ({money(balances.get(x.id) ?? 0)})</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div><Label>ধরন</Label>
+                    <Select value={sm.direction} onValueChange={v => setSm({ ...sm, direction: v })}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="deposit">নগদ → ব্যাংকে জমা</SelectItem>
+                        <SelectItem value="withdraw">ব্যাংক → নগদ উত্তোলন</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div><Label>পরিমাণ</Label><Input type="number" value={sm.amount || ""} onChange={e => setSm({ ...sm, amount: +e.target.value })} /></div>
+                  <div><Label>তারিখ</Label><Input type="date" value={sm.txn_date} onChange={e => setSm({ ...sm, txn_date: e.target.value })} /></div>
+                  <div className="col-span-2"><Label>নোট (ঐচ্ছিক)</Label><Input value={sm.note} onChange={e => setSm({ ...sm, note: e.target.value })} /></div>
+                </div>
+                <DialogFooter><Button variant="outline" onClick={() => setOpenS(false)}>বাতিল</Button><Button onClick={saveSechMove}>সংরক্ষণ</Button></DialogFooter>
+              </DialogContent>
+            </Dialog>
+
             <Dialog open={openX} onOpenChange={setOpenX}>
+
               <DialogTrigger asChild><Button size="sm"><ArrowRightLeft className="h-4 w-4 mr-1" />Transfer</Button></DialogTrigger>
               <DialogContent>
                 <DialogHeader><DialogTitle>Bank-to-Bank Transfer</DialogTitle></DialogHeader>

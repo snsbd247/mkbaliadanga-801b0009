@@ -269,3 +269,46 @@ export async function postBankOpening(opts: {
     return "skipped";
   }
 }
+
+/** Stable journal reference for a cash ↔ bank movement (deposit/withdraw). */
+export const bankCashTransferRef = (bankTxnId: string) => `BANK-CASH-${bankTxnId}`;
+
+/**
+ * নগদ ↔ ব্যাংক ট্রান্সফারের জার্নাল পোস্ট করে:
+ *   deposit  (নগদ → ব্যাংক): Dr Bank(1020) / Cr Cash(1010)
+ *   withdraw (ব্যাংক → নগদ): Dr Cash(1010) / Cr Bank(1020)
+ * Best-effort — কখনো caller-এর ফ্লো ভাঙবে না।
+ */
+export async function postBankCashTransfer(opts: {
+  bankTxnId: string;
+  direction: "deposit" | "withdraw";
+  amount: number;
+  bankLabel?: string | null;
+  entryDate?: string | null;
+  officeId?: string | null;
+  createdBy?: string | null;
+}): Promise<"posted" | "skipped"> {
+  const amount = Math.round(Number(opts.amount) || 0);
+  if (amount <= 0) return "skipped";
+  const [cash, bank] = await Promise.all([accountId(ACC.cash), accountId(ACC.bank)]);
+  if (!cash || !bank) return "skipped";
+  const label = opts.bankLabel ? ` — ${opts.bankLabel}` : "";
+  const isDeposit = opts.direction === "deposit";
+  await createJournal({
+    reference: bankCashTransferRef(opts.bankTxnId),
+    description: `${isDeposit ? "নগদ ব্যাংকে জমা" : "ব্যাংক থেকে নগদ উত্তোলন"}${label}`,
+    officeId: opts.officeId,
+    createdBy: opts.createdBy,
+    entryDate: opts.entryDate ?? null,
+    lines: isDeposit
+      ? [
+          { account_id: bank, debit: amount, credit: 0, description: "ব্যাংকে জমা", position: 1 },
+          { account_id: cash, debit: 0, credit: amount, description: "নগদ কমেছে", position: 2 },
+        ]
+      : [
+          { account_id: cash, debit: amount, credit: 0, description: "নগদ বৃদ্ধি", position: 1 },
+          { account_id: bank, debit: 0, credit: amount, description: "ব্যাংক থেকে উত্তোলন", position: 2 },
+        ],
+  });
+  return "posted";
+}
