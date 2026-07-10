@@ -171,7 +171,7 @@ export default function Dashboard() {
       { label: lang === "bn" ? "সেচের বাকি" : "Irrigation Due", value: money(irrigationDue), icon: Droplets, tone: "danger", href: "/reports/irrigation-due" },
       
       { label: lang === "bn" ? "হাতে নগদ" : "Hand Cash", value: money(handCashBalance), icon: Banknote, tone: handCashBalance < 0 ? "danger" : "success", href: "/hand-cash" },
-      { label: lang === "bn" ? "হ্যান্ড ক্যাশ (মাস শেষ)" : "Hand Cash (Month-end)", value: money(handCashClosing), icon: Banknote, tone: "success", href: "/hand-cash" },
+      { label: lang === "bn" ? "হ্যান্ড ক্যাশ (মাস শেষ)" : "Hand Cash (Month-end)", value: money(handCashClosing), icon: Banknote, tone: handCashClosing < 0 ? "danger" : "success", href: "/hand-cash" },
       { label: t("pendingApprovals"), value: String(pendingCount), icon: AlertTriangle, tone: pendingCount > 0 ? "warn" : "default", href: "/approvals" },
     ]);
 
@@ -205,7 +205,7 @@ export default function Dashboard() {
     }
     const fromIso = new Date(now.getFullYear(), now.getMonth() - 5, 1).toISOString().slice(0, 10);
     const [pAll, eAll, sAll] = await Promise.all([
-      db.from("payments").select("amount,created_at").is("deleted_at", null).gte("created_at", fromIso),
+      db.from("payments").select("amount,created_at,occurred_at,status").is("deleted_at", null).gte("created_at", fromIso),
       db.from("expenses").select("amount,expense_date").is("deleted_at", null).gte("expense_date", fromIso),
       db.from("savings_transactions").select("type,amount,txn_date,status").is("deleted_at", null).eq("status", "approved").gte("txn_date", fromIso),
     ]);
