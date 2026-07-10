@@ -108,6 +108,8 @@ export default function IrrigationDueReport() {
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string>("");
+  const [pageSize, setPageSize] = useState<number>(100);
+  const [page, setPage] = useState<number>(1);
 
   useEffect(() => {
     document.title = t("irrigationDueReport");
