@@ -88,7 +88,7 @@ export default function Receipts() {
       const pid = (iip as any).payment_id;
       if (!pid || map[pid]) continue;
       const land = (iip as any).irrigation_invoices?.lands;
-      const name = land?.mouzas?.name_bn || land?.mouzas?.name || land?.mouza;
+      const name = resolveMouzaName(land);
       if (name) map[pid] = name;
     }
     setMouzaByPayment(map);
