@@ -82,8 +82,9 @@ export default function Receipts() {
   async function resolveMouzas(rows: any[]) {
     const irrRows = rows.filter((p) => p.kind === "irrigation");
     const payIds = irrRows.map((p) => p.id);
-    if (payIds.length === 0) { setMouzaByPayment({}); return; }
+    if (payIds.length === 0) { setMouzaByPayment({}); setMouzaNamesByPayment({}); return; }
     const map: Record<string, string> = {};
+    const namesMap: Record<string, string[]> = {};
 
     const { data: iips } = await db
       .from("irrigation_invoice_payments")
@@ -94,7 +95,7 @@ export default function Receipts() {
       if (!pid || map[pid]) continue;
       const land = (iip as any).irrigation_invoices?.lands;
       const name = resolveMouzaName(land);
-      if (name) map[pid] = name;
+      if (name) { map[pid] = name; namesMap[pid] = resolveMouzaAllNames(land); }
     }
 
     // Fallback: for any irrigation payment still unresolved, use the farmer's land mouza.
@@ -107,30 +108,31 @@ export default function Receipts() {
         .in("farmer_id", farmerIds)
         .is("deleted_at", null);
       const byFarmer: Record<string, string> = {};
+      const namesByFarmer: Record<string, string[]> = {};
       for (const l of lands ?? []) {
         const fid = (l as any).farmer_id;
         if (!fid || byFarmer[fid]) continue;
         const name = resolveMouzaName(l as any);
-        if (name) byFarmer[fid] = name;
+        if (name) { byFarmer[fid] = name; namesByFarmer[fid] = resolveMouzaAllNames(l as any); }
       }
       for (const p of unresolved) {
         const name = byFarmer[p.farmer_id];
-        if (name) map[p.id] = name;
+        if (name) { map[p.id] = name; namesMap[p.id] = namesByFarmer[p.farmer_id]; }
       }
     }
 
     setMouzaByPayment(map);
+    setMouzaNamesByPayment(namesMap);
   }
 
   const displayList = useMemo(() => {
     const code = farmerCode.trim().toLowerCase();
-    const m = mouza.trim().toLowerCase();
     return list.filter((p) => {
       if (code && !String(p.farmers?.farmer_code ?? "").toLowerCase().includes(code)) return false;
-      if (m && !String(mouzaByPayment[p.id] ?? "").toLowerCase().includes(m)) return false;
+      if (!namesMatchMouza(mouzaNamesByPayment[p.id] ?? [], mouza)) return false;
       return true;
     });
-  }, [list, farmerCode, mouza, mouzaByPayment]);
+  }, [list, farmerCode, mouza, mouzaNamesByPayment]);
 
   function clearFilters() {
     setReceiptNo(""); setFrom(""); setTo(""); setFarmerId(null); setFarmerCode(""); setMouza("");
