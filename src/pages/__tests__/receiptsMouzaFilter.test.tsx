@@ -16,6 +16,7 @@ const payments = [
     amount: 500,
     status: "approved",
     created_at: "2026-07-01T00:00:00Z",
+    farmer_id: "farmer-1",
     farmers: { name_bn: "করিম", farmer_code: "F1" },
   },
   {
@@ -25,28 +26,39 @@ const payments = [
     amount: 700,
     status: "approved",
     created_at: "2026-07-02T00:00:00Z",
+    farmer_id: "farmer-2",
     farmers: { name_bn: "রহিম", farmer_code: "F2" },
   },
 ];
 
 const iips = [
-  {
-    payment_id: "pay-1",
-    irrigation_invoices: {
-      land_id: "land-1",
-      lands: { mouza: "", mouzas: { name_bn: "কোচলাপাড়া", name: "Kochlapara" } },
-    },
-  },
-  {
-    payment_id: "pay-2",
-    irrigation_invoices: {
-      land_id: "land-2",
-      lands: { mouza: "", mouzas: { name_bn: "চরপাড়া", name: "Charpara" } },
-    },
-  },
+  { payment_id: "pay-1", invoice_id: "inv-1" },
+  { payment_id: "pay-2", invoice_id: "inv-2" },
+];
+
+const invoices = [
+  { id: "inv-1", farmer_id: "farmer-1", land_id: "land-1" },
+  { id: "inv-2", farmer_id: "farmer-2", land_id: "land-2" },
+];
+
+const lands = [
+  { id: "land-1", farmer_id: "farmer-1", mouza: "", mouza_id: "mouza-1" },
+  { id: "land-2", farmer_id: "farmer-2", mouza: "", mouza_id: "mouza-2" },
+];
+
+const mouzas = [
+  { id: "mouza-1", name_bn: "কোচলাপাড়া", name: "Kochlapara" },
+  { id: "mouza-2", name_bn: "চরপাড়া", name: "Charpara" },
 ];
 
 function makeQuery(table: string) {
+  const tableData: Record<string, any[]> = {
+    payments,
+    irrigation_invoice_payments: iips,
+    irrigation_invoices: invoices,
+    lands,
+    mouzas,
+  };
   const chain: any = {
     select: () => chain,
     is: () => chain,
@@ -55,8 +67,8 @@ function makeQuery(table: string) {
     gte: () => chain,
     lte: () => chain,
     order: () => chain,
-    in: () => Promise.resolve({ data: table === "irrigation_invoice_payments" ? iips : [], error: null }),
-    limit: () => Promise.resolve({ data: table === "payments" ? payments : [], error: null }),
+    in: () => Promise.resolve({ data: tableData[table] ?? [], error: null }),
+    limit: () => Promise.resolve({ data: tableData[table] ?? [], error: null }),
   };
   return chain;
 }
