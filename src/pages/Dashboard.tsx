@@ -138,16 +138,23 @@ export default function Dashboard() {
       .is("deleted_at", null).gte("created_at", monthStart);
     const activeLoanCount = loansData.filter((l: any) => l.status === "approved").length;
 
-    // Hand Cash — prefer split cash accounts (1011/1012); older installs only
-    // have 1010, so fall back to it instead of showing a misleading zero.
-    const { data: cashAccts } = await db.from("accounts").select("id,code").in("code", ["1010", "1011", "1012"]);
-    const splitIds = (cashAccts ?? []).filter((a: any) => a.code === "1011" || a.code === "1012").map((a: any) => a.id);
-    const fallbackId = (cashAccts ?? []).find((a: any) => a.code === "1010")?.id;
-    const cashAccountIds = splitIds.length ? splitIds : (fallbackId ? [fallbackId] : []);
-    const { data: cashLedger } = cashAccountIds.length
-      ? await db.from("ledger_entries").select("debit,credit,account_id").in("account_id", cashAccountIds)
-      : { data: [] as any[] };
-    const handCashBalance = (cashLedger ?? []).reduce((a: number, r: any) => a + Number(r.debit || 0) - Number(r.credit || 0), 0);
+    // Hand Cash — must match the Cash Book "Irrigation cash" closing exactly
+    // (income = irrigation-kind receipts + approved irrigation payments not yet
+    // receipted; expense = irrigation-stream vouchers). The old ledger_entries
+    // computation mixed streams and diverged from the Cash Book.
+    const IRR_INCOME_KINDS = new Set(["irrigation", "bigha_rent", "pond", "crop_sale", "scrap"]);
+    const [{ data: hcReceiptsAll }, { data: hcIrrExpenses }] = await Promise.all([
+      db.from("receipts").select("kind,amount,receipt_no"),
+      db.from("expenses").select("amount").eq("stream", "irrigation").is("deleted_at", null),
+    ]);
+    const receiptNos = new Set((hcReceiptsAll ?? []).map((r: any) => String(r.receipt_no ?? "")).filter(Boolean));
+    const irrReceiptIncome = sum((hcReceiptsAll ?? []).filter((r: any) => IRR_INCOME_KINDS.has(r.kind)), "amount");
+    const { data: irrPayFallback } = await db.from("payments")
+      .select("amount,receipt_no").eq("kind", "irrigation").eq("status", "approved").is("deleted_at", null);
+    const irrPayIncome = sum((irrPayFallback ?? []).filter((p: any) => p.receipt_no && !receiptNos.has(String(p.receipt_no))), "amount");
+    const irrExpenseTotal = sum(hcIrrExpenses ?? [], "amount");
+    const handCashBalance = irrReceiptIncome + irrPayIncome - irrExpenseTotal;
+
 
     // Hand Cash module month-end: use the latest submitted closing if present;
     // otherwise mirror /hand-cash's current-month closing from receipts-expenses.
