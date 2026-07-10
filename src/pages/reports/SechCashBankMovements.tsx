@@ -9,9 +9,11 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { FileDown, RefreshCw, Droplets } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { FileDown, RefreshCw, Droplets, FileSpreadsheet, Printer, ExternalLink } from "lucide-react";
+import { Link } from "react-router-dom";
 import { money, fmtDate } from "@/lib/format";
-import { exportTablePDF } from "@/lib/exports";
+import { exportTablePDF, exportExcel } from "@/lib/exports";
 import { useLang } from "@/i18n/LanguageProvider";
 import { isSechStream } from "@/lib/cashStreamGuard";
 
@@ -36,6 +38,11 @@ export default function SechCashBankMovements() {
   const [openingCash, setOpeningCash] = useState(0);
   const [audit, setAudit] = useState<any[]>([]);
   const [journals, setJournals] = useState<any[]>([]);
+  const [offices, setOffices] = useState<any[]>([]);
+  const [profiles, setProfiles] = useState<any[]>([]);
+  const [auOffice, setAuOffice] = useState("__all__");
+  const [auUser, setAuUser] = useState("__all__");
+  const [auAction, setAuAction] = useState("__all__");
 
   useEffect(() => { document.title = tx("Sech Cash & Bank Movements", "সেচ নগদ ও ব্যাংক মুভমেন্ট"); }, [lang]);
   useEffect(() => { void load(); /* eslint-disable-next-line */ }, [from, to]);
@@ -65,12 +72,16 @@ export default function SechCashBankMovements() {
         setAllTxns(trx ?? []);
       } else setAllTxns([]);
 
-      const [audRes, jRes] = await Promise.all([
-        sb.from("system_audit_logs").select("*").eq("module", "bank_transaction").order("created_at", { ascending: false }).limit(200),
+      const [audRes, jRes, offRes, profRes] = await Promise.all([
+        sb.from("system_audit_logs").select("*").eq("module", "bank_transaction").order("created_at", { ascending: false }).limit(500),
         sb.from("journal_entries").select("id,entry_date,reference,description,journal_entry_lines(debit,credit,description,account:accounts(code,name,name_bn))").like("reference", "BANK-CASH-%").is("deleted_at", null).order("entry_date", { ascending: false }).limit(300),
+        sb.from("offices").select("id,name"),
+        sb.from("profiles").select("id,full_name"),
       ]);
       setAudit(audRes.data ?? []);
       setJournals(jRes.data ?? []);
+      setOffices(offRes.data ?? []);
+      setProfiles(profRes.data ?? []);
     } finally { setLoading(false); }
   }
 
@@ -117,6 +128,49 @@ export default function SechCashBankMovements() {
     );
   }
 
+  // Excel export — same rows + totals as the PDF.
+  function exportXlsx() {
+    const rows = rangeTxns.map(t => ({
+      [bn ? "তারিখ" : "Date"]: fmtDate(t.txn_date),
+      [bn ? "ব্যাংক" : "Bank"]: `${t.account?.bank_name ?? ""} ${t.account?.account_no ?? ""}`.trim(),
+      [bn ? "ধরন" : "Type"]: typeLabel(t.txn_type),
+      [bn ? "পরিমাণ" : "Amount"]: num(t.amount),
+      [bn ? "নোট" : "Note"]: t.note ?? "",
+    }));
+    const T = bn ? "সারসংক্ষেপ" : "Summary";
+    rows.push({ [bn ? "তারিখ" : "Date"]: "", [bn ? "ব্যাংক" : "Bank"]: "", [bn ? "ধরন" : "Type"]: bn ? "মোট জমা" : "Total Deposit", [bn ? "পরিমাণ" : "Amount"]: totals.deposits, [bn ? "নোট" : "Note"]: T } as any);
+    rows.push({ [bn ? "তারিখ" : "Date"]: "", [bn ? "ব্যাংক" : "Bank"]: "", [bn ? "ধরন" : "Type"]: bn ? "মোট উত্তোলন" : "Total Withdraw", [bn ? "পরিমাণ" : "Amount"]: totals.withdrawals, [bn ? "নোট" : "Note"]: T } as any);
+    rows.push({ [bn ? "তারিখ" : "Date"]: "", [bn ? "ব্যাংক" : "Bank"]: "", [bn ? "ধরন" : "Type"]: bn ? "ক্যাশ ইন হ্যান্ড (সেচ)" : "Cash in Hand (Sech)", [bn ? "পরিমাণ" : "Amount"]: totals.cashInHand, [bn ? "নোট" : "Note"]: T } as any);
+    rows.push({ [bn ? "তারিখ" : "Date"]: "", [bn ? "ব্যাংক" : "Bank"]: "", [bn ? "ধরন" : "Type"]: bn ? "ব্যাংক ব্যালেন্স (সেচ)" : "Bank Balance (Sech)", [bn ? "পরিমাণ" : "Amount"]: bankBalance, [bn ? "নোট" : "Note"]: T } as any);
+    exportExcel("sech-cash-bank", bn ? "সেচ মুভমেন্ট" : "Sech Movements", rows, { from, to });
+  }
+
+  const officeName = (id?: string | null) => offices.find(o => o.id === id)?.name ?? (id ? String(id).slice(0, 8) : "-");
+  const userName = (id?: string | null) => profiles.find(p => p.id === id)?.full_name ?? (id ? String(id).slice(0, 8) : "-");
+
+  const auditActions = useMemo(() => Array.from(new Set(audit.map(a => a.action_type).filter(Boolean))), [audit]);
+  const auditUsers = useMemo(() => Array.from(new Set(audit.map(a => a.user_id).filter(Boolean))), [audit]);
+  const auditOffices = useMemo(() => Array.from(new Set(audit.map(a => a.office_id).filter(Boolean))), [audit]);
+
+  const filteredAudit = useMemo(() => audit.filter(a => {
+    const d = (a.created_at ?? "").slice(0, 10);
+    if (d && (d < from || d > to)) return false;
+    if (auOffice !== "__all__" && a.office_id !== auOffice) return false;
+    if (auUser !== "__all__" && a.user_id !== auUser) return false;
+    if (auAction !== "__all__" && a.action_type !== auAction) return false;
+    return true;
+  }), [audit, from, to, auOffice, auUser, auAction]);
+
+  async function exportAuditPdf() {
+    const head = [bn ? "সময়" : "Time", bn ? "অফিস" : "Office", bn ? "ব্যবহারকারী" : "User", bn ? "অ্যাকশন" : "Action", bn ? "বিবরণ" : "Details"];
+    const rows = filteredAudit.map(a => [
+      `${fmtDate(a.created_at)} ${new Date(a.created_at).toLocaleTimeString()}`,
+      officeName(a.office_id), userName(a.user_id), a.action_type,
+      typeof a.new_data === "string" ? a.new_data : JSON.stringify(a.new_data),
+    ]);
+    await exportTablePDF(bn ? "সেচ ব্যাংক অডিট ট্রেইল" : "Sech Bank Audit Trail", head, rows, { from, to }, { landscape: true });
+  }
+
   const typeLabel = (t: string) =>
     t === "deposit" ? (bn ? "জমা" : "Deposit") : t === "withdraw" ? (bn ? "উত্তোলন" : "Withdraw") : t;
 
@@ -125,7 +179,7 @@ export default function SechCashBankMovements() {
       <PageHeader
         title={bn ? "সেচ নগদ ও ব্যাংক মুভমেন্ট" : "Sech Cash & Bank Movements"}
         description={bn ? "সেচ নগদ, ব্যাংক জমা/উত্তোলন ও জার্নাল — তারিখ রেঞ্জ অনুযায়ী।" : "Sech cash-in-hand, bank deposits/withdrawals and journals by date range."}
-        actions={<Button size="sm" onClick={exportPdf}><FileDown className="h-4 w-4 mr-1" />PDF</Button>}
+        actions={<div className="flex gap-2"><Button size="sm" onClick={exportPdf}><FileDown className="h-4 w-4 mr-1" />PDF</Button><Button size="sm" variant="outline" onClick={exportXlsx}><FileSpreadsheet className="h-4 w-4 mr-1" />Excel</Button></div>}
       />
 
       <Card className="p-3 mb-3 flex flex-wrap items-end gap-3">
@@ -185,24 +239,38 @@ export default function SechCashBankMovements() {
               <TableHeader><TableRow>
                 <TableHead>{bn ? "তারিখ" : "Date"}</TableHead>
                 <TableHead>{bn ? "বিবরণ" : "Description"}</TableHead>
-                <TableHead>{bn ? "হিসাব (ডেবিট / ক্রেডিট)" : "Accounts (Dr / Cr)"}</TableHead>
+                <TableHead>{bn ? "ডেবিট / ক্রেডিট সারাংশ" : "Dr / Cr Summary"}</TableHead>
+                <TableHead>{bn ? "উৎস" : "Source"}</TableHead>
               </TableRow></TableHeader>
               <TableBody>
-                {journals.map(j => (
-                  <TableRow key={j.id}>
-                    <TableCell>{fmtDate(j.entry_date)}</TableCell>
-                    <TableCell>{j.description}</TableCell>
-                    <TableCell className="text-xs">
-                      {(j.journal_entry_lines ?? []).map((l: any, i: number) => (
-                        <div key={i}>
-                          {(bn ? l.account?.name_bn : l.account?.name) ?? l.account?.code}: {l.debit > 0 ? `Dr ${money(num(l.debit))}` : `Cr ${money(num(l.credit))}`}
-                        </div>
-                      ))}
-                    </TableCell>
-                  </TableRow>
-                ))}
+                {journals.map(j => {
+                  const lines = j.journal_entry_lines ?? [];
+                  const dr = lines.find((l: any) => num(l.debit) > 0);
+                  const cr = lines.find((l: any) => num(l.credit) > 0);
+                  const amt = lines.reduce((s: number, l: any) => s + num(l.debit), 0);
+                  const drName = (bn ? dr?.account?.name_bn : dr?.account?.name) ?? dr?.account?.code ?? "-";
+                  const crName = (bn ? cr?.account?.name_bn : cr?.account?.name) ?? cr?.account?.code ?? "-";
+                  const txnId = String(j.reference ?? "").replace(/^BANK-CASH-/, "");
+                  return (
+                    <TableRow key={j.id}>
+                      <TableCell>{fmtDate(j.entry_date)}</TableCell>
+                      <TableCell>{j.description}</TableCell>
+                      <TableCell className="text-xs">
+                        <div><span className="font-medium">Dr</span> {drName} — {money(amt)}</div>
+                        <div><span className="font-medium">Cr</span> {crName} — {money(amt)}</div>
+                      </TableCell>
+                      <TableCell className="text-xs">
+                        {txnId ? (
+                          <Link to={`/bank-accounts?txn=${txnId}`} className="inline-flex items-center gap-1 text-primary hover:underline">
+                            <ExternalLink className="h-3 w-3" />{bn ? "ব্যাংক লেনদেন" : "Bank txn"}
+                          </Link>
+                        ) : "-"}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
                 {journals.length === 0 && (
-                  <TableRow><TableCell colSpan={3} className="text-center text-muted-foreground py-6">{bn ? "কোন জার্নাল নেই" : "No journal entries"}</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground py-6">{bn ? "কোন জার্নাল নেই" : "No journal entries"}</TableCell></TableRow>
                 )}
               </TableBody>
             </Table>
@@ -210,23 +278,61 @@ export default function SechCashBankMovements() {
         </TabsContent>
 
         <TabsContent value="audit">
+          <Card className="p-3 mb-3 flex flex-wrap items-end gap-3">
+            <div className="min-w-[9rem]">
+              <Label>{bn ? "অফিস" : "Office"}</Label>
+              <Select value={auOffice} onValueChange={setAuOffice}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__all__">{bn ? "সব" : "All"}</SelectItem>
+                  {auditOffices.map(id => <SelectItem key={id} value={id}>{officeName(id)}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="min-w-[9rem]">
+              <Label>{bn ? "ব্যবহারকারী" : "User"}</Label>
+              <Select value={auUser} onValueChange={setAuUser}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__all__">{bn ? "সব" : "All"}</SelectItem>
+                  {auditUsers.map(id => <SelectItem key={id} value={id}>{userName(id)}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="min-w-[9rem]">
+              <Label>{bn ? "অ্যাকশন" : "Action"}</Label>
+              <Select value={auAction} onValueChange={setAuAction}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__all__">{bn ? "সব" : "All"}</SelectItem>
+                  {auditActions.map(a => <SelectItem key={a} value={a}>{a}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="ml-auto"><Badge variant="secondary">{bn ? "স্ট্রিম: সেচ" : "Stream: Sech"}</Badge></div>
+            <Button size="sm" variant="outline" onClick={exportAuditPdf}><Printer className="h-4 w-4 mr-1" />{bn ? "প্রিন্ট / PDF" : "Print / PDF"}</Button>
+          </Card>
           <Card className="p-0 overflow-auto">
             <Table>
               <TableHeader><TableRow>
                 <TableHead>{bn ? "সময়" : "Time"}</TableHead>
+                <TableHead>{bn ? "অফিস" : "Office"}</TableHead>
+                <TableHead>{bn ? "ব্যবহারকারী" : "User"}</TableHead>
                 <TableHead>{bn ? "অ্যাকশন" : "Action"}</TableHead>
                 <TableHead>{bn ? "বিবরণ" : "Details"}</TableHead>
               </TableRow></TableHeader>
               <TableBody>
-                {audit.map(a => (
+                {filteredAudit.map(a => (
                   <TableRow key={a.id}>
                     <TableCell className="whitespace-nowrap">{fmtDate(a.created_at)} {new Date(a.created_at).toLocaleTimeString()}</TableCell>
+                    <TableCell>{officeName(a.office_id)}</TableCell>
+                    <TableCell>{userName(a.user_id)}</TableCell>
                     <TableCell><Badge variant="outline">{a.action_type}</Badge></TableCell>
                     <TableCell className="text-xs text-muted-foreground max-w-md truncate">{typeof a.new_data === "string" ? a.new_data : JSON.stringify(a.new_data)}</TableCell>
                   </TableRow>
                 ))}
-                {audit.length === 0 && (
-                  <TableRow><TableCell colSpan={3} className="text-center text-muted-foreground py-6">{bn ? "কোন অডিট রেকর্ড নেই" : "No audit records"}</TableCell></TableRow>
+                {filteredAudit.length === 0 && (
+                  <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-6">{bn ? "কোন অডিট রেকর্ড নেই" : "No audit records"}</TableCell></TableRow>
                 )}
               </TableBody>
             </Table>

@@ -1,10 +1,14 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/auth/AuthProvider";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Switch } from "@/components/ui/switch";
+import { Input } from "@/components/ui/input";
+import { Progress } from "@/components/ui/progress";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import {
@@ -12,7 +16,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useLang } from "@/i18n/LanguageProvider";
-import { Download, Database, FileSpreadsheet, Upload, AlertTriangle, ShieldCheck, FileCode2, Loader2 } from "lucide-react";
+import { Download, Database, FileSpreadsheet, Upload, AlertTriangle, ShieldCheck, FileCode2, Loader2, CalendarClock, CheckCircle2, XCircle } from "lucide-react";
 import { toast } from "sonner";
 import * as XLSX from "xlsx";
 
@@ -138,6 +142,37 @@ export default function Backup() {
   const [sqlRestoreFile, setSqlRestoreFile] = useState<File | null>(null);
   const [sqlConfirmOpen, setSqlConfirmOpen] = useState(false);
   const [sqlResult, setSqlResult] = useState<{ ok: boolean; message: string; durationMs?: number } | null>(null);
+  const [sqlProgress, setSqlProgress] = useState(0);
+  const [restoreLog, setRestoreLog] = useState<{ table: string; status: "ok" | "error" | "running"; rows?: number; error?: string }[]>([]);
+  const [verifyRows, setVerifyRows] = useState<{ tablename: string; expected: number; actual: number }[]>([]);
+  const [autoSnapshot, setAutoSnapshot] = useState<{ url: string; name: string } | null>(null);
+  const [schedule, setSchedule] = useState<any | null>(null);
+  const [schedLoaded, setSchedLoaded] = useState(false);
+
+  // ---- Scheduled backups (developer only) ----
+  useEffect(() => {
+    if (!isDeveloper) return;
+    void (async () => {
+      const { data } = await (supabase as any).from("backup_schedules").select("*").limit(1).maybeSingle();
+      setSchedule(data ?? { enabled: false, frequency: "daily", retention_count: 7 });
+      setSchedLoaded(true);
+    })();
+  }, [isDeveloper]);
+
+  async function saveSchedule() {
+    setBusy("__sched__");
+    try {
+      const payload = { enabled: !!schedule.enabled, frequency: schedule.frequency ?? "daily", retention_count: Number(schedule.retention_count) || 7 };
+      let res;
+      if (schedule.id) res = await (supabase as any).from("backup_schedules").update(payload).eq("id", schedule.id).select().maybeSingle();
+      else res = await (supabase as any).from("backup_schedules").insert(payload).select().maybeSingle();
+      if (res.error) throw res.error;
+      setSchedule(res.data);
+      toast.success("Backup schedule সংরক্ষিত হয়েছে");
+    } catch (e: any) {
+      toast.error("Schedule save failed: " + e.message);
+    } finally { setBusy(null); }
+  }
 
   // ---- Full SQL backup / restore (developer only) ----
   async function downloadFullSql() {
@@ -168,35 +203,126 @@ export default function Backup() {
     }
   }
 
+  // Parse a data-only export into ordered per-table chunks (TRUNCATE + INSERTs)
+  // using the `-- <table>: <n> rows` markers and TRUNCATE lines the exporter emits.
+  function parseSqlByTable(sql: string): { table: string; declared: number; sql: string }[] {
+    const lines = sql.split(/\r?\n/);
+    const truncates = new Map<string, string>();
+    for (const l of lines) {
+      const m = l.match(/^TRUNCATE TABLE public\."([^"]+)"/);
+      if (m) truncates.set(m[1], l);
+    }
+    const chunks: { table: string; declared: number; sql: string }[] = [];
+    let cur: { table: string; declared: number; body: string[] } | null = null;
+    const flush = () => {
+      if (!cur) return;
+      const trunc = truncates.get(cur.table);
+      const parts = [trunc, ...cur.body].filter(Boolean) as string[];
+      chunks.push({ table: cur.table, declared: cur.declared, sql: parts.join("\n") });
+      cur = null;
+    };
+    for (const l of lines) {
+      const m = l.match(/^-- (\w+): (\d+) rows$/);
+      if (m) { flush(); cur = { table: m[1], declared: Number(m[2]), body: [] }; continue; }
+      if (cur && l.trim().startsWith("INSERT INTO")) cur.body.push(l);
+    }
+    flush();
+    return chunks;
+  }
+
+  async function callRestore(body: any) {
+    const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/db-restore`;
+    const res = await fetch(url, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${session!.access_token}`, "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok || json.success === false) throw new Error(json.error ?? json.errors?.join("; ") ?? `HTTP ${res.status}`);
+    return json;
+  }
+
+  async function buildSqlSnapshot(): Promise<{ url: string; name: string } | null> {
+    try {
+      const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/db-export?mode=data`, {
+        headers: { Authorization: `Bearer ${session!.access_token}` },
+      });
+      if (!res.ok) return null;
+      const blob = new Blob([await res.blob()], { type: "application/sql" });
+      const url = URL.createObjectURL(blob);
+      const name = `pre-restore-snapshot-${new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-")}.sql`;
+      // Auto-download the rollback point immediately.
+      const a = document.createElement("a"); a.href = url; a.download = name; a.click();
+      return { url, name };
+    } catch { return null; }
+  }
+
   async function restoreFullSql() {
     if (!sqlRestoreFile) return toast.error("Choose a .sql file first");
     if (!session?.access_token) return toast.error("Not authenticated");
     setSqlConfirmOpen(false);
     setBusy("__sql_restore__");
-    setSqlResult(null);
+    setSqlResult(null); setSqlProgress(0); setRestoreLog([]); setVerifyRows([]);
+    const startedAt = Date.now();
     try {
       const sqlText = await sqlRestoreFile.text();
-      const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/db-restore`;
-      const res = await fetch(url, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${session.access_token}`,
-          "Content-Type": "application/sql",
-        },
-        body: sqlText,
-      });
-      const json = await res.json();
-      if (!res.ok || !json.success) {
-        const msg = json.errors?.join("; ") ?? json.error ?? `HTTP ${res.status}`;
-        setSqlResult({ ok: false, message: msg });
-        toast.error(`Restore failed: ${msg.slice(0, 120)}`);
-      } else {
-        setSqlResult({ ok: true, message: "Restore completed", durationMs: json.duration_ms });
-        toast.success(`Restore completed in ${(json.duration_ms / 1000).toFixed(1)}s`);
+      const chunks = parseSqlByTable(sqlText);
+      if (chunks.length === 0) {
+        // Fallback to legacy single-shot for non-standard files.
+        const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/db-restore`, {
+          method: "POST", headers: { Authorization: `Bearer ${session.access_token}`, "Content-Type": "application/sql" }, body: sqlText,
+        });
+        const json = await res.json();
+        if (!res.ok || !json.success) throw new Error(json.errors?.join("; ") ?? json.error ?? `HTTP ${res.status}`);
+        setSqlResult({ ok: true, message: "Restore completed (single-shot)", durationMs: json.duration_ms });
+        return;
       }
+
+      // Step 1 — auto pre-restore snapshot (rollback point).
+      toast.info("Pre-restore snapshot তৈরি হচ্ছে…");
+      const snap = await buildSqlSnapshot();
+      setAutoSnapshot(snap);
+
+      // Step 2 — begin: drop & stash foreign keys.
+      await callRestore({ phase: "begin" });
+
+      // Step 3 — load each table, updating progress + log.
+      const declaredMap = new Map<string, number>();
+      for (let i = 0; i < chunks.length; i++) {
+        const c = chunks[i];
+        declaredMap.set(c.table, c.declared);
+        setRestoreLog((prev) => [...prev, { table: c.table, status: "running", rows: c.declared }]);
+        try {
+          await callRestore({ phase: "exec", table: c.table, sql: c.sql });
+          setRestoreLog((prev) => prev.map((r) => r.table === c.table ? { ...r, status: "ok" } : r));
+        } catch (e: any) {
+          setRestoreLog((prev) => prev.map((r) => r.table === c.table ? { ...r, status: "error", error: e.message } : r));
+          throw new Error(`Table "${c.table}" failed: ${e.message}`);
+        }
+        setSqlProgress(Math.round(((i + 1) / chunks.length) * 100));
+      }
+
+      // Step 4 — commit: re-add foreign keys.
+      await callRestore({ phase: "commit" });
+
+      // Step 5 — verify row counts.
+      const vr = await callRestore({ phase: "verify" });
+      const actualMap = new Map<string, number>((vr.counts ?? []).map((r: any) => [r.tablename, Number(r.row_count)]));
+      const rows = Array.from(new Set([...declaredMap.keys(), ...actualMap.keys()])).sort().map((tbl) => ({
+        tablename: tbl, expected: declaredMap.get(tbl) ?? 0, actual: actualMap.get(tbl) ?? 0,
+      }));
+      setVerifyRows(rows);
+
+      const mism = rows.filter((r) => declaredMap.has(r.tablename) && r.expected !== r.actual).length;
+      setSqlResult({
+        ok: mism === 0,
+        message: mism === 0 ? `Restore verified — ${chunks.length} tables, all row counts match` : `Restore done but ${mism} table(s) have mismatched row counts — check verification`,
+        durationMs: Date.now() - startedAt,
+      });
+      if (mism === 0) toast.success("Restore সম্পন্ন ও যাচাই হয়েছে"); else toast.warning(`${mism} টেবিলে row count মেলেনি`);
     } catch (e: any) {
-      setSqlResult({ ok: false, message: e.message });
-      toast.error(`Restore failed: ${e.message}`);
+      setSqlResult({ ok: false, message: e.message, durationMs: Date.now() - startedAt });
+      toast.error(`Restore failed: ${String(e.message).slice(0, 140)}`);
     } finally {
       setBusy(null);
     }
@@ -584,7 +710,110 @@ export default function Backup() {
                     {sqlResult.durationMs !== undefined && ` (${(sqlResult.durationMs / 1000).toFixed(1)}s)`}
                   </div>
                 )}
+
+                {autoSnapshot && (
+                  <div className="mt-3 rounded p-2 text-xs bg-amber-50 text-amber-900 border border-amber-300 flex items-center justify-between gap-2">
+                    <span>Pre-restore snapshot (rollback point): <strong>{autoSnapshot.name}</strong></span>
+                    <a href={autoSnapshot.url} download={autoSnapshot.name} className="underline font-medium">আবার ডাউনলোড</a>
+                  </div>
+                )}
+
+                {busy === "__sql_restore__" && (
+                  <div className="mt-3">
+                    <div className="flex justify-between text-xs mb-1"><span>Restore চলছে… (table-by-table)</span><span>{sqlProgress}%</span></div>
+                    <Progress value={sqlProgress} />
+                  </div>
+                )}
+
+                {restoreLog.length > 0 && (
+                  <div className="mt-3 max-h-56 overflow-auto rounded border">
+                    <Table>
+                      <TableHeader><TableRow>
+                        <TableHead className="h-8">Table</TableHead>
+                        <TableHead className="h-8 text-right">Rows</TableHead>
+                        <TableHead className="h-8">Status</TableHead>
+                      </TableRow></TableHeader>
+                      <TableBody>
+                        {restoreLog.map((r) => (
+                          <TableRow key={r.table}>
+                            <TableCell className="py-1 font-mono text-xs">{r.table}</TableCell>
+                            <TableCell className="py-1 text-right text-xs">{r.rows ?? "-"}</TableCell>
+                            <TableCell className="py-1 text-xs">
+                              {r.status === "running" && <span className="inline-flex items-center gap-1 text-muted-foreground"><Loader2 className="h-3 w-3 animate-spin" />running</span>}
+                              {r.status === "ok" && <span className="inline-flex items-center gap-1 text-emerald-600"><CheckCircle2 className="h-3 w-3" />ok</span>}
+                              {r.status === "error" && <span className="inline-flex items-center gap-1 text-destructive" title={r.error}><XCircle className="h-3 w-3" />error</span>}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
+
+                {verifyRows.length > 0 && (
+                  <div className="mt-4">
+                    <div className="text-sm font-medium mb-2 flex items-center gap-2"><ShieldCheck className="h-4 w-4" />Post-restore verification (row counts)</div>
+                    <div className="max-h-64 overflow-auto rounded border">
+                      <Table>
+                        <TableHeader><TableRow>
+                          <TableHead className="h-8">Table</TableHead>
+                          <TableHead className="h-8 text-right">Expected</TableHead>
+                          <TableHead className="h-8 text-right">Actual</TableHead>
+                          <TableHead className="h-8">Match</TableHead>
+                        </TableRow></TableHeader>
+                        <TableBody>
+                          {verifyRows.map((r) => {
+                            const match = r.expected === r.actual;
+                            return (
+                              <TableRow key={r.tablename} className={match ? "" : "bg-destructive/5"}>
+                                <TableCell className="py-1 font-mono text-xs">{r.tablename}</TableCell>
+                                <TableCell className="py-1 text-right text-xs">{r.expected}</TableCell>
+                                <TableCell className="py-1 text-right text-xs">{r.actual}</TableCell>
+                                <TableCell className="py-1 text-xs">{match ? <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" /> : <XCircle className="h-3.5 w-3.5 text-destructive" />}</TableCell>
+                              </TableRow>
+                            );
+                          })}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </div>
+                )}
               </div>
+
+              {/* Scheduled backups */}
+              {schedLoaded && schedule && (
+                <div className="rounded-md border p-3 bg-background/60">
+                  <div className="text-sm font-medium mb-2 flex items-center gap-2"><CalendarClock className="h-4 w-4" />৩. Scheduled Full SQL Backups</div>
+                  <div className="flex flex-wrap items-end gap-4">
+                    <div className="flex items-center gap-2">
+                      <Switch checked={!!schedule.enabled} onCheckedChange={(v) => setSchedule({ ...schedule, enabled: v })} id="sched-en" />
+                      <Label htmlFor="sched-en" className="cursor-pointer">সক্রিয়</Label>
+                    </div>
+                    <div className="w-40">
+                      <Label className="text-xs">Frequency</Label>
+                      <Select value={schedule.frequency ?? "daily"} onValueChange={(v) => setSchedule({ ...schedule, frequency: v })}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="daily">দৈনিক (Daily)</SelectItem>
+                          <SelectItem value="weekly">সাপ্তাহিক (Weekly)</SelectItem>
+                          <SelectItem value="monthly">মাসিক (Monthly)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="w-32">
+                      <Label className="text-xs">Retention (কয়টি রাখবে)</Label>
+                      <Input type="number" min={1} value={schedule.retention_count ?? 7} onChange={(e) => setSchedule({ ...schedule, retention_count: e.target.value })} />
+                    </div>
+                    <Button onClick={saveSchedule} disabled={busy === "__sched__"}>
+                      {busy === "__sched__" ? <Loader2 className="h-4 w-4 animate-spin" /> : "সংরক্ষণ"}
+                    </Button>
+                  </div>
+                  {schedule.last_run_at && (
+                    <p className="text-xs text-muted-foreground mt-2">সর্বশেষ রান: {new Date(schedule.last_run_at).toLocaleString()} — {schedule.last_status ?? "-"}</p>
+                  )}
+                  <p className="text-xs text-muted-foreground mt-1">স্বয়ংক্রিয় ব্যাকআপ প্রতিদিন রাত ২টায় চেক হয় এবং frequency অনুযায়ী সংরক্ষণ করা হয় (private storage-এ)।</p>
+                </div>
+              )}
             </div>
           </div>
         </Card>

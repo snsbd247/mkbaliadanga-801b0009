@@ -44,6 +44,7 @@ import { useReceiptRenderArgs } from "@/lib/receiptOptions";
 import { useBranding } from "@/lib/branding";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { IrrigationPaymentPanel } from "@/components/payments/IrrigationPaymentPanel";
+import { SechBankDepositButton } from "@/components/payments/SechBankDepositButton";
 import { findRecentDuplicatePayment } from "@/lib/duplicatePaymentCheck";
 import { buildIrrigationReceiptEnrichment } from "@/lib/irrigationReceiptData";
 import { buildPaymentReceiptData } from "@/lib/buildPaymentReceiptData";
@@ -825,7 +826,7 @@ export default function Payments() {
       <PageHeader
         title={t("payments")}
         description={tx("Unified payment — splits across loan, savings & irrigation in one entry", "একীভূত পেমেন্ট — এক এন্ট্রিতে ঋণ, সঞ্চয় ও সেচে ভাগ হয়")}
-        actions={<div className="flex gap-2"><Dialog open={withdrawOpen} onOpenChange={setWithdrawOpen}>
+        actions={<div className="flex gap-2"><SechBankDepositButton /><Dialog open={withdrawOpen} onOpenChange={setWithdrawOpen}>
           <DialogTrigger asChild>
             <Button variant="outline" size="sm" disabled={!farmerId}><ArrowDownToLine className="h-4 w-4 mr-1" />{tx("Withdraw savings", "সঞ্চয় উত্তোলন")}</Button>
           </DialogTrigger>
