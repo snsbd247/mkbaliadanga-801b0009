@@ -25,6 +25,9 @@ type MouzaObj = { name?: string | null; name_bn?: string | null };
 type MouzaRelation = MouzaObj | MouzaObj[] | null | undefined;
 
 export type LandLike = {
+  id?: string | null;
+  mouza_id?: string | null;
+  farmer_id?: string | null;
   mouza?: string | null;
   mouzas?: MouzaRelation;
 } | null | undefined;
@@ -69,6 +72,206 @@ export function namesMatchMouza(names: string[], filter: string): boolean {
   if (!filter || filter === "all") return true;
   const f = filter.trim().toLowerCase();
   return names.some((n) => n.toLowerCase().includes(f));
+}
+
+export type PaymentLikeForMouza = {
+  id: string;
+  kind?: string | null;
+  farmer_id?: string | null;
+  reference_id?: string | null;
+};
+
+export type PaymentMouzaResolution = {
+  paymentId: string;
+  name: string;
+  variants: string[];
+  mouzaId: string | null;
+  source: "invoice-payment" | "reference-invoice" | "farmer-invoice" | "farmer-land";
+};
+
+function uniqueStrings(values: Array<string | null | undefined>): string[] {
+  return Array.from(
+    new Set(values.map((v) => (v ?? "").toString().trim()).filter(Boolean)),
+  );
+}
+
+function attachMouzaRelation(land: any, mouzaById: Record<string, MouzaObj>): LandLike {
+  if (!land) return null;
+  return {
+    ...land,
+    mouzas: land.mouza_id ? mouzaById[land.mouza_id] ?? null : null,
+  };
+}
+
+function resolveFromLands(
+  lands: LandLike[],
+  source: PaymentMouzaResolution["source"],
+  paymentId: string,
+): PaymentMouzaResolution | null {
+  const usable = lands.filter((land) => resolveMouzaAllNames(land).length > 0);
+  if (!usable.length) return null;
+  const names = uniqueStrings(usable.map((land) => resolveMouzaName(land)));
+  const variants = uniqueStrings(usable.flatMap((land) => resolveMouzaAllNames(land)));
+  const mouzaId = usable.find((land) => land?.mouza_id)?.mouza_id ?? null;
+  return { paymentId, name: names.join(", "), variants, mouzaId, source };
+}
+
+async function fetchMouzasById(ids: string[]): Promise<Record<string, MouzaObj>> {
+  const unique = Array.from(new Set(ids.filter(Boolean)));
+  if (!unique.length) return {};
+  const { data } = await db.from("mouzas").select("id,name,name_bn").in("id", unique);
+  const out: Record<string, MouzaObj> = {};
+  for (const row of data ?? []) out[(row as any).id] = row as MouzaObj;
+  return out;
+}
+
+async function fetchLandsById(ids: string[]): Promise<Record<string, LandLike>> {
+  const unique = Array.from(new Set(ids.filter(Boolean)));
+  if (!unique.length) return {};
+  const { data: lands } = await db
+    .from("lands")
+    .select("id,farmer_id,mouza,mouza_id,created_at,deleted_at")
+    .in("id", unique);
+  const mouzaById = await fetchMouzasById(
+    ((lands as any[]) ?? []).map((land) => land?.mouza_id).filter(Boolean),
+  );
+  const out: Record<string, LandLike> = {};
+  for (const land of lands ?? []) out[(land as any).id] = attachMouzaRelation(land, mouzaById);
+  return out;
+}
+
+async function fetchInvoicesById(ids: string[]): Promise<Record<string, any>> {
+  const unique = Array.from(new Set(ids.filter(Boolean)));
+  if (!unique.length) return {};
+  const { data } = await db
+    .from("irrigation_invoices")
+    .select("id,farmer_id,land_id,due_date,created_at,invoice_status,deleted_at")
+    .in("id", unique);
+  const out: Record<string, any> = {};
+  for (const inv of data ?? []) out[(inv as any).id] = inv;
+  return out;
+}
+
+/**
+ * Resolve receipt-list/filter Mouzas with the same safe lookup style used by
+ * receipt preview: payment→invoice links first, then farmer invoice fallback,
+ * then nearest farmer land. This intentionally avoids nested-in-nested embeds
+ * so the Lovable preview and VPS backend behave the same.
+ */
+export async function resolvePaymentMouzas(
+  payments: PaymentLikeForMouza[],
+): Promise<Record<string, PaymentMouzaResolution>> {
+  const rows = payments.filter((p) => p?.id);
+  const irrigationRows = rows.filter((p) => (p.kind ?? "") === "irrigation");
+  const resolved: Record<string, PaymentMouzaResolution> = {};
+  if (!irrigationRows.length) return resolved;
+
+  const paymentIds = irrigationRows.map((p) => p.id);
+
+  // Primary path: exact payment→invoice links.
+  const { data: links } = await db
+    .from("irrigation_invoice_payments")
+    .select("payment_id,invoice_id")
+    .in("payment_id", paymentIds);
+  const invoiceIdsByPayment: Record<string, string[]> = {};
+  for (const link of links ?? []) {
+    const pid = (link as any).payment_id;
+    const iid = (link as any).invoice_id;
+    if (!pid || !iid) continue;
+    (invoiceIdsByPayment[pid] ||= []).push(iid);
+  }
+
+  const exactInvoiceById = await fetchInvoicesById(
+    Object.values(invoiceIdsByPayment).flat(),
+  );
+  const exactLandById = await fetchLandsById(
+    Object.values(exactInvoiceById).map((inv: any) => inv?.land_id).filter(Boolean),
+  );
+  for (const payment of irrigationRows) {
+    const lands = (invoiceIdsByPayment[payment.id] ?? [])
+      .map((invoiceId) => exactInvoiceById[invoiceId]?.land_id)
+      .filter(Boolean)
+      .map((landId) => exactLandById[landId])
+      .filter(Boolean) as LandLike[];
+    const hit = resolveFromLands(lands, "invoice-payment", payment.id);
+    if (hit) resolved[payment.id] = hit;
+  }
+
+  // Secondary path: some imported/legacy payments store the invoice in reference_id.
+  const refIds = irrigationRows
+    .filter((p) => !resolved[p.id] && p.reference_id)
+    .map((p) => p.reference_id!)
+    .filter(Boolean);
+  if (refIds.length) {
+    const refInvoiceById = await fetchInvoicesById(refIds);
+    const refLandById = await fetchLandsById(
+      Object.values(refInvoiceById).map((inv: any) => inv?.land_id).filter(Boolean),
+    );
+    for (const payment of irrigationRows) {
+      if (resolved[payment.id] || !payment.reference_id) continue;
+      const inv = refInvoiceById[payment.reference_id];
+      const hit = resolveFromLands(
+        inv?.land_id ? [refLandById[inv.land_id]].filter(Boolean) as LandLike[] : [],
+        "reference-invoice",
+        payment.id,
+      );
+      if (hit) resolved[payment.id] = hit;
+    }
+  }
+
+  // Preview fallback: if a payment has no payment→invoice row, preview uses the
+  // farmer's active invoices. Batch that same rule so list display/filter matches.
+  const unresolvedAfterExact = irrigationRows.filter((p) => !resolved[p.id] && p.farmer_id);
+  const farmerIds = Array.from(new Set(unresolvedAfterExact.map((p) => p.farmer_id!).filter(Boolean)));
+  if (farmerIds.length) {
+    const { data: farmerInvoices } = await db
+      .from("irrigation_invoices")
+      .select("id,farmer_id,land_id,due_date,created_at,invoice_status,deleted_at")
+      .in("farmer_id", farmerIds)
+      .is("deleted_at", null)
+      .neq("invoice_status", "cancelled")
+      .order("due_date", { ascending: true });
+    const farmerLandById = await fetchLandsById(
+      ((farmerInvoices as any[]) ?? []).map((inv) => inv?.land_id).filter(Boolean),
+    );
+    const landsByFarmer: Record<string, LandLike[]> = {};
+    for (const inv of farmerInvoices ?? []) {
+      const fid = (inv as any).farmer_id;
+      const land = (inv as any).land_id ? farmerLandById[(inv as any).land_id] : null;
+      if (fid && land) (landsByFarmer[fid] ||= []).push(land);
+    }
+    for (const payment of unresolvedAfterExact) {
+      const hit = resolveFromLands(landsByFarmer[payment.farmer_id!] ?? [], "farmer-invoice", payment.id);
+      if (hit) resolved[payment.id] = hit;
+    }
+  }
+
+  // Last fallback: nearest land relation for the farmer, even if invoice links are absent.
+  const stillUnresolved = irrigationRows.filter((p) => !resolved[p.id] && p.farmer_id);
+  const fallbackFarmerIds = Array.from(new Set(stillUnresolved.map((p) => p.farmer_id!).filter(Boolean)));
+  if (fallbackFarmerIds.length) {
+    const { data: farmerLands } = await db
+      .from("lands")
+      .select("id,farmer_id,mouza,mouza_id,created_at,deleted_at")
+      .in("farmer_id", fallbackFarmerIds)
+      .is("deleted_at", null)
+      .order("created_at", { ascending: false });
+    const mouzaById = await fetchMouzasById(
+      ((farmerLands as any[]) ?? []).map((land) => land?.mouza_id).filter(Boolean),
+    );
+    const landsByFarmer: Record<string, LandLike[]> = {};
+    for (const land of farmerLands ?? []) {
+      const withMouza = attachMouzaRelation(land, mouzaById);
+      const fid = (withMouza as any)?.farmer_id;
+      if (fid) (landsByFarmer[fid] ||= []).push(withMouza);
+    }
+    for (const payment of stillUnresolved) {
+      const hit = resolveFromLands(landsByFarmer[payment.farmer_id!] ?? [], "farmer-land", payment.id);
+      if (hit) resolved[payment.id] = hit;
+    }
+  }
+
+  return resolved;
 }
 
 /** True when a row matches the selected mouza filter ("all" matches everything). */
