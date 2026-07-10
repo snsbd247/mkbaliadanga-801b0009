@@ -28,8 +28,10 @@ function query(table: string) {
     order: () => chain,
     in: (column: string, values: unknown[]) => {
       filters.push({ column, values });
-      return Promise.resolve({ data: applyFilters(rows[table] ?? [], filters), error: null });
+      return chain;
     },
+    then: (resolve: (value: { data: any[]; error: null }) => unknown) =>
+      Promise.resolve({ data: applyFilters(rows[table] ?? [], filters), error: null }).then(resolve),
   };
   return chain;
 }
