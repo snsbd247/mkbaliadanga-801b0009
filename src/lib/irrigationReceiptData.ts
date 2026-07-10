@@ -3,6 +3,7 @@ import { resolveFieldTypeLabel } from "@/lib/irrigationLandType";
 import { normalizeIrrigationRatePerAcre } from "@/lib/bnReceipts";
 import { joinNotes } from "@/lib/irrigationExports";
 import { buildMemberSummary } from "@/lib/receiptMemberSummary";
+import { resolveMouzaName } from "@/lib/mouzaQuery";
 
 // Placeholders shown on the receipt when patwari data is missing, so the field
 // is never silently blank.
@@ -161,6 +162,18 @@ export async function buildIrrigationReceiptEnrichment(
       .in("id", landIds);
     const lands = landRows ?? [];
 
+    const mouzaIds = Array.from(
+      new Set(lands.map((l: any) => l?.mouza_id).filter(Boolean)),
+    ) as string[];
+    const mouzaById: Record<string, any> = {};
+    if (mouzaIds.length) {
+      const { data: mouzaRows } = await db
+        .from("mouzas")
+        .select("id,name,name_bn")
+        .in("id", mouzaIds);
+      for (const m of mouzaRows ?? []) mouzaById[(m as any).id] = m;
+    }
+
     const patwariIds = Array.from(
       new Set(lands.map((l: any) => l?.patwari_id).filter(Boolean)),
     ) as string[];
@@ -215,6 +228,7 @@ export async function buildIrrigationReceiptEnrichment(
       const { patwari, source } = resolveReceiptPatwari(l as any, patwariById, patwariByMouza);
       landById[(l as any).id] = {
         ...(l as any),
+        mouzas: (l as any).mouza_id ? mouzaById[(l as any).mouza_id] ?? null : null,
         patwaris: patwari,
         patwari_source: source,
         owner: (l as any).owner_farmer_id ? ownerById[(l as any).owner_farmer_id] ?? null : null,
@@ -312,7 +326,7 @@ export async function buildIrrigationReceiptEnrichment(
     owner: ownerFarmer,
     isBorga: anyBorga,
   });
-  const mouza = invoiceRows.find((inv) => inv?.lands?.mouza)?.lands?.mouza ?? null;
+  const mouza = invoiceRows.map((inv) => resolveMouzaName(inv?.lands)).find(Boolean) ?? null;
   const dagNo =
     Array.from(
       new Set(
