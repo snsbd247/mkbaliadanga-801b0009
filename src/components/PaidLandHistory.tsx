@@ -1,3 +1,4 @@
+import { resolveMouzaName } from "@/lib/mouzaQuery";
 import { useEffect, useMemo, useState } from "react";
 import { db } from "@/lib/db";
 import { Card } from "@/components/ui/card";

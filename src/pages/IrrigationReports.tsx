@@ -1,3 +1,4 @@
+import { resolveMouzaName } from "@/lib/mouzaQuery";
 import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import { db } from "@/lib/db";
 import { PageHeader } from "@/components/layout/PageHeader";
