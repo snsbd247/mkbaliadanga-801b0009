@@ -168,16 +168,17 @@ export default function IrrigationDueReport() {
       const [farmerById, landById, seasonById] = await Promise.all([
         fetchByIds("farmers", invoiceRows.map((r) => r.farmer_id), farmerSelect),
         fetchByIds("lands", invoiceRows.map((r) => r.land_id), isLaravelBackend
-          ? "id,mouza,mouza_id,dag_no,dag_numbers,land_size,area_decimal,patwari_id,owner_farmer_id,deleted_at"
-          : "id,mouza,mouza_id,dag_no,dag_numbers,land_size,patwari_id,owner_farmer_id,deleted_at"),
+          ? "id,mouza,mouza_id,dag_no,dag_numbers,land_size,area_decimal,land_type_id,patwari_id,owner_farmer_id,deleted_at"
+          : "id,mouza,mouza_id,dag_no,dag_numbers,land_size,land_type_id,patwari_id,owner_farmer_id,deleted_at"),
         fetchByIds("seasons", invoiceRows.map((r) => r.season_id), "id,name,year,type"),
       ]);
 
       const lands = Object.values(landById) as any[];
-      const [mouzaById, patwariById, ownerById] = await Promise.all([
+      const [mouzaById, patwariById, ownerById, landTypeById] = await Promise.all([
         fetchByIds("mouzas", lands.map((l) => l.mouza_id), "id,name,name_bn"),
         fetchByIds("patwaris", lands.map((l) => l.patwari_id), "id,name,name_bn"),
         fetchByIds("farmers", lands.map((l) => l.owner_farmer_id), farmerSelect),
+        fetchByIds("land_types", lands.map((l) => l.land_type_id), "id,name,name_bn"),
       ]);
 
       const grouped = new Map<string, Row>();
