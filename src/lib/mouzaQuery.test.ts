@@ -4,6 +4,8 @@ import {
   resolveRowMouzaName,
   rowMatchesMouza,
   buildMouzaOptions,
+  resolveMouzaAllNames,
+  namesMatchMouza,
   LAND_MOUZA_FIELDS,
   LANDS_EMBED,
 } from "./mouzaQuery";
