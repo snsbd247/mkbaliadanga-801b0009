@@ -328,6 +328,21 @@ export default function Receipts() {
               </TableBody>
             </Table>
           </div>
+          {!loading && displayList.length > 0 && (
+            <div className="flex items-center justify-between gap-2 border-t p-3 text-sm">
+              <span className="text-muted-foreground">
+                {tx(
+                  `Showing ${(page - 1) * PAGE_SIZE + 1}-${Math.min(page * PAGE_SIZE, displayList.length)} of ${displayList.length}`,
+                  `${displayList.length} টির মধ্যে ${(page - 1) * PAGE_SIZE + 1}-${Math.min(page * PAGE_SIZE, displayList.length)} দেখানো হচ্ছে`,
+                )}
+              </span>
+              <div className="flex items-center gap-2">
+                <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))}>{tx("Prev", "পূর্ববর্তী")}</Button>
+                <span>{page} / {pageCount}</span>
+                <Button variant="outline" size="sm" disabled={page >= pageCount} onClick={() => setPage((p) => Math.min(pageCount, p + 1))}>{tx("Next", "পরবর্তী")}</Button>
+              </div>
+            </div>
+          )}
         </Card>
       </div>
 
