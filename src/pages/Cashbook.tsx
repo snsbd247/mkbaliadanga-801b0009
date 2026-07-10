@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Plus, FileDown, FileSpreadsheet, Printer, Pencil, Trash2, Paperclip } from "lucide-react";
+import { IRRIGATION_INCOME_KINDS, computeHandCash } from "@/lib/handCash";
 import { useLang } from "@/i18n/LanguageProvider";
 import { money, fmtDate } from "@/lib/format";
 import { toast } from "sonner";
