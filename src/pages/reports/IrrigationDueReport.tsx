@@ -16,6 +16,7 @@ import { formatLandSize, shatakToBigha } from "@/lib/irrigationCalc";
 import { formatDagNumbers } from "@/lib/dagNumbers";
 import { useAuth } from "@/auth/AuthProvider";
 import { useLang } from "@/i18n/LanguageProvider";
+import { isLaravelBackend } from "@/lib/backend";
 
 type Row = {
   farmer_id: string;
@@ -45,6 +46,47 @@ type Row = {
   due: number;
 };
 
+const uniq = (values: Array<string | null | undefined>) =>
+  Array.from(new Set(values.map((v) => (v ?? "").toString()).filter(Boolean)));
+
+const chunk = <T,>(items: T[], size = 500): T[][] => {
+  const out: T[][] = [];
+  for (let i = 0; i < items.length; i += size) out.push(items.slice(i, i + size));
+  return out;
+};
+
+const parseFilterDate = (value: string): string | null => {
+  const raw = value.trim();
+  if (!raw) return null;
+
+  const iso = raw.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  const dmy = raw.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{2,4})$/);
+  const parts = iso
+    ? { y: Number(iso[1]), m: Number(iso[2]), d: Number(iso[3]) }
+    : dmy
+      ? { y: Number(dmy[3].length === 2 ? `20${dmy[3]}` : dmy[3]), m: Number(dmy[2]), d: Number(dmy[1]) }
+      : null;
+  if (!parts || parts.m < 1 || parts.m > 12 || parts.d < 1 || parts.d > 31) return null;
+  const dt = new Date(Date.UTC(parts.y, parts.m - 1, parts.d));
+  if (dt.getUTCFullYear() !== parts.y || dt.getUTCMonth() !== parts.m - 1 || dt.getUTCDate() !== parts.d) return null;
+  return `${parts.y.toString().padStart(4, "0")}-${parts.m.toString().padStart(2, "0")}-${parts.d.toString().padStart(2, "0")}`;
+};
+
+const dateOnly = (value: unknown): string => {
+  const text = (value ?? "").toString();
+  const m = text.match(/^(\d{4}-\d{2}-\d{2})/);
+  return m?.[1] ?? "";
+};
+
+async function fetchByIds(table: string, ids: string[], select: string) {
+  const rows: any[] = [];
+  for (const part of chunk(uniq(ids))) {
+    const { data } = await db.from(table).select(select).in("id", part);
+    rows.push(...((data as any[]) ?? []));
+  }
+  return Object.fromEntries(rows.map((row) => [row.id, row]));
+}
+
 export default function IrrigationDueReport() {
   const { t, tx } = useLang();
   const { isSuper } = useAuth();
@@ -64,6 +106,7 @@ export default function IrrigationDueReport() {
   const [onlyDue, setOnlyDue] = useState<boolean>(true);
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string>("");
 
   useEffect(() => {
     document.title = t("irrigationDueReport");
@@ -83,63 +126,106 @@ export default function IrrigationDueReport() {
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
+    setErrorMessage("");
     (async () => {
-      let q = db.from("irrigation_invoices").select(
-        "farmer_id,land_id,season_id,payable_amount,paid_amount,due_amount,office_id,generated_at,due_date," +
-        "farmers!irrigation_invoices_farmer_id_fkey(name_en,name_bn,farmer_code,father_name,village,mobile)," +
-        "lands(mouza,mouzas(name_bn,name),dag_no,dag_numbers,land_size,patwari_id,patwaris(name,name_bn),owner:farmers!lands_owner_farmer_id_fkey(name_en,name_bn,farmer_code,father_name,village,mobile))," +
-        "seasons(name,year,type)"
-      ).is("deleted_at", null).neq("invoice_status", "cancelled").limit(10000);
+      const parsedGenFrom = parseFilterDate(genFrom);
+      const parsedGenTo = parseFilterDate(genTo);
+      const parsedDueFrom = parseFilterDate(dueFrom);
+      const parsedDueTo = parseFilterDate(dueTo);
+      const invoiceSelect = isLaravelBackend
+        ? "id,farmer_id,land_id,season_id,payable_amount,amount,paid_amount,due_amount,office_id,generated_at,issue_date,created_at,due_date,invoice_status,status,deleted_at"
+        : "id,farmer_id,land_id,season_id,payable_amount,paid_amount,due_amount,office_id,generated_at,created_at,due_date,invoice_status,deleted_at";
+      let q = db.from("irrigation_invoices").select(invoiceSelect).is("deleted_at", null).neq("invoice_status", "cancelled").limit(10000);
       if (officeId !== "all") q = q.eq("office_id", officeId);
       if (seasonId !== "all") q = q.eq("season_id", seasonId);
       if (farmerId !== "all") q = q.eq("farmer_id", farmerId);
-      if (genFrom) q = q.gte("generated_at", genFrom);
-      if (genTo) q = q.lte("generated_at", `${genTo}T23:59:59`);
-      if (dueFrom) q = q.gte("due_date", dueFrom);
-      if (dueTo) q = q.lte("due_date", dueTo);
+      if (parsedDueFrom) q = q.gte("due_date", parsedDueFrom);
+      if (parsedDueTo) q = q.lte("due_date", parsedDueTo);
       const { data, error } = await q;
       if (cancelled) return;
-      setLoading(false);
-      if (error) return;
+      if (error) {
+        setLoading(false);
+        setRows([]);
+        setErrorMessage(error.message || tx("Data could not be loaded", "ডাটা লোড করা যায়নি"));
+        return;
+      }
+
+      const invoiceRows = ((data as any[]) ?? []).filter((r) => {
+        if ((r.invoice_status ?? r.status) === "cancelled") return false;
+        const generated = dateOnly(r.generated_at) || dateOnly(r.issue_date) || dateOnly(r.created_at);
+        if (parsedGenFrom && (!generated || generated < parsedGenFrom)) return false;
+        if (parsedGenTo && (!generated || generated > parsedGenTo)) return false;
+        const due = dateOnly(r.due_date);
+        if (parsedDueFrom && (!due || due < parsedDueFrom)) return false;
+        if (parsedDueTo && (!due || due > parsedDueTo)) return false;
+        return true;
+      });
+
+      const farmerSelect = isLaravelBackend
+        ? "id,name,name_en,name_bn,farmer_code,member_no,code,father_name,village,mobile,phone"
+        : "id,name_en,name_bn,farmer_code,member_no,father_name,village,mobile";
+      const [farmerById, landById, seasonById] = await Promise.all([
+        fetchByIds("farmers", invoiceRows.map((r) => r.farmer_id), farmerSelect),
+        fetchByIds("lands", invoiceRows.map((r) => r.land_id), isLaravelBackend
+          ? "id,mouza,mouza_id,dag_no,dag_numbers,land_size,area_decimal,patwari_id,owner_farmer_id,deleted_at"
+          : "id,mouza,mouza_id,dag_no,dag_numbers,land_size,patwari_id,owner_farmer_id,deleted_at"),
+        fetchByIds("seasons", invoiceRows.map((r) => r.season_id), "id,name,year,type"),
+      ]);
+
+      const lands = Object.values(landById) as any[];
+      const [mouzaById, patwariById, ownerById] = await Promise.all([
+        fetchByIds("mouzas", lands.map((l) => l.mouza_id), "id,name,name_bn"),
+        fetchByIds("patwaris", lands.map((l) => l.patwari_id), "id,name,name_bn"),
+        fetchByIds("farmers", lands.map((l) => l.owner_farmer_id), farmerSelect),
+      ]);
+
       const grouped = new Map<string, Row>();
-      (data ?? []).forEach((r: any) => {
-        if (patwariId !== "all" && r.lands?.patwari_id !== patwariId) return;
+      invoiceRows.forEach((r: any) => {
+        const land = landById[r.land_id] ?? null;
+        if (land?.deleted_at) return;
+        if (patwariId !== "all" && land?.patwari_id !== patwariId) return;
+        const farmer = farmerById[r.farmer_id] ?? null;
+        const season = seasonById[r.season_id] ?? null;
+        const mouza = land?.mouza_id ? mouzaById[land.mouza_id] ?? null : null;
+        const landWithMouza = land ? { ...land, mouzas: mouza } : null;
+        const pw = land?.patwari_id ? patwariById[land.patwari_id] : null;
+        const own = land?.owner_farmer_id ? ownerById[land.owner_farmer_id] : null;
         const key = `${r.farmer_id}|${r.land_id}|${r.season_id}`;
-        const shatak = Number(r.lands?.land_size ?? 0);
-        const pw = r.lands?.patwaris;
-        const own = r.lands?.owner;
-        const dag = r.lands?.dag_no ? formatDagNumbers(r.lands.dag_no) : (r.lands?.dag_numbers ? formatDagNumbers(r.lands.dag_numbers) : "");
+        const shatak = Number(land?.land_size ?? land?.area_decimal ?? 0);
+        const dag = land?.dag_no ? formatDagNumbers(land.dag_no) : (land?.dag_numbers ? formatDagNumbers(land.dag_numbers) : "");
+        const resolvedMouza = resolveMouzaName(landWithMouza) || land?.mouza || "";
         const cur = grouped.get(key) ?? {
           farmer_id: r.farmer_id,
-          farmer_name: r.farmers?.name_bn || r.farmers?.name_en || "—",
-          farmer_code: r.farmers?.farmer_code ?? "—",
-          father_name: r.farmers?.father_name ?? "",
-          village: r.farmers?.village ?? "",
-          mobile: r.farmers?.mobile ?? "",
+          farmer_name: farmer?.name_bn || farmer?.name_en || farmer?.name || "—",
+          farmer_code: farmer?.farmer_code || farmer?.member_no || farmer?.code || "—",
+          father_name: farmer?.father_name ?? "",
+          village: farmer?.village ?? "",
+          mobile: farmer?.mobile || farmer?.phone || "",
           land_id: r.land_id,
-          land_label: [resolveMouzaName(r.lands) || r.lands?.mouza, dag ? `Dag ${dag}` : null, r.lands?.land_size != null ? formatLandSize(r.lands.land_size, "short") : null].filter(Boolean).join(" • ") || "—",
-          mouza: resolveMouzaName(r.lands) || "",
+          land_label: [resolvedMouza, dag ? `Dag ${dag}` : null, shatak ? formatLandSize(shatak, "short") : null].filter(Boolean).join(" • ") || "—",
+          mouza: resolvedMouza,
           dag,
-          patwari_id: r.lands?.patwari_id ?? null,
+          patwari_id: land?.patwari_id ?? null,
           patwari_name: pw ? (pw.name_bn || pw.name) : "—",
-          owner_name: own ? (own.name_bn || own.name_en || "") : "",
-          owner_code: own?.farmer_code ?? "",
+          owner_name: own ? (own.name_bn || own.name_en || own.name || "") : "",
+          owner_code: own?.farmer_code || own?.member_no || own?.code || "",
           owner_father: own?.father_name ?? "",
           owner_village: own?.village ?? "",
-          owner_mobile: own?.mobile ?? "",
+          owner_mobile: own?.mobile || own?.phone || "",
           land_size_shatak: shatak,
           land_size_bigha: shatakToBigha(shatak),
           season_id: r.season_id,
-          season_label: r.seasons ? `${r.seasons.name ?? r.seasons.type} ${r.seasons.year}` : "—",
-          season_type: r.seasons?.type ?? "",
+          season_label: season ? `${season.name ?? season.type} ${season.year}` : "—",
+          season_type: season?.type ?? "",
           total: 0, paid: 0, due: 0,
         };
-        cur.total += Number(r.payable_amount || 0);
+        cur.total += Number(r.payable_amount ?? r.amount ?? (Number(r.paid_amount || 0) + Number(r.due_amount || 0)));
         cur.paid += Number(r.paid_amount || 0);
         cur.due += Number(r.due_amount || 0);
         grouped.set(key, cur);
       });
       setRows(Array.from(grouped.values()));
+      setLoading(false);
     })();
     return () => { cancelled = true; };
   }, [officeId, seasonId, patwariId, farmerId, genFrom, genTo, dueFrom, dueTo]);
@@ -154,6 +240,10 @@ export default function IrrigationDueReport() {
         r.farmer_code.toLowerCase().includes(s) ||
         (r.father_name || "").toLowerCase().includes(s) ||
         r.land_label.toLowerCase().includes(s) ||
+        r.mouza.toLowerCase().includes(s) ||
+        r.dag.toLowerCase().includes(s) ||
+        (r.owner_name || "").toLowerCase().includes(s) ||
+        (r.season_label || "").toLowerCase().includes(s) ||
         r.patwari_name.toLowerCase().includes(s)
       );
     }).sort((a, b) => b.due - a.due);
@@ -268,7 +358,7 @@ export default function IrrigationDueReport() {
       <Card>
         <CardContent className="pt-6">
           <div className="mb-3 flex items-center justify-between">
-            <p className="text-sm text-muted-foreground">{filtered.length} {t("rows")} {loading && `(${t("loading")})`}</p>
+            <p className="text-sm text-muted-foreground">{errorMessage || `${filtered.length} ${t("rows")} ${loading ? `(${t("loading")})` : ""}`}</p>
             <div className="flex gap-2">
               <Button variant="outline" size="sm" onClick={() => exportTablePDF("Irrigation-Due", head, body, { from: dueFrom, to: dueTo }, { landscape: true, preview: true })}>
                 <FileDown className="mr-1 h-4 w-4" /> {tx("Preview (A4)", "প্রিভিউ (A4)")}
