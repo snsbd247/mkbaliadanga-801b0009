@@ -1096,7 +1096,7 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
                         {(inv.owner?.name_bn || inv.owner?.name_en || "—")}
                         {inv.is_borga && <Badge variant="outline" className="ml-1 text-[9px] px-1 py-0">{tx("Borga", "বর্গা")}</Badge>}
                       </TableCell>
-                      <TableCell className="text-xs">{inv.lands?.mouza || "—"}</TableCell>
+                      <TableCell className="text-xs">{resolveMouzaName(inv.lands) || "—"}</TableCell>
                       <TableCell className="text-right font-mono text-xs">{inv.lands?.land_size ?? "—"}</TableCell>
                       <TableCell className="text-xs">{inv.seasons?.name} {inv.seasons?.year}</TableCell>
                       <TableCell className="text-right font-mono text-xs">{money(inv.irrigation_amount)}</TableCell>

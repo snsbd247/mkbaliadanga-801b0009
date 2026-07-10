@@ -593,7 +593,7 @@ export default function FarmerDetail() {
         patwari_name: patwari ? (patwari.name_bn || patwari.name) : null,
         patwari_mobile: patwari?.mobile ?? null,
         farmer: {
-          mouza: invoiceRows.find((inv) => inv?.lands?.mouza)?.lands?.mouza ?? null,
+          mouza: (invoiceRows.map((inv) => resolveMouzaName(inv?.lands)).find(Boolean)) ?? null,
           field_type_bn: fieldTypeBn,
           land_size: landSize,
           dag_no: dagNo,
@@ -682,7 +682,7 @@ export default function FarmerDetail() {
         mobile: inv.farmers?.mobile,
         village: inv.farmers?.village ?? null,
       },
-      land: { mouza: inv.lands?.mouza, dag_no: inv.lands?.dag_no, land_size: inv.lands?.land_size },
+      land: { mouza: resolveMouzaName(inv.lands) || inv.lands?.mouza, dag_no: inv.lands?.dag_no, land_size: inv.lands?.land_size },
       season: inv.seasons,
     };
   }

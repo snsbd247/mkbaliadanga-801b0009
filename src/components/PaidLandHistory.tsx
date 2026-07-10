@@ -102,7 +102,7 @@ export function PaidLandHistory({ farmerId }: Props) {
         paid_on: r.payment?.created_at ?? r.created_at ?? null,
         amount: Number(r.collected_amount || 0),
         dag_no: r.invoice?.lands?.dag_no ?? "—",
-        mouza: r.invoice?.lands?.mouza ?? "—",
+        mouza: resolveMouzaName(r.invoice?.lands) || "—",
         land_size: r.invoice?.lands?.land_size != null ? Number(r.invoice.lands.land_size) : null,
         land_type: r.invoice?.land_type_name ?? "—",
         acre_rate: acreRate,

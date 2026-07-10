@@ -112,7 +112,7 @@ export default function FarmerProfileReport() {
         const billedArea = Number(snap?.billed_area_shotok ?? snap?.land_size_shotok ?? row.lands?.land_size ?? 0);
         return {
           id: row.id,
-          mouza: safeText(row.lands?.mouza),
+          mouza: safeText(resolveMouzaName(row.lands) || row.lands?.mouza),
           season: row.seasons?.name ? `${safeText(row.seasons.name)}, ${safeText(row.seasons.year)}` : "",
           dag_no: safeText(row.lands?.dag_no),
           owner_type: ownerTypeText,

@@ -237,7 +237,7 @@ export default function IrrigationReports() {
           { key: "farmer_father", label: "পিতার নাম", accessor: (r: any) => r.farmers?.father_name ?? "" },
           { key: "farmer_village", label: "গ্রাম", accessor: (r: any) => r.farmers?.village ?? "" },
           { key: "mobile", label: t("irr_colMobile" as any), accessor: (r: any) => r.farmers?.mobile ?? "" },
-          { key: "mouza", label: t("irr_colMouza" as any), accessor: (r: any) => r.lands?.mouza ?? "" },
+          { key: "mouza", label: t("irr_colMouza" as any), accessor: (r: any) => resolveMouzaName(r.lands) || "" },
           { key: "dag_no", label: t("irr_colDagNo" as any), accessor: (r: any) => formatDagNumbers(r.lands?.dag_no) },
           { key: "land_size", label: t("irr_colLandSize" as any), accessor: (r: any) => r.lands?.land_size ?? "" },
           { key: "rate", label: t("irr_colRate" as any), accessor: (r: any) => r.rate ?? "" },
