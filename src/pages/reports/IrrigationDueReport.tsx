@@ -29,6 +29,7 @@ type Row = {
   land_label: string;
   mouza: string;
   dag: string;
+  land_type: string;
   patwari_id: string | null;
   patwari_name: string;
   owner_name: string;
@@ -167,16 +168,17 @@ export default function IrrigationDueReport() {
       const [farmerById, landById, seasonById] = await Promise.all([
         fetchByIds("farmers", invoiceRows.map((r) => r.farmer_id), farmerSelect),
         fetchByIds("lands", invoiceRows.map((r) => r.land_id), isLaravelBackend
-          ? "id,mouza,mouza_id,dag_no,dag_numbers,land_size,area_decimal,patwari_id,owner_farmer_id,deleted_at"
-          : "id,mouza,mouza_id,dag_no,dag_numbers,land_size,patwari_id,owner_farmer_id,deleted_at"),
+          ? "id,mouza,mouza_id,dag_no,dag_numbers,land_size,area_decimal,land_type_id,patwari_id,owner_farmer_id,deleted_at"
+          : "id,mouza,mouza_id,dag_no,dag_numbers,land_size,land_type_id,patwari_id,owner_farmer_id,deleted_at"),
         fetchByIds("seasons", invoiceRows.map((r) => r.season_id), "id,name,year,type"),
       ]);
 
       const lands = Object.values(landById) as any[];
-      const [mouzaById, patwariById, ownerById] = await Promise.all([
+      const [mouzaById, patwariById, ownerById, landTypeById] = await Promise.all([
         fetchByIds("mouzas", lands.map((l) => l.mouza_id), "id,name,name_bn"),
         fetchByIds("patwaris", lands.map((l) => l.patwari_id), "id,name,name_bn"),
         fetchByIds("farmers", lands.map((l) => l.owner_farmer_id), farmerSelect),
+        fetchByIds("land_types", lands.map((l) => l.land_type_id), "id,name,name_bn"),
       ]);
 
       const grouped = new Map<string, Row>();
@@ -205,6 +207,7 @@ export default function IrrigationDueReport() {
           land_label: [resolvedMouza, dag ? `Dag ${dag}` : null, shatak ? formatLandSize(shatak, "short") : null].filter(Boolean).join(" • ") || "—",
           mouza: resolvedMouza,
           dag,
+          land_type: (() => { const lt = land?.land_type_id ? landTypeById[land.land_type_id] : null; return lt ? (lt.name_bn || lt.name || "") : ""; })(),
           patwari_id: land?.patwari_id ?? null,
           patwari_name: pw ? (pw.name_bn || pw.name) : "—",
           owner_name: own ? (own.name_bn || own.name_en || own.name || "") : "",
@@ -255,18 +258,18 @@ export default function IrrigationDueReport() {
   ), [filtered]);
 
   const head = [
-    t("farmerCode"), t("farmer"), tx("Father", "পিতার নাম"), tx("Village", "গ্রাম"), tx("Mobile", "মোবাইল"),
-    tx("Mouza", "মৌজা"), tx("Dag", "দাগ"), tx("Type", "টাইপ"), t("season"), "Bigha", "Shatak",
-    t("total"), t("paid"), t("dueAmount"),
-    tx("Owner", "মালিক"), tx("Owner ID", "মালিক আইডি"), tx("Owner father", "মালিকের পিতা"),
-    tx("Owner village", "মালিকের গ্রাম"), tx("Owner mobile", "মালিকের মোবাইল"), tx("Patwari", "পাটুয়ারি"),
+    tx("Farmer ID", "কৃষক আইডি"), t("farmer"), tx("Father", "পিতার নাম"), tx("Village", "গ্রাম"), tx("Mobile", "মোবাইল"),
+    tx("Mouza", "মৌজা"), tx("Dag No", "দাগ নং"), tx("Land Type", "জমির ধরন"), t("season"), tx("Land Size (Decimal)", "জমির পরিমাণ (শতক)"),
+    tx("Land Owner", "জমির মালিক"), tx("Owner ID", "মালিক আইডি"), tx("Owner father", "মালিকের পিতা"), tx("Owner mobile", "মালিকের মোবাইল"),
+    tx("Patwari", "পাটুয়ারি"), tx("Total Amount", "মোট"), tx("Paid Amount", "পরিশোধ"), tx("Due Amount", "বকেয়া"),
   ];
   const body = filtered.map((r) => [
     r.farmer_code, r.farmer_name, r.father_name || "—", r.village || "—", r.mobile || "—",
-    r.mouza || "—", r.dag || "—", r.season_type || "—", r.season_label, r.land_size_bigha.toFixed(2), r.land_size_shatak.toFixed(2),
-    money(r.total), money(r.paid), money(r.due),
-    r.owner_name || "—", r.owner_code || "—", r.owner_father || "—", r.owner_village || "—", r.owner_mobile || "—", r.patwari_name,
+    r.mouza || "—", r.dag || "—", r.land_type || "—", r.season_label, r.land_size_shatak.toFixed(2),
+    r.owner_name || "—", r.owner_code || "—", r.owner_father || "—", r.owner_mobile || "—",
+    r.patwari_name, money(r.total), money(r.paid), money(r.due),
   ]);
+
 
   return (
     <div className="container mx-auto p-4 space-y-4">
@@ -360,10 +363,10 @@ export default function IrrigationDueReport() {
           <div className="mb-3 flex items-center justify-between">
             <p className="text-sm text-muted-foreground">{errorMessage || `${filtered.length} ${t("rows")} ${loading ? `(${t("loading")})` : ""}`}</p>
             <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={() => exportTablePDF("Irrigation-Due", head, body, { from: dueFrom, to: dueTo }, { landscape: true, preview: true })}>
-                <FileDown className="mr-1 h-4 w-4" /> {tx("Preview (A4)", "প্রিভিউ (A4)")}
+              <Button variant="outline" size="sm" onClick={() => exportTablePDF("Irrigation-Due", head, body, { from: dueFrom, to: dueTo }, { landscape: true, preview: true, format: "legal" })}>
+                <FileDown className="mr-1 h-4 w-4" /> {tx("Preview (Legal)", "প্রিভিউ (লিগ্যাল)")}
               </Button>
-              <Button variant="outline" size="sm" onClick={() => exportTablePDF("Irrigation-Due", head, body, { from: dueFrom, to: dueTo }, { landscape: true })}>
+              <Button variant="outline" size="sm" onClick={() => exportTablePDF("Irrigation-Due", head, body, { from: dueFrom, to: dueTo }, { landscape: true, format: "legal" })}>
                 <FileDown className="mr-1 h-4 w-4" /> PDF
               </Button>
               <Button variant="outline" size="sm" onClick={() => exportCSV(
@@ -374,14 +377,13 @@ export default function IrrigationDueReport() {
               <Button variant="outline" size="sm" onClick={() => exportExcel(
                 "Irrigation-Due", "Due",
                 filtered.map((r) => ({
-                  "Farmer Code": r.farmer_code, "Farmer": r.farmer_name,
+                  "Farmer ID": r.farmer_code, "Farmer": r.farmer_name,
                   "Father": r.father_name, "Village": r.village, "Mobile": r.mobile,
-                  "Mouza": r.mouza, "Dag": r.dag, "Type": r.season_type, "Season": r.season_label,
-                  "Bigha": Number(r.land_size_bigha.toFixed(2)),
-                  "Shatak": Number(r.land_size_shatak.toFixed(2)),
-                  "Total": r.total, "Paid": r.paid, "Due": r.due,
-                  "Owner": r.owner_name, "Owner ID": r.owner_code, "Owner Father": r.owner_father,
-                  "Owner Village": r.owner_village, "Owner Mobile": r.owner_mobile, "Patwari": r.patwari_name,
+                  "Mouza": r.mouza, "Dag No": r.dag, "Land Type": r.land_type, "Season": r.season_label,
+                  "Land Size (Decimal)": Number(r.land_size_shatak.toFixed(2)),
+                  "Land Owner": r.owner_name, "Owner ID": r.owner_code, "Owner Father": r.owner_father,
+                  "Owner Mobile": r.owner_mobile, "Patwari": r.patwari_name,
+                  "Total Amount": r.total, "Paid Amount": r.paid, "Due Amount": r.due,
                 })),
               )}>
                 <FileSpreadsheet className="mr-1 h-4 w-4" /> Excel
@@ -391,18 +393,24 @@ export default function IrrigationDueReport() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>{t("code")}</TableHead>
+                <TableHead>{tx("Farmer ID", "কৃষক আইডি")}</TableHead>
                 <TableHead>{t("farmer")}</TableHead>
                 <TableHead>{tx("Father", "পিতার নাম")}</TableHead>
                 <TableHead>{tx("Village", "গ্রাম")}</TableHead>
                 <TableHead>{tx("Mobile", "মোবাইল")}</TableHead>
-                <TableHead>{t("land")}</TableHead>
-                <TableHead>{tx("Owner", "মালিক")}</TableHead>
-                <TableHead>{tx("Patwari", "পাটুয়ারি")}</TableHead>
+                <TableHead>{tx("Mouza", "মৌজা")}</TableHead>
+                <TableHead>{tx("Dag No", "দাগ নং")}</TableHead>
+                <TableHead>{tx("Land Type", "জমির ধরন")}</TableHead>
                 <TableHead>{t("season")}</TableHead>
-                <TableHead className="text-right">{t("total")}</TableHead>
-                <TableHead className="text-right">{t("paid")}</TableHead>
-                <TableHead className="text-right">{t("dueAmount")}</TableHead>
+                <TableHead className="text-right">{tx("Land Size (Decimal)", "জমির পরিমাণ (শতক)")}</TableHead>
+                <TableHead>{tx("Land Owner", "জমির মালিক")}</TableHead>
+                <TableHead>{tx("Owner ID", "মালিক আইডি")}</TableHead>
+                <TableHead>{tx("Owner father", "মালিকের পিতা")}</TableHead>
+                <TableHead>{tx("Owner mobile", "মালিকের মোবাইল")}</TableHead>
+                <TableHead>{tx("Patwari", "পাটুয়ারি")}</TableHead>
+                <TableHead className="text-right">{tx("Total Amount", "মোট")}</TableHead>
+                <TableHead className="text-right">{tx("Paid Amount", "পরিশোধ")}</TableHead>
+                <TableHead className="text-right">{tx("Due Amount", "বকেয়া")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -413,17 +421,23 @@ export default function IrrigationDueReport() {
                   <TableCell className="text-xs">{r.father_name || "—"}</TableCell>
                   <TableCell className="text-xs">{r.village || "—"}</TableCell>
                   <TableCell className="text-xs">{r.mobile || "—"}</TableCell>
-                  <TableCell className="text-xs">{r.land_label}</TableCell>
-                  <TableCell className="text-xs">{r.owner_name || "—"}</TableCell>
-                  <TableCell className="text-xs">{r.patwari_name}</TableCell>
+                  <TableCell className="text-xs">{r.mouza || "—"}</TableCell>
+                  <TableCell className="text-xs">{r.dag || "—"}</TableCell>
+                  <TableCell className="text-xs">{r.land_type || "—"}</TableCell>
                   <TableCell className="text-xs">{r.season_label}</TableCell>
+                  <TableCell className="text-right text-xs">{r.land_size_shatak.toFixed(2)}</TableCell>
+                  <TableCell className="text-xs">{r.owner_name || "—"}</TableCell>
+                  <TableCell className="text-xs">{r.owner_code || "—"}</TableCell>
+                  <TableCell className="text-xs">{r.owner_father || "—"}</TableCell>
+                  <TableCell className="text-xs">{r.owner_mobile || "—"}</TableCell>
+                  <TableCell className="text-xs">{r.patwari_name}</TableCell>
                   <TableCell className="text-right">{money(r.total)}</TableCell>
                   <TableCell className="text-right">{money(r.paid)}</TableCell>
                   <TableCell className="text-right font-semibold text-destructive">{money(r.due)}</TableCell>
                 </TableRow>
               ))}
               {!filtered.length && (
-                <TableRow><TableCell colSpan={12} className="text-center text-muted-foreground py-6">{t("noData")}</TableCell></TableRow>
+                <TableRow><TableCell colSpan={18} className="text-center text-muted-foreground py-6">{t("noData")}</TableCell></TableRow>
               )}
             </TableBody>
 

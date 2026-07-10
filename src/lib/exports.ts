@@ -156,9 +156,9 @@ export async function exportTablePDF(
   head: string[],
   rows: any[][],
   range?: { from?: string | null; to?: string | null },
-  opts?: { signatures?: string[]; landscape?: boolean; preview?: boolean },
+  opts?: { signatures?: string[]; landscape?: boolean; preview?: boolean; format?: string | number[] },
 ) {
-  const doc = new jsPDF({ unit: "mm", format: "a4", orientation: opts?.landscape ? "landscape" : "portrait" });
+  const doc = new jsPDF({ unit: "mm", format: opts?.format ?? "a4", orientation: opts?.landscape ? "landscape" : "portrait" });
   const startY = await applyPdfHeaderFooter(doc, { title, range });
   autoTable(doc, { startY: startY + 2, head: [head], body: rows, styles: { fontSize: 9 }, headStyles: { fillColor: [30, 110, 70] }, theme: "grid" });
 
