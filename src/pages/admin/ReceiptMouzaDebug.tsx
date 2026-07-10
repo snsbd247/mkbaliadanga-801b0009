@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { MouzaSelect } from "@/components/locations/MouzaSelect";
-import { resolveMouzaName, resolveMouzaAllNames, namesMatchMouza } from "@/lib/mouzaQuery";
+import { namesMatchMouza, resolvePaymentMouzas } from "@/lib/mouzaQuery";
 import { toast } from "sonner";
 
 /**
@@ -21,7 +21,8 @@ type Row = {
   id: string;
   receipt_no: string | null;
   farmer: string;
-  source: "invoice" | "farmer-land" | "none";
+  source: "invoice-payment" | "reference-invoice" | "farmer-invoice" | "farmer-land" | "none";
+  mouzaId: string | null;
   resolved: string;
   variants: string[];
 };
@@ -48,41 +49,7 @@ export default function ReceiptMouzaDebug() {
     const irr = pays ?? [];
     const payIds = irr.map((p: any) => p.id);
 
-    const resolved: Record<string, { name: string; variants: string[]; source: Row["source"] }> = {};
-    if (payIds.length) {
-      const { data: iips } = await db
-        .from("irrigation_invoice_payments")
-        .select("payment_id, irrigation_invoices(land_id, lands(mouza, mouzas(name_bn, name)))")
-        .in("payment_id", payIds);
-      for (const iip of iips ?? []) {
-        const pid = (iip as any).payment_id;
-        if (!pid || resolved[pid]) continue;
-        const land = (iip as any).irrigation_invoices?.lands;
-        const name = resolveMouzaName(land);
-        if (name) resolved[pid] = { name, variants: resolveMouzaAllNames(land), source: "invoice" };
-      }
-      // Fallback via farmer land.
-      const unresolved = irr.filter((p: any) => !resolved[p.id] && p.farmer_id);
-      const farmerIds = Array.from(new Set(unresolved.map((p: any) => p.farmer_id)));
-      if (farmerIds.length) {
-        const { data: lands } = await db
-          .from("lands")
-          .select("farmer_id, mouza, mouzas(name_bn, name)")
-          .in("farmer_id", farmerIds)
-          .is("deleted_at", null);
-        const byFarmer: Record<string, { name: string; variants: string[] }> = {};
-        for (const l of lands ?? []) {
-          const fid = (l as any).farmer_id;
-          if (!fid || byFarmer[fid]) continue;
-          const name = resolveMouzaName(l as any);
-          if (name) byFarmer[fid] = { name, variants: resolveMouzaAllNames(l as any) };
-        }
-        for (const p of unresolved) {
-          const hit = byFarmer[(p as any).farmer_id];
-          if (hit) resolved[(p as any).id] = { ...hit, source: "farmer-land" };
-        }
-      }
-    }
+    const resolved = payIds.length ? await resolvePaymentMouzas(irr as any[]) : {};
 
     setRows(irr.map((p: any) => {
       const r = resolved[p.id];
@@ -91,6 +58,7 @@ export default function ReceiptMouzaDebug() {
         receipt_no: p.receipt_no,
         farmer: `${p.farmers?.name_bn || p.farmers?.name_en || "—"} (${p.farmers?.farmer_code ?? ""})`,
         source: r?.source ?? "none",
+        mouzaId: r?.mouzaId ?? null,
         resolved: r?.name ?? "",
         variants: r?.variants ?? [],
       };
@@ -128,6 +96,7 @@ export default function ReceiptMouzaDebug() {
                 <TableHead>{tx("Receipt #", "রশিদ নং")}</TableHead>
                 <TableHead>{tx("Farmer", "কৃষক")}</TableHead>
                 <TableHead>{tx("Resolved mouza", "প্রকৃত মৌজা")}</TableHead>
+                <TableHead>{tx("Mouza ID", "মৌজা আইডি")}</TableHead>
                 <TableHead>{tx("Variants", "ভ্যারিয়েন্ট")}</TableHead>
                 <TableHead>{tx("Source", "উৎস")}</TableHead>
                 <TableHead>{tx("Matches filter", "ফিল্টার ম্যাচ")}</TableHead>
@@ -148,10 +117,11 @@ export default function ReceiptMouzaDebug() {
                     <TableCell>{r.resolved || "—"}</TableCell>
                     <TableCell className="text-xs">{r.variants.join(" · ") || "—"}</TableCell>
                     <TableCell>
-                      <Badge variant={r.source === "none" ? "destructive" : r.source === "farmer-land" ? "secondary" : "outline"}>
+                      <Badge variant={r.source === "none" ? "destructive" : r.source === "farmer-land" || r.source === "farmer-invoice" ? "secondary" : "outline"}>
                         {r.source}
                       </Badge>
                     </TableCell>
+                    <TableCell className="font-mono text-xs">{r.mouzaId ?? "—"}</TableCell>
                     <TableCell>{mouza ? (r.matches ? "✅" : "—") : "—"}</TableCell>
                   </TableRow>
                 ))
