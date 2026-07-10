@@ -174,35 +174,126 @@ export default function Backup() {
     }
   }
 
+  // Parse a data-only export into ordered per-table chunks (TRUNCATE + INSERTs)
+  // using the `-- <table>: <n> rows` markers and TRUNCATE lines the exporter emits.
+  function parseSqlByTable(sql: string): { table: string; declared: number; sql: string }[] {
+    const lines = sql.split(/\r?\n/);
+    const truncates = new Map<string, string>();
+    for (const l of lines) {
+      const m = l.match(/^TRUNCATE TABLE public\."([^"]+)"/);
+      if (m) truncates.set(m[1], l);
+    }
+    const chunks: { table: string; declared: number; sql: string }[] = [];
+    let cur: { table: string; declared: number; body: string[] } | null = null;
+    const flush = () => {
+      if (!cur) return;
+      const trunc = truncates.get(cur.table);
+      const parts = [trunc, ...cur.body].filter(Boolean) as string[];
+      chunks.push({ table: cur.table, declared: cur.declared, sql: parts.join("\n") });
+      cur = null;
+    };
+    for (const l of lines) {
+      const m = l.match(/^-- (\w+): (\d+) rows$/);
+      if (m) { flush(); cur = { table: m[1], declared: Number(m[2]), body: [] }; continue; }
+      if (cur && l.trim().startsWith("INSERT INTO")) cur.body.push(l);
+    }
+    flush();
+    return chunks;
+  }
+
+  async function callRestore(body: any) {
+    const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/db-restore`;
+    const res = await fetch(url, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${session!.access_token}`, "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok || json.success === false) throw new Error(json.error ?? json.errors?.join("; ") ?? `HTTP ${res.status}`);
+    return json;
+  }
+
+  async function buildSqlSnapshot(): Promise<{ url: string; name: string } | null> {
+    try {
+      const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/db-export?mode=data`, {
+        headers: { Authorization: `Bearer ${session!.access_token}` },
+      });
+      if (!res.ok) return null;
+      const blob = new Blob([await res.blob()], { type: "application/sql" });
+      const url = URL.createObjectURL(blob);
+      const name = `pre-restore-snapshot-${new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-")}.sql`;
+      // Auto-download the rollback point immediately.
+      const a = document.createElement("a"); a.href = url; a.download = name; a.click();
+      return { url, name };
+    } catch { return null; }
+  }
+
   async function restoreFullSql() {
     if (!sqlRestoreFile) return toast.error("Choose a .sql file first");
     if (!session?.access_token) return toast.error("Not authenticated");
     setSqlConfirmOpen(false);
     setBusy("__sql_restore__");
-    setSqlResult(null);
+    setSqlResult(null); setSqlProgress(0); setRestoreLog([]); setVerifyRows([]);
+    const startedAt = Date.now();
     try {
       const sqlText = await sqlRestoreFile.text();
-      const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/db-restore`;
-      const res = await fetch(url, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${session.access_token}`,
-          "Content-Type": "application/sql",
-        },
-        body: sqlText,
-      });
-      const json = await res.json();
-      if (!res.ok || !json.success) {
-        const msg = json.errors?.join("; ") ?? json.error ?? `HTTP ${res.status}`;
-        setSqlResult({ ok: false, message: msg });
-        toast.error(`Restore failed: ${msg.slice(0, 120)}`);
-      } else {
-        setSqlResult({ ok: true, message: "Restore completed", durationMs: json.duration_ms });
-        toast.success(`Restore completed in ${(json.duration_ms / 1000).toFixed(1)}s`);
+      const chunks = parseSqlByTable(sqlText);
+      if (chunks.length === 0) {
+        // Fallback to legacy single-shot for non-standard files.
+        const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/db-restore`, {
+          method: "POST", headers: { Authorization: `Bearer ${session.access_token}`, "Content-Type": "application/sql" }, body: sqlText,
+        });
+        const json = await res.json();
+        if (!res.ok || !json.success) throw new Error(json.errors?.join("; ") ?? json.error ?? `HTTP ${res.status}`);
+        setSqlResult({ ok: true, message: "Restore completed (single-shot)", durationMs: json.duration_ms });
+        return;
       }
+
+      // Step 1 — auto pre-restore snapshot (rollback point).
+      toast.info("Pre-restore snapshot তৈরি হচ্ছে…");
+      const snap = await buildSqlSnapshot();
+      setAutoSnapshot(snap);
+
+      // Step 2 — begin: drop & stash foreign keys.
+      await callRestore({ phase: "begin" });
+
+      // Step 3 — load each table, updating progress + log.
+      const declaredMap = new Map<string, number>();
+      for (let i = 0; i < chunks.length; i++) {
+        const c = chunks[i];
+        declaredMap.set(c.table, c.declared);
+        setRestoreLog((prev) => [...prev, { table: c.table, status: "running", rows: c.declared }]);
+        try {
+          await callRestore({ phase: "exec", table: c.table, sql: c.sql });
+          setRestoreLog((prev) => prev.map((r) => r.table === c.table ? { ...r, status: "ok" } : r));
+        } catch (e: any) {
+          setRestoreLog((prev) => prev.map((r) => r.table === c.table ? { ...r, status: "error", error: e.message } : r));
+          throw new Error(`Table "${c.table}" failed: ${e.message}`);
+        }
+        setSqlProgress(Math.round(((i + 1) / chunks.length) * 100));
+      }
+
+      // Step 4 — commit: re-add foreign keys.
+      await callRestore({ phase: "commit" });
+
+      // Step 5 — verify row counts.
+      const vr = await callRestore({ phase: "verify" });
+      const actualMap = new Map<string, number>((vr.counts ?? []).map((r: any) => [r.tablename, Number(r.row_count)]));
+      const rows = Array.from(new Set([...declaredMap.keys(), ...actualMap.keys()])).sort().map((tbl) => ({
+        tablename: tbl, expected: declaredMap.get(tbl) ?? 0, actual: actualMap.get(tbl) ?? 0,
+      }));
+      setVerifyRows(rows);
+
+      const mism = rows.filter((r) => declaredMap.has(r.tablename) && r.expected !== r.actual).length;
+      setSqlResult({
+        ok: mism === 0,
+        message: mism === 0 ? `Restore verified — ${chunks.length} tables, all row counts match` : `Restore done but ${mism} table(s) have mismatched row counts — check verification`,
+        durationMs: Date.now() - startedAt,
+      });
+      if (mism === 0) toast.success("Restore সম্পন্ন ও যাচাই হয়েছে"); else toast.warning(`${mism} টেবিলে row count মেলেনি`);
     } catch (e: any) {
-      setSqlResult({ ok: false, message: e.message });
-      toast.error(`Restore failed: ${e.message}`);
+      setSqlResult({ ok: false, message: e.message, durationMs: Date.now() - startedAt });
+      toast.error(`Restore failed: ${String(e.message).slice(0, 140)}`);
     } finally {
       setBusy(null);
     }
