@@ -61,6 +61,7 @@ export function AppSidebar() {
         { url: "/admin/deleted-farmers", icon: FileBarChart, label: lang === "bn" ? "ডিলিট রিপোর্ট" : "Delete Report", superOnly: true },
         { url: "/admin/patwaris", icon: Users, label: t("patwaris"), adminOnly: true },
         { url: "/admin/mouza-data-health", icon: FileBarChart, label: lang === "bn" ? "মৌজা ডাটা হেলথ" : "Mouza Data Health", adminOnly: true },
+        { url: "/admin/receipt-mouza-debug", icon: FileBarChart, label: lang === "bn" ? "রশিদ মৌজা ডিবাগ" : "Receipt Mouza Debug", adminOnly: true },
         { url: "/voters", icon: Users, label: t("voterList"), permKey: "farmers" },
         { url: "/voters/history", icon: FileBarChart, label: t("voterHistory"), permKey: "farmers" },
         { url: "/reports/voter-audit", icon: FileBarChart, label: t("voterAudit"), permKey: "farmers" },
