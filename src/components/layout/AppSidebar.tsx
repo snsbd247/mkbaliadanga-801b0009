@@ -60,6 +60,7 @@ export function AppSidebar() {
         { url: "/admin/farmer-merge", icon: Users, label: t("farmerMerge" as any) || "Farmer Merge", adminOnly: true },
         { url: "/admin/deleted-farmers", icon: FileBarChart, label: lang === "bn" ? "ডিলিট রিপোর্ট" : "Delete Report", superOnly: true },
         { url: "/admin/patwaris", icon: Users, label: t("patwaris"), adminOnly: true },
+        { url: "/admin/mouza-data-health", icon: FileBarChart, label: lang === "bn" ? "মৌজা ডাটা হেলথ" : "Mouza Data Health", adminOnly: true },
         { url: "/voters", icon: Users, label: t("voterList"), permKey: "farmers" },
         { url: "/voters/history", icon: FileBarChart, label: t("voterHistory"), permKey: "farmers" },
         { url: "/reports/voter-audit", icon: FileBarChart, label: t("voterAudit"), permKey: "farmers" },
