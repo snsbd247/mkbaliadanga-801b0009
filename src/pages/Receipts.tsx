@@ -75,32 +75,21 @@ export default function Receipts() {
     setLoading(false);
   }
 
-  // Resolve each payment's mouza via its irrigation invoice → land relation.
+  // Resolve each payment's mouza via irrigation_invoice_payments → invoice → land → mouza.
   async function resolveMouzas(rows: any[]) {
-    const refIds = new Set<string>();
-    for (const p of rows) {
-      for (const a of p.payment_allocations ?? []) {
-        if (a.kind === "irrigation" && a.reference_id) refIds.add(a.reference_id);
-      }
-    }
-    if (refIds.size === 0) { setMouzaByPayment({}); return; }
-    const { data: invs } = await db
-      .from("irrigation_invoices")
-      .select("id, lands(mouza)")
-      .in("id", Array.from(refIds));
-    const invMouza: Record<string, string> = {};
-    for (const inv of invs ?? []) {
-      const m = (inv as any).lands?.mouza;
-      if (m) invMouza[(inv as any).id] = m;
-    }
+    const payIds = rows.filter((p) => p.kind === "irrigation").map((p) => p.id);
+    if (payIds.length === 0) { setMouzaByPayment({}); return; }
+    const { data: iips } = await db
+      .from("irrigation_invoice_payments")
+      .select("payment_id, irrigation_invoices(land_id, lands(mouza, mouzas(name_bn, name)))")
+      .in("payment_id", payIds);
     const map: Record<string, string> = {};
-    for (const p of rows) {
-      for (const a of p.payment_allocations ?? []) {
-        if (a.kind === "irrigation" && a.reference_id && invMouza[a.reference_id]) {
-          map[p.id] = invMouza[a.reference_id];
-          break;
-        }
-      }
+    for (const iip of iips ?? []) {
+      const pid = (iip as any).payment_id;
+      if (!pid || map[pid]) continue;
+      const land = (iip as any).irrigation_invoices?.lands;
+      const name = land?.mouzas?.name_bn || land?.mouzas?.name || land?.mouza;
+      if (name) map[pid] = name;
     }
     setMouzaByPayment(map);
   }
