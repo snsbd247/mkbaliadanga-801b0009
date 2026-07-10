@@ -17,6 +17,7 @@ import { formatDagNumbers } from "@/lib/dagNumbers";
 import { useAuth } from "@/auth/AuthProvider";
 import { useLang } from "@/i18n/LanguageProvider";
 import { isLaravelBackend } from "@/lib/backend";
+import { SearchableSelect } from "@/components/SearchableSelect";
 
 type Row = {
   farmer_id: string;
