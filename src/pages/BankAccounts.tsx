@@ -49,6 +49,7 @@ export default function BankAccounts() {
   const [openA, setOpenA] = useState(false);
   const [openT, setOpenT] = useState(false);
   const [openX, setOpenX] = useState(false); // transfer
+  const [openS, setOpenS] = useState(false); // sech quick cash↔bank
   const [editAccId, setEditAccId] = useState<string | null>(null);
   const [editTxn, setEditTxn] = useState<any | null>(null);
   const [pendingDelete, setPendingDelete] = useState<
