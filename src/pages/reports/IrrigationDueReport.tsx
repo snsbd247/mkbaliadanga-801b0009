@@ -259,6 +259,15 @@ export default function IrrigationDueReport() {
     { total: 0, paid: 0, due: 0 },
   ), [filtered]);
 
+  useEffect(() => { setPage(1); }, [search, onlyDue, pageSize, officeId, seasonId, patwariId, farmerId, genFrom, genTo, dueFrom, dueTo]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+  const currentPage = Math.min(page, totalPages);
+  const paged = useMemo(
+    () => filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize),
+    [filtered, currentPage, pageSize],
+  );
+
   const head = [
     tx("Farmer ID", "কৃষক আইডি"), t("farmer"), tx("Father", "পিতার নাম"), tx("Village", "গ্রাম"), tx("Mobile", "মোবাইল"),
     tx("Mouza", "মৌজা"), tx("Dag No", "দাগ নং"), tx("Land Type", "জমির ধরন"), t("season"), tx("Land Size (Decimal)", "জমির পরিমাণ (শতক)"),
