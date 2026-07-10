@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Plus, FileDown, FileSpreadsheet, Printer, Pencil, Trash2, Paperclip } from "lucide-react";
+import { IRRIGATION_INCOME_KINDS } from "@/lib/handCash";
 import { useLang } from "@/i18n/LanguageProvider";
 import { money, fmtDate } from "@/lib/format";
 import { toast } from "sonner";
@@ -52,7 +53,7 @@ function getKindLabel(t: (k: any) => string, k: Kind): string {
 
 // Which receipt kinds feed which cash stream (income side).
 const STREAM_INCOME_KINDS: Record<Stream, Set<string>> = {
-  irrigation: new Set(["irrigation", "bigha_rent", "pond", "crop_sale", "scrap"]),
+  irrigation: IRRIGATION_INCOME_KINDS,
   savings: new Set(["savings_deposit", "share", "loan_taken", "donation", "other"]),
 };
 
