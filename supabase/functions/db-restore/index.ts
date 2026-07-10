@@ -83,10 +83,25 @@ Deno.serve(async (req) => {
   const startedAt = Date.now();
   const errors: string[] = [];
 
+  // Sanitize legacy backups: `exec_sql_admin` runs the payload inside a
+  // PL/pgSQL function, so transaction-control statements (BEGIN/COMMIT) and the
+  // superuser-only `session_replication_role` toggle must be stripped. Foreign
+  // keys are handled by the helper itself (dropped, then re-added).
+  const cleanSql = sqlText
+    .split(/\r?\n/)
+    .filter((line) => {
+      const l = line.trim().toLowerCase();
+      if (l.startsWith("set session_replication_role")) return false;
+      if (l === "begin;" || l === "begin" || l === "start transaction;") return false;
+      if (l === "commit;" || l === "commit" || l === "end;") return false;
+      return true;
+    })
+    .join("\n");
+
   try {
     // Single-shot execution — Postgres can run multi-statement strings
     const { error } = await adminClient.rpc("exec_sql_admin", {
-      sql: sqlText,
+      sql: cleanSql,
     });
     if (error) {
       errors.push(error.message);

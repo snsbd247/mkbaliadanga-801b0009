@@ -161,17 +161,19 @@ Deno.serve(async (req) => {
     }
 
     let sql = "";
-    sql += `-- Lovable Cloud database export\n`;
+    sql += `-- Lovable Cloud database export (data-only, full)\n`;
     sql += `-- Generated: ${new Date().toISOString()}\n`;
-    sql += `-- Tables: ${tables.length}\n\n`;
-    sql += `SET session_replication_role = 'replica';\n`;
-    sql += `BEGIN;\n\n`;
+    sql += `-- Tables: ${tables.length}\n`;
+    sql += `-- Restore via the app's "Full SQL Restore" — it wraps this file in a\n`;
+    sql += `-- transaction, drops foreign keys, loads data, and re-adds them.\n\n`;
 
-    sql += `-- Clear existing data\n`;
+    sql += `-- Clear existing data (order-independent; CASCADE handles dependents)\n`;
     for (const t of tables) {
       sql += `TRUNCATE TABLE public."${t}" RESTART IDENTITY CASCADE;\n`;
     }
     sql += `\n`;
+
+
 
     let totalRows = 0;
     for (const table of tables) {
@@ -201,9 +203,8 @@ Deno.serve(async (req) => {
       totalRows += rows.length;
     }
 
-    sql += `COMMIT;\n`;
-    sql += `SET session_replication_role = 'origin';\n`;
     sql += `-- Done. Total rows: ${totalRows}\n`;
+
 
     const filename = `lovable-backup-${
       new Date().toISOString().replace(/[:.]/g, "-")
