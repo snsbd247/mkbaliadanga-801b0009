@@ -51,9 +51,15 @@ describe("mouzaQuery shared helpers", () => {
   });
 
   it("exposes a stable embed fragment used by every module", () => {
-    expect(LAND_MOUZA_FIELDS).toContain("mouzas(name)");
-    expect(LANDS_EMBED).toBe("lands(dag_no,land_size,mouza,mouzas(name))");
+    expect(LAND_MOUZA_FIELDS).toContain("mouzas(name_bn,name)");
+    expect(LANDS_EMBED).toBe("lands(dag_no,land_size,mouza,notes,mouzas(name_bn,name))");
   });
+
+  it("prefers the Bengali mouza name from the relation", () => {
+    const row = { lands: { mouza: "text-fallback", mouzas: { name: "English", name_bn: "বাংলা" } } };
+    expect(resolveRowMouzaName(row)).toBe("বাংলা");
+  });
+
 
   it("resolves mouza on Laravel/MySQL where mouzas(name) is unavailable (text fallback)", () => {
     // On the VPS backend the mouzas(name) embed is dropped, so rows arrive with
