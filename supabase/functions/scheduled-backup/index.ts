@@ -34,6 +34,18 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Frequency gating (cron fires daily; weekly/monthly skip until due).
+    const intervalMs: Record<string, number> = { daily: 20, weekly: 6.5 * 24, monthly: 27 * 24 };
+    const hoursNeeded = intervalMs[String(sched.frequency)] ?? 20;
+    if (sched.last_run_at) {
+      const sinceH = (Date.now() - new Date(sched.last_run_at).getTime()) / 36e5;
+      if (sinceH < hoursNeeded) {
+        return new Response(JSON.stringify({ skipped: true, reason: "not_due" }), {
+          status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    }
+
     // Generate the export using db-export with the cron secret.
     const expRes = await fetch(`${SUPABASE_URL}/functions/v1/db-export?mode=data`, {
       headers: { "x-cron-secret": CRON_SECRET },
