@@ -161,8 +161,11 @@ export default function IrrigationDueReport() {
         return true;
       });
 
+      const farmerSelect = isLaravelBackend
+        ? "id,name,name_en,name_bn,farmer_code,member_no,code,father_name,village,mobile,phone"
+        : "id,name_en,name_bn,farmer_code,member_no,father_name,village,mobile";
       const [farmerById, landById, seasonById] = await Promise.all([
-        fetchByIds("farmers", invoiceRows.map((r) => r.farmer_id), "id,name,name_en,name_bn,farmer_code,member_no,code,father_name,village,mobile,phone"),
+        fetchByIds("farmers", invoiceRows.map((r) => r.farmer_id), farmerSelect),
         fetchByIds("lands", invoiceRows.map((r) => r.land_id), isLaravelBackend
           ? "id,mouza,mouza_id,dag_no,dag_numbers,land_size,area_decimal,patwari_id,owner_farmer_id,deleted_at"
           : "id,mouza,mouza_id,dag_no,dag_numbers,land_size,patwari_id,owner_farmer_id,deleted_at"),
@@ -173,7 +176,7 @@ export default function IrrigationDueReport() {
       const [mouzaById, patwariById, ownerById] = await Promise.all([
         fetchByIds("mouzas", lands.map((l) => l.mouza_id), "id,name,name_bn"),
         fetchByIds("patwaris", lands.map((l) => l.patwari_id), "id,name,name_bn"),
-        fetchByIds("farmers", lands.map((l) => l.owner_farmer_id), "id,name,name_en,name_bn,farmer_code,member_no,code,father_name,village,mobile,phone"),
+        fetchByIds("farmers", lands.map((l) => l.owner_farmer_id), farmerSelect),
       ]);
 
       const grouped = new Map<string, Row>();
