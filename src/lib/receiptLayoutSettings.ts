@@ -321,3 +321,13 @@ export function getIrrigationReceiptPadding(): {
 export function getReceiptFitToPage(): boolean {
   return getReceiptLayoutSettings().fitToPage;
 }
+
+/** Global font-size multiplier for receipt text (0.8–1.4). */
+export function getReceiptFontScale(): number {
+  return getReceiptLayoutSettings().fontScale;
+}
+
+/** Side (left/right) page margin in mm for irrigation two-up printing. */
+export function getReceiptSideMarginMm(): number {
+  return getReceiptLayoutSettings().sideMarginMm;
+}
