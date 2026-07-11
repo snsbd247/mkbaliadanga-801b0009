@@ -23,6 +23,8 @@ export function ReceiptSettingsButton() {
   const [bottomPad, setBottomPad] = useState<number>(() => getReceiptLayoutSettings().irrigationBottomPaddingPx);
   const [holdingPad, setHoldingPad] = useState<number>(() => getReceiptLayoutSettings().holdingBottomPaddingPx);
   const [fitToPage, setFitToPage] = useState<boolean>(() => getReceiptLayoutSettings().fitToPage);
+  const [fontScale, setFontScale] = useState<number>(() => getReceiptLayoutSettings().fontScale);
+  const [sideMargin, setSideMargin] = useState<number>(() => getReceiptLayoutSettings().sideMarginMm);
   // Persist to profile + keep local edits in sync whenever layout changes.
   const saveLayout = (next: Parameters<typeof setReceiptLayoutSettings>[0]) => {
     setReceiptLayoutSettings(next);
