@@ -56,11 +56,12 @@ describe("barga split — 2 sharecroppers × 0.3330 on a 0.6650 parcel", () => {
 
   it("charges each farmer proportional to their billed area only", () => {
     const settings: ChargeSettings = {
-      maintenance_per_shotok: 0,
-      canal_per_shotok: 0,
-      delay_fee_per_day: 0,
-      delay_grace_days: 0,
-    } as ChargeSettings;
+      delay_fee_percent: 0,
+      maintenance_percent: 0,
+      canal_percent: 0,
+      grace_days: 0,
+      auto_apply_delay_fee: false,
+    };
 
     const dueRows = computeBargaDue({
       owner_farmer_id: owner,
