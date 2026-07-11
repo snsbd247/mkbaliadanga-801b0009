@@ -79,6 +79,6 @@ describe("barga split — 2 sharecroppers × 0.3330 on a 0.6650 parcel", () => {
     // 0.3330 shotok × 100 = 33.30 — not the full-parcel 66.50.
     expect(a.payable_amount).toBeCloseTo(33.3, 1);
     const total = dueRows.reduce((acc, r) => acc + r.payable_amount, 0);
-    expect(total).toBeCloseTo(66.5, 1);
+    expect(total).toBeCloseTo(66.6, 1);
   });
 });
