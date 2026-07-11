@@ -215,7 +215,20 @@ export default function Dashboard() {
     const savMonthIncome = sum((hcReceipts.data ?? []).filter((r: any) => String(r.kind ?? "").toLowerCase() !== "irrigation"), "amount");
     const savMonthExpense = sum((hcExpensesAll.data ?? []).filter((e: any) => String(e.stream ?? "irrigation") !== "irrigation"), "amount");
     const savSubmitted = submittedClosing("savings");
-    const savMonthEnd = savSubmitted ? Number((savSubmitted as any).closing_cash || 0) : savMonthOpening + savMonthIncome - savMonthExpense;
+    const savMonthComputed = savMonthOpening + savMonthIncome - savMonthExpense;
+    const savMonthEnd = savSubmitted ? Number((savSubmitted as any).closing_cash || 0) : savMonthComputed;
+
+    // Reconciliation: where a month has a finalized (submitted) Hand Cash
+    // closing, verify the dashboard's computed month-end matches it. This
+    // catches any drift between the displayed cards and the finalized ledger.
+    const reconEntries: { label: string; dashboard: number; source: number }[] = [];
+    if (irrSubmitted) {
+      reconEntries.push({ label: lang === "bn" ? "সেচ হ্যান্ড ক্যাশ (মাস শেষ)" : "Irrigation Hand Cash (Month-end)", dashboard: irrMonth.closing, source: Number((irrSubmitted as any).closing_cash || 0) });
+    }
+    if (savSubmitted) {
+      reconEntries.push({ label: lang === "bn" ? "সঞ্চয় হ্যান্ড ক্যাশ (মাস শেষ)" : "Savings Hand Cash (Month-end)", dashboard: savMonthComputed, source: Number((savSubmitted as any).closing_cash || 0) });
+    }
+    setRecon(reconEntries.length ? reconcileBalances(reconEntries) : null);
 
 
     const farmersList = votersOnly ? farmersData.filter((f: any) => f.is_voter) : farmersData;
