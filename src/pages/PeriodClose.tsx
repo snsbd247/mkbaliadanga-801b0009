@@ -195,6 +195,10 @@ export default function PeriodClose() {
         </CardContent>
       </Card>
 
+      <DayCloseCard officeId={officeId === NONE ? null : officeId} />
+
+
+
       <Card>
         <CardHeader><CardTitle className="text-lg">{t("closedPeriods")}</CardTitle></CardHeader>
         <CardContent>
