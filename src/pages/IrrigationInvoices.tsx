@@ -2388,11 +2388,18 @@ function ManualInvoiceDialog({ open, onOpenChange, seasons, userId }: any) {
     try {
       const land = lands.find((l: any) => l.id === landId);
       const billed = await resolveBilledFarmer(landId, dueDate);
+      // Phase 4: bill only this farmer's split area (owner remainder or borga share),
+      // not the whole parcel — otherwise a sharecropper is charged for the full land.
+      const splits = await resolveBillingSplits(landId, dueDate);
+      const mySplit = splits.find((s: any) => s.billed_farmer_id === farmerId);
+      const billedArea = mySplit && mySplit.billed_area > 0
+        ? mySplit.billed_area
+        : Number(land?.land_size ?? 0);
       const rawSettings = await getChargeSettings(land?.office_id ?? null);
       // No auto delay fee at generation — penalty is added at payment time only.
       const settings = { ...rawSettings, auto_apply_delay_fee: false };
       const calc = calcInvoice({
-        land_size_shotok: Number(land?.land_size ?? 0),
+        land_size_shotok: billedArea,
         rate_per_shotok: rate,
         settings,
         due_date: dueDate,
