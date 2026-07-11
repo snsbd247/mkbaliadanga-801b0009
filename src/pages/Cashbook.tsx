@@ -617,7 +617,7 @@ function StreamCashbook(props: {
   // (cash-book style) with description "রশিদ নং X – Y (n টি)".
   const incomeRows = useMemo(() => {
     if (!consolidated) {
-      return streamReceipts.map(x => ({
+      return collectionReceipts.map(x => ({
         date: x.receipt_date, kind: "income", ref: x.receipt_no || "—",
         label: getKindLabel(t, x.kind as Kind), desc: x.note || "", amount: Number(x.amount), raw: x,
       }));
@@ -626,7 +626,7 @@ function StreamCashbook(props: {
     // (e.g. today 4683–4690, tomorrow 4691–4705).
     const num = (s: any) => { const m = String(s ?? "").match(/(\d+)/); return m ? Number(m[1]) : NaN; };
     const groups = new Map<string, any[]>();
-    streamReceipts.forEach(x => {
+    collectionReceipts.forEach(x => {
       const key = `${x.receipt_date}__${x.kind}`;
       if (!groups.has(key)) groups.set(key, []);
       groups.get(key)!.push(x);
@@ -640,17 +640,33 @@ function StreamCashbook(props: {
       const amount = list.reduce((s, x) => s + Number(x.amount), 0);
       return { date, kind: "income", ref: range || "—", label: getKindLabel(t, kind as Kind), desc, amount, raw: { note: desc } };
     });
-  }, [streamReceipts, consolidated, t]);
+  }, [collectionReceipts, consolidated, t]);
+
+  // Bank ↔ cash transfer rows: withdrawals bring cash in, deposits move cash out.
+  // Distinct label + badge so they read as transfers, not irrigation collections.
+  const transferRows = useMemo(() => [
+    ...transferInReceipts.map(x => ({
+      date: x.receipt_date, kind: "income", ref: "—", isTransfer: true,
+      label: tx("Bank withdrawal (to cash)", "ব্যাংক থেকে উত্তোলন (নগদে)"),
+      desc: x.note || "", amount: Number(x.amount), raw: x,
+    })),
+    ...transferOutExpenses.map(x => ({
+      date: x.expense_date, kind: "expense", ref: "—", isTransfer: true,
+      label: tx("Bank deposit (from cash)", "নগদ থেকে ব্যাংকে জমা"),
+      desc: x.note || x.payee || "", amount: Number(x.amount), raw: x,
+    })),
+  ], [transferInReceipts, transferOutExpenses, tx]);
 
   const entries = useMemo(() => {
     const rows: any[] = [
       ...incomeRows,
       ...officeIncomeRows,
-      ...streamExpenses.map(x => ({ date: x.expense_date, kind: "expense", ref: x.voucher_no || "—", label: x.head, desc: x.payee || x.note || "", amount: Number(x.amount), raw: x })),
+      ...realExpenses.map(x => ({ date: x.expense_date, kind: "expense", ref: x.voucher_no || "—", label: x.head, desc: x.payee || x.note || "", amount: Number(x.amount), raw: x })),
+      ...transferRows,
     ].sort((a, b) => a.date.localeCompare(b.date));
     let bal = Number(opening || 0);
     return rows.map(row => { bal += row.kind === "income" ? row.amount : -row.amount; return { ...row, balance: bal }; });
-  }, [incomeRows, officeIncomeRows, streamExpenses, opening]);
+  }, [incomeRows, officeIncomeRows, realExpenses, transferRows, opening]);
 
   // Pagination — keep running balance intact but show a page at a time.
   const pageCount = Math.max(1, Math.ceil(entries.length / pageSize));
