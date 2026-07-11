@@ -362,3 +362,87 @@ export async function postBankExternal(opts: {
   });
   return "posted";
 }
+
+/** Idempotency: does a posted/unposted journal with this reference already exist? */
+async function journalExists(reference: string): Promise<boolean> {
+  try {
+    const { data } = await db.from("journal_entries").select("id").eq("reference", reference).maybeSingle();
+    return !!(data as any)?.id;
+  } catch {
+    return false;
+  }
+}
+
+export interface DayCloseResult {
+  ok: boolean;
+  incomePosted: number;
+  expensePosted: number;
+  skipped: number;
+  message?: string;
+}
+
+/**
+ * ডে-ক্লোজ: নির্বাচিত তারিখের সব আয় (office_incomes) ও খরচ (expenses) balanced
+ * জার্নাল হিসেবে লেজারে পোস্ট করে। ব্যাংক লেনদেন তৈরির সময়ই লেজারে পোস্ট হয়ে যায়,
+ * তাই এখানে শুধু বাকি আয়/ব্যয় পোস্ট হয়। Idempotent — reference key দিয়ে ডুপ্লিকেট
+ * এড়ানো হয় (INCOME-<id>, EXPENSE-<id>)। ব্যাংক-ডিপোজিট মিরর expense বাদ যায়।
+ */
+export async function postDayClose(opts: {
+  date: string; // YYYY-MM-DD
+  officeId?: string | null;
+  createdBy?: string | null;
+}): Promise<DayCloseResult> {
+  const { date } = opts;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return { ok: false, incomePosted: 0, expensePosted: 0, skipped: 0, message: "সঠিক তারিখ দিন" };
+  let incomePosted = 0, expensePosted = 0, skipped = 0;
+
+  try {
+    const [cash, income, expense] = await Promise.all([
+      accountId(ACC.cash), accountId(ACC.officeIncome), accountId(ACC.generalExpense),
+    ]);
+    if (!cash || !income || !expense) return { ok: false, incomePosted, expensePosted, skipped, message: "আবশ্যক হিসাব পাওয়া যায়নি" };
+
+    // Office incomes for the day → Dr Cash / Cr Office Income.
+    const { data: incs } = await db.from("office_incomes").select("*").eq("received_on", date);
+    for (const r of (incs ?? []) as any[]) {
+      const amt = Math.round(Number(r.amount) || 0);
+      if (amt <= 0) { skipped++; continue; }
+      const ref = `INCOME-${r.id}`;
+      if (await journalExists(ref)) { skipped++; continue; }
+      await createJournal({
+        reference: ref,
+        description: `অফিস আয়${r.receipt_no ? ` (রসিদ: ${r.receipt_no})` : ""}`,
+        officeId: r.office_id ?? opts.officeId ?? null, createdBy: opts.createdBy, entryDate: date,
+        lines: [
+          { account_id: cash, debit: amt, credit: 0, description: "নগদ আয়", position: 1 },
+          { account_id: income, debit: 0, credit: amt, description: "অফিস আয়", position: 2 },
+        ],
+      });
+      incomePosted++;
+    }
+
+    // Expenses for the day (excluding bank-deposit mirrors, already journaled) → Dr Expense / Cr Cash.
+    const { data: exps } = await db.from("expenses").select("*").eq("expense_date", date).is("deleted_at", null);
+    for (const r of (exps ?? []) as any[]) {
+      if (r.is_bank_deposit) { skipped++; continue; }
+      const amt = Math.round(Number(r.amount) || 0);
+      if (amt <= 0) { skipped++; continue; }
+      const ref = `EXPENSE-${r.id}`;
+      if (await journalExists(ref)) { skipped++; continue; }
+      await createJournal({
+        reference: ref,
+        description: `খরচ${r.head ? ` — ${r.head}` : ""}${r.voucher_no ? ` (${r.voucher_no})` : ""}`,
+        officeId: r.office_id ?? opts.officeId ?? null, createdBy: opts.createdBy, entryDate: date,
+        lines: [
+          { account_id: expense, debit: amt, credit: 0, description: r.head || "খরচ", position: 1 },
+          { account_id: cash, debit: 0, credit: amt, description: "নগদ কমেছে", position: 2 },
+        ],
+      });
+      expensePosted++;
+    }
+
+    return { ok: true, incomePosted, expensePosted, skipped };
+  } catch (e: any) {
+    return { ok: false, incomePosted, expensePosted, skipped, message: e?.message ?? "ডে-ক্লোজ ব্যর্থ" };
+  }
+}
