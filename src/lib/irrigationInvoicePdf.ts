@@ -218,6 +218,7 @@ function copyHtml(d: IrrigationInvoiceData, brand: CompanyBranding, copyLabel: s
     ? `বিল হওয়া অংশ ${billedText} (মোট ${formatLandSize(land.parcel_size, "with_katha") ?? "—"})`
     : billedText;
 
+  const rows: Array<[string, string]> = [
     ["কৃষকের নাম", `${farmer.name ?? "—"}${farmer.farmer_code ? " (" + farmer.farmer_code + ")" : ""}`],
     ["গ্রাম / মোবাইল", `${farmer.village ?? "—"}${farmer.mobile ? " / " + farmer.mobile : ""}`],
     ["জমির ধরন", d.is_borga ? "বর্গাদার" : "নিজ মালিক"],
