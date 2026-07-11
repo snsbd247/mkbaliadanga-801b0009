@@ -18,7 +18,7 @@ export type ReceiptKind = "irrigation" | "savings" | "loan";
 export const IRRIGATION_RECEIPT_PAGE = {
   paper: "a5" as const,
   orientation: "l" as const,
-  margins: { t: 6, r: 4, b: 6, l: 4 },
+  margins: { t: 4, r: 2, b: 4, l: 2 },
   /** Render width (px) for html2canvas that yields the A5-landscape aspect. */
   renderWidthPx: 1040,
   /** A5 landscape aspect ratio (210mm / 148mm) for preview containers. */
@@ -617,14 +617,14 @@ function copyHtml(d: BnReceiptData, copyLabel: string, signatureUrl: string | nu
           : v;
       return `
         <tr>
-          <td style="padding:${rowPadY};vertical-align:top;width:46%;font-size:21px;line-height:1.25;white-space:normal;overflow:visible;text-overflow:clip;font-weight:600;">${label}</td>
-          <td style="padding:${rowPadColon};vertical-align:top;width:14px;font-size:21px;line-height:1.25;font-weight:700;">:</td>
-          <td style="padding:${rowPadVal};vertical-align:top;font-size:21px;line-height:1.25;font-weight:600;${cellWrap}">${value}</td>
+          <td style="padding:${rowPadY};vertical-align:top;width:46%;font-size:24px;line-height:1.25;white-space:normal;overflow:visible;text-overflow:clip;font-weight:600;">${label}</td>
+          <td style="padding:${rowPadColon};vertical-align:top;width:14px;font-size:24px;line-height:1.25;font-weight:700;">:</td>
+          <td style="padding:${rowPadVal};vertical-align:top;font-size:24px;line-height:1.25;font-weight:600;${cellWrap}">${value}</td>
         </tr>`;
     }).join("");
 
     return `
-    <div style="position:relative;font-family:${fontFamily};color:#111;padding:${padCfg.page}px ${padCfg.page}px ${padCfg.bottom}px;min-height:520px;box-sizing:border-box;" data-receipt-copy="${copyLabel}">
+    <div style="position:relative;font-family:${fontFamily};color:#111;padding:${padCfg.page}px ${padCfg.page}px ${padCfg.bottom}px;min-height:440px;box-sizing:border-box;" data-receipt-copy="${copyLabel}">
       ${watermark}
       <div style="position:relative;z-index:1;display:grid;grid-template-columns:240px 1fr 128px;align-items:start;min-height:92px;">
         <div style="padding-top:16px;">${tpl.show_logo ? logo : ""}</div>
@@ -649,7 +649,7 @@ function copyHtml(d: BnReceiptData, copyLabel: string, signatureUrl: string | nu
       </table>
 
       ${tpl.show_signature_line !== false ? `
-      <div style="position:relative;z-index:1;display:flex;justify-content:space-between;align-items:flex-end;margin-top:26px;font-size:20px;line-height:1.2;">
+      <div style="position:relative;z-index:1;display:flex;justify-content:space-between;align-items:flex-end;margin-top:18px;font-size:22px;line-height:1.2;">
         <div style="border-top:1px solid #111;padding-top:2px;min-width:260px;">${lang === "bn" ? "সদস্যের স্বাক্ষর/প্রদানকারীর স্বাক্ষর" : "Member / Payer signature"}</div>
         <div style="text-align:right;min-width:300px;">
           ${signatureUrl
