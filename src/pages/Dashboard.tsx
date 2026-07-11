@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { db } from "@/lib/db";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card } from "@/components/ui/card";
-import { Users, UserCheck, Wallet, Coins, HandCoins, Droplets, CalendarClock, AlertTriangle, FileText, Trophy, Activity, UserPlus, TrendingUp, TrendingDown, Banknote } from "lucide-react";
+import { Users, UserCheck, Wallet, Coins, HandCoins, Droplets, CalendarClock, AlertTriangle, FileText, Trophy, Activity, UserPlus, TrendingUp, TrendingDown, Banknote, Landmark } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { useLang } from "@/i18n/LanguageProvider";
@@ -155,6 +155,25 @@ export default function Dashboard() {
     });
     const handCashBalance = handCash.closing;
 
+    // Savings-side hand cash (সঞ্চয়): non-irrigation receipts − non-irrigation expenses.
+    const [{ data: savingsExpensesAll }, { data: bankAccts }, { data: bankTxAll }] = await Promise.all([
+      db.from("expenses").select("amount,stream").is("deleted_at", null),
+      db.from("bank_accounts").select("id,opening_balance").eq("is_active", true),
+      db.from("bank_transactions").select("bank_account_id,txn_type,amount"),
+    ]);
+    const savingsIncome = sum((hcReceiptsAll ?? []).filter((r: any) => String(r.kind ?? "").toLowerCase() !== "irrigation"), "amount");
+    const savingsExpense = sum((savingsExpensesAll ?? []).filter((e: any) => String(e.stream ?? "").toLowerCase() !== "irrigation"), "amount");
+    const savingsHandCash = savingsIncome - savingsExpense;
+
+    // All banks combined current balance.
+    const bankMap = new Map<string, number>();
+    (bankAccts ?? []).forEach((a: any) => bankMap.set(a.id, Number(a.opening_balance || 0)));
+    (bankTxAll ?? []).forEach((t: any) => {
+      const sign = ["deposit", "transfer_in", "interest"].includes(t.txn_type) ? 1 : -1;
+      bankMap.set(t.bank_account_id, (bankMap.get(t.bank_account_id) ?? 0) + sign * Number(t.amount || 0));
+    });
+    const bankBalance = Array.from(bankMap.values()).reduce((a, b) => a + b, 0);
+
 
     // Hand Cash module month-end: use the latest submitted closing if present;
     // otherwise mirror /hand-cash's current-month closing using the SAME
@@ -193,7 +212,9 @@ export default function Dashboard() {
       { label: t("thisMonthCollection"), value: money(monthCollect), icon: CalendarClock, delta: momDelta, href: "/payments?period=this_month" },
       { label: lang === "bn" ? "সেচের বাকি" : "Irrigation Due", value: money(irrigationDue), icon: Droplets, tone: "danger", href: "/reports/irrigation-due" },
       
-      { label: lang === "bn" ? "হাতে নগদ" : "Hand Cash", value: money(handCashBalance), icon: Banknote, tone: handCashBalance < 0 ? "danger" : "success", href: "/hand-cash" },
+      { label: lang === "bn" ? "সেচ হ্যান্ড ক্যাশ" : "Irrigation Hand Cash", value: money(handCashBalance), icon: Banknote, tone: handCashBalance < 0 ? "danger" : "success", href: "/hand-cash" },
+      { label: lang === "bn" ? "সঞ্চয় হ্যান্ড ক্যাশ" : "Savings Hand Cash", value: money(savingsHandCash), icon: Banknote, tone: savingsHandCash < 0 ? "danger" : "success", href: "/hand-cash" },
+      { label: lang === "bn" ? "সব ব্যাংক ব্যালেন্স" : "All Banks Balance", value: money(bankBalance), icon: Landmark, tone: "default", href: "/bank-accounts" },
       { label: lang === "bn" ? "হ্যান্ড ক্যাশ (মাস শেষ)" : "Hand Cash (Month-end)", value: money(handCashClosing), icon: Banknote, tone: handCashClosing < 0 ? "danger" : "success", href: "/hand-cash" },
       { label: t("pendingApprovals"), value: String(pendingCount), icon: AlertTriangle, tone: pendingCount > 0 ? "warn" : "default", href: "/approvals" },
     ]);
