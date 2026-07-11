@@ -416,10 +416,23 @@ export default function BankAccounts() {
                   <div><Label>Reference</Label><Input value={tx.reference_no} onChange={e => setTx({ ...tx, reference_no: e.target.value })} /></div>
                   <div className="col-span-2"><Label>Note</Label><Input value={tx.note} onChange={e => setTx({ ...tx, note: e.target.value })} /></div>
                   {(tx.txn_type === "deposit" || tx.txn_type === "withdraw") && (
-                    <label className="col-span-2 flex items-center gap-2 text-sm">
-                      <input type="checkbox" checked={!!tx.post_cashbook} onChange={e => setTx({ ...tx, post_cashbook: e.target.checked })} />
-                      <span>Cashbook এ {tx.txn_type === "deposit" ? "expense (Bank Deposit)" : "receipt (Bank Withdraw)"} হিসেবে যোগ করুন</span>
-                    </label>
+                    <>
+                      <div className="col-span-2"><Label>উৎস / Source</Label>
+                        <Select value={tx.cash_source ?? "cash"} onValueChange={v => setTx({ ...tx, cash_source: v, post_cashbook: v === "cash" })}>
+                          <SelectTrigger><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="cash">{tx.txn_type === "deposit" ? "নগদ থেকে ব্যাংকে জমা (নগদ কমবে)" : "ব্যাংক থেকে নগদে উত্তোলন (নগদ বাড়বে)"}</SelectItem>
+                            <SelectItem value="external">{tx.txn_type === "deposit" ? "সরাসরি ব্যাংক জমা (নগদে প্রভাব নেই)" : "সরাসরি ব্যাংক খরচ (নগদে প্রভাব নেই)"}</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      {(tx.cash_source ?? "cash") === "cash" && (
+                        <label className="col-span-2 flex items-center gap-2 text-sm">
+                          <input type="checkbox" checked={!!tx.post_cashbook} onChange={e => setTx({ ...tx, post_cashbook: e.target.checked })} />
+                          <span>Cashbook এ {tx.txn_type === "deposit" ? "expense (Bank Deposit)" : "receipt (Bank Withdraw)"} হিসেবে যোগ করুন</span>
+                        </label>
+                      )}
+                    </>
                   )}
                 </div>
                 <DialogFooter><Button variant="outline" onClick={() => setOpenT(false)}>Cancel</Button><Button onClick={saveTxn}>Save</Button></DialogFooter>
