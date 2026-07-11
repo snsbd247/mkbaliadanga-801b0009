@@ -242,10 +242,12 @@ export default function Cashbook() {
     toast.success(t("saved")); load();
   }
 
-  async function downloadScan(path: string) {
+  async function downloadScan(path: string, mime?: string) {
     const { data, error } = await sb.storage.from("vouchers").createSignedUrl(path, 300);
     if (error) return toast.error(error.message);
-    window.open(data.signedUrl, "_blank");
+    const isImage = mime ? mime.startsWith("image/") : /\.(png|jpe?g|gif|webp|bmp)$/i.test(path);
+    if (isImage) setScanPreview({ url: data.signedUrl, isImage: true });
+    else window.open(data.signedUrl, "_blank");
   }
 
   // ---------- Monthly final submit per stream ----------
