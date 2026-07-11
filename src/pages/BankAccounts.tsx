@@ -18,7 +18,7 @@ import { useAuth } from "@/auth/AuthProvider";
 import { exportTablePDF, exportExcel } from "@/lib/exports";
 import { useLang } from "@/i18n/LanguageProvider";
 import { logAudit } from "@/lib/audit";
-import { postBankOpening, postBankCashTransfer } from "@/lib/accountingPosting";
+import { postBankOpening, postBankCashTransfer, postBankExternal } from "@/lib/accountingPosting";
 import { partitionOpenings, summarizeBackfill } from "@/lib/bankOpening";
 import { assertSechTransfer, isSechStream } from "@/lib/cashStreamGuard";
 
