@@ -327,7 +327,7 @@ export default function BankAccounts() {
       bank_account_id: sm.bank_account_id, txn_type: sm.direction, amount: Number(sm.amount),
       txn_date: sm.txn_date, reference_no: "",
       note: sm.note || (sm.direction === "deposit" ? "সেচ নগদ ব্যাংকে জমা" : "ব্যাংক থেকে সেচ নগদ উত্তোলন"),
-      post_cashbook: true,
+      post_cashbook: true, cash_source: "cash",
     });
     setSm({ bank_account_id: "", direction: "deposit", amount: 0, txn_date: new Date().toISOString().slice(0, 10), note: "" });
   }
