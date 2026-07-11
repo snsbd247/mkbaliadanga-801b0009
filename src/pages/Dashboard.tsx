@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { db } from "@/lib/db";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card } from "@/components/ui/card";
-import { Users, UserCheck, Wallet, Coins, HandCoins, Droplets, CalendarClock, AlertTriangle, FileText, Trophy, Activity, UserPlus, TrendingUp, TrendingDown, Banknote, Landmark } from "lucide-react";
+import { Users, UserCheck, Wallet, Coins, HandCoins, Droplets, CalendarClock, AlertTriangle, FileText, Trophy, Activity, UserPlus, TrendingUp, TrendingDown, Banknote, Landmark, Info } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { useLang } from "@/i18n/LanguageProvider";
@@ -15,14 +15,16 @@ import { useAuth } from "@/auth/AuthProvider";
 import { NoOfficeBanner } from "@/components/layout/NoOfficeBanner";
 import { SmsProviderStatusCard } from "@/components/dashboard/SmsProviderStatusCard";
 import { LumpSumDueCard } from "@/components/dashboard/LumpSumDueCard";
+import { computeSavingsHandCash, reconcileBalances, type ReconcileResult } from "@/lib/cashReconcile";
 
-interface Stat { label: string; value: string; icon: any; tone?: "default" | "danger" | "warn" | "success"; delta?: number | null; href?: string }
+interface Stat { label: string; value: string; icon: any; tone?: "default" | "danger" | "warn" | "success"; delta?: number | null; href?: string; hint?: string }
 
 export default function Dashboard() {
   const { t, lang } = useLang();
   const { isSuper, isAdmin, officeId } = useAuth();
   const [officeName, setOfficeName] = useState<string>("");
   const [stats, setStats] = useState<Stat[]>([]);
+  const [recon, setRecon] = useState<ReconcileResult | null>(null);
   const [recent, setRecent] = useState<any[]>([]);
   const [pending, setPending] = useState<any[]>([]);
   const [trend, setTrend] = useState<any[]>([]);
@@ -161,9 +163,11 @@ export default function Dashboard() {
       db.from("bank_accounts").select("id,opening_balance").eq("is_active", true),
       db.from("bank_transactions").select("bank_account_id,txn_type,amount"),
     ]);
-    const savingsIncome = sum((hcReceiptsAll ?? []).filter((r: any) => String(r.kind ?? "").toLowerCase() !== "irrigation"), "amount");
-    const savingsExpense = sum((savingsExpensesAll ?? []).filter((e: any) => String(e.stream ?? "").toLowerCase() !== "irrigation"), "amount");
-    const savingsHandCash = savingsIncome - savingsExpense;
+    const savingsAllTime = computeSavingsHandCash({
+      receipts: hcReceiptsAll ?? [],
+      expenses: savingsExpensesAll ?? [],
+    });
+    const savingsHandCash = savingsAllTime.closing;
 
     // All banks combined current balance.
     const bankMap = new Map<string, number>();
@@ -211,7 +215,20 @@ export default function Dashboard() {
     const savMonthIncome = sum((hcReceipts.data ?? []).filter((r: any) => String(r.kind ?? "").toLowerCase() !== "irrigation"), "amount");
     const savMonthExpense = sum((hcExpensesAll.data ?? []).filter((e: any) => String(e.stream ?? "irrigation") !== "irrigation"), "amount");
     const savSubmitted = submittedClosing("savings");
-    const savMonthEnd = savSubmitted ? Number((savSubmitted as any).closing_cash || 0) : savMonthOpening + savMonthIncome - savMonthExpense;
+    const savMonthComputed = savMonthOpening + savMonthIncome - savMonthExpense;
+    const savMonthEnd = savSubmitted ? Number((savSubmitted as any).closing_cash || 0) : savMonthComputed;
+
+    // Reconciliation: where a month has a finalized (submitted) Hand Cash
+    // closing, verify the dashboard's computed month-end matches it. This
+    // catches any drift between the displayed cards and the finalized ledger.
+    const reconEntries: { label: string; dashboard: number; source: number }[] = [];
+    if (irrSubmitted) {
+      reconEntries.push({ label: lang === "bn" ? "সেচ হ্যান্ড ক্যাশ (মাস শেষ)" : "Irrigation Hand Cash (Month-end)", dashboard: irrMonth.closing, source: Number((irrSubmitted as any).closing_cash || 0) });
+    }
+    if (savSubmitted) {
+      reconEntries.push({ label: lang === "bn" ? "সঞ্চয় হ্যান্ড ক্যাশ (মাস শেষ)" : "Savings Hand Cash (Month-end)", dashboard: savMonthComputed, source: Number((savSubmitted as any).closing_cash || 0) });
+    }
+    setRecon(reconEntries.length ? reconcileBalances(reconEntries) : null);
 
 
     const farmersList = votersOnly ? farmersData.filter((f: any) => f.is_voter) : farmersData;
@@ -229,11 +246,11 @@ export default function Dashboard() {
       { label: t("thisMonthCollection"), value: money(monthCollect), icon: CalendarClock, delta: momDelta, href: "/payments?period=this_month" },
       { label: lang === "bn" ? "সেচের বাকি" : "Irrigation Due", value: money(irrigationDue), icon: Droplets, tone: "danger", href: "/reports/irrigation-due" },
       
-      { label: lang === "bn" ? "সেচ হ্যান্ড ক্যাশ" : "Irrigation Hand Cash", value: money(handCashBalance), icon: Banknote, tone: handCashBalance < 0 ? "danger" : "success", href: "/hand-cash" },
-      { label: lang === "bn" ? "সঞ্চয় হ্যান্ড ক্যাশ" : "Savings Hand Cash", value: money(savingsHandCash), icon: Banknote, tone: savingsHandCash < 0 ? "danger" : "success", href: "/hand-cash" },
-      { label: lang === "bn" ? "সব ব্যাংক ব্যালেন্স" : "All Banks Balance", value: money(bankBalance), icon: Landmark, tone: "default", href: "/bank-accounts" },
-      { label: lang === "bn" ? "সেচ হ্যান্ড ক্যাশ (মাস শেষ)" : "Irrigation Hand Cash (Month-end)", value: money(irrMonthEnd), icon: Banknote, tone: irrMonthEnd < 0 ? "danger" : "success", href: "/hand-cash" },
-      { label: lang === "bn" ? "সঞ্চয় হ্যান্ড ক্যাশ (মাস শেষ)" : "Savings Hand Cash (Month-end)", value: money(savMonthEnd), icon: Banknote, tone: savMonthEnd < 0 ? "danger" : "success", href: "/hand-cash" },
+      { label: lang === "bn" ? "সেচ হ্যান্ড ক্যাশ" : "Irrigation Hand Cash", value: money(handCashBalance), icon: Banknote, tone: handCashBalance < 0 ? "danger" : "success", href: "/hand-cash", hint: lang === "bn" ? "নেট = সব সেচ রশিদ (+ব্যাংক ট্রান্সফার) − সেচ ব্যয়। Cash Book সেচ ক্যাশ ক্লোজিং-এর সমান।" : "Net = all irrigation receipts (+bank transfers) − irrigation expenses. Equals Cash Book Irrigation cash closing." },
+      { label: lang === "bn" ? "সঞ্চয় হ্যান্ড ক্যাশ" : "Savings Hand Cash", value: money(savingsHandCash), icon: Banknote, tone: savingsHandCash < 0 ? "danger" : "success", href: "/hand-cash", hint: lang === "bn" ? "নেট = সঞ্চয়/লোন রশিদ − সঞ্চয় ব্যয় (সেচ বাদে)। Cash Book সেভিং ক্যাশ ক্লোজিং-এর সমান।" : "Net = savings/loan receipts − savings expenses (excludes irrigation). Equals Cash Book Savings cash closing." },
+      { label: lang === "bn" ? "সব ব্যাংক ব্যালেন্স" : "All Banks Balance", value: money(bankBalance), icon: Landmark, tone: "default", href: "/bank-accounts", hint: lang === "bn" ? "প্রতিটি ব্যাংকের ওপেনিং ব্যালেন্স + জমা/সুদ/ট্রান্সফার-ইন − উত্তোলন/ট্রান্সফার-আউট।" : "Each bank's opening balance + deposits/interest/transfer-in − withdrawals/transfer-out." },
+      { label: lang === "bn" ? "সেচ হ্যান্ড ক্যাশ (মাস শেষ)" : "Irrigation Hand Cash (Month-end)", value: money(irrMonthEnd), icon: Banknote, tone: irrMonthEnd < 0 ? "danger" : "success", href: "/hand-cash", hint: lang === "bn" ? "চলতি মাসের সেচ ক্লোজিং = গত মাসের ক্লোজিং + এই মাসের সেচ আয় − ব্যয়। সাবমিট থাকলে সাবমিট করা মান।" : "Current month irrigation closing = last month closing + this month irrigation income − expenses. Uses the submitted value if finalized." },
+      { label: lang === "bn" ? "সঞ্চয় হ্যান্ড ক্যাশ (মাস শেষ)" : "Savings Hand Cash (Month-end)", value: money(savMonthEnd), icon: Banknote, tone: savMonthEnd < 0 ? "danger" : "success", href: "/hand-cash", hint: lang === "bn" ? "চলতি মাসের সঞ্চয় ক্লোজিং = গত মাসের ক্লোজিং + এই মাসের সঞ্চয় আয় − ব্যয়। সাবমিট থাকলে সাবমিট করা মান।" : "Current month savings closing = last month closing + this month savings income − expenses. Uses the submitted value if finalized." },
       { label: t("pendingApprovals"), value: String(pendingCount), icon: AlertTriangle, tone: pendingCount > 0 ? "warn" : "default", href: "/approvals" },
     ]);
 
@@ -357,7 +374,10 @@ export default function Dashboard() {
           const inner = (
             <div className="flex items-start justify-between">
               <div>
-                <div className="text-xs uppercase tracking-wide text-muted-foreground">{s.label}</div>
+                <div className="flex items-center gap-1 text-xs uppercase tracking-wide text-muted-foreground">
+                  <span>{s.label}</span>
+                  {s.hint && <Info className="h-3 w-3 shrink-0 opacity-60" aria-label={s.hint} />}
+                </div>
                 <div className={`mt-2 text-2xl font-bold ${s.tone === "danger" ? "text-destructive" : s.tone === "success" ? "text-success" : "text-foreground"}`}>{s.value}</div>
                 {typeof s.delta === "number" && (
                   <div className={`mt-1 inline-flex items-center gap-1 text-xs font-medium ${s.delta >= 0 ? "text-success" : "text-destructive"}`}>
@@ -372,14 +392,44 @@ export default function Dashboard() {
             </div>
           );
           return s.href ? (
-            <Link key={s.label} to={s.href} className="stat-card block transition-all hover:shadow-md hover:-translate-y-0.5 hover:border-primary/40 focus:outline-none focus:ring-2 focus:ring-primary/40">
+            <Link key={s.label} to={s.href} title={s.hint} className="stat-card block transition-all hover:shadow-md hover:-translate-y-0.5 hover:border-primary/40 focus:outline-none focus:ring-2 focus:ring-primary/40">
               {inner}
             </Link>
           ) : (
-            <div key={s.label} className="stat-card">{inner}</div>
+            <div key={s.label} title={s.hint} className="stat-card">{inner}</div>
           );
         })}
       </div>
+
+      {recon && !recon.ok && (
+        <Card className="mt-4 border-destructive/50 bg-destructive/5 p-4">
+          <div className="flex items-center gap-2 font-semibold text-destructive">
+            <AlertTriangle className="h-4 w-4" />
+            {lang === "bn" ? "ব্যালেন্স অমিল পাওয়া গেছে" : "Balance mismatch detected"}
+          </div>
+          <p className="mt-1 text-xs text-muted-foreground">
+            {lang === "bn"
+              ? "ড্যাশবোর্ডের গণনা করা মান ও সাবমিট করা Hand Cash ক্লোজিং-এর মধ্যে পার্থক্য:"
+              : "Difference between the dashboard's computed value and the finalized Hand Cash closing:"}
+          </p>
+          <ul className="mt-2 space-y-1 text-sm">
+            {recon.mismatches.map((m) => (
+              <li key={m.label} className="flex flex-wrap items-center justify-between gap-2">
+                <span>{m.label}</span>
+                <span className="text-muted-foreground">
+                  {lang === "bn" ? "ড্যাশবোর্ড" : "Dashboard"} {money(m.dashboard)} · {lang === "bn" ? "সাবমিট" : "Submitted"} {money(m.source)} ·{" "}
+                  <span className="font-semibold text-destructive">Δ {money(m.diff)}</span>
+                </span>
+              </li>
+            ))}
+          </ul>
+        </Card>
+      )}
+      {recon && recon.ok && (
+        <p className="mt-3 text-xs text-success">
+          ✓ {lang === "bn" ? "সব সাবমিট করা মাস-শেষ ব্যালেন্স ড্যাশবোর্ডের সাথে মিলছে।" : "All finalized month-end balances reconcile with the dashboard."}
+        </p>
+      )}
 
       {/* 30-day collection sparkline */}
       <Card className="mt-4 p-5">
