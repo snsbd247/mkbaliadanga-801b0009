@@ -83,7 +83,7 @@ export default function DayReconciliation() {
 
   return (
     <div className="space-y-4">
-      <PageHeader title="দিন-ভিত্তিক রিকনসিলিয়েশন" subtitle="ব্যাংক, আয়/ব্যয় ও লেজার পোস্টিং মিলিয়ে দেখুন" />
+      <PageHeader title="দিন-ভিত্তিক রিকনসিলিয়েশন" description="ব্যাংক, আয়/ব্যয় ও লেজার পোস্টিং মিলিয়ে দেখুন" />
 
       <Card>
         <CardHeader>
