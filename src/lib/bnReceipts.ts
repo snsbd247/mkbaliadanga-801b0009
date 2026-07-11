@@ -590,6 +590,8 @@ function copyHtml(d: BnReceiptData, copyLabel: string, signatureUrl: string | nu
     const blue = "#111";
     const padCfg = getIrrigationReceiptPadding();
     const hb = padCfg.holdingBottom;
+    const fs = getReceiptFontScale();
+    const px = (n: number) => Math.round(n * fs);
     const officialRows = rows.map(([k, v], idx) => {
       const isLast = idx === rows.length - 1;
       const rowPadY = isLast ? `1px 0 ${hb}px 12px` : "1px 0 1px 12px";
