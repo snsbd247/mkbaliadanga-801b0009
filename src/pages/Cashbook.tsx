@@ -591,6 +591,14 @@ function StreamCashbook(props: {
 
   const streamReceipts = useMemo(() => receipts.filter(x => STREAM_INCOME_KINDS[stream].has(x.kind)), [receipts, stream]);
   const streamExpenses = useMemo(() => expenses.filter(x => x.stream === stream), [expenses, stream]);
+  // Bank ↔ cash transfers are mirrored as receipts (withdrawal, has link_id) or
+  // expenses (deposit, is_bank_deposit). They move cash but are NOT operational
+  // income/expense, so keep them out of the income/expense totals and show them
+  // as clearly-labelled transfer rows that still affect the running cash balance.
+  const collectionReceipts = useMemo(() => streamReceipts.filter(x => !x.link_id), [streamReceipts]);
+  const transferInReceipts = useMemo(() => streamReceipts.filter(x => !!x.link_id), [streamReceipts]);
+  const realExpenses = useMemo(() => streamExpenses.filter(x => !x.is_bank_deposit), [streamExpenses]);
+  const transferOutExpenses = useMemo(() => streamExpenses.filter(x => !!x.is_bank_deposit), [streamExpenses]);
   // Office income entries (office_incomes) feed the income side too. Their stream
   // is stored as "sech"/"saving" — map it to the cashbook "irrigation"/"savings".
   const streamIncomes = useMemo(() => {
