@@ -78,6 +78,8 @@ export default function Cashbook() {
   const [heads, setHeads] = useState<any[]>([]);
   const [bankAccounts, setBankAccounts] = useState<any[]>([]);
   const [submissions, setSubmissions] = useState<any[]>([]);
+  const [scanPreview, setScanPreview] = useState<{ url: string; isImage: boolean } | null>(null);
+
 
   const [openingCash, setOpeningCash] = useState<Record<Stream, number>>(() => ({
     irrigation: Number(localStorage.getItem("cb_open_irrigation") ?? 0),
