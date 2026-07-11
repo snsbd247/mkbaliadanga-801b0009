@@ -141,14 +141,16 @@ export default function HandCash() {
     load();
   }
 
+  const rangeLabel = (r: DayRow) => (r.receiptFrom ? (r.receiptFrom === r.receiptTo ? r.receiptFrom : `${r.receiptFrom}–${r.receiptTo}`) : "—");
   function exportPdf() {
-    exportTablePDF(tx("Hand Cash", "হ্যান্ড ক্যাশ"), [tx("Date", "তারিখ"), tx("Opening balance", "প্রারম্ভিক জমা"), tx("Income", "আয়"), tx("Expense", "ব্যয়"), tx("Closing", "সমাপনী")],
-      rows.map(r => [fmtDate(r.date), r.opening, r.income, r.expense, r.closing]), { from: mFrom, to: mTo });
+    exportTablePDF(tx("Hand Cash", "হ্যান্ড ক্যাশ"), [tx("Date", "তারিখ"), tx("Receipt no.", "রশিদ নং"), tx("Opening balance", "প্রারম্ভিক জমা"), tx("Income", "আয়"), tx("Expense", "ব্যয়"), tx("Closing", "সমাপনী")],
+      rows.map(r => [fmtDate(r.date), rangeLabel(r), r.opening, r.income, r.expense, r.closing]), { from: mFrom, to: mTo });
   }
   function exportXlsx() {
     exportExcel("hand-cash", "HandCash",
-      rows.map(r => ({ "তারিখ": r.date, "প্রারম্ভিক জমা": r.opening, "আয়": r.income, "ব্যয়": r.expense, "সমাপনী": r.closing })), { from: mFrom, to: mTo });
+      rows.map(r => ({ "তারিখ": r.date, "রশিদ নং": rangeLabel(r), "প্রারম্ভিক জমা": r.opening, "আয়": r.income, "ব্যয়": r.expense, "সমাপনী": r.closing })), { from: mFrom, to: mTo });
   }
+
 
   const years = Array.from({ length: 6 }, (_, i) => today.getFullYear() - i);
 
