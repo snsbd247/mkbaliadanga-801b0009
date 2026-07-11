@@ -496,6 +496,12 @@ export default function Cashbook() {
       />
 
       <Card className="p-4 mb-4">
+        <div className="text-xs text-muted-foreground">{tx("All banks — current balance", "সব ব্যাংক — বর্তমান ব্যালেন্স")}</div>
+        <div className="text-2xl font-bold text-primary">{money(bankBalance)}</div>
+        <div className="text-xs text-muted-foreground mt-1">{tx(`${bankAccounts.length} account(s)`, `${bankAccounts.length} টি একাউন্ট`)}</div>
+      </Card>
+
+      <Card className="p-4 mb-4">
         <div className="flex flex-wrap items-end gap-3">
           <div><Label>{tx("Year", "বছর")}</Label><Input type="number" className="w-28" value={year} onChange={e => setYear(+e.target.value)} /></div>
           <div><Label>{tx("Month", "মাস")}</Label>
