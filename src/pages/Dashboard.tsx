@@ -175,27 +175,44 @@ export default function Dashboard() {
     const bankBalance = Array.from(bankMap.values()).reduce((a, b) => a + b, 0);
 
 
-    // Hand Cash module month-end: use the latest submitted closing if present;
-    // otherwise mirror /hand-cash's current-month closing using the SAME
-    // irrigation-only logic (receipts by irrigation kind + approved irrigation
-    // payments − irrigation-stream expenses) so it matches the Cash Book.
+    // Hand Cash month-end — split per stream (সেচ vs সঞ্চয়) to mirror the
+    // Hand Cash page, which keeps a separate ledger for each stream. Use the
+    // submitted closing for the current month if present, otherwise carry the
+    // previous month's closing and add this month's cash movement.
     const prevMonthNo = now.getMonth() === 0 ? 12 : now.getMonth();
     const prevMonthYear = now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear();
-    const [hcLatest, hcPrev, hcReceipts, hcExpenses, hcMonthPay] = await Promise.all([
-      db.from("hand_cash_submissions").select("closing_cash,year,month").order("year", { ascending: false }).order("month", { ascending: false }).limit(1).maybeSingle(),
-      db.from("hand_cash_submissions").select("closing_cash").eq("year", prevMonthYear).eq("month", prevMonthNo).maybeSingle(),
+    const curYear = now.getFullYear();
+    const curMonth = now.getMonth() + 1;
+    const [hcSubs, hcReceipts, hcExpensesAll, hcMonthPay] = await Promise.all([
+      db.from("hand_cash_submissions").select("closing_cash,year,month,stream"),
       db.from("receipts").select("kind,amount,receipt_no,receipt_date").gte("receipt_date", monthStart).lte("receipt_date", today),
-      db.from("expenses").select("amount,expense_date").eq("stream", "irrigation").is("deleted_at", null).gte("expense_date", monthStart).lte("expense_date", today),
+      db.from("expenses").select("amount,stream,expense_date").is("deleted_at", null).gte("expense_date", monthStart).lte("expense_date", today),
       db.from("payments").select("amount,receipt_no,kind,status,created_at").eq("kind", "irrigation").eq("status", "approved").is("deleted_at", null).gte("created_at", monthStart),
     ]);
-    const monthHandCash = computeHandCash({
+    const subsRows = hcSubs.data ?? [];
+    const streamOf = (s: any) => (String(s?.stream ?? "irrigation") === "savings" ? "savings" : "irrigation");
+    const submittedClosing = (stream: "irrigation" | "savings") =>
+      subsRows.find((s: any) => s.year === curYear && s.month === curMonth && streamOf(s) === stream);
+    const prevClosing = (stream: "irrigation" | "savings") =>
+      subsRows.find((s: any) => s.year === prevMonthYear && s.month === prevMonthNo && streamOf(s) === stream);
+
+    // Irrigation month-end
+    const irrMonth = computeHandCash({
       receipts: hcReceipts.data ?? [],
       payments: hcMonthPay.data ?? [],
-      expenses: hcExpenses.data ?? [],
-      opening: Number((hcPrev.data as any)?.closing_cash || 0),
+      expenses: (hcExpensesAll.data ?? []).filter((e: any) => String(e.stream ?? "irrigation") === "irrigation"),
+      opening: Number((prevClosing("irrigation") as any)?.closing_cash || 0),
     });
-    const computedMonthClosing = monthHandCash.closing;
-    const handCashClosing = hcLatest.data ? Number((hcLatest.data as any).closing_cash || 0) : computedMonthClosing;
+    const irrSubmitted = submittedClosing("irrigation");
+    const irrMonthEnd = irrSubmitted ? Number((irrSubmitted as any).closing_cash || 0) : irrMonth.closing;
+
+    // Savings month-end (non-irrigation receipts − savings-stream expenses)
+    const savMonthOpening = Number((prevClosing("savings") as any)?.closing_cash || 0);
+    const savMonthIncome = sum((hcReceipts.data ?? []).filter((r: any) => String(r.kind ?? "").toLowerCase() !== "irrigation"), "amount");
+    const savMonthExpense = sum((hcExpensesAll.data ?? []).filter((e: any) => String(e.stream ?? "irrigation") !== "irrigation"), "amount");
+    const savSubmitted = submittedClosing("savings");
+    const savMonthEnd = savSubmitted ? Number((savSubmitted as any).closing_cash || 0) : savMonthOpening + savMonthIncome - savMonthExpense;
+
 
     const farmersList = votersOnly ? farmersData.filter((f: any) => f.is_voter) : farmersData;
     setStats([
@@ -215,7 +232,8 @@ export default function Dashboard() {
       { label: lang === "bn" ? "সেচ হ্যান্ড ক্যাশ" : "Irrigation Hand Cash", value: money(handCashBalance), icon: Banknote, tone: handCashBalance < 0 ? "danger" : "success", href: "/hand-cash" },
       { label: lang === "bn" ? "সঞ্চয় হ্যান্ড ক্যাশ" : "Savings Hand Cash", value: money(savingsHandCash), icon: Banknote, tone: savingsHandCash < 0 ? "danger" : "success", href: "/hand-cash" },
       { label: lang === "bn" ? "সব ব্যাংক ব্যালেন্স" : "All Banks Balance", value: money(bankBalance), icon: Landmark, tone: "default", href: "/bank-accounts" },
-      { label: lang === "bn" ? "হ্যান্ড ক্যাশ (মাস শেষ)" : "Hand Cash (Month-end)", value: money(handCashClosing), icon: Banknote, tone: handCashClosing < 0 ? "danger" : "success", href: "/hand-cash" },
+      { label: lang === "bn" ? "সেচ হ্যান্ড ক্যাশ (মাস শেষ)" : "Irrigation Hand Cash (Month-end)", value: money(irrMonthEnd), icon: Banknote, tone: irrMonthEnd < 0 ? "danger" : "success", href: "/hand-cash" },
+      { label: lang === "bn" ? "সঞ্চয় হ্যান্ড ক্যাশ (মাস শেষ)" : "Savings Hand Cash (Month-end)", value: money(savMonthEnd), icon: Banknote, tone: savMonthEnd < 0 ? "danger" : "success", href: "/hand-cash" },
       { label: t("pendingApprovals"), value: String(pendingCount), icon: AlertTriangle, tone: pendingCount > 0 ? "warn" : "default", href: "/approvals" },
     ]);
 
