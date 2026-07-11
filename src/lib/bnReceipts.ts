@@ -843,7 +843,8 @@ async function renderPdf(data: BnReceiptData, copy: ReceiptCopy, options?: Recei
   if (irrigationTwoUp) {
     opts.paper = "a4";
     opts.orientation = "p";
-    opts.margins = { ...IRRIGATION_RECEIPT_PAGE.margins };
+    const sm = getReceiptSideMarginMm();
+    opts.margins = { t: IRRIGATION_RECEIPT_PAGE.margins.t, b: IRRIGATION_RECEIPT_PAGE.margins.b, l: sm, r: sm };
   }
   let tpl: ReceiptTemplate = { ...DEFAULT_TEMPLATE };
   try { tpl = { ...tpl, ...(await loadReceiptTemplate(true)) }; } catch { /* use defaults */ }
