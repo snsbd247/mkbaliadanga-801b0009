@@ -4,7 +4,7 @@
 // other modules (savings/loan receipts, lands/voter exports, etc.).
 
 export type DagSeparator = "comma" | "newline" | "semicolon";
-export type PaperSize = "a4" | "a5";
+export type PaperSize = "a4" | "a5" | "letter";
 export type PaperOrientation = "p" | "l";
 
 export interface ReceiptLayoutSettings {
