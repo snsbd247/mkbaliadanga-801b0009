@@ -629,7 +629,7 @@ function StreamCashbook(props: {
     [entries, safePage, pageSize],
   );
 
-  const totalIncome = streamReceipts.reduce((s, x) => s + Number(x.amount), 0);
+  const totalIncome = streamReceipts.reduce((s, x) => s + Number(x.amount), 0) + streamIncomes.reduce((s, x) => s + Number(x.amount), 0);
   const totalExpense = streamExpenses.reduce((s, x) => s + Number(x.amount), 0);
   const closing = Number(opening || 0) + totalIncome - totalExpense;
 
