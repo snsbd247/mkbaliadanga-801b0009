@@ -631,7 +631,7 @@ function copyHtml(d: BnReceiptData, copyLabel: string, signatureUrl: string | nu
       <div style="position:relative;z-index:1;display:grid;grid-template-columns:240px 1fr 128px;align-items:start;min-height:92px;">
         <div style="padding-top:16px;">${tpl.show_logo ? logo : ""}</div>
         <div style="text-align:center;padding-top:24px;">
-          <div style="display:inline-block;font-size:25px;font-weight:800;line-height:1.1;color:${accent};text-decoration:underline;text-underline-offset:4px;text-decoration-thickness:2px;">${titleFor(d.kind, lang)}</div>
+          <div style="display:inline-block;font-size:${px(25)}px;font-weight:800;line-height:1.1;color:${accent};text-decoration:underline;text-underline-offset:4px;text-decoration-thickness:2px;">${titleFor(d.kind, lang)}</div>
         </div>
         <div style="text-align:right;padding-top:14px;">
           ${qrDataUrl && tpl.qr_placement !== "none" ? `<img src="${qrDataUrl}" style="width:78px;height:78px;display:block;margin-left:auto;" /><div style="font-size:11px;color:#111;margin-top:2px;">${lang === "bn" ? "যাচাই করুন" : "Scan to verify"}</div>` : ""}
