@@ -1,9 +1,12 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { db } from "@/lib/db";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card } from "@/components/ui/card";
-import { Users, UserCheck, Wallet, Coins, HandCoins, Droplets, CalendarClock, AlertTriangle, FileText, Trophy, Activity, UserPlus, TrendingUp, TrendingDown, Banknote, Landmark, Info } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
+import { exportTablePDF, exportExcel } from "@/lib/exports";
+import { Users, UserCheck, Wallet, Coins, HandCoins, Droplets, CalendarClock, AlertTriangle, FileText, Trophy, Activity, UserPlus, TrendingUp, TrendingDown, Banknote, Landmark, Info, FileDown, FileSpreadsheet } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { useLang } from "@/i18n/LanguageProvider";
