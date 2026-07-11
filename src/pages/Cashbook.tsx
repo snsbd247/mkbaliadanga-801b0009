@@ -591,6 +591,14 @@ function StreamCashbook(props: {
 
   const streamReceipts = useMemo(() => receipts.filter(x => STREAM_INCOME_KINDS[stream].has(x.kind)), [receipts, stream]);
   const streamExpenses = useMemo(() => expenses.filter(x => x.stream === stream), [expenses, stream]);
+  // Bank ↔ cash transfers are mirrored as receipts (withdrawal, has link_id) or
+  // expenses (deposit, is_bank_deposit). They move cash but are NOT operational
+  // income/expense, so keep them out of the income/expense totals and show them
+  // as clearly-labelled transfer rows that still affect the running cash balance.
+  const collectionReceipts = useMemo(() => streamReceipts.filter(x => !x.link_id), [streamReceipts]);
+  const transferInReceipts = useMemo(() => streamReceipts.filter(x => !!x.link_id), [streamReceipts]);
+  const realExpenses = useMemo(() => streamExpenses.filter(x => !x.is_bank_deposit), [streamExpenses]);
+  const transferOutExpenses = useMemo(() => streamExpenses.filter(x => !!x.is_bank_deposit), [streamExpenses]);
   // Office income entries (office_incomes) feed the income side too. Their stream
   // is stored as "sech"/"saving" — map it to the cashbook "irrigation"/"savings".
   const streamIncomes = useMemo(() => {
@@ -609,7 +617,7 @@ function StreamCashbook(props: {
   // (cash-book style) with description "রশিদ নং X – Y (n টি)".
   const incomeRows = useMemo(() => {
     if (!consolidated) {
-      return streamReceipts.map(x => ({
+      return collectionReceipts.map(x => ({
         date: x.receipt_date, kind: "income", ref: x.receipt_no || "—",
         label: getKindLabel(t, x.kind as Kind), desc: x.note || "", amount: Number(x.amount), raw: x,
       }));
@@ -618,7 +626,7 @@ function StreamCashbook(props: {
     // (e.g. today 4683–4690, tomorrow 4691–4705).
     const num = (s: any) => { const m = String(s ?? "").match(/(\d+)/); return m ? Number(m[1]) : NaN; };
     const groups = new Map<string, any[]>();
-    streamReceipts.forEach(x => {
+    collectionReceipts.forEach(x => {
       const key = `${x.receipt_date}__${x.kind}`;
       if (!groups.has(key)) groups.set(key, []);
       groups.get(key)!.push(x);
@@ -632,17 +640,33 @@ function StreamCashbook(props: {
       const amount = list.reduce((s, x) => s + Number(x.amount), 0);
       return { date, kind: "income", ref: range || "—", label: getKindLabel(t, kind as Kind), desc, amount, raw: { note: desc } };
     });
-  }, [streamReceipts, consolidated, t]);
+  }, [collectionReceipts, consolidated, t]);
+
+  // Bank ↔ cash transfer rows: withdrawals bring cash in, deposits move cash out.
+  // Distinct label + badge so they read as transfers, not irrigation collections.
+  const transferRows = useMemo(() => [
+    ...transferInReceipts.map(x => ({
+      date: x.receipt_date, kind: "income", ref: "—", isTransfer: true,
+      label: tx("Bank withdrawal (to cash)", "ব্যাংক থেকে উত্তোলন (নগদে)"),
+      desc: x.note || "", amount: Number(x.amount), raw: x,
+    })),
+    ...transferOutExpenses.map(x => ({
+      date: x.expense_date, kind: "expense", ref: "—", isTransfer: true,
+      label: tx("Bank deposit (from cash)", "নগদ থেকে ব্যাংকে জমা"),
+      desc: x.note || x.payee || "", amount: Number(x.amount), raw: x,
+    })),
+  ], [transferInReceipts, transferOutExpenses, tx]);
 
   const entries = useMemo(() => {
     const rows: any[] = [
       ...incomeRows,
       ...officeIncomeRows,
-      ...streamExpenses.map(x => ({ date: x.expense_date, kind: "expense", ref: x.voucher_no || "—", label: x.head, desc: x.payee || x.note || "", amount: Number(x.amount), raw: x })),
+      ...realExpenses.map(x => ({ date: x.expense_date, kind: "expense", ref: x.voucher_no || "—", label: x.head, desc: x.payee || x.note || "", amount: Number(x.amount), raw: x })),
+      ...transferRows,
     ].sort((a, b) => a.date.localeCompare(b.date));
     let bal = Number(opening || 0);
     return rows.map(row => { bal += row.kind === "income" ? row.amount : -row.amount; return { ...row, balance: bal }; });
-  }, [incomeRows, officeIncomeRows, streamExpenses, opening]);
+  }, [incomeRows, officeIncomeRows, realExpenses, transferRows, opening]);
 
   // Pagination — keep running balance intact but show a page at a time.
   const pageCount = Math.max(1, Math.ceil(entries.length / pageSize));
@@ -653,9 +677,13 @@ function StreamCashbook(props: {
     [entries, safePage, pageSize],
   );
 
-  const totalIncome = streamReceipts.reduce((s, x) => s + Number(x.amount), 0) + streamIncomes.reduce((s, x) => s + Number(x.amount), 0);
-  const totalExpense = streamExpenses.reduce((s, x) => s + Number(x.amount), 0);
-  const closing = Number(opening || 0) + totalIncome - totalExpense;
+  // Operational income/expense exclude bank transfers; transfers are netted into
+  // the cash balance separately so closing still reflects true cash in hand.
+  const totalIncome = collectionReceipts.reduce((s, x) => s + Number(x.amount), 0) + streamIncomes.reduce((s, x) => s + Number(x.amount), 0);
+  const totalExpense = realExpenses.reduce((s, x) => s + Number(x.amount), 0);
+  const transferIn = transferInReceipts.reduce((s, x) => s + Number(x.amount), 0);
+  const transferOut = transferOutExpenses.reduce((s, x) => s + Number(x.amount), 0);
+  const closing = Number(opening || 0) + totalIncome - totalExpense + transferIn - transferOut;
 
   // Expense by head summary
   const byHead = useMemo(() => {
@@ -701,6 +729,9 @@ function StreamCashbook(props: {
           <div className="text-sm">
             <div>{t("income")}: <span className="font-semibold text-success">{money(totalIncome)}</span></div>
             <div>{t("expense")}: <span className="font-semibold text-destructive">{money(totalExpense)}</span></div>
+            {(transferIn > 0 || transferOut > 0) && (
+              <div className="text-xs text-muted-foreground">{tx("Bank transfer", "ব্যাংক স্থানান্তর")}: +{money(transferIn)} / −{money(transferOut)}</div>
+            )}
             <div>{t("closing")}: <span className={`font-bold ${closing < 0 ? "due-text" : ""}`}>{money(closing)}</span></div>
           </div>
           <div className="flex items-center gap-2 self-center">
@@ -758,7 +789,7 @@ function StreamCashbook(props: {
               <TableCell className="font-mono text-xs">{row.ref}</TableCell>
               <TableCell>{fmtDate(row.date)}</TableCell>
               <TableCell>{row.label}</TableCell>
-              <TableCell className="text-xs text-muted-foreground">{row.desc || row.raw?.payee || row.raw?.note || ""}{row.raw?.is_bank_deposit && <Badge variant="outline" className="ml-1">{tx("Bank", "ব্যাংক")}</Badge>}</TableCell>
+              <TableCell className="text-xs text-muted-foreground">{row.desc || row.raw?.payee || row.raw?.note || ""}{(row.isTransfer || row.raw?.is_bank_deposit) && <Badge variant="outline" className="ml-1">{tx("Bank transfer", "ব্যাংক স্থানান্তর")}</Badge>}</TableCell>
               <TableCell className="text-right text-success">{row.kind === "income" ? money(row.amount) : "—"}</TableCell>
               <TableCell className="text-right text-destructive">{row.kind === "expense" ? money(row.amount) : "—"}</TableCell>
               <TableCell className={`text-right font-semibold ${row.balance < 0 ? "due-text" : ""}`}>{money(row.balance)}</TableCell>
