@@ -30,6 +30,7 @@ export default function HandCash() {
 
   const [year, setYear] = useState(today.getFullYear());
   const [month, setMonth] = useState(today.getMonth() + 1);
+  const [stream, setStream] = useState<"irrigation" | "savings">("irrigation");
   const [openingBalance, setOpeningBalance] = useState<number>(0);
   const [receipts, setReceipts] = useState<any[]>([]);
   const [expenses, setExpenses] = useState<any[]>([]);
@@ -40,16 +41,21 @@ export default function HandCash() {
   const mTo = `${year}-${String(month).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`;
 
   useEffect(() => { document.title = `${tx("Hand Cash", "হ্যান্ড ক্যাশ")} — MK Baliadanga`; }, [lang]);
-  useEffect(() => { load(); /* eslint-disable-next-line */ }, [year, month]);
+  useEffect(() => { load(); /* eslint-disable-next-line */ }, [year, month, stream]);
+
+  // A receipt/expense belongs to সেচ when its kind/stream is "irrigation",
+  // otherwise it belongs to the সঞ্চয়/লোন side.
+  const isSech = (k: unknown) => String(k ?? "").toLowerCase() === "irrigation";
+  const matchesStream = (v: unknown) => (stream === "irrigation" ? isSech(v) : !isSech(v));
 
   async function load() {
     const [rec, exp, sub] = await Promise.all([
       sb.from("receipts").select("receipt_date,amount,receipt_no,kind").gte("receipt_date", mFrom).lte("receipt_date", mTo).limit(20000),
       sb.from("expenses").select("expense_date,amount,stream").is("deleted_at", null).gte("expense_date", mFrom).lte("expense_date", mTo).limit(20000),
-      sb.from("hand_cash_submissions").select("*").eq("year", year).eq("month", month).is("office_id", officeId ?? null).maybeSingle(),
+      sb.from("hand_cash_submissions").select("*").eq("year", year).eq("month", month).eq("stream", stream).is("office_id", officeId ?? null).maybeSingle(),
     ]);
-    setReceipts(rec.data ?? []);
-    setExpenses(exp.data ?? []);
+    setReceipts((rec.data ?? []).filter((r: any) => matchesStream(r.kind)));
+    setExpenses((exp.data ?? []).filter((e: any) => matchesStream(e.stream)));
     setSubmission(sub.data ?? null);
     if (sub.data) {
       setOpeningBalance(Number(sub.data.opening_cash || 0));
@@ -57,7 +63,7 @@ export default function HandCash() {
       // Auto-carry: opening = previous month's submitted closing, fallback 0.
       const pm = month === 1 ? 12 : month - 1;
       const py = month === 1 ? year - 1 : year;
-      const { data: prev } = await sb.from("hand_cash_submissions").select("closing_cash").eq("year", py).eq("month", pm).is("office_id", officeId ?? null).maybeSingle();
+      const { data: prev } = await sb.from("hand_cash_submissions").select("closing_cash").eq("year", py).eq("month", pm).eq("stream", stream).is("office_id", officeId ?? null).maybeSingle();
       setOpeningBalance(prev ? Number(prev.closing_cash || 0) : 0);
     }
   }
@@ -98,29 +104,17 @@ export default function HandCash() {
   const totalExpense = rows.reduce((s, r) => s + r.expense, 0);
   const finalClosing = rows.length ? rows[rows.length - 1].closing : openingBalance;
 
-  // Split hand cash by stream: সেচ (irrigation) vs সঞ্চয় (savings/society side).
-  const isSech = (k: unknown) => String(k ?? "").toLowerCase() === "irrigation";
-  const streamTotals = useMemo(() => {
-    const sech = { income: 0, expense: 0 };
-    const savings = { income: 0, expense: 0 };
-    receipts.forEach((r: any) => {
-      (isSech(r.kind) ? sech : savings).income += Number(r.amount || 0);
-    });
-    expenses.forEach((e: any) => {
-      (isSech(e.stream) ? sech : savings).expense += Number(e.amount || 0);
-    });
-    return { sech, savings };
-  }, [receipts, expenses]);
+  const streamLabel = stream === "irrigation" ? tx("Irrigation", "সেচ") : tx("Savings / Loan", "সঞ্চয় / লোন");
 
   async function submitMonth() {
     if (locked) return toast.error(tx("This month is already submitted/locked", "এই মাস ইতিমধ্যে সাবমিট/লক করা"));
     if (!confirm(`${MONTHS[month - 1]} ${year} — ${tx("Final submit hand cash? Opening balance will be locked.", "হ্যান্ড ক্যাশ ফাইনাল সাবমিট করবেন? এরপর প্রারম্ভিক জমা লক হয়ে যাবে।")}`)) return;
     const payload = {
-      office_id: officeId ?? null, year, month,
+      office_id: officeId ?? null, year, month, stream,
       opening_cash: openingBalance, total_income: totalIncome, total_expense: totalExpense,
       closing_cash: finalClosing, locked: true, submitted_by: user?.id, submitted_at: new Date().toISOString(),
     };
-    const { error } = await sb.from("hand_cash_submissions").upsert(payload, { onConflict: "office_id,year,month" });
+    const { error } = await sb.from("hand_cash_submissions").upsert(payload, { onConflict: "office_id,year,month,stream" });
     if (error) return toast.error(error.message);
     toast.success(tx("Submitted", "সাবমিট হয়েছে"));
     load();
@@ -129,11 +123,11 @@ export default function HandCash() {
   async function saveOpeningDraft() {
     if (locked) return;
     const payload = {
-      office_id: officeId ?? null, year, month,
+      office_id: officeId ?? null, year, month, stream,
       opening_cash: openingBalance, total_income: totalIncome, total_expense: totalExpense,
       closing_cash: finalClosing, locked: false,
     };
-    const { error } = await sb.from("hand_cash_submissions").upsert(payload, { onConflict: "office_id,year,month" });
+    const { error } = await sb.from("hand_cash_submissions").upsert(payload, { onConflict: "office_id,year,month,stream" });
     if (error) return toast.error(error.message);
     toast.success(tx("Opening balance saved", "প্রারম্ভিক জমা সংরক্ষিত"));
     load();
@@ -199,24 +193,11 @@ export default function HandCash() {
         <div><div className="text-xs text-muted-foreground">{tx("Closing balance", "সমাপনী জমা")}</div><div className="text-lg font-bold text-primary">{money(finalClosing)}</div></div>
       </Card>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
-        <Card className="p-3">
-          <div className="text-sm font-semibold mb-2">{tx("Irrigation hand cash", "সেচ হ্যান্ড ক্যাশ")}</div>
-          <div className="grid grid-cols-3 gap-2">
-            <div><div className="text-xs text-muted-foreground">{tx("Income", "আয়")}</div><div className="font-bold text-success">{money(streamTotals.sech.income)}</div></div>
-            <div><div className="text-xs text-muted-foreground">{tx("Expense", "ব্যয়")}</div><div className="font-bold text-destructive">{money(streamTotals.sech.expense)}</div></div>
-            <div><div className="text-xs text-muted-foreground">{tx("Net", "নিট")}</div><div className="font-bold text-primary">{money(streamTotals.sech.income - streamTotals.sech.expense)}</div></div>
-          </div>
-        </Card>
-        <Card className="p-3">
-          <div className="text-sm font-semibold mb-2">{tx("Savings hand cash", "সঞ্চয় হ্যান্ড ক্যাশ")}</div>
-          <div className="grid grid-cols-3 gap-2">
-            <div><div className="text-xs text-muted-foreground">{tx("Income", "আয়")}</div><div className="font-bold text-success">{money(streamTotals.savings.income)}</div></div>
-            <div><div className="text-xs text-muted-foreground">{tx("Expense", "ব্যয়")}</div><div className="font-bold text-destructive">{money(streamTotals.savings.expense)}</div></div>
-            <div><div className="text-xs text-muted-foreground">{tx("Net", "নিট")}</div><div className="font-bold text-primary">{money(streamTotals.savings.income - streamTotals.savings.expense)}</div></div>
-          </div>
-        </Card>
+      <div className="mb-3 inline-flex rounded-md border p-1 gap-1">
+        <Button size="sm" variant={stream === "irrigation" ? "default" : "ghost"} onClick={() => setStream("irrigation")}>{tx("Irrigation", "সেচ")}</Button>
+        <Button size="sm" variant={stream === "savings" ? "default" : "ghost"} onClick={() => setStream("savings")}>{tx("Savings / Loan", "সঞ্চয় / লোন")}</Button>
       </div>
+      <p className="text-xs text-muted-foreground mb-3">{tx(`Separate ledger — ${streamLabel}`, `আলাদা লেজার — ${streamLabel}`)}</p>
 
       <Card className="overflow-x-auto"><Table>
         <TableHeader><TableRow>
