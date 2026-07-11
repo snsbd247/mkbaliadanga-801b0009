@@ -16,6 +16,8 @@ const ACC = {
   irrigationIncome: { code: "4010", name: "Irrigation Income", name_bn: "সেচ আয়", type: "income" },
   discountExpense: { code: "5050", name: "Discount Expense", name_bn: "ডিসকাউন্ট খরচ", type: "expense" },
   openingEquity: { code: "3000", name: "Opening Balance Equity", name_bn: "প্রারম্ভিক জের (মূলধন)", type: "equity" },
+  bankOtherIncome: { code: "4090", name: "Bank/Other Income", name_bn: "ব্যাংক/অন্যান্য আয়", type: "income" },
+  bankOtherExpense: { code: "5090", name: "Bank/Other Expense", name_bn: "ব্যাংক/অন্যান্য খরচ", type: "expense" },
 } as const;
 
 const cache = new Map<string, string>();
