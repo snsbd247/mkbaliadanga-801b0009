@@ -25,8 +25,10 @@ beforeEach(() => {
 });
 
 function rowFor(html: string, label: string): string {
-  // Match <tr>... <td>label</td><td>value</td> ...</tr>
-  const re = new RegExp(`<tr>[\\s\\S]*?<td[^>]*>${label.replace(/[.*+?^${}()|[\\]\\\\]/g, "\\$&")}</td>[\\s\\S]*?<td[^>]*>([\\s\\S]*?)</td>[\\s\\S]*?</tr>`);
+  // Match <tr>... <td>label</td> [<td>:</td>] <td>value</td> ...</tr>
+  // The irrigation layout has an optional colon cell between label and value,
+  // so grab the LAST <td> in the row (greedy) as the value.
+  const re = new RegExp(`<tr>[\\s\\S]*?<td[^>]*>${label.replace(/[.*+?^${}()|[\\]\\\\]/g, "\\$&")}</td>[\\s\\S]*<td[^>]*>([\\s\\S]*?)</td>[\\s\\S]*?</tr>`);
   const m = html.match(re);
   return m ? m[1] : "";
 }
