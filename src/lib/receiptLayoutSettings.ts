@@ -50,6 +50,8 @@ export interface ReceiptLayoutSettings {
   fontScale: number;
   /** Side (left/right) page margin in mm for irrigation two-up printing. 0–15. */
   sideMarginMm: number;
+}
+
 
 export const DEFAULT_RECEIPT_LAYOUT: ReceiptLayoutSettings = {
   dagSeparator: "comma",
