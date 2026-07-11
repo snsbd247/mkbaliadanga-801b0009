@@ -624,7 +624,7 @@ function copyHtml(d: BnReceiptData, copyLabel: string, signatureUrl: string | nu
     }).join("");
 
     return `
-    <div style="position:relative;font-family:${fontFamily};color:#111;padding:${padCfg.page}px ${padCfg.page}px ${padCfg.bottom}px;min-height:520px;box-sizing:border-box;" data-receipt-copy="${copyLabel}">
+    <div style="position:relative;font-family:${fontFamily};color:#111;padding:${padCfg.page}px ${padCfg.page}px ${padCfg.bottom}px;min-height:440px;box-sizing:border-box;" data-receipt-copy="${copyLabel}">
       ${watermark}
       <div style="position:relative;z-index:1;display:grid;grid-template-columns:240px 1fr 128px;align-items:start;min-height:92px;">
         <div style="padding-top:16px;">${tpl.show_logo ? logo : ""}</div>
