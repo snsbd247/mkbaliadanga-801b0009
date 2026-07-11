@@ -677,9 +677,13 @@ function StreamCashbook(props: {
     [entries, safePage, pageSize],
   );
 
-  const totalIncome = streamReceipts.reduce((s, x) => s + Number(x.amount), 0) + streamIncomes.reduce((s, x) => s + Number(x.amount), 0);
-  const totalExpense = streamExpenses.reduce((s, x) => s + Number(x.amount), 0);
-  const closing = Number(opening || 0) + totalIncome - totalExpense;
+  // Operational income/expense exclude bank transfers; transfers are netted into
+  // the cash balance separately so closing still reflects true cash in hand.
+  const totalIncome = collectionReceipts.reduce((s, x) => s + Number(x.amount), 0) + streamIncomes.reduce((s, x) => s + Number(x.amount), 0);
+  const totalExpense = realExpenses.reduce((s, x) => s + Number(x.amount), 0);
+  const transferIn = transferInReceipts.reduce((s, x) => s + Number(x.amount), 0);
+  const transferOut = transferOutExpenses.reduce((s, x) => s + Number(x.amount), 0);
+  const closing = Number(opening || 0) + totalIncome - totalExpense + transferIn - transferOut;
 
   // Expense by head summary
   const byHead = useMemo(() => {
