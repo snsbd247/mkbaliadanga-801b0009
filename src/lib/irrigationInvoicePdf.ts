@@ -160,6 +160,7 @@ export interface IrrigationInvoiceData {
     mouza?: string | null;
     dag_no?: string | null;
     land_size?: number | null;
+    parcel_size?: number | null;
   } | null;
   season?: { name?: string | null; type?: string | null; year?: number | null } | null;
 }
