@@ -77,6 +77,7 @@ export default function Cashbook() {
   const [incomes, setIncomes] = useState<any[]>([]);
   const [heads, setHeads] = useState<any[]>([]);
   const [bankAccounts, setBankAccounts] = useState<any[]>([]);
+  const [bankTxns, setBankTxns] = useState<any[]>([]);
   const [submissions, setSubmissions] = useState<any[]>([]);
   const [scanPreview, setScanPreview] = useState<{ url: string; isImage: boolean } | null>(null);
 
