@@ -614,15 +614,22 @@ function StreamCashbook(props: {
         label: getKindLabel(t, x.kind as Kind), desc: x.note || "", amount: Number(x.amount), raw: x,
       }));
     }
+    // Group per day + kind so each date shows its own receipt-number range
+    // (e.g. today 4683–4690, tomorrow 4691–4705).
+    const num = (s: any) => { const m = String(s ?? "").match(/(\d+)/); return m ? Number(m[1]) : NaN; };
     const groups = new Map<string, any[]>();
-    streamReceipts.forEach(x => { if (!groups.has(x.kind)) groups.set(x.kind, []); groups.get(x.kind)!.push(x); });
-    return Array.from(groups.entries()).map(([kind, list]) => {
-      const sorted = [...list].sort((a, b) => String(a.receipt_no || "").localeCompare(String(b.receipt_no || "")));
+    streamReceipts.forEach(x => {
+      const key = `${x.receipt_date}__${x.kind}`;
+      if (!groups.has(key)) groups.set(key, []);
+      groups.get(key)!.push(x);
+    });
+    return Array.from(groups.entries()).map(([key, list]) => {
+      const [date, kind] = key.split("__");
+      const sorted = [...list].sort((a, b) => (num(a.receipt_no) - num(b.receipt_no)) || String(a.receipt_no || "").localeCompare(String(b.receipt_no || "")));
       const nos = sorted.map(s => s.receipt_no).filter(Boolean);
       const range = nos.length === 0 ? "" : nos.length === 1 ? String(nos[0]) : `${nos[0]} – ${nos[nos.length - 1]}`;
       const desc = `${tx("Receipt no", "রশিদ নং")} ${range} (${list.length}${tx(" pcs", "টি")})`;
       const amount = list.reduce((s, x) => s + Number(x.amount), 0);
-      const date = sorted[sorted.length - 1].receipt_date;
       return { date, kind: "income", ref: range || "—", label: getKindLabel(t, kind as Kind), desc, amount, raw: { note: desc } };
     });
   }, [streamReceipts, consolidated, t]);
