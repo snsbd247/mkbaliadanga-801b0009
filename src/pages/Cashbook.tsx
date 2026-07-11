@@ -613,11 +613,12 @@ function StreamCashbook(props: {
   const entries = useMemo(() => {
     const rows: any[] = [
       ...incomeRows,
+      ...officeIncomeRows,
       ...streamExpenses.map(x => ({ date: x.expense_date, kind: "expense", ref: x.voucher_no || "—", label: x.head, desc: x.payee || x.note || "", amount: Number(x.amount), raw: x })),
     ].sort((a, b) => a.date.localeCompare(b.date));
     let bal = Number(opening || 0);
     return rows.map(row => { bal += row.kind === "income" ? row.amount : -row.amount; return { ...row, balance: bal }; });
-  }, [incomeRows, streamExpenses, opening]);
+  }, [incomeRows, officeIncomeRows, streamExpenses, opening]);
 
   // Pagination — keep running balance intact but show a page at a time.
   const pageCount = Math.max(1, Math.ceil(entries.length / pageSize));
