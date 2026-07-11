@@ -392,14 +392,44 @@ export default function Dashboard() {
             </div>
           );
           return s.href ? (
-            <Link key={s.label} to={s.href} className="stat-card block transition-all hover:shadow-md hover:-translate-y-0.5 hover:border-primary/40 focus:outline-none focus:ring-2 focus:ring-primary/40">
+            <Link key={s.label} to={s.href} title={s.hint} className="stat-card block transition-all hover:shadow-md hover:-translate-y-0.5 hover:border-primary/40 focus:outline-none focus:ring-2 focus:ring-primary/40">
               {inner}
             </Link>
           ) : (
-            <div key={s.label} className="stat-card">{inner}</div>
+            <div key={s.label} title={s.hint} className="stat-card">{inner}</div>
           );
         })}
       </div>
+
+      {recon && !recon.ok && (
+        <Card className="mt-4 border-destructive/50 bg-destructive/5 p-4">
+          <div className="flex items-center gap-2 font-semibold text-destructive">
+            <AlertTriangle className="h-4 w-4" />
+            {lang === "bn" ? "ব্যালেন্স অমিল পাওয়া গেছে" : "Balance mismatch detected"}
+          </div>
+          <p className="mt-1 text-xs text-muted-foreground">
+            {lang === "bn"
+              ? "ড্যাশবোর্ডের গণনা করা মান ও সাবমিট করা Hand Cash ক্লোজিং-এর মধ্যে পার্থক্য:"
+              : "Difference between the dashboard's computed value and the finalized Hand Cash closing:"}
+          </p>
+          <ul className="mt-2 space-y-1 text-sm">
+            {recon.mismatches.map((m) => (
+              <li key={m.label} className="flex flex-wrap items-center justify-between gap-2">
+                <span>{m.label}</span>
+                <span className="text-muted-foreground">
+                  {lang === "bn" ? "ড্যাশবোর্ড" : "Dashboard"} {money(m.dashboard)} · {lang === "bn" ? "সাবমিট" : "Submitted"} {money(m.source)} ·{" "}
+                  <span className="font-semibold text-destructive">Δ {money(m.diff)}</span>
+                </span>
+              </li>
+            ))}
+          </ul>
+        </Card>
+      )}
+      {recon && recon.ok && (
+        <p className="mt-3 text-xs text-success">
+          ✓ {lang === "bn" ? "সব সাবমিট করা মাস-শেষ ব্যালেন্স ড্যাশবোর্ডের সাথে মিলছে।" : "All finalized month-end balances reconcile with the dashboard."}
+        </p>
+      )}
 
       {/* 30-day collection sparkline */}
       <Card className="mt-4 p-5">
