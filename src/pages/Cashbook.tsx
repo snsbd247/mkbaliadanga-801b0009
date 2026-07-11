@@ -516,7 +516,7 @@ export default function Cashbook() {
           <StreamCashbook
             stream="savings" label={tx("Savings cash", "সেভিং ক্যাশ")}
             month={monthLabel} mFrom={mFrom} mTo={mTo}
-            receipts={receipts} expenses={expenses} opening={openingCash.savings}
+            receipts={receipts} expenses={expenses} incomes={incomes} opening={openingCash.savings}
             setOpening={(n) => setOpening("savings", n)} locked={isLocked("savings")}
             canSubmit={isCommittee} isSuper={isSuper} brand={brand}
             onSubmit={() => submitStream("savings")}
