@@ -4,7 +4,7 @@ import QRCode from "qrcode";
 import { toBnDigits, bnAmountInWords } from "@/lib/bnNumber";
 import { parseDagNumbers } from "@/lib/dagNumbers";
 
-import { getReceiptLayoutSettings, getIrrigationLabels, getRowSpacingForKind, getSavingsLabels, getLoanLabels, getDefaultPaperSize, getDefaultOrientation, getIrrigationReceiptPadding, getReceiptFitToPage } from "@/lib/receiptLayoutSettings";
+import { getReceiptLayoutSettings, getIrrigationLabels, getRowSpacingForKind, getSavingsLabels, getLoanLabels, getDefaultPaperSize, getDefaultOrientation, getIrrigationReceiptPadding, getReceiptFitToPage, getReceiptFontScale, getReceiptSideMarginMm } from "@/lib/receiptLayoutSettings";
 import { DEFAULT_TEMPLATE, type ReceiptTemplate } from "@/lib/paymentReceiptPdf";
 import { loadReceiptTemplate } from "@/lib/receiptTemplate";
 
@@ -590,6 +590,8 @@ function copyHtml(d: BnReceiptData, copyLabel: string, signatureUrl: string | nu
     const blue = "#111";
     const padCfg = getIrrigationReceiptPadding();
     const hb = padCfg.holdingBottom;
+    const fs = getReceiptFontScale();
+    const px = (n: number) => Math.round(n * fs);
     const officialRows = rows.map(([k, v], idx) => {
       const isLast = idx === rows.length - 1;
       const rowPadY = isLast ? `1px 0 ${hb}px 12px` : "1px 0 1px 12px";
@@ -617,9 +619,9 @@ function copyHtml(d: BnReceiptData, copyLabel: string, signatureUrl: string | nu
           : v;
       return `
         <tr>
-          <td style="padding:${rowPadY};vertical-align:top;width:46%;font-size:24px;line-height:1.25;white-space:normal;overflow:visible;text-overflow:clip;font-weight:600;">${label}</td>
-          <td style="padding:${rowPadColon};vertical-align:top;width:14px;font-size:24px;line-height:1.25;font-weight:700;">:</td>
-          <td style="padding:${rowPadVal};vertical-align:top;font-size:24px;line-height:1.25;font-weight:600;${cellWrap}">${value}</td>
+          <td style="padding:${rowPadY};vertical-align:top;width:46%;font-size:${px(24)}px;line-height:1.25;white-space:normal;overflow:visible;text-overflow:clip;font-weight:600;">${label}</td>
+          <td style="padding:${rowPadColon};vertical-align:top;width:14px;font-size:${px(24)}px;line-height:1.25;font-weight:700;">:</td>
+          <td style="padding:${rowPadVal};vertical-align:top;font-size:${px(24)}px;line-height:1.25;font-weight:600;${cellWrap}">${value}</td>
         </tr>`;
     }).join("");
 
@@ -629,14 +631,14 @@ function copyHtml(d: BnReceiptData, copyLabel: string, signatureUrl: string | nu
       <div style="position:relative;z-index:1;display:grid;grid-template-columns:240px 1fr 128px;align-items:start;min-height:92px;">
         <div style="padding-top:16px;">${tpl.show_logo ? logo : ""}</div>
         <div style="text-align:center;padding-top:24px;">
-          <div style="display:inline-block;font-size:25px;font-weight:800;line-height:1.1;color:${accent};text-decoration:underline;text-underline-offset:4px;text-decoration-thickness:2px;">${titleFor(d.kind, lang)}</div>
+          <div style="display:inline-block;font-size:${px(25)}px;font-weight:800;line-height:1.1;color:${accent};text-decoration:underline;text-underline-offset:4px;text-decoration-thickness:2px;">${titleFor(d.kind, lang)}</div>
         </div>
         <div style="text-align:right;padding-top:14px;">
           ${qrDataUrl && tpl.qr_placement !== "none" ? `<img src="${qrDataUrl}" style="width:78px;height:78px;display:block;margin-left:auto;" /><div style="font-size:11px;color:#111;margin-top:2px;">${lang === "bn" ? "যাচাই করুন" : "Scan to verify"}</div>` : ""}
         </div>
       </div>
 
-      <div style="position:relative;z-index:1;display:grid;grid-template-columns:1fr auto;column-gap:24px;margin-top:4px;font-size:21px;line-height:1.35;">
+      <div style="position:relative;z-index:1;display:grid;grid-template-columns:1fr auto;column-gap:24px;margin-top:4px;font-size:${px(21)}px;line-height:1.35;">
         <div>
           <div>${t.receiptNo} ${officialReceiptNoText(d, lang)}</div>
           ${d.bill_info ? `<div>${t.billInfo} ${digits(cleanBnReceiptText(normalizeCollectionInfo(d.bill_info) ?? d.bill_info), lang)}</div>` : ""}
@@ -649,13 +651,13 @@ function copyHtml(d: BnReceiptData, copyLabel: string, signatureUrl: string | nu
       </table>
 
       ${tpl.show_signature_line !== false ? `
-      <div style="position:relative;z-index:1;display:flex;justify-content:space-between;align-items:flex-end;margin-top:18px;font-size:22px;line-height:1.2;">
+      <div style="position:relative;z-index:1;display:flex;justify-content:space-between;align-items:flex-end;margin-top:18px;font-size:${px(22)}px;line-height:1.2;">
         <div style="border-top:1px solid #111;padding-top:2px;min-width:260px;">${lang === "bn" ? "সদস্যের স্বাক্ষর/প্রদানকারীর স্বাক্ষর" : "Member / Payer signature"}</div>
         <div style="text-align:right;min-width:300px;">
           ${signatureUrl
             ? `<img src="${signatureUrl}" crossorigin="anonymous" style="height:96px;margin:0 0 4px auto;display:block;object-fit:contain;" data-sig="filled" />`
             : ""}
-          <div style="border-top:1px solid #111;padding-top:4px;font-size:22px;font-weight:600;">${t.collectorSig}</div>
+          <div style="border-top:1px solid #111;padding-top:4px;font-size:${px(22)}px;font-weight:600;">${t.collectorSig}</div>
         </div>
       </div>` : ""}
       ${(() => { const fn = (lang === "bn" ? tpl.footer_note_bn : tpl.footer_note) || ""; return fn.trim() ? `<div style="position:relative;z-index:1;text-align:center;font-size:13px;color:#555;margin-top:14px;">${fn}</div>` : ""; })()}
@@ -841,7 +843,8 @@ async function renderPdf(data: BnReceiptData, copy: ReceiptCopy, options?: Recei
   if (irrigationTwoUp) {
     opts.paper = "a4";
     opts.orientation = "p";
-    opts.margins = { ...IRRIGATION_RECEIPT_PAGE.margins };
+    const sm = getReceiptSideMarginMm();
+    opts.margins = { t: IRRIGATION_RECEIPT_PAGE.margins.t, b: IRRIGATION_RECEIPT_PAGE.margins.b, l: sm, r: sm };
   }
   let tpl: ReceiptTemplate = { ...DEFAULT_TEMPLATE };
   try { tpl = { ...tpl, ...(await loadReceiptTemplate(true)) }; } catch { /* use defaults */ }

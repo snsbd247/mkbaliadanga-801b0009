@@ -23,6 +23,8 @@ export function ReceiptSettingsButton() {
   const [bottomPad, setBottomPad] = useState<number>(() => getReceiptLayoutSettings().irrigationBottomPaddingPx);
   const [holdingPad, setHoldingPad] = useState<number>(() => getReceiptLayoutSettings().holdingBottomPaddingPx);
   const [fitToPage, setFitToPage] = useState<boolean>(() => getReceiptLayoutSettings().fitToPage);
+  const [fontScale, setFontScale] = useState<number>(() => getReceiptLayoutSettings().fontScale);
+  const [sideMargin, setSideMargin] = useState<number>(() => getReceiptLayoutSettings().sideMarginMm);
   // Persist to profile + keep local edits in sync whenever layout changes.
   const saveLayout = (next: Parameters<typeof setReceiptLayoutSettings>[0]) => {
     setReceiptLayoutSettings(next);
@@ -38,6 +40,8 @@ export function ReceiptSettingsButton() {
     setBottomPad(s.irrigationBottomPaddingPx);
     setHoldingPad(s.holdingBottomPaddingPx);
     setFitToPage(s.fitToPage);
+    setFontScale(s.fontScale);
+    setSideMargin(s.sideMarginMm);
   };
   const onSelectPreset = (id: string) => {
     const s = applyReceiptPreset(id);
@@ -190,7 +194,7 @@ export function ReceiptSettingsButton() {
           <Select
             value={pdfPaper}
             onValueChange={(v) => {
-              const next = (v === "a4" ? "a4" : "a5") as PaperSize;
+              const next = (["a4", "a5", "letter"].includes(v) ? v : "a5") as PaperSize;
               setPdfPaper(next);
               saveLayout({ defaultPaperSize: next });
             }}
@@ -199,10 +203,33 @@ export function ReceiptSettingsButton() {
             <SelectContent>
               <SelectItem value="a5">A5 (compact)</SelectItem>
               <SelectItem value="a4">A4 (full page)</SelectItem>
+              <SelectItem value="letter">Letter</SelectItem>
             </SelectContent>
           </Select>
           <p className="text-[11px] text-muted-foreground">
             সব receipt PDF এই paper size-এ generate হবে।
+          </p>
+        </div>
+
+        <div className="border-t pt-2 space-y-2">
+          <div>
+            <Label className="text-xs">{lang === "bn" ? "ফন্ট স্কেল" : "Font scale"}: {fontScale.toFixed(2)}×</Label>
+            <Input
+              type="number" min={0.8} max={1.4} step={0.05}
+              value={fontScale}
+              onChange={(e) => { const n = Number(e.target.value); setFontScale(n); saveLayout({ fontScale: n }); }}
+            />
+          </div>
+          <div>
+            <Label className="text-xs">{lang === "bn" ? "সাইড মার্জিন (mm)" : "Side margin (mm)"}: {sideMargin}</Label>
+            <Input
+              type="number" min={0} max={15}
+              value={sideMargin}
+              onChange={(e) => { const n = Number(e.target.value); setSideMargin(n); saveLayout({ sideMarginMm: n }); }}
+            />
+          </div>
+          <p className="text-[11px] text-muted-foreground">
+            {lang === "bn" ? "ফন্ট বড়/ছোট ও দুই পাশের গ্যাপ ঠিক করুন।" : "Adjust text size and left/right gaps."}
           </p>
         </div>
 

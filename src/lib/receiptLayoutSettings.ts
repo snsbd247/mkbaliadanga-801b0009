@@ -4,7 +4,7 @@
 // other modules (savings/loan receipts, lands/voter exports, etc.).
 
 export type DagSeparator = "comma" | "newline" | "semicolon";
-export type PaperSize = "a4" | "a5";
+export type PaperSize = "a4" | "a5" | "letter";
 export type PaperOrientation = "p" | "l";
 
 export interface ReceiptLayoutSettings {
@@ -46,7 +46,12 @@ export interface ReceiptLayoutSettings {
   /** When true, receipt is scaled to fit a single page (width + height) so the
    *  preview and downloaded PDF stay aligned across printer drivers. */
   fitToPage: boolean;
+  /** Global font-size multiplier for receipt text. 0.8–1.4, default 1.0. */
+  fontScale: number;
+  /** Side (left/right) page margin in mm for irrigation two-up printing. 0–15. */
+  sideMarginMm: number;
 }
+
 
 export const DEFAULT_RECEIPT_LAYOUT: ReceiptLayoutSettings = {
   dagSeparator: "comma",
@@ -73,6 +78,8 @@ export const DEFAULT_RECEIPT_LAYOUT: ReceiptLayoutSettings = {
   irrigationBottomPaddingPx: 10,
   holdingBottomPaddingPx: 12,
   fitToPage: true,
+  fontScale: 1.0,
+  sideMarginMm: 4,
 };
 
 /** Default labels — single source of truth shared by HTML/PDF/Excel. */
@@ -101,6 +108,11 @@ function clampRange(v: any, min: number, max: number, fallback: number): number 
   return Number.isFinite(n) ? Math.max(min, Math.min(max, Math.round(n))) : fallback;
 }
 
+function clampFloat(v: any, min: number, max: number, fallback: number): number {
+  const n = Number(v);
+  return Number.isFinite(n) ? Math.max(min, Math.min(max, Math.round(n * 100) / 100)) : fallback;
+}
+
 export function getReceiptLayoutSettings(): ReceiptLayoutSettings {
   if (typeof localStorage === "undefined") return { ...DEFAULT_RECEIPT_LAYOUT };
   try {
@@ -118,11 +130,13 @@ export function getReceiptLayoutSettings(): ReceiptLayoutSettings {
     merged.loanRowSpacingPx = clampSpacing(
       parsed?.loanRowSpacingPx ?? DEFAULT_RECEIPT_LAYOUT.loanRowSpacingPx,
     );
-    merged.defaultPaperSize = (parsed?.defaultPaperSize === "a4" ? "a4" : "a5");
+    merged.defaultPaperSize = (["a4", "a5", "letter"].includes(parsed?.defaultPaperSize as string) ? parsed!.defaultPaperSize! : "a5");
     merged.defaultOrientation = (parsed?.defaultOrientation === "l" ? "l" : "p");
-    merged.irrigationPagePaddingPx = clampRange(merged.irrigationPagePaddingPx, 24, 72, 48);
-    merged.irrigationBottomPaddingPx = clampRange(merged.irrigationBottomPaddingPx, 12, 96, 42);
+    merged.irrigationPagePaddingPx = clampRange(merged.irrigationPagePaddingPx, 8, 72, 16);
+    merged.irrigationBottomPaddingPx = clampRange(merged.irrigationBottomPaddingPx, 6, 96, 10);
     merged.holdingBottomPaddingPx = clampRange(merged.holdingBottomPaddingPx, 0, 48, 12);
+    merged.fontScale = clampFloat(merged.fontScale, 0.8, 1.4, 1.0);
+    merged.sideMarginMm = clampRange(merged.sideMarginMm, 0, 15, 4);
     merged.fitToPage = parsed?.fitToPage !== undefined ? !!parsed.fitToPage : DEFAULT_RECEIPT_LAYOUT.fitToPage;
     return merged;
   } catch {
@@ -306,4 +320,14 @@ export function getIrrigationReceiptPadding(): {
 /** Whether receipts should be scaled to fit a single page (preview + PDF). */
 export function getReceiptFitToPage(): boolean {
   return getReceiptLayoutSettings().fitToPage;
+}
+
+/** Global font-size multiplier for receipt text (0.8–1.4). */
+export function getReceiptFontScale(): number {
+  return getReceiptLayoutSettings().fontScale;
+}
+
+/** Side (left/right) page margin in mm for irrigation two-up printing. */
+export function getReceiptSideMarginMm(): number {
+  return getReceiptLayoutSettings().sideMarginMm;
 }

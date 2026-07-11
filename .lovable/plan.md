@@ -1,40 +1,43 @@
-# সেচ ক্যাশ↔ব্যাংক + ব্যাকআপ/রিস্টোর উন্নয়ন
+## Goal
 
-Eight features, built in order. Group A = Sech cash↔bank (items 1–4), Group B = backup/restore (items 5–8). All changes stay additive so no existing module breaks.
+Give a single place to preview a receipt, tune margins + font scale + paper, confirm it looks right, then export — and guarantee every receipt type uses the same settings without excessive side gaps.
 
-## Group A — Sech cash ↔ bank
+## What already exists (reuse, don't rebuild)
 
-**1. One-click Sech deposit/withdraw from payment**
-- On the irrigation payment surface (`IrrigationInvoices.tsx` / `Payments.tsx`), add a "সেচ নগদ ব্যাংকে জমা" button that opens a small confirm dialog (amount + target Sech bank account, pre-filled from the day's collected cash).
-- On confirm, reuse the existing `saveTxn` + `postBankCashTransfer` path in `BankAccounts.tsx` — extract that logic into a shared helper `src/lib/sechBankTransfer.ts` so both pages call the same guarded flow (`assertSechTransfer`). No auto-post without confirmation.
+- `src/lib/receiptLayoutSettings.ts` — paper size (a5/a4), orientation, fit-to-page, page/bottom/holding padding, presets, persistence.
+- `src/components/receipts/ReceiptSettingsButton.tsx` — popover with all the above controls.
+- `src/lib/bnReceipts.ts` — `previewBnReceiptPdf` / `downloadBnReceiptPdf`, irrigation two-up rendering.
+- `IrrigationReceiptPreviewDialog.tsx` — iframe PDF preview.
 
-**2. Excel export for Sech Cash & Bank Movements report**
-- In `SechCashBankMovements.tsx` add an "Excel" button next to the PDF button, using `exportExcel` from `src/lib/exports.ts`.
-- Same date-range filter, same rows, and the same four total lines (deposits, withdrawals, cash-in-hand, bank balance) appended as in `exportPdf`.
+## Changes
 
-**3. Audit-trail filtering + printable export**
-- Add filters to the Audit tab: date range (reuse `from`/`to`), office, user, and stream (dropdowns populated from loaded data).
-- Add a "প্রিন্ট / PDF" export for the filtered audit rows via `exportTablePDF`.
+### 1. New settings fields
+In `receiptLayoutSettings.ts`:
+- Add `fontScale` (0.8–1.4, default 1.0) and `sideMarginMm` (0–15, default per current).
+- Lower padding clamp minimums (page 8, bottom 6) so gaps can shrink further than today's floor of 24/12.
+- Add `"letter"` to `PaperSize` and to preset/clamp logic.
 
-**4. Improved journal view**
-- Show a per-transfer Dr/Cr summary line (Dr Bank / Cr Cash or reverse) for each journal entry.
-- Make each row link to its source: parse the `reference` (`BANK-CASH-<txnId>`) to jump to the related bank transaction / invoice payment.
+### 2. Apply settings everywhere
+In `bnReceipts.ts`:
+- Multiply the hardcoded row/label/signature font sizes by `fontScale`.
+- Use `sideMarginMm` for the two-up/side margins instead of the fixed `IRRIGATION_RECEIPT_PAGE.margins`.
+- Support `letter` paper in `renderPdf`.
+Confirm loan/savings/office-income receipts read the same `getReceiptLayoutSettings()` path (they already do) so nothing prints with wide side gaps.
 
-## Group B — Backup / restore
+### 3. Dedicated print-preview page
+New route `src/pages/ReceiptPrintPreview.tsx` (added to router):
+- Left: live PDF preview via `previewBnReceiptPdf` using a sample receipt of each type (type selector: Irrigation / Savings / Loan).
+- Right: controls — paper (A4/A5/Letter), orientation, side margin (mm), font scale slider, fit-to-page toggle, page/bottom padding. All write through `setReceiptLayoutSettings` + `scheduleReceiptLayoutPersist` and re-render preview on every change.
+- Buttons: Download PDF, Print. Reuse `ReceiptSettingsButton` logic where possible.
 
-**5. Post-restore verification**
-- After a restore, call a new lightweight edge action that returns row counts per table (via `pg_tables_public_list` + `count`). Show a table in `Backup.tsx` comparing expected vs actual counts, flagging mismatches red.
-
-**6. Automatic pre-restore snapshot**
-- Before running a restore, `Backup.tsx` first calls `db-export` and downloads/stores the current full SQL as an auto-snapshot ("rollback point"), surfaced with a restore-this-snapshot action.
-
-**7. Real-time restore progress + per-table logs**
-- Split the restore payload table-by-table on the client, send each table's SQL sequentially to `db-restore`, and render a progress bar + per-table status log (ok / rows / error) so a failure shows exactly which table stopped.
-
-**8. Scheduled full SQL backups**
-- Add a `backup_schedules` settings row (frequency + retention) and a `scheduled-backup` edge function invoked by pg_cron; it runs `db-export`, stores the file, and prunes older-than-retention backups.
+### 4. Automated tests
+`src/lib/__tests__/receiptLayoutSettings.spec.ts`:
+- fontScale/sideMargin/letter clamp + default assertions.
+- A test that renders the receipt HTML (via the existing `buildHtml`/test export) and asserts font-size scales up when `fontScale` increases and side margin value flows into the PDF margins.
+- Extend existing layout tests to cover Letter paper page dimensions.
 
 ## Technical notes
-- New files: `src/lib/sechBankTransfer.ts`, `supabase/functions/scheduled-backup/index.ts`; edits to `IrrigationInvoices.tsx`/`Payments.tsx`, `SechCashBankMovements.tsx`, `Backup.tsx`, `db-restore`, `db-export`.
-- DB: one migration for `backup_schedules` (with GRANTs + RLS, developer-only) and a `table_row_counts()` RPC for verification; pg_cron scheduling inserted via the insert tool (contains project URL/anon key).
-- Reuse existing `exports.ts`, `accountingPosting.ts`, `cashStreamGuard.ts`, `exec_sql_admin` — no rewrites of working logic.
+
+- Preview re-render: debounce control changes (~150ms) before calling `previewBnReceiptPdf` to avoid thrashing html2canvas.
+- Keep irrigation official receipt fixed two-up behavior; font scale still applies inside each copy.
+- All colors via existing semantic tokens; no hardcoded colors.
