@@ -44,8 +44,8 @@ export default function HandCash() {
 
   async function load() {
     const [rec, exp, sub] = await Promise.all([
-      sb.from("receipts").select("receipt_date,amount,receipt_no").gte("receipt_date", mFrom).lte("receipt_date", mTo).limit(20000),
-      sb.from("expenses").select("expense_date,amount").is("deleted_at", null).gte("expense_date", mFrom).lte("expense_date", mTo).limit(20000),
+      sb.from("receipts").select("receipt_date,amount,receipt_no,kind").gte("receipt_date", mFrom).lte("receipt_date", mTo).limit(20000),
+      sb.from("expenses").select("expense_date,amount,stream").is("deleted_at", null).gte("expense_date", mFrom).lte("expense_date", mTo).limit(20000),
       sb.from("hand_cash_submissions").select("*").eq("year", year).eq("month", month).is("office_id", officeId ?? null).maybeSingle(),
     ]);
     setReceipts(rec.data ?? []);
@@ -97,6 +97,20 @@ export default function HandCash() {
   const totalIncome = rows.reduce((s, r) => s + r.income, 0);
   const totalExpense = rows.reduce((s, r) => s + r.expense, 0);
   const finalClosing = rows.length ? rows[rows.length - 1].closing : openingBalance;
+
+  // Split hand cash by stream: সেচ (irrigation) vs সঞ্চয় (savings/society side).
+  const isSech = (k: unknown) => String(k ?? "").toLowerCase() === "irrigation";
+  const streamTotals = useMemo(() => {
+    const sech = { income: 0, expense: 0 };
+    const savings = { income: 0, expense: 0 };
+    receipts.forEach((r: any) => {
+      (isSech(r.kind) ? sech : savings).income += Number(r.amount || 0);
+    });
+    expenses.forEach((e: any) => {
+      (isSech(e.stream) ? sech : savings).expense += Number(e.amount || 0);
+    });
+    return { sech, savings };
+  }, [receipts, expenses]);
 
   async function submitMonth() {
     if (locked) return toast.error(tx("This month is already submitted/locked", "এই মাস ইতিমধ্যে সাবমিট/লক করা"));
@@ -184,6 +198,25 @@ export default function HandCash() {
         <div><div className="text-xs text-muted-foreground">{tx("Total expense", "মোট ব্যয়")}</div><div className="text-lg font-bold text-destructive">{money(totalExpense)}</div></div>
         <div><div className="text-xs text-muted-foreground">{tx("Closing balance", "সমাপনী জমা")}</div><div className="text-lg font-bold text-primary">{money(finalClosing)}</div></div>
       </Card>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+        <Card className="p-3">
+          <div className="text-sm font-semibold mb-2">{tx("Irrigation hand cash", "সেচ হ্যান্ড ক্যাশ")}</div>
+          <div className="grid grid-cols-3 gap-2">
+            <div><div className="text-xs text-muted-foreground">{tx("Income", "আয়")}</div><div className="font-bold text-success">{money(streamTotals.sech.income)}</div></div>
+            <div><div className="text-xs text-muted-foreground">{tx("Expense", "ব্যয়")}</div><div className="font-bold text-destructive">{money(streamTotals.sech.expense)}</div></div>
+            <div><div className="text-xs text-muted-foreground">{tx("Net", "নিট")}</div><div className="font-bold text-primary">{money(streamTotals.sech.income - streamTotals.sech.expense)}</div></div>
+          </div>
+        </Card>
+        <Card className="p-3">
+          <div className="text-sm font-semibold mb-2">{tx("Savings hand cash", "সঞ্চয় হ্যান্ড ক্যাশ")}</div>
+          <div className="grid grid-cols-3 gap-2">
+            <div><div className="text-xs text-muted-foreground">{tx("Income", "আয়")}</div><div className="font-bold text-success">{money(streamTotals.savings.income)}</div></div>
+            <div><div className="text-xs text-muted-foreground">{tx("Expense", "ব্যয়")}</div><div className="font-bold text-destructive">{money(streamTotals.savings.expense)}</div></div>
+            <div><div className="text-xs text-muted-foreground">{tx("Net", "নিট")}</div><div className="font-bold text-primary">{money(streamTotals.savings.income - streamTotals.savings.expense)}</div></div>
+          </div>
+        </Card>
+      </div>
 
       <Card className="overflow-x-auto"><Table>
         <TableHeader><TableRow>

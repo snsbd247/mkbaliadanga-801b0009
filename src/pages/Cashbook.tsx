@@ -77,6 +77,7 @@ export default function Cashbook() {
   const [incomes, setIncomes] = useState<any[]>([]);
   const [heads, setHeads] = useState<any[]>([]);
   const [bankAccounts, setBankAccounts] = useState<any[]>([]);
+  const [bankTxns, setBankTxns] = useState<any[]>([]);
   const [submissions, setSubmissions] = useState<any[]>([]);
   const [scanPreview, setScanPreview] = useState<{ url: string; isImage: boolean } | null>(null);
 
@@ -117,6 +118,7 @@ export default function Cashbook() {
     db.from("farmers").select("id,name_en,farmer_code,member_no").order("name_en").then(d => setFarmers(d.data ?? []));
     loadHeads();
     sb.from("bank_accounts").select("*").eq("is_active", true).order("bank_name").then((d: any) => setBankAccounts(d.data ?? []));
+    sb.from("bank_transactions").select("bank_account_id,txn_type,amount").then((d: any) => setBankTxns(d.data ?? []));
   }, []);
 
   useEffect(() => { load(); /* eslint-disable-next-line */ }, [year, month]);
@@ -348,6 +350,17 @@ export default function Cashbook() {
 
   const monthLabel = `${year}-${String(month).padStart(2, "0")}`;
 
+  const bankBalance = useMemo(() => {
+    const map = new Map<string, number>();
+    bankAccounts.forEach(ac => map.set(ac.id, Number(ac.opening_balance || 0)));
+    bankTxns.forEach(t => {
+      const cur = map.get(t.bank_account_id) ?? 0;
+      const sign = ["deposit", "transfer_in", "interest"].includes(t.txn_type) ? 1 : -1;
+      map.set(t.bank_account_id, cur + sign * Number(t.amount || 0));
+    });
+    return Array.from(map.values()).reduce((a, b) => a + b, 0);
+  }, [bankAccounts, bankTxns]);
+
   return (
     <>
       <PageHeader
@@ -481,6 +494,12 @@ export default function Cashbook() {
           </>
         }
       />
+
+      <Card className="p-4 mb-4">
+        <div className="text-xs text-muted-foreground">{tx("All banks — current balance", "সব ব্যাংক — বর্তমান ব্যালেন্স")}</div>
+        <div className="text-2xl font-bold text-primary">{money(bankBalance)}</div>
+        <div className="text-xs text-muted-foreground mt-1">{tx(`${bankAccounts.length} account(s)`, `${bankAccounts.length} টি একাউন্ট`)}</div>
+      </Card>
 
       <Card className="p-4 mb-4">
         <div className="flex flex-wrap items-end gap-3">
