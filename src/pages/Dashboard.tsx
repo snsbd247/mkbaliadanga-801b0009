@@ -24,7 +24,7 @@ interface Stat { label: string; value: string; icon: any; tone?: "default" | "da
 
 export default function Dashboard() {
   const { t, lang } = useLang();
-  const { isSuper, isAdmin, officeId } = useAuth();
+  const { isSuper, isAdmin, officeId, user } = useAuth();
   const [officeName, setOfficeName] = useState<string>("");
   const [stats, setStats] = useState<Stat[]>([]);
   const [recon, setRecon] = useState<ReconcileResult | null>(null);
