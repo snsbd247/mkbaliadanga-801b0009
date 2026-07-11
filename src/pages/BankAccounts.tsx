@@ -255,26 +255,39 @@ export default function BankAccounts() {
     const acc = accounts.find(a => a.id === cur.bank_account_id);
     const cbStream = cashbookStreamForAccount(acc?.stream);
     if (await isCashbookLocked(cur.txn_date, cbStream)) return toast.error("এই মাসের ক্যাশবুক লক করা — ব্যাংক লেনদেন করা যাবে না");
-    const { post_cashbook, ...txnRow } = cur;
+    const { post_cashbook, cash_source, ...txnRow } = cur;
+    const isMovement = cur.txn_type === "deposit" || cur.txn_type === "withdraw";
+    // "cash" = নগদ ↔ ব্যাংক ট্রান্সফার (নগদে প্রভাব ফেলে, ক্যাশবুকে মিরর হয়)।
+    // "external" = সরাসরি ব্যাংক জমা/উত্তোলন (নগদ স্পর্শ করে না, শুধু ব্যাংক লেজার)।
+    const isCashSource = (cash_source ?? "cash") === "cash";
     // Link the bank row with its mirrored cashbook row so edits/deletes stay paired.
-    const linkId = (post_cashbook && (cur.txn_type === "deposit" || cur.txn_type === "withdraw"))
+    const linkId = (post_cashbook && isCashSource && isMovement)
       ? crypto.randomUUID() : null;
     const { data: insData, error } = await sb.from("bank_transactions").insert({ ...txnRow, created_by: user?.id, link_id: linkId }).select();
     if (error) return toast.error("লেনদেন সংরক্ষণ ব্যর্থ: " + error.message);
     const insertedTxn = Array.isArray(insData) ? insData[0] : insData;
-    void logAudit({ office_id: acc?.office_id ?? null, module: "bank_transaction", action_type: "create", reference_id: cur.bank_account_id, new_data: { ...txnRow, id: insertedTxn?.id, link_id: linkId } });
+    void logAudit({ office_id: acc?.office_id ?? null, module: "bank_transaction", action_type: "create", reference_id: cur.bank_account_id, new_data: { ...txnRow, id: insertedTxn?.id, link_id: linkId, cash_source: cash_source ?? "cash" } });
 
-    // Auto-generate a balanced Dr/Cr journal entry for the cash ↔ bank movement.
-    if (insertedTxn?.id && (cur.txn_type === "deposit" || cur.txn_type === "withdraw")) {
-      void postBankCashTransfer({
-        bankTxnId: insertedTxn.id, direction: cur.txn_type, amount: Number(cur.amount),
-        bankLabel: acc ? `${acc.bank_name} — ${acc.account_no}` : null,
-        entryDate: cur.txn_date, officeId: acc?.office_id ?? null, createdBy: user?.id,
-      });
+    // Auto-generate a balanced Dr/Cr journal entry for the movement.
+    if (insertedTxn?.id && isMovement) {
+      const bankLabelJ = acc ? `${acc.bank_name} — ${acc.account_no}` : null;
+      if (isCashSource) {
+        // নগদ ↔ ব্যাংক: Dr Bank / Cr Cash (deposit) — নগদে প্রভাব।
+        void postBankCashTransfer({
+          bankTxnId: insertedTxn.id, direction: cur.txn_type, amount: Number(cur.amount),
+          bankLabel: bankLabelJ, entryDate: cur.txn_date, officeId: acc?.office_id ?? null, createdBy: user?.id,
+        });
+      } else {
+        // সরাসরি ব্যাংক: নগদ স্পর্শ করে না, শুধু ব্যাংক লেজার।
+        void postBankExternal({
+          bankTxnId: insertedTxn.id, direction: cur.txn_type, amount: Number(cur.amount),
+          bankLabel: bankLabelJ, entryDate: cur.txn_date, officeId: acc?.office_id ?? null, createdBy: user?.id,
+        });
+      }
     }
 
-    // Auto-link to Cashbook: deposit (cash→bank) = expense; withdraw (bank→cash) = receipt.
-    // Routed to the correct cash stream based on the bank account's stream.
+    // Auto-link to Cashbook only for cash-source movements: deposit = expense (নগদ কমল),
+    // withdraw = receipt (নগদ বাড়ল). External bank movements never touch the cashbook.
     if (linkId) {
       const bankLabel = acc ? `${acc.bank_name} — ${acc.account_no}` : "Bank";
       const ref = cur.reference_no ? ` (Ref: ${cur.reference_no})` : "";
@@ -300,7 +313,7 @@ export default function BankAccounts() {
     }
 
     toast.success("Saved"); setOpenT(false); load();
-    setTx({ bank_account_id: "", txn_type: "deposit", amount: 0, txn_date: new Date().toISOString().slice(0, 10), reference_no: "", note: "", post_cashbook: true });
+    setTx({ bank_account_id: "", txn_type: "deposit", amount: 0, txn_date: new Date().toISOString().slice(0, 10), reference_no: "", note: "", post_cashbook: true, cash_source: "cash" });
   }
 
   // সেচ নগদ ↔ ব্যাংক কুইক অ্যাকশন — শুধুমাত্র সেচ-স্ট্রিমের অ্যাকাউন্ট অনুমোদিত।
