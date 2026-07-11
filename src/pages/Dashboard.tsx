@@ -374,7 +374,10 @@ export default function Dashboard() {
           const inner = (
             <div className="flex items-start justify-between">
               <div>
-                <div className="text-xs uppercase tracking-wide text-muted-foreground">{s.label}</div>
+                <div className="flex items-center gap-1 text-xs uppercase tracking-wide text-muted-foreground">
+                  <span>{s.label}</span>
+                  {s.hint && <Info className="h-3 w-3 shrink-0 opacity-60" aria-label={s.hint} />}
+                </div>
                 <div className={`mt-2 text-2xl font-bold ${s.tone === "danger" ? "text-destructive" : s.tone === "success" ? "text-success" : "text-foreground"}`}>{s.value}</div>
                 {typeof s.delta === "number" && (
                   <div className={`mt-1 inline-flex items-center gap-1 text-xs font-medium ${s.delta >= 0 ? "text-success" : "text-destructive"}`}>
