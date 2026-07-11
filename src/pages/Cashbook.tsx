@@ -74,6 +74,7 @@ export default function Cashbook() {
   const [farmers, setFarmers] = useState<any[]>([]);
   const [receipts, setReceipts] = useState<any[]>([]);
   const [expenses, setExpenses] = useState<any[]>([]);
+  const [incomes, setIncomes] = useState<any[]>([]);
   const [heads, setHeads] = useState<any[]>([]);
   const [bankAccounts, setBankAccounts] = useState<any[]>([]);
   const [submissions, setSubmissions] = useState<any[]>([]);
