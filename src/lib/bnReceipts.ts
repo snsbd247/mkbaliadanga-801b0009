@@ -638,7 +638,7 @@ function copyHtml(d: BnReceiptData, copyLabel: string, signatureUrl: string | nu
         </div>
       </div>
 
-      <div style="position:relative;z-index:1;display:grid;grid-template-columns:1fr auto;column-gap:24px;margin-top:4px;font-size:21px;line-height:1.35;">
+      <div style="position:relative;z-index:1;display:grid;grid-template-columns:1fr auto;column-gap:24px;margin-top:4px;font-size:${px(21)}px;line-height:1.35;">
         <div>
           <div>${t.receiptNo} ${officialReceiptNoText(d, lang)}</div>
           ${d.bill_info ? `<div>${t.billInfo} ${digits(cleanBnReceiptText(normalizeCollectionInfo(d.bill_info) ?? d.bill_info), lang)}</div>` : ""}
