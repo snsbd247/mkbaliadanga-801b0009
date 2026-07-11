@@ -18,10 +18,6 @@ const sb = db as any;
 
 type DayRow = { date: string; opening: number; income: number; expense: number; closing: number; receiptFrom: string; receiptTo: string };
 
-const receiptNum = (s: unknown) => {
-  const m = String(s ?? "").match(/(\d+)/);
-  return m ? Number(m[1]) : NaN;
-};
 
 const MONTHS_BN = ["জানুয়ারি", "ফেব্রুয়ারি", "মার্চ", "এপ্রিল", "মে", "জুন", "জুলাই", "আগস্ট", "সেপ্টেম্বর", "অক্টোবর", "নভেম্বর", "ডিসেম্বর"];
 
