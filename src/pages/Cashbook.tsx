@@ -565,7 +565,7 @@ function StreamCashbook(props: {
   submissions: any[]; onUnlock: (id: string) => void;
 }) {
   const { t, tx } = useLang();
-  const { stream, label, month, mFrom, mTo, receipts, expenses, opening, setOpening, locked, canSubmit, isSuper, onSubmit, onEdit, onDelete, onScan, submissions, onUnlock } = props;
+  const { stream, label, month, mFrom, mTo, receipts, expenses, incomes = [], opening, setOpening, locked, canSubmit, isSuper, onSubmit, onEdit, onDelete, onScan, submissions, onUnlock } = props;
 
   const [consolidated, setConsolidated] = useState(true);
   const [previewOpen, setPreviewOpen] = useState(false);
