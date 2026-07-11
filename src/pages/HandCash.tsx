@@ -196,16 +196,18 @@ export default function HandCash() {
       <Card className="overflow-x-auto"><Table>
         <TableHeader><TableRow>
           <TableHead>{tx("Date", "তারিখ")}</TableHead>
+          <TableHead>{tx("Receipt no.", "রশিদ নং")}</TableHead>
           <TableHead className="text-right">{tx("Opening balance", "প্রারম্ভিক জমা")}</TableHead>
           <TableHead className="text-right">{tx("Income", "আয়")}</TableHead>
           <TableHead className="text-right">{tx("Expense", "ব্যয়")}</TableHead>
           <TableHead className="text-right">{tx("Closing", "সমাপনী")}</TableHead>
         </TableRow></TableHeader>
         <TableBody>
-          {rows.length === 0 && <TableRow><TableCell colSpan={5} className="text-center py-8 text-muted-foreground">{tx("No transactions this month", "এই মাসে কোনো লেনদেন নেই")}</TableCell></TableRow>}
+          {rows.length === 0 && <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">{tx("No transactions this month", "এই মাসে কোনো লেনদেন নেই")}</TableCell></TableRow>}
           {rows.map((r) => (
             <TableRow key={r.date}>
               <TableCell>{fmtDate(r.date)}</TableCell>
+              <TableCell>{rangeLabel(r)}</TableCell>
               <TableCell className="text-right">{money(r.opening)}</TableCell>
               <TableCell className="text-right text-success">{r.income ? money(r.income) : "—"}</TableCell>
               <TableCell className="text-right text-destructive">{r.expense ? money(r.expense) : "—"}</TableCell>
@@ -214,7 +216,7 @@ export default function HandCash() {
           ))}
           {rows.length > 0 && (
             <TableRow className="bg-muted/60 font-bold">
-              <TableCell className="text-right">{tx("Total", "মোট")}</TableCell>
+              <TableCell className="text-right" colSpan={2}>{tx("Total", "মোট")}</TableCell>
               <TableCell />
               <TableCell className="text-right text-success">{money(totalIncome)}</TableCell>
               <TableCell className="text-right text-destructive">{money(totalExpense)}</TableCell>
