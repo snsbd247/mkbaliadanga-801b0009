@@ -70,9 +70,16 @@ export default function HandCash() {
   const rows: DayRow[] = useMemo(() => {
     const incomeByDay = new Map<string, number>();
     const expenseByDay = new Map<string, number>();
+    const receiptNosByDay = new Map<string, number[]>();
     receipts.forEach((r: any) => {
       const d = String(r.receipt_date).slice(0, 10);
       incomeByDay.set(d, (incomeByDay.get(d) ?? 0) + Number(r.amount || 0));
+      const num = receiptNum(r.receipt_no);
+      if (!Number.isNaN(num)) {
+        const arr = receiptNosByDay.get(d) ?? [];
+        arr.push(num);
+        receiptNosByDay.set(d, arr);
+      }
     });
     expenses.forEach((e: any) => {
       const d = String(e.expense_date).slice(0, 10);
@@ -85,11 +92,15 @@ export default function HandCash() {
       const income = incomeByDay.get(d) ?? 0;
       const expense = expenseByDay.get(d) ?? 0;
       const closing = opening + income - expense;
-      out.push({ date: d, opening, income, expense, closing });
+      const nos = (receiptNosByDay.get(d) ?? []).sort((a, b) => a - b);
+      const receiptFrom = nos.length ? String(nos[0]) : "";
+      const receiptTo = nos.length ? String(nos[nos.length - 1]) : "";
+      out.push({ date: d, opening, income, expense, closing, receiptFrom, receiptTo });
       opening = closing;
     }
     return out;
   }, [receipts, expenses, openingBalance]);
+
 
   const totalIncome = rows.reduce((s, r) => s + r.income, 0);
   const totalExpense = rows.reduce((s, r) => s + r.expense, 0);
