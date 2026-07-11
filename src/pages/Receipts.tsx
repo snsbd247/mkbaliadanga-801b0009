@@ -181,6 +181,9 @@ export default function Receipts() {
         description={tx("All payment & irrigation receipts — filter, edit, delete, print", "সকল পেমেন্ট ও সেচ রশিদ — ফিল্টার, এডিট, ডিলিট, প্রিন্ট")}
         actions={
           <div className="flex gap-2">
+            <Button variant="outline" size="sm" asChild>
+              <Link to="/receipts/print-preview">{tx("Print preview", "প্রিন্ট প্রিভিউ")}</Link>
+            </Button>
             <Button variant="outline" size="sm" onClick={exportExcel} disabled={!displayList.length}>Excel</Button>
             <Button variant="outline" size="sm" onClick={exportCsv} disabled={!displayList.length}>CSV</Button>
           </div>
