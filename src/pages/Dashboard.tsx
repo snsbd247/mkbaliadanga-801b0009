@@ -409,6 +409,23 @@ export default function Dashboard() {
 
   const pieColors = ["hsl(var(--primary))", "hsl(var(--accent))", "hsl(var(--warning))", "hsl(var(--destructive))"];
 
+  const reconTitle = lang === "bn" ? "রিকনসিলিয়েশন রিপোর্ট" : "Reconciliation Report";
+  function reconReportRows() {
+    const mm = recon?.mismatches ?? [];
+    const cols = lang === "bn"
+      ? { item: "খাত", dash: "ড্যাশবোর্ড", sub: "সাবমিট", diff: "পার্থক্য" }
+      : { item: "Item", dash: "Dashboard", sub: "Submitted", diff: "Difference" };
+    return mm.map((m) => ({ [cols.item]: m.label, [cols.dash]: m.dashboard, [cols.sub]: m.source, [cols.diff]: m.diff }));
+  }
+  function exportReconPDF() {
+    const head = lang === "bn" ? ["খাত", "ড্যাশবোর্ড", "সাবমিট", "পার্থক্য"] : ["Item", "Dashboard", "Submitted", "Difference"];
+    const rows = (recon?.mismatches ?? []).map((m) => [m.label, money(m.dashboard), money(m.source), money(m.diff)]);
+    exportTablePDF(reconTitle, head, rows);
+  }
+  function exportReconExcel() {
+    exportExcel(reconTitle, lang === "bn" ? "রিকন" : "Recon", reconReportRows());
+  }
+
   return (
     <>
       <PageHeader title={t("dashboard")} description={t("appName")} />
