@@ -122,12 +122,12 @@ async function createJournal(opts: {
   createdBy?: string | null;
   entryDate?: string | null;
   lines: Line[];
-}): Promise<void> {
+}): Promise<string | null> {
   // Guard: lines must balance and be non-trivial.
   const bal = checkBalanced(opts.lines);
   if (!bal.balanced) {
     lastImbalance = { ...bal, reference: opts.reference ?? null, description: opts.description ?? null };
-    return;
+    return null;
   }
   try {
     // Insert the journal UNPOSTED first. The ledger-posting trigger
