@@ -104,19 +104,7 @@ export default function HandCash() {
   const totalExpense = rows.reduce((s, r) => s + r.expense, 0);
   const finalClosing = rows.length ? rows[rows.length - 1].closing : openingBalance;
 
-  // Split hand cash by stream: সেচ (irrigation) vs সঞ্চয় (savings/society side).
-  const isSech = (k: unknown) => String(k ?? "").toLowerCase() === "irrigation";
-  const streamTotals = useMemo(() => {
-    const sech = { income: 0, expense: 0 };
-    const savings = { income: 0, expense: 0 };
-    receipts.forEach((r: any) => {
-      (isSech(r.kind) ? sech : savings).income += Number(r.amount || 0);
-    });
-    expenses.forEach((e: any) => {
-      (isSech(e.stream) ? sech : savings).expense += Number(e.amount || 0);
-    });
-    return { sech, savings };
-  }, [receipts, expenses]);
+  const streamLabel = stream === "irrigation" ? tx("Irrigation", "সেচ") : tx("Savings / Loan", "সঞ্চয় / লোন");
 
   async function submitMonth() {
     if (locked) return toast.error(tx("This month is already submitted/locked", "এই মাস ইতিমধ্যে সাবমিট/লক করা"));
