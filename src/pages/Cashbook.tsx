@@ -729,6 +729,9 @@ function StreamCashbook(props: {
           <div className="text-sm">
             <div>{t("income")}: <span className="font-semibold text-success">{money(totalIncome)}</span></div>
             <div>{t("expense")}: <span className="font-semibold text-destructive">{money(totalExpense)}</span></div>
+            {(transferIn > 0 || transferOut > 0) && (
+              <div className="text-xs text-muted-foreground">{tx("Bank transfer", "ব্যাংক স্থানান্তর")}: +{money(transferIn)} / −{money(transferOut)}</div>
+            )}
             <div>{t("closing")}: <span className={`font-bold ${closing < 0 ? "due-text" : ""}`}>{money(closing)}</span></div>
           </div>
           <div className="flex items-center gap-2 self-center">
