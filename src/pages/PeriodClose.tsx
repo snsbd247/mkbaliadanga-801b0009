@@ -21,6 +21,7 @@ import { useAuth } from "@/auth/AuthProvider";
 import { exportTablePDF } from "@/lib/exports";
 import { getFiscalStartMonth, listFiscalYears, monthRange, quarterRange } from "@/lib/accounting";
 import { useLang } from "@/i18n/LanguageProvider";
+import { postDayClose, type DayCloseResult } from "@/lib/accountingPosting";
 
 type Period = {
   id: string;
