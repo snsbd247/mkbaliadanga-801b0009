@@ -47,7 +47,7 @@ export default function HandCash() {
 
   async function load() {
     const [rec, exp, sub] = await Promise.all([
-      sb.from("receipts").select("receipt_date,amount").gte("receipt_date", mFrom).lte("receipt_date", mTo).limit(20000),
+      sb.from("receipts").select("receipt_date,amount,receipt_no").gte("receipt_date", mFrom).lte("receipt_date", mTo).limit(20000),
       sb.from("expenses").select("expense_date,amount").is("deleted_at", null).gte("expense_date", mFrom).lte("expense_date", mTo).limit(20000),
       sb.from("hand_cash_submissions").select("*").eq("year", year).eq("month", month).is("office_id", officeId ?? null).maybeSingle(),
     ]);
