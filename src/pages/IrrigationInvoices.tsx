@@ -67,6 +67,13 @@ function invoiceLandSize(inv: any): number | undefined {
   return inv?.lands?.land_size;
 }
 
+/** Full parcel size frozen on the invoice (for barga "billed portion / total" display). */
+function invoiceParcelSize(inv: any): number | undefined {
+  const v = inv?.calculation_snapshot?.parcel_size_shotok;
+  if (v != null && Number(v) > 0) return Number(v);
+  return inv?.lands?.land_size;
+}
+
 const mouzaName = (r: any) => resolveRowMouzaName(r);
 
 const STATUS_VARIANT: Record<InvoiceStatus, "default" | "secondary" | "destructive" | "outline"> = {
