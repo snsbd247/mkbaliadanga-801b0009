@@ -713,7 +713,7 @@ function StreamCashbook(props: {
             <TableCell className="text-right">—</TableCell><TableCell className="text-right">—</TableCell>
             <TableCell className="text-right font-semibold">{money(opening)}</TableCell><TableCell></TableCell>
           </TableRow>
-          {entries.map((row, i) => (
+          {pagedEntries.map((row, i) => (
             <TableRow key={i}>
               <TableCell className="font-mono text-xs">{row.ref}</TableCell>
               <TableCell>{fmtDate(row.date)}</TableCell>
