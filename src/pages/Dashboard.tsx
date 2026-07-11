@@ -1,9 +1,12 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { db } from "@/lib/db";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card } from "@/components/ui/card";
-import { Users, UserCheck, Wallet, Coins, HandCoins, Droplets, CalendarClock, AlertTriangle, FileText, Trophy, Activity, UserPlus, TrendingUp, TrendingDown, Banknote, Landmark, Info } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
+import { exportTablePDF, exportExcel } from "@/lib/exports";
+import { Users, UserCheck, Wallet, Coins, HandCoins, Droplets, CalendarClock, AlertTriangle, FileText, Trophy, Activity, UserPlus, TrendingUp, TrendingDown, Banknote, Landmark, Info, FileDown, FileSpreadsheet } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { useLang } from "@/i18n/LanguageProvider";
@@ -21,10 +24,12 @@ interface Stat { label: string; value: string; icon: any; tone?: "default" | "da
 
 export default function Dashboard() {
   const { t, lang } = useLang();
-  const { isSuper, isAdmin, officeId } = useAuth();
+  const { isSuper, isAdmin, officeId, user } = useAuth();
   const [officeName, setOfficeName] = useState<string>("");
   const [stats, setStats] = useState<Stat[]>([]);
   const [recon, setRecon] = useState<ReconcileResult | null>(null);
+  const [officeRecon, setOfficeRecon] = useState<{ office: string; stream: string; submitted: number }[]>([]);
+  const auditedRef = useRef<Set<string>>(new Set());
   const [recent, setRecent] = useState<any[]>([]);
   const [pending, setPending] = useState<any[]>([]);
   const [trend, setTrend] = useState<any[]>([]);
@@ -188,7 +193,7 @@ export default function Dashboard() {
     const curYear = now.getFullYear();
     const curMonth = now.getMonth() + 1;
     const [hcSubs, hcReceipts, hcExpensesAll, hcMonthPay] = await Promise.all([
-      db.from("hand_cash_submissions").select("closing_cash,year,month,stream"),
+      db.from("hand_cash_submissions").select("closing_cash,year,month,stream,office_id,offices(name)"),
       db.from("receipts").select("kind,amount,receipt_no,receipt_date").gte("receipt_date", monthStart).lte("receipt_date", today),
       db.from("expenses").select("amount,stream,expense_date").is("deleted_at", null).gte("expense_date", monthStart).lte("expense_date", today),
       db.from("payments").select("amount,receipt_no,kind,status,created_at").eq("kind", "irrigation").eq("status", "approved").is("deleted_at", null).gte("created_at", monthStart),
@@ -228,7 +233,57 @@ export default function Dashboard() {
     if (savSubmitted) {
       reconEntries.push({ label: lang === "bn" ? "সঞ্চয় হ্যান্ড ক্যাশ (মাস শেষ)" : "Savings Hand Cash (Month-end)", dashboard: savMonthComputed, source: Number((savSubmitted as any).closing_cash || 0) });
     }
-    setRecon(reconEntries.length ? reconcileBalances(reconEntries) : null);
+    const reconResult = reconEntries.length ? reconcileBalances(reconEntries) : null;
+    setRecon(reconResult);
+
+    // Office-wise reconciliation details (current month submissions per office).
+    const officeRows = subsRows
+      .filter((s: any) => s.year === curYear && s.month === curMonth && (!officeId || s.office_id === officeId))
+      .map((s: any) => ({
+        office: (s as any).offices?.name || (lang === "bn" ? "অজানা অফিস" : "Unknown office"),
+        stream: streamOf(s) === "irrigation" ? (lang === "bn" ? "সেচ" : "Irrigation") : (lang === "bn" ? "সঞ্চয়" : "Savings"),
+        submitted: Number(s.closing_cash || 0),
+      }));
+    setOfficeRecon(officeRows);
+
+    // Audit + toast — only fire once per (month, ok-state) to avoid noise on
+    // language toggles / re-renders.
+    if (reconResult) {
+      const irrPass = reconResult.mismatches.every((m) => !m.label.includes(lang === "bn" ? "সেচ" : "Irrigation"));
+      const savPass = reconResult.mismatches.every((m) => !m.label.includes(lang === "bn" ? "সঞ্চয়" : "Savings"));
+      const auditKey = `${curYear}-${curMonth}-${reconResult.ok ? "ok" : "fail"}-${officeId ?? "all"}`;
+      if (!auditedRef.current.has(auditKey)) {
+        auditedRef.current.add(auditKey);
+        const uid = user?.id ?? null;
+        const streamsAudit = [
+          { stream: "irrigation", passed: irrSubmitted ? irrPass : null },
+          { stream: "savings", passed: savSubmitted ? savPass : null },
+        ].filter((s) => s.passed !== null);
+        if (streamsAudit.length) {
+          await db.from("system_audit_logs").insert(
+            streamsAudit.map((s) => ({
+              user_id: uid,
+              office_id: officeId ?? null,
+              module: "reconciliation",
+              action_type: s.passed ? "reconcile_pass" : "reconcile_fail",
+              new_data: { year: curYear, month: curMonth, stream: s.stream, passed: s.passed },
+            })) as any,
+          );
+        }
+        if (!reconResult.ok) {
+          toast.error(
+            lang === "bn" ? "ব্যালেন্স অমিল পাওয়া গেছে" : "Balance mismatch detected",
+            {
+              description: lang === "bn" ? "বিস্তারিত দেখতে ক্লিক করুন।" : "Click to view mismatch details.",
+              action: {
+                label: lang === "bn" ? "বিস্তারিত" : "Details",
+                onClick: () => document.getElementById("recon-details")?.scrollIntoView({ behavior: "smooth" }),
+              },
+            },
+          );
+        }
+      }
+    }
 
 
     const farmersList = votersOnly ? farmersData.filter((f: any) => f.is_voter) : farmersData;
@@ -354,6 +409,23 @@ export default function Dashboard() {
 
   const pieColors = ["hsl(var(--primary))", "hsl(var(--accent))", "hsl(var(--warning))", "hsl(var(--destructive))"];
 
+  const reconTitle = lang === "bn" ? "রিকনসিলিয়েশন রিপোর্ট" : "Reconciliation Report";
+  function reconReportRows() {
+    const mm = recon?.mismatches ?? [];
+    const cols = lang === "bn"
+      ? { item: "খাত", dash: "ড্যাশবোর্ড", sub: "সাবমিট", diff: "পার্থক্য" }
+      : { item: "Item", dash: "Dashboard", sub: "Submitted", diff: "Difference" };
+    return mm.map((m) => ({ [cols.item]: m.label, [cols.dash]: m.dashboard, [cols.sub]: m.source, [cols.diff]: m.diff }));
+  }
+  function exportReconPDF() {
+    const head = lang === "bn" ? ["খাত", "ড্যাশবোর্ড", "সাবমিট", "পার্থক্য"] : ["Item", "Dashboard", "Submitted", "Difference"];
+    const rows = (recon?.mismatches ?? []).map((m) => [m.label, money(m.dashboard), money(m.source), money(m.diff)]);
+    exportTablePDF(reconTitle, head, rows);
+  }
+  function exportReconExcel() {
+    exportExcel(reconTitle, lang === "bn" ? "রিকন" : "Recon", reconReportRows());
+  }
+
   return (
     <>
       <PageHeader title={t("dashboard")} description={t("appName")} />
@@ -402,10 +474,16 @@ export default function Dashboard() {
       </div>
 
       {recon && !recon.ok && (
-        <Card className="mt-4 border-destructive/50 bg-destructive/5 p-4">
-          <div className="flex items-center gap-2 font-semibold text-destructive">
-            <AlertTriangle className="h-4 w-4" />
-            {lang === "bn" ? "ব্যালেন্স অমিল পাওয়া গেছে" : "Balance mismatch detected"}
+        <Card id="recon-details" className="mt-4 border-destructive/50 bg-destructive/5 p-4 scroll-mt-20">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex items-center gap-2 font-semibold text-destructive">
+              <AlertTriangle className="h-4 w-4" />
+              {lang === "bn" ? "ব্যালেন্স অমিল পাওয়া গেছে" : "Balance mismatch detected"}
+            </div>
+            <div className="flex gap-2">
+              <Button size="sm" variant="outline" onClick={exportReconPDF}><FileDown className="mr-1 h-3.5 w-3.5" /> PDF</Button>
+              <Button size="sm" variant="outline" onClick={exportReconExcel}><FileSpreadsheet className="mr-1 h-3.5 w-3.5" /> Excel</Button>
+            </div>
           </div>
           <p className="mt-1 text-xs text-muted-foreground">
             {lang === "bn"
@@ -423,10 +501,23 @@ export default function Dashboard() {
               </li>
             ))}
           </ul>
+          {officeId && officeRecon.length > 0 && (
+            <div className="mt-3 border-t border-destructive/20 pt-2">
+              <div className="text-xs font-semibold">{lang === "bn" ? "অফিসভিত্তিক সাবমিট (চলতি মাস)" : "Office-wise submitted (this month)"}</div>
+              <ul className="mt-1 space-y-1 text-sm">
+                {officeRecon.map((o, i) => (
+                  <li key={`${o.office}-${o.stream}-${i}`} className="flex justify-between gap-2">
+                    <span>{o.office} · {o.stream}</span>
+                    <span className="text-muted-foreground">{money(o.submitted)}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
         </Card>
       )}
       {recon && recon.ok && (
-        <p className="mt-3 text-xs text-success">
+        <p id="recon-details" className="mt-3 text-xs text-success">
           ✓ {lang === "bn" ? "সব সাবমিট করা মাস-শেষ ব্যালেন্স ড্যাশবোর্ডের সাথে মিলছে।" : "All finalized month-end balances reconcile with the dashboard."}
         </p>
       )}
