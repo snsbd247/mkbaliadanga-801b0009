@@ -154,7 +154,7 @@ export default function Cashbook() {
         farmers: p.farmers,
         _from_payment: true,
       }));
-    setReceipts([...realReceipts, ...paymentFallbackReceipts]); setExpenses(exp.data ?? []); setSubmissions(subs.data ?? []);
+    setReceipts([...realReceipts, ...paymentFallbackReceipts]); setExpenses(exp.data ?? []); setSubmissions(subs.data ?? []); setIncomes(inc.data ?? []);
   }
 
   function isLocked(stream: Stream) {
