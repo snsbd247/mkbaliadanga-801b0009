@@ -79,6 +79,7 @@ import SmsLogs from "./pages/SmsLogs";
 import SmsTemplates from "./pages/SmsTemplates";
 import Locations from "./pages/Locations";
 import LedgerReconciliation from "./pages/LedgerReconciliation";
+import DayReconciliation from "./pages/DayReconciliation";
 import ShareCapitalReconciliation from "./pages/ShareCapitalReconciliation";
 import QrRotation from "./pages/QrRotation";
 import BulkCards from "./pages/BulkCards";
