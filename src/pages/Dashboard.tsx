@@ -24,6 +24,7 @@ export default function Dashboard() {
   const { isSuper, isAdmin, officeId } = useAuth();
   const [officeName, setOfficeName] = useState<string>("");
   const [stats, setStats] = useState<Stat[]>([]);
+  const [recon, setRecon] = useState<ReconcileResult | null>(null);
   const [recent, setRecent] = useState<any[]>([]);
   const [pending, setPending] = useState<any[]>([]);
   const [trend, setTrend] = useState<any[]>([]);
