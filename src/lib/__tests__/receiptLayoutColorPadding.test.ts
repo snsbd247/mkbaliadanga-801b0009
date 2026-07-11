@@ -65,9 +65,9 @@ describe("irrigation receipt — black text + configurable padding", () => {
   it("clamps out-of-range padding values", () => {
     setReceiptLayoutSettings({ holdingBottomPaddingPx: 999, irrigationPagePaddingPx: 1 });
     const html = buildReceiptCopyHtmlForTest(base, "farmer", "bn");
-    // holding clamped to 48, page clamped to 24
+    // holding clamped to 48, page clamped to min 8
     expect(html).toContain("1px 0 48px 12px");
-    expect(html).toContain("padding:24px 24px");
+    expect(html).toContain("padding:8px 8px");
   });
 
   it("English and Bangla share the same padding layout", () => {
