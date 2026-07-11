@@ -125,15 +125,15 @@ export default function Cashbook() {
 
   async function load() {
     const [rec, exp, subs, pay] = await Promise.all([
-      sb.from("receipts").select("*, farmers(name_en,farmer_code,member_no)").gte("receipt_date", mFrom).lte("receipt_date", mTo).order("receipt_date", { ascending: false }),
-      sb.from("expenses").select("*").is("deleted_at", null).gte("expense_date", mFrom).lte("expense_date", mTo).order("expense_date", { ascending: false }),
+      sb.from("receipts").select("*, farmers(name_en,farmer_code,member_no)").gte("receipt_date", mFrom).lte("receipt_date", mTo).order("receipt_date", { ascending: false }).limit(20000),
+      sb.from("expenses").select("*").is("deleted_at", null).gte("expense_date", mFrom).lte("expense_date", mTo).order("expense_date", { ascending: false }).limit(20000),
       sb.from("cashbook_submissions").select("*").order("year", { ascending: false }).order("month", { ascending: false }).limit(48),
       sb.from("payments").select("id,kind,status,receipt_no,amount,method,note,created_at,occurred_at,office_id,farmer_id,farmers(name_en,farmer_code,member_no)")
         .eq("kind", "irrigation")
         .eq("status", "approved")
         .gte("created_at", `${mFrom} 00:00:00`)
         .lte("created_at", `${mTo} 23:59:59`)
-        .order("created_at", { ascending: false }),
+        .order("created_at", { ascending: false }).limit(20000),
     ]);
     const realReceipts = rec.data ?? [];
     const existingNos = new Set(realReceipts.map((r: any) => String(r.receipt_no ?? "")).filter(Boolean));
@@ -567,6 +567,8 @@ function StreamCashbook(props: {
 
   const [consolidated, setConsolidated] = useState(true);
   const [previewOpen, setPreviewOpen] = useState(false);
+  const [pageSize, setPageSize] = useState(100);
+  const [page, setPage] = useState(0);
 
   const streamReceipts = useMemo(() => receipts.filter(x => STREAM_INCOME_KINDS[stream].has(x.kind)), [receipts, stream]);
   const streamExpenses = useMemo(() => expenses.filter(x => x.stream === stream), [expenses, stream]);
@@ -601,6 +603,15 @@ function StreamCashbook(props: {
     let bal = Number(opening || 0);
     return rows.map(row => { bal += row.kind === "income" ? row.amount : -row.amount; return { ...row, balance: bal }; });
   }, [incomeRows, streamExpenses, opening]);
+
+  // Pagination — keep running balance intact but show a page at a time.
+  const pageCount = Math.max(1, Math.ceil(entries.length / pageSize));
+  const safePage = Math.min(page, pageCount - 1);
+  useEffect(() => { setPage(0); }, [month, pageSize, consolidated]);
+  const pagedEntries = useMemo(
+    () => entries.slice(safePage * pageSize, safePage * pageSize + pageSize),
+    [entries, safePage, pageSize],
+  );
 
   const totalIncome = streamReceipts.reduce((s, x) => s + Number(x.amount), 0);
   const totalExpense = streamExpenses.reduce((s, x) => s + Number(x.amount), 0);
@@ -702,7 +713,7 @@ function StreamCashbook(props: {
             <TableCell className="text-right">—</TableCell><TableCell className="text-right">—</TableCell>
             <TableCell className="text-right font-semibold">{money(opening)}</TableCell><TableCell></TableCell>
           </TableRow>
-          {entries.map((row, i) => (
+          {pagedEntries.map((row, i) => (
             <TableRow key={i}>
               <TableCell className="font-mono text-xs">{row.ref}</TableCell>
               <TableCell>{fmtDate(row.date)}</TableCell>
@@ -732,6 +743,28 @@ function StreamCashbook(props: {
           {entries.length === 0 && <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-6">{t("noData")}</TableCell></TableRow>}
         </TableBody>
       </Table></Card>
+
+      {entries.length > 0 && (
+        <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
+          <div className="flex items-center gap-2">
+            <span className="text-muted-foreground">{tx("Rows per page", "প্রতি পেজে")}</span>
+            <Select value={String(pageSize)} onValueChange={(v) => setPageSize(Number(v))}>
+              <SelectTrigger className="w-24 h-8"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {[100, 200, 500, 1000].map(n => <SelectItem key={n} value={String(n)}>{n}</SelectItem>)}
+              </SelectContent>
+            </Select>
+            <span className="text-muted-foreground">
+              {tx("Total", "মোট")} {entries.length} • {tx("Page", "পেজ")} {safePage + 1}/{pageCount}
+            </span>
+          </div>
+          <div className="flex gap-2">
+            <Button size="sm" variant="outline" disabled={safePage <= 0} onClick={() => setPage(safePage - 1)}>{tx("Previous", "পূর্ববর্তী")}</Button>
+            <Button size="sm" variant="outline" disabled={safePage >= pageCount - 1} onClick={() => setPage(safePage + 1)}>{tx("Next", "পরবর্তী")}</Button>
+          </div>
+        </div>
+      )}
+
 
       {byHead.length > 0 && (
         <Card className="p-4">
