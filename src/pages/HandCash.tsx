@@ -110,11 +110,11 @@ export default function HandCash() {
     if (locked) return toast.error(tx("This month is already submitted/locked", "এই মাস ইতিমধ্যে সাবমিট/লক করা"));
     if (!confirm(`${MONTHS[month - 1]} ${year} — ${tx("Final submit hand cash? Opening balance will be locked.", "হ্যান্ড ক্যাশ ফাইনাল সাবমিট করবেন? এরপর প্রারম্ভিক জমা লক হয়ে যাবে।")}`)) return;
     const payload = {
-      office_id: officeId ?? null, year, month,
+      office_id: officeId ?? null, year, month, stream,
       opening_cash: openingBalance, total_income: totalIncome, total_expense: totalExpense,
       closing_cash: finalClosing, locked: true, submitted_by: user?.id, submitted_at: new Date().toISOString(),
     };
-    const { error } = await sb.from("hand_cash_submissions").upsert(payload, { onConflict: "office_id,year,month" });
+    const { error } = await sb.from("hand_cash_submissions").upsert(payload, { onConflict: "office_id,year,month,stream" });
     if (error) return toast.error(error.message);
     toast.success(tx("Submitted", "সাবমিট হয়েছে"));
     load();
@@ -123,11 +123,11 @@ export default function HandCash() {
   async function saveOpeningDraft() {
     if (locked) return;
     const payload = {
-      office_id: officeId ?? null, year, month,
+      office_id: officeId ?? null, year, month, stream,
       opening_cash: openingBalance, total_income: totalIncome, total_expense: totalExpense,
       closing_cash: finalClosing, locked: false,
     };
-    const { error } = await sb.from("hand_cash_submissions").upsert(payload, { onConflict: "office_id,year,month" });
+    const { error } = await sb.from("hand_cash_submissions").upsert(payload, { onConflict: "office_id,year,month,stream" });
     if (error) return toast.error(error.message);
     toast.success(tx("Opening balance saved", "প্রারম্ভিক জমা সংরক্ষিত"));
     load();
