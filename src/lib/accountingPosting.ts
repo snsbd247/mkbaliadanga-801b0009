@@ -146,19 +146,47 @@ async function createJournal(opts: {
       })
       .select("id")
       .single();
-    if (error || !je) return;
+    if (error || !je) return null;
     const journalId = (je as any).id;
     const { error: lineErr } = await db
       .from("journal_entry_lines")
       .insert(opts.lines.map((l) => ({ ...l, journal_id: journalId })));
-    if (lineErr) return;
+    if (lineErr) return null;
     // Flip to posted → trigger writes the ledger entries.
     await db
       .from("journal_entries")
       .update({ posted: true, posted_at: new Date().toISOString() })
       .eq("id", journalId);
+    return journalId ?? null;
   } catch {
     /* posting failure must not break the caller */
+    return null;
+  }
+}
+
+/**
+ * Audit trail for bank / day-close journal postings. Records actor, timestamp
+ * (server default), the journal reference and id so postings are traceable.
+ * Best-effort — never throws into the posting flow.
+ */
+async function auditJournalPosting(opts: {
+  action: string;
+  reference: string | null;
+  journalId: string | null;
+  officeId?: string | null;
+  detail?: Record<string, unknown>;
+}): Promise<void> {
+  try {
+    const { logAudit } = await import("@/lib/audit");
+    await logAudit({
+      office_id: opts.officeId ?? null,
+      module: "other",
+      action_type: opts.action,
+      reference_id: opts.journalId ?? opts.reference,
+      new_data: { reference: opts.reference, journal_id: opts.journalId, ...(opts.detail ?? {}) },
+    });
+  } catch {
+    /* ignore audit failures */
   }
 }
 
