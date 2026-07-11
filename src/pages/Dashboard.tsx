@@ -254,8 +254,7 @@ export default function Dashboard() {
       const auditKey = `${curYear}-${curMonth}-${reconResult.ok ? "ok" : "fail"}-${officeId ?? "all"}`;
       if (!auditedRef.current.has(auditKey)) {
         auditedRef.current.add(auditKey);
-        const { data: authData } = await db.auth.getUser();
-        const uid = authData?.user?.id ?? null;
+        const uid = user?.id ?? null;
         const streamsAudit = [
           { stream: "irrigation", passed: irrSubmitted ? irrPass : null },
           { stream: "savings", passed: savSubmitted ? savPass : null },
