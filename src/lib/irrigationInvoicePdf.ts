@@ -160,6 +160,7 @@ export interface IrrigationInvoiceData {
     mouza?: string | null;
     dag_no?: string | null;
     land_size?: number | null;
+    parcel_size?: number | null;
   } | null;
   season?: { name?: string | null; type?: string | null; year?: number | null } | null;
 }
@@ -208,11 +209,20 @@ function copyHtml(d: IrrigationInvoiceData, brand: CompanyBranding, copyLabel: s
   const appliedRateText = d.applied_rate != null ? `${fmt2(d.applied_rate)}` : "—";
   const stdRateText = d.original_standard_rate != null ? ` (মানক: ${fmt2(d.original_standard_rate)})` : "";
 
+  // Billed portion vs total parcel — makes barga (sharecropper) invoices explicit.
+  const billedText = formatLandSize(land.land_size, "with_katha") ?? "—";
+  const showPortion = d.is_borga && land.parcel_size != null
+    && Number(land.parcel_size) > 0
+    && Number(land.parcel_size) !== Number(land.land_size ?? 0);
+  const landSizeText = showPortion
+    ? `বিল হওয়া অংশ ${billedText} (মোট ${formatLandSize(land.parcel_size, "with_katha") ?? "—"})`
+    : billedText;
+
   const rows: Array<[string, string]> = [
     ["কৃষকের নাম", `${farmer.name ?? "—"}${farmer.farmer_code ? " (" + farmer.farmer_code + ")" : ""}`],
     ["গ্রাম / মোবাইল", `${farmer.village ?? "—"}${farmer.mobile ? " / " + farmer.mobile : ""}`],
     ["জমির ধরন", d.is_borga ? "বর্গাদার" : "নিজ মালিক"],
-    [mouzaLabel, `${land.mouza ?? "—"} / ${formatLandSize(land.land_size, "with_katha") ?? "—"}`],
+    [mouzaLabel, `${land.mouza ?? "—"} / ${landSizeText}`],
     [dagLabel, dagJoined || "—"],
     ["সিজন", seasonLabel || "—"],
     ["রেট উৎস", `${srcBn}${d.irrigation_category_name ? " — " + d.irrigation_category_name : ""}`],
