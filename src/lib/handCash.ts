@@ -80,3 +80,19 @@ export function computeHandCash(input: HandCashInput): HandCashResult {
     closing: open + income - expense,
   };
 }
+
+// Extract the leading integer from a receipt number string (e.g. "R-4683" -> 4683).
+export function receiptNum(s: unknown): number {
+  const m = String(s ?? "").match(/(\d+)/);
+  return m ? Number(m[1]) : NaN;
+}
+
+/**
+ * Compute the sorted from/to receipt-number range for a set of receipt numbers.
+ * Non-numeric values are ignored. Returns empty strings when none are numeric.
+ */
+export function receiptRange(receiptNos: unknown[]): { from: string; to: string } {
+  const nums = receiptNos.map(receiptNum).filter((n) => !Number.isNaN(n)).sort((a, b) => a - b);
+  if (!nums.length) return { from: "", to: "" };
+  return { from: String(nums[0]), to: String(nums[nums.length - 1]) };
+}
