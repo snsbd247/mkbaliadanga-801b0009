@@ -29,7 +29,7 @@ export interface PaymentReceiptData {
 
 export interface ReceiptTemplate {
   language: "en" | "bn" | "both";
-  paper_size: "a4" | "a5" | "a6";
+  paper_size: "a4" | "a5" | "a6" | "letter";
   accent_color: string; // hex
   show_logo: boolean;
   show_signature_line: boolean;
