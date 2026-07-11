@@ -118,6 +118,7 @@ export default function Cashbook() {
     db.from("farmers").select("id,name_en,farmer_code,member_no").order("name_en").then(d => setFarmers(d.data ?? []));
     loadHeads();
     sb.from("bank_accounts").select("*").eq("is_active", true).order("bank_name").then((d: any) => setBankAccounts(d.data ?? []));
+    sb.from("bank_transactions").select("bank_account_id,txn_type,amount").then((d: any) => setBankTxns(d.data ?? []));
   }, []);
 
   useEffect(() => { load(); /* eslint-disable-next-line */ }, [year, month]);
