@@ -232,7 +232,8 @@ export default function Dashboard() {
       { label: lang === "bn" ? "সেচ হ্যান্ড ক্যাশ" : "Irrigation Hand Cash", value: money(handCashBalance), icon: Banknote, tone: handCashBalance < 0 ? "danger" : "success", href: "/hand-cash" },
       { label: lang === "bn" ? "সঞ্চয় হ্যান্ড ক্যাশ" : "Savings Hand Cash", value: money(savingsHandCash), icon: Banknote, tone: savingsHandCash < 0 ? "danger" : "success", href: "/hand-cash" },
       { label: lang === "bn" ? "সব ব্যাংক ব্যালেন্স" : "All Banks Balance", value: money(bankBalance), icon: Landmark, tone: "default", href: "/bank-accounts" },
-      { label: lang === "bn" ? "হ্যান্ড ক্যাশ (মাস শেষ)" : "Hand Cash (Month-end)", value: money(handCashClosing), icon: Banknote, tone: handCashClosing < 0 ? "danger" : "success", href: "/hand-cash" },
+      { label: lang === "bn" ? "সেচ হ্যান্ড ক্যাশ (মাস শেষ)" : "Irrigation Hand Cash (Month-end)", value: money(irrMonthEnd), icon: Banknote, tone: irrMonthEnd < 0 ? "danger" : "success", href: "/hand-cash" },
+      { label: lang === "bn" ? "সঞ্চয় হ্যান্ড ক্যাশ (মাস শেষ)" : "Savings Hand Cash (Month-end)", value: money(savMonthEnd), icon: Banknote, tone: savMonthEnd < 0 ? "danger" : "success", href: "/hand-cash" },
       { label: t("pendingApprovals"), value: String(pendingCount), icon: AlertTriangle, tone: pendingCount > 0 ? "warn" : "default", href: "/approvals" },
     ]);
 
