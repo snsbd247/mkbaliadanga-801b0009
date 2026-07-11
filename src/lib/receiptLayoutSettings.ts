@@ -78,6 +78,8 @@ export const DEFAULT_RECEIPT_LAYOUT: ReceiptLayoutSettings = {
   irrigationBottomPaddingPx: 10,
   holdingBottomPaddingPx: 12,
   fitToPage: true,
+  fontScale: 1.0,
+  sideMarginMm: 4,
 };
 
 /** Default labels — single source of truth shared by HTML/PDF/Excel. */
