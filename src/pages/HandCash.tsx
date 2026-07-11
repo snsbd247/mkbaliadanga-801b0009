@@ -13,7 +13,7 @@ import { FileDown, FileSpreadsheet, Lock, Unlock, CheckCircle2 } from "lucide-re
 import { toast } from "sonner";
 import { useAuth } from "@/auth/AuthProvider";
 import { useLang } from "@/i18n/LanguageProvider";
-import { receiptNum, receiptRange } from "@/lib/handCash";
+import { receiptRange } from "@/lib/handCash";
 
 const sb = db as any;
 
