@@ -745,7 +745,7 @@ function StreamCashbook(props: {
               <TableCell className="text-right">
                 {row.kind === "expense" && (
                   <div className="flex justify-end gap-1">
-                    {row.raw?.attachment_path && <Button size="icon" variant="ghost" title={tx("Scan", "স্ক্যান")} onClick={() => onScan(row.raw.attachment_path)}><Paperclip className="h-4 w-4" /></Button>}
+                    {row.raw?.attachment_path && <Button size="icon" variant="ghost" title={tx("View voucher", "ভাউচার ভিউ")} onClick={() => onScan(row.raw.attachment_path, row.raw.attachment_mime)}><Paperclip className="h-4 w-4" /></Button>}
                     {(!locked || isSuper) && <Button size="icon" variant="ghost" title={t("edit")} onClick={() => onEdit(row.raw)}><Pencil className="h-4 w-4" /></Button>}
                     {(!locked || isSuper) && <Button size="icon" variant="ghost" title={t("delete")} onClick={() => onDelete(row.raw)}><Trash2 className="h-4 w-4" /></Button>}
                   </div>
