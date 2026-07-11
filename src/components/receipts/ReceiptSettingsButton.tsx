@@ -40,6 +40,8 @@ export function ReceiptSettingsButton() {
     setBottomPad(s.irrigationBottomPaddingPx);
     setHoldingPad(s.holdingBottomPaddingPx);
     setFitToPage(s.fitToPage);
+    setFontScale(s.fontScale);
+    setSideMargin(s.sideMarginMm);
   };
   const onSelectPreset = (id: string) => {
     const s = applyReceiptPreset(id);
