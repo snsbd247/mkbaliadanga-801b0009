@@ -619,9 +619,9 @@ function copyHtml(d: BnReceiptData, copyLabel: string, signatureUrl: string | nu
           : v;
       return `
         <tr>
-          <td style="padding:${rowPadY};vertical-align:top;width:46%;font-size:24px;line-height:1.25;white-space:normal;overflow:visible;text-overflow:clip;font-weight:600;">${label}</td>
-          <td style="padding:${rowPadColon};vertical-align:top;width:14px;font-size:24px;line-height:1.25;font-weight:700;">:</td>
-          <td style="padding:${rowPadVal};vertical-align:top;font-size:24px;line-height:1.25;font-weight:600;${cellWrap}">${value}</td>
+          <td style="padding:${rowPadY};vertical-align:top;width:46%;font-size:${px(24)}px;line-height:1.25;white-space:normal;overflow:visible;text-overflow:clip;font-weight:600;">${label}</td>
+          <td style="padding:${rowPadColon};vertical-align:top;width:14px;font-size:${px(24)}px;line-height:1.25;font-weight:700;">:</td>
+          <td style="padding:${rowPadVal};vertical-align:top;font-size:${px(24)}px;line-height:1.25;font-weight:600;${cellWrap}">${value}</td>
         </tr>`;
     }).join("");
 
