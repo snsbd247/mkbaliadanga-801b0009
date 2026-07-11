@@ -2174,6 +2174,7 @@ export type Database = {
           month: number
           office_id: string | null
           opening_cash: number
+          stream: string
           submitted_at: string | null
           submitted_by: string | null
           total_expense: number
@@ -2189,6 +2190,7 @@ export type Database = {
           month: number
           office_id?: string | null
           opening_cash?: number
+          stream?: string
           submitted_at?: string | null
           submitted_by?: string | null
           total_expense?: number
@@ -2204,6 +2206,7 @@ export type Database = {
           month?: number
           office_id?: string | null
           opening_cash?: number
+          stream?: string
           submitted_at?: string | null
           submitted_by?: string | null
           total_expense?: number
