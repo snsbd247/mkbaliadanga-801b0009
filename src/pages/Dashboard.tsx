@@ -474,10 +474,16 @@ export default function Dashboard() {
       </div>
 
       {recon && !recon.ok && (
-        <Card className="mt-4 border-destructive/50 bg-destructive/5 p-4">
-          <div className="flex items-center gap-2 font-semibold text-destructive">
-            <AlertTriangle className="h-4 w-4" />
-            {lang === "bn" ? "ব্যালেন্স অমিল পাওয়া গেছে" : "Balance mismatch detected"}
+        <Card id="recon-details" className="mt-4 border-destructive/50 bg-destructive/5 p-4 scroll-mt-20">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex items-center gap-2 font-semibold text-destructive">
+              <AlertTriangle className="h-4 w-4" />
+              {lang === "bn" ? "ব্যালেন্স অমিল পাওয়া গেছে" : "Balance mismatch detected"}
+            </div>
+            <div className="flex gap-2">
+              <Button size="sm" variant="outline" onClick={exportReconPDF}><FileDown className="mr-1 h-3.5 w-3.5" /> PDF</Button>
+              <Button size="sm" variant="outline" onClick={exportReconExcel}><FileSpreadsheet className="mr-1 h-3.5 w-3.5" /> Excel</Button>
+            </div>
           </div>
           <p className="mt-1 text-xs text-muted-foreground">
             {lang === "bn"
@@ -495,10 +501,23 @@ export default function Dashboard() {
               </li>
             ))}
           </ul>
+          {officeId && officeRecon.length > 0 && (
+            <div className="mt-3 border-t border-destructive/20 pt-2">
+              <div className="text-xs font-semibold">{lang === "bn" ? "অফিসভিত্তিক সাবমিট (চলতি মাস)" : "Office-wise submitted (this month)"}</div>
+              <ul className="mt-1 space-y-1 text-sm">
+                {officeRecon.map((o, i) => (
+                  <li key={`${o.office}-${o.stream}-${i}`} className="flex justify-between gap-2">
+                    <span>{o.office} · {o.stream}</span>
+                    <span className="text-muted-foreground">{money(o.submitted)}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
         </Card>
       )}
       {recon && recon.ok && (
-        <p className="mt-3 text-xs text-success">
+        <p id="recon-details" className="mt-3 text-xs text-success">
           ✓ {lang === "bn" ? "সব সাবমিট করা মাস-শেষ ব্যালেন্স ড্যাশবোর্ডের সাথে মিলছে।" : "All finalized month-end balances reconcile with the dashboard."}
         </p>
       )}
