@@ -163,9 +163,11 @@ export default function Dashboard() {
       db.from("bank_accounts").select("id,opening_balance").eq("is_active", true),
       db.from("bank_transactions").select("bank_account_id,txn_type,amount"),
     ]);
-    const savingsIncome = sum((hcReceiptsAll ?? []).filter((r: any) => String(r.kind ?? "").toLowerCase() !== "irrigation"), "amount");
-    const savingsExpense = sum((savingsExpensesAll ?? []).filter((e: any) => String(e.stream ?? "").toLowerCase() !== "irrigation"), "amount");
-    const savingsHandCash = savingsIncome - savingsExpense;
+    const savingsAllTime = computeSavingsHandCash({
+      receipts: hcReceiptsAll ?? [],
+      expenses: savingsExpensesAll ?? [],
+    });
+    const savingsHandCash = savingsAllTime.closing;
 
     // All banks combined current balance.
     const bankMap = new Map<string, number>();
