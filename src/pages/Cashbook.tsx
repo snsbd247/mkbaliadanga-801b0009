@@ -350,6 +350,17 @@ export default function Cashbook() {
 
   const monthLabel = `${year}-${String(month).padStart(2, "0")}`;
 
+  const bankBalance = useMemo(() => {
+    const map = new Map<string, number>();
+    bankAccounts.forEach(ac => map.set(ac.id, Number(ac.opening_balance || 0)));
+    bankTxns.forEach(t => {
+      const cur = map.get(t.bank_account_id) ?? 0;
+      const sign = ["deposit", "transfer_in", "interest"].includes(t.txn_type) ? 1 : -1;
+      map.set(t.bank_account_id, cur + sign * Number(t.amount || 0));
+    });
+    return Array.from(map.values()).reduce((a, b) => a + b, 0);
+  }, [bankAccounts, bankTxns]);
+
   return (
     <>
       <PageHeader
