@@ -567,6 +567,8 @@ function StreamCashbook(props: {
 
   const [consolidated, setConsolidated] = useState(true);
   const [previewOpen, setPreviewOpen] = useState(false);
+  const [pageSize, setPageSize] = useState(100);
+  const [page, setPage] = useState(0);
 
   const streamReceipts = useMemo(() => receipts.filter(x => STREAM_INCOME_KINDS[stream].has(x.kind)), [receipts, stream]);
   const streamExpenses = useMemo(() => expenses.filter(x => x.stream === stream), [expenses, stream]);
