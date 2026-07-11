@@ -46,7 +46,10 @@ export interface ReceiptLayoutSettings {
   /** When true, receipt is scaled to fit a single page (width + height) so the
    *  preview and downloaded PDF stay aligned across printer drivers. */
   fitToPage: boolean;
-}
+  /** Global font-size multiplier for receipt text. 0.8–1.4, default 1.0. */
+  fontScale: number;
+  /** Side (left/right) page margin in mm for irrigation two-up printing. 0–15. */
+  sideMarginMm: number;
 
 export const DEFAULT_RECEIPT_LAYOUT: ReceiptLayoutSettings = {
   dagSeparator: "comma",
