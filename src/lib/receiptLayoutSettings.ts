@@ -125,11 +125,13 @@ export function getReceiptLayoutSettings(): ReceiptLayoutSettings {
     merged.loanRowSpacingPx = clampSpacing(
       parsed?.loanRowSpacingPx ?? DEFAULT_RECEIPT_LAYOUT.loanRowSpacingPx,
     );
-    merged.defaultPaperSize = (parsed?.defaultPaperSize === "a4" ? "a4" : "a5");
+    merged.defaultPaperSize = (["a4", "a5", "letter"].includes(parsed?.defaultPaperSize as string) ? parsed!.defaultPaperSize! : "a5");
     merged.defaultOrientation = (parsed?.defaultOrientation === "l" ? "l" : "p");
-    merged.irrigationPagePaddingPx = clampRange(merged.irrigationPagePaddingPx, 24, 72, 48);
-    merged.irrigationBottomPaddingPx = clampRange(merged.irrigationBottomPaddingPx, 12, 96, 42);
+    merged.irrigationPagePaddingPx = clampRange(merged.irrigationPagePaddingPx, 8, 72, 16);
+    merged.irrigationBottomPaddingPx = clampRange(merged.irrigationBottomPaddingPx, 6, 96, 10);
     merged.holdingBottomPaddingPx = clampRange(merged.holdingBottomPaddingPx, 0, 48, 12);
+    merged.fontScale = clampFloat(merged.fontScale, 0.8, 1.4, 1.0);
+    merged.sideMarginMm = clampRange(merged.sideMarginMm, 0, 15, 4);
     merged.fitToPage = parsed?.fitToPage !== undefined ? !!parsed.fitToPage : DEFAULT_RECEIPT_LAYOUT.fitToPage;
     return merged;
   } catch {
