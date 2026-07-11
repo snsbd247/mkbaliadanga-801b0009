@@ -108,6 +108,11 @@ function clampRange(v: any, min: number, max: number, fallback: number): number 
   return Number.isFinite(n) ? Math.max(min, Math.min(max, Math.round(n))) : fallback;
 }
 
+function clampFloat(v: any, min: number, max: number, fallback: number): number {
+  const n = Number(v);
+  return Number.isFinite(n) ? Math.max(min, Math.min(max, Math.round(n * 100) / 100)) : fallback;
+}
+
 export function getReceiptLayoutSettings(): ReceiptLayoutSettings {
   if (typeof localStorage === "undefined") return { ...DEFAULT_RECEIPT_LAYOUT };
   try {
