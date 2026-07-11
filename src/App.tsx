@@ -31,6 +31,7 @@ import IrrigationRates from "./pages/IrrigationRates";
 import HistoricalReceiptEntry from "./pages/HistoricalReceiptEntry";
 import Payments from "./pages/Payments";
 import Receipts from "./pages/Receipts";
+import ReceiptPrintPreview from "./pages/ReceiptPrintPreview";
 import CombinedPayment from "./pages/CombinedPayment";
 import Reports from "./pages/Reports";
 import Users from "./pages/Users";
