@@ -2439,7 +2439,9 @@ function ManualInvoiceDialog({ open, onOpenChange, seasons, userId }: any) {
         override_reason: rateSource === "MANUAL" ? (manualReason.trim() || null) : null,
         calculation_snapshot: {
           rate_per_shotok: rate,
-          land_size_shotok: Number(land?.land_size ?? 0),
+          land_size_shotok: billedArea,
+          parcel_size_shotok: Number(land?.land_size ?? 0),
+          billed_area_shotok: billedArea,
           land_type_code: rateRow?.land_type_code ?? land?.field_type ?? null,
           land_type_name: rateRow?.land_type_name ?? null,
           settings,
