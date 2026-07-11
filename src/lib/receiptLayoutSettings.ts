@@ -69,8 +69,8 @@ export const DEFAULT_RECEIPT_LAYOUT: ReceiptLayoutSettings = {
   defaultOrientation: "p",
   watermarkText: "",
   watermarkEnabled: false,
-  irrigationPagePaddingPx: 28,
-  irrigationBottomPaddingPx: 18,
+  irrigationPagePaddingPx: 16,
+  irrigationBottomPaddingPx: 10,
   holdingBottomPaddingPx: 12,
   fitToPage: true,
 };
