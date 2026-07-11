@@ -155,6 +155,25 @@ export default function Dashboard() {
     });
     const handCashBalance = handCash.closing;
 
+    // Savings-side hand cash (সঞ্চয়): non-irrigation receipts − non-irrigation expenses.
+    const [{ data: savingsExpensesAll }, { data: bankAccts }, { data: bankTxAll }] = await Promise.all([
+      db.from("expenses").select("amount,stream").is("deleted_at", null),
+      db.from("bank_accounts").select("id,opening_balance").eq("is_active", true),
+      db.from("bank_transactions").select("bank_account_id,txn_type,amount"),
+    ]);
+    const savingsIncome = sum((hcReceiptsAll ?? []).filter((r: any) => String(r.kind ?? "").toLowerCase() !== "irrigation"), "amount");
+    const savingsExpense = sum((savingsExpensesAll ?? []).filter((e: any) => String(e.stream ?? "").toLowerCase() !== "irrigation"), "amount");
+    const savingsHandCash = savingsIncome - savingsExpense;
+
+    // All banks combined current balance.
+    const bankMap = new Map<string, number>();
+    (bankAccts ?? []).forEach((a: any) => bankMap.set(a.id, Number(a.opening_balance || 0)));
+    (bankTxAll ?? []).forEach((t: any) => {
+      const sign = ["deposit", "transfer_in", "interest"].includes(t.txn_type) ? 1 : -1;
+      bankMap.set(t.bank_account_id, (bankMap.get(t.bank_account_id) ?? 0) + sign * Number(t.amount || 0));
+    });
+    const bankBalance = Array.from(bankMap.values()).reduce((a, b) => a + b, 0);
+
 
     // Hand Cash module month-end: use the latest submitted closing if present;
     // otherwise mirror /hand-cash's current-month closing using the SAME
