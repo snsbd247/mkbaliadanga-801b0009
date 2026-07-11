@@ -193,7 +193,7 @@ export default function Dashboard() {
     const curYear = now.getFullYear();
     const curMonth = now.getMonth() + 1;
     const [hcSubs, hcReceipts, hcExpensesAll, hcMonthPay] = await Promise.all([
-      db.from("hand_cash_submissions").select("closing_cash,year,month,stream"),
+      db.from("hand_cash_submissions").select("closing_cash,year,month,stream,office_id,offices(name)"),
       db.from("receipts").select("kind,amount,receipt_no,receipt_date").gte("receipt_date", monthStart).lte("receipt_date", today),
       db.from("expenses").select("amount,stream,expense_date").is("deleted_at", null).gte("expense_date", monthStart).lte("expense_date", today),
       db.from("payments").select("amount,receipt_no,kind,status,created_at").eq("kind", "irrigation").eq("status", "approved").is("deleted_at", null).gte("created_at", monthStart),
