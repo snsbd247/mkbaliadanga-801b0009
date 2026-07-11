@@ -25,10 +25,8 @@ beforeEach(() => {
 });
 
 function rowFor(html: string, label: string): string {
-  // Match <td>label</td> [<td>:</td>] <td>value</td>. The irrigation layout has
-  // an optional colon cell between label and value, so skip one middle cell.
-  const esc = label.replace(/[.*+?^${}()|[\\]\\\\]/g, "\\$&");
-  const re = new RegExp(`<td[^>]*>${esc}</td>(?:\\s*<td[^>]*>[^<]*</td>)?\\s*<td[^>]*>([\\s\\S]*?)</td>`);
+  // Match <tr>... <td>label</td><td>value</td> ...</tr>
+  const re = new RegExp(`<tr>[\\s\\S]*?<td[^>]*>${label.replace(/[.*+?^${}()|[\\]\\\\]/g, "\\$&")}</td>[\\s\\S]*?<td[^>]*>([\\s\\S]*?)</td>[\\s\\S]*?</tr>`);
   const m = html.match(re);
   return m ? m[1] : "";
 }
