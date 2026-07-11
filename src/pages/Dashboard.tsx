@@ -233,7 +233,58 @@ export default function Dashboard() {
     if (savSubmitted) {
       reconEntries.push({ label: lang === "bn" ? "সঞ্চয় হ্যান্ড ক্যাশ (মাস শেষ)" : "Savings Hand Cash (Month-end)", dashboard: savMonthComputed, source: Number((savSubmitted as any).closing_cash || 0) });
     }
-    setRecon(reconEntries.length ? reconcileBalances(reconEntries) : null);
+    const reconResult = reconEntries.length ? reconcileBalances(reconEntries) : null;
+    setRecon(reconResult);
+
+    // Office-wise reconciliation details (current month submissions per office).
+    const officeRows = subsRows
+      .filter((s: any) => s.year === curYear && s.month === curMonth && (!officeId || s.office_id === officeId))
+      .map((s: any) => ({
+        office: (s as any).offices?.name || (lang === "bn" ? "অজানা অফিস" : "Unknown office"),
+        stream: streamOf(s) === "irrigation" ? (lang === "bn" ? "সেচ" : "Irrigation") : (lang === "bn" ? "সঞ্চয়" : "Savings"),
+        submitted: Number(s.closing_cash || 0),
+      }));
+    setOfficeRecon(officeRows);
+
+    // Audit + toast — only fire once per (month, ok-state) to avoid noise on
+    // language toggles / re-renders.
+    if (reconResult) {
+      const irrPass = reconResult.mismatches.every((m) => !m.label.includes(lang === "bn" ? "সেচ" : "Irrigation"));
+      const savPass = reconResult.mismatches.every((m) => !m.label.includes(lang === "bn" ? "সঞ্চয়" : "Savings"));
+      const auditKey = `${curYear}-${curMonth}-${reconResult.ok ? "ok" : "fail"}-${officeId ?? "all"}`;
+      if (!auditedRef.current.has(auditKey)) {
+        auditedRef.current.add(auditKey);
+        const { data: authData } = await db.auth.getUser();
+        const uid = authData?.user?.id ?? null;
+        const streamsAudit = [
+          { stream: "irrigation", passed: irrSubmitted ? irrPass : null },
+          { stream: "savings", passed: savSubmitted ? savPass : null },
+        ].filter((s) => s.passed !== null);
+        if (streamsAudit.length) {
+          await db.from("system_audit_logs").insert(
+            streamsAudit.map((s) => ({
+              user_id: uid,
+              office_id: officeId ?? null,
+              module: "reconciliation",
+              action_type: s.passed ? "reconcile_pass" : "reconcile_fail",
+              new_data: { year: curYear, month: curMonth, stream: s.stream, passed: s.passed },
+            })) as any,
+          );
+        }
+        if (!reconResult.ok) {
+          toast.error(
+            lang === "bn" ? "ব্যালেন্স অমিল পাওয়া গেছে" : "Balance mismatch detected",
+            {
+              description: lang === "bn" ? "বিস্তারিত দেখতে ক্লিক করুন।" : "Click to view mismatch details.",
+              action: {
+                label: lang === "bn" ? "বিস্তারিত" : "Details",
+                onClick: () => document.getElementById("recon-details")?.scrollIntoView({ behavior: "smooth" }),
+              },
+            },
+          );
+        }
+      }
+    }
 
 
     const farmersList = votersOnly ? farmersData.filter((f: any) => f.is_voter) : farmersData;
