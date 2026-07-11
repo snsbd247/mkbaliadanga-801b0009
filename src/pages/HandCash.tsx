@@ -41,16 +41,21 @@ export default function HandCash() {
   const mTo = `${year}-${String(month).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`;
 
   useEffect(() => { document.title = `${tx("Hand Cash", "হ্যান্ড ক্যাশ")} — MK Baliadanga`; }, [lang]);
-  useEffect(() => { load(); /* eslint-disable-next-line */ }, [year, month]);
+  useEffect(() => { load(); /* eslint-disable-next-line */ }, [year, month, stream]);
+
+  // A receipt/expense belongs to সেচ when its kind/stream is "irrigation",
+  // otherwise it belongs to the সঞ্চয়/লোন side.
+  const isSech = (k: unknown) => String(k ?? "").toLowerCase() === "irrigation";
+  const matchesStream = (v: unknown) => (stream === "irrigation" ? isSech(v) : !isSech(v));
 
   async function load() {
     const [rec, exp, sub] = await Promise.all([
       sb.from("receipts").select("receipt_date,amount,receipt_no,kind").gte("receipt_date", mFrom).lte("receipt_date", mTo).limit(20000),
       sb.from("expenses").select("expense_date,amount,stream").is("deleted_at", null).gte("expense_date", mFrom).lte("expense_date", mTo).limit(20000),
-      sb.from("hand_cash_submissions").select("*").eq("year", year).eq("month", month).is("office_id", officeId ?? null).maybeSingle(),
+      sb.from("hand_cash_submissions").select("*").eq("year", year).eq("month", month).eq("stream", stream).is("office_id", officeId ?? null).maybeSingle(),
     ]);
-    setReceipts(rec.data ?? []);
-    setExpenses(exp.data ?? []);
+    setReceipts((rec.data ?? []).filter((r: any) => matchesStream(r.kind)));
+    setExpenses((exp.data ?? []).filter((e: any) => matchesStream(e.stream)));
     setSubmission(sub.data ?? null);
     if (sub.data) {
       setOpeningBalance(Number(sub.data.opening_cash || 0));
@@ -58,7 +63,7 @@ export default function HandCash() {
       // Auto-carry: opening = previous month's submitted closing, fallback 0.
       const pm = month === 1 ? 12 : month - 1;
       const py = month === 1 ? year - 1 : year;
-      const { data: prev } = await sb.from("hand_cash_submissions").select("closing_cash").eq("year", py).eq("month", pm).is("office_id", officeId ?? null).maybeSingle();
+      const { data: prev } = await sb.from("hand_cash_submissions").select("closing_cash").eq("year", py).eq("month", pm).eq("stream", stream).is("office_id", officeId ?? null).maybeSingle();
       setOpeningBalance(prev ? Number(prev.closing_cash || 0) : 0);
     }
   }
