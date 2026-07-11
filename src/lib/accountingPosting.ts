@@ -378,8 +378,9 @@ export async function postBankExternal(opts: {
   ]);
   if (!bank || !other) return "skipped";
   const label = opts.bankLabel ? ` — ${opts.bankLabel}` : "";
-  await createJournal({
-    reference: bankExternalRef(opts.bankTxnId),
+  const ref = bankExternalRef(opts.bankTxnId);
+  const jid = await createJournal({
+    reference: ref,
     description: `${isDeposit ? "সরাসরি ব্যাংক জমা" : "সরাসরি ব্যাংক উত্তোলন"}${label}`,
     officeId: opts.officeId,
     createdBy: opts.createdBy,
@@ -393,6 +394,11 @@ export async function postBankExternal(opts: {
           { account_id: other, debit: amount, credit: 0, description: "ব্যাংক/অন্যান্য খরচ", position: 1 },
           { account_id: bank, debit: 0, credit: amount, description: "ব্যাংক থেকে উত্তোলন", position: 2 },
         ],
+  });
+  await auditJournalPosting({
+    action: isDeposit ? "bank_deposit_external" : "bank_withdraw_external",
+    reference: ref, journalId: jid, officeId: opts.officeId,
+    detail: { amount, direction: opts.direction, source: "external", bank_txn_id: opts.bankTxnId },
   });
   return "posted";
 }
