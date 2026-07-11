@@ -481,6 +481,12 @@ export async function postDayClose(opts: {
       expensePosted++;
     }
 
+    // Audit the day-close run with actor, timestamp and posting summary.
+    await auditJournalPosting({
+      action: "day_close", reference: `DAYCLOSE-${date}`, journalId: null, officeId: opts.officeId,
+      detail: { date, incomePosted, expensePosted, skipped },
+    });
+
     return { ok: true, incomePosted, expensePosted, skipped };
   } catch (e: any) {
     return { ok: false, incomePosted, expensePosted, skipped, message: e?.message ?? "ডে-ক্লোজ ব্যর্থ" };
