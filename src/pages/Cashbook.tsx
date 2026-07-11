@@ -574,6 +574,19 @@ function StreamCashbook(props: {
 
   const streamReceipts = useMemo(() => receipts.filter(x => STREAM_INCOME_KINDS[stream].has(x.kind)), [receipts, stream]);
   const streamExpenses = useMemo(() => expenses.filter(x => x.stream === stream), [expenses, stream]);
+  // Office income entries (office_incomes) feed the income side too. Their stream
+  // is stored as "sech"/"saving" — map it to the cashbook "irrigation"/"savings".
+  const streamIncomes = useMemo(() => {
+    const mapStream = (s: string) => (s === "sech" || s === "irrigation") ? "irrigation" : "savings";
+    return incomes.filter(x => mapStream(String(x.stream ?? "")) === stream);
+  }, [incomes, stream]);
+  const officeIncomeRows = useMemo(() =>
+    streamIncomes.map(x => ({
+      date: x.received_on, kind: "income", ref: x.receipt_no || "—",
+      label: tx("Office income", "অফিস আয়"),
+      desc: [x.income_type, x.payer_name, x.note].filter(Boolean).join(" · "),
+      amount: Number(x.amount), raw: x,
+    })), [streamIncomes, tx]);
 
   // Income rows — either one row per receipt, or one consolidated row per kind
   // (cash-book style) with description "রশিদ নং X – Y (n টি)".
