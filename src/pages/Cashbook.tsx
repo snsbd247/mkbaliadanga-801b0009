@@ -565,7 +565,7 @@ function StreamCashbook(props: {
   stream: Stream; label: string; month: string; mFrom: string; mTo: string;
   receipts: any[]; expenses: any[]; incomes?: any[]; opening: number; setOpening: (n: number) => void;
   locked: boolean; canSubmit: boolean; isSuper: boolean; brand: any;
-  onSubmit: () => void; onEdit: (x: any) => void; onDelete: (x: any) => void; onScan: (p: string) => void;
+  onSubmit: () => void; onEdit: (x: any) => void; onDelete: (x: any) => void; onScan: (p: string, mime?: string) => void;
   submissions: any[]; onUnlock: (id: string) => void;
 }) {
   const { t, tx } = useLang();
