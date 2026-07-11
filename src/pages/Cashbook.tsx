@@ -744,6 +744,28 @@ function StreamCashbook(props: {
         </TableBody>
       </Table></Card>
 
+      {entries.length > 0 && (
+        <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
+          <div className="flex items-center gap-2">
+            <span className="text-muted-foreground">{tx("Rows per page", "প্রতি পেজে")}</span>
+            <Select value={String(pageSize)} onValueChange={(v) => setPageSize(Number(v))}>
+              <SelectTrigger className="w-24 h-8"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {[100, 200, 500, 1000].map(n => <SelectItem key={n} value={String(n)}>{n}</SelectItem>)}
+              </SelectContent>
+            </Select>
+            <span className="text-muted-foreground">
+              {tx("Total", "মোট")} {entries.length} • {tx("Page", "পেজ")} {safePage + 1}/{pageCount}
+            </span>
+          </div>
+          <div className="flex gap-2">
+            <Button size="sm" variant="outline" disabled={safePage <= 0} onClick={() => setPage(safePage - 1)}>{tx("Previous", "পূর্ববর্তী")}</Button>
+            <Button size="sm" variant="outline" disabled={safePage >= pageCount - 1} onClick={() => setPage(safePage + 1)}>{tx("Next", "পরবর্তী")}</Button>
+          </div>
+        </div>
+      )}
+
+
       {byHead.length > 0 && (
         <Card className="p-4">
           <h4 className="font-semibold mb-2">{tx("Expense by head", "খাত-ভিত্তিক ব্যয়")}</h4>
