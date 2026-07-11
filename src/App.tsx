@@ -79,6 +79,7 @@ import SmsLogs from "./pages/SmsLogs";
 import SmsTemplates from "./pages/SmsTemplates";
 import Locations from "./pages/Locations";
 import LedgerReconciliation from "./pages/LedgerReconciliation";
+import DayReconciliation from "./pages/DayReconciliation";
 import ShareCapitalReconciliation from "./pages/ShareCapitalReconciliation";
 import QrRotation from "./pages/QrRotation";
 import BulkCards from "./pages/BulkCards";
@@ -378,6 +379,7 @@ const App = () => (
                 <Route path="/sms-templates" element={<RequireRole roles={["super_admin"]}><SmsTemplates /></RequireRole>} />
                 <Route path="/locations" element={<RequirePerm module="locations"><Locations /></RequirePerm>} />
                 <Route path="/admin/reconciliation" element={<RequirePerm module="accounting"><LedgerReconciliation /></RequirePerm>} />
+                <Route path="/admin/day-reconciliation" element={<RequirePerm module="accounting"><DayReconciliation /></RequirePerm>} />
                 <Route path="/admin/share-capital-reconciliation" element={<RequirePerm module="accounting"><ShareCapitalReconciliation /></RequirePerm>} />
                 <Route path="/admin/qr-rotation" element={<RequireRole roles={["super_admin"]}><QrRotation /></RequireRole>} />
                 <Route path="/admin/bulk-cards" element={<RequirePerm module="farmers"><BulkCards /></RequirePerm>} />

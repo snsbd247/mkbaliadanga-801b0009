@@ -122,12 +122,12 @@ async function createJournal(opts: {
   createdBy?: string | null;
   entryDate?: string | null;
   lines: Line[];
-}): Promise<void> {
+}): Promise<string | null> {
   // Guard: lines must balance and be non-trivial.
   const bal = checkBalanced(opts.lines);
   if (!bal.balanced) {
     lastImbalance = { ...bal, reference: opts.reference ?? null, description: opts.description ?? null };
-    return;
+    return null;
   }
   try {
     // Insert the journal UNPOSTED first. The ledger-posting trigger
@@ -146,19 +146,47 @@ async function createJournal(opts: {
       })
       .select("id")
       .single();
-    if (error || !je) return;
+    if (error || !je) return null;
     const journalId = (je as any).id;
     const { error: lineErr } = await db
       .from("journal_entry_lines")
       .insert(opts.lines.map((l) => ({ ...l, journal_id: journalId })));
-    if (lineErr) return;
+    if (lineErr) return null;
     // Flip to posted → trigger writes the ledger entries.
     await db
       .from("journal_entries")
       .update({ posted: true, posted_at: new Date().toISOString() })
       .eq("id", journalId);
+    return journalId ?? null;
   } catch {
     /* posting failure must not break the caller */
+    return null;
+  }
+}
+
+/**
+ * Audit trail for bank / day-close journal postings. Records actor, timestamp
+ * (server default), the journal reference and id so postings are traceable.
+ * Best-effort — never throws into the posting flow.
+ */
+async function auditJournalPosting(opts: {
+  action: string;
+  reference: string | null;
+  journalId: string | null;
+  officeId?: string | null;
+  detail?: Record<string, unknown>;
+}): Promise<void> {
+  try {
+    const { logAudit } = await import("@/lib/audit");
+    await logAudit({
+      office_id: opts.officeId ?? null,
+      module: "other",
+      action_type: opts.action,
+      reference_id: opts.journalId ?? opts.reference,
+      new_data: { reference: opts.reference, journal_id: opts.journalId, ...(opts.detail ?? {}) },
+    });
+  } catch {
+    /* ignore audit failures */
   }
 }
 
@@ -298,8 +326,9 @@ export async function postBankCashTransfer(opts: {
   if (!cash || !bank) return "skipped";
   const label = opts.bankLabel ? ` — ${opts.bankLabel}` : "";
   const isDeposit = opts.direction === "deposit";
-  await createJournal({
-    reference: bankCashTransferRef(opts.bankTxnId),
+  const ref = bankCashTransferRef(opts.bankTxnId);
+  const jid = await createJournal({
+    reference: ref,
     description: `${isDeposit ? "নগদ ব্যাংকে জমা" : "ব্যাংক থেকে নগদ উত্তোলন"}${label}`,
     officeId: opts.officeId,
     createdBy: opts.createdBy,
@@ -313,6 +342,11 @@ export async function postBankCashTransfer(opts: {
           { account_id: cash, debit: amount, credit: 0, description: "নগদ বৃদ্ধি", position: 1 },
           { account_id: bank, debit: 0, credit: amount, description: "ব্যাংক থেকে উত্তোলন", position: 2 },
         ],
+  });
+  await auditJournalPosting({
+    action: isDeposit ? "bank_deposit_cash" : "bank_withdraw_cash",
+    reference: ref, journalId: jid, officeId: opts.officeId,
+    detail: { amount, direction: opts.direction, source: "cash", bank_txn_id: opts.bankTxnId },
   });
   return "posted";
 }
@@ -344,8 +378,9 @@ export async function postBankExternal(opts: {
   ]);
   if (!bank || !other) return "skipped";
   const label = opts.bankLabel ? ` — ${opts.bankLabel}` : "";
-  await createJournal({
-    reference: bankExternalRef(opts.bankTxnId),
+  const ref = bankExternalRef(opts.bankTxnId);
+  const jid = await createJournal({
+    reference: ref,
     description: `${isDeposit ? "সরাসরি ব্যাংক জমা" : "সরাসরি ব্যাংক উত্তোলন"}${label}`,
     officeId: opts.officeId,
     createdBy: opts.createdBy,
@@ -359,6 +394,11 @@ export async function postBankExternal(opts: {
           { account_id: other, debit: amount, credit: 0, description: "ব্যাংক/অন্যান্য খরচ", position: 1 },
           { account_id: bank, debit: 0, credit: amount, description: "ব্যাংক থেকে উত্তোলন", position: 2 },
         ],
+  });
+  await auditJournalPosting({
+    action: isDeposit ? "bank_deposit_external" : "bank_withdraw_external",
+    reference: ref, journalId: jid, officeId: opts.officeId,
+    detail: { amount, direction: opts.direction, source: "external", bank_txn_id: opts.bankTxnId },
   });
   return "posted";
 }
@@ -440,6 +480,12 @@ export async function postDayClose(opts: {
       });
       expensePosted++;
     }
+
+    // Audit the day-close run with actor, timestamp and posting summary.
+    await auditJournalPosting({
+      action: "day_close", reference: `DAYCLOSE-${date}`, journalId: null, officeId: opts.officeId,
+      detail: { date, incomePosted, expensePosted, skipped },
+    });
 
     return { ok: true, incomePosted, expensePosted, skipped };
   } catch (e: any) {
