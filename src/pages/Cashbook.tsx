@@ -74,9 +74,12 @@ export default function Cashbook() {
   const [farmers, setFarmers] = useState<any[]>([]);
   const [receipts, setReceipts] = useState<any[]>([]);
   const [expenses, setExpenses] = useState<any[]>([]);
+  const [incomes, setIncomes] = useState<any[]>([]);
   const [heads, setHeads] = useState<any[]>([]);
   const [bankAccounts, setBankAccounts] = useState<any[]>([]);
   const [submissions, setSubmissions] = useState<any[]>([]);
+  const [scanPreview, setScanPreview] = useState<{ url: string; isImage: boolean } | null>(null);
+
 
   const [openingCash, setOpeningCash] = useState<Record<Stream, number>>(() => ({
     irrigation: Number(localStorage.getItem("cb_open_irrigation") ?? 0),
@@ -124,7 +127,7 @@ export default function Cashbook() {
   }
 
   async function load() {
-    const [rec, exp, subs, pay] = await Promise.all([
+    const [rec, exp, subs, pay, inc] = await Promise.all([
       sb.from("receipts").select("*, farmers(name_en,farmer_code,member_no)").gte("receipt_date", mFrom).lte("receipt_date", mTo).order("receipt_date", { ascending: false }).limit(20000),
       sb.from("expenses").select("*").is("deleted_at", null).gte("expense_date", mFrom).lte("expense_date", mTo).order("expense_date", { ascending: false }).limit(20000),
       sb.from("cashbook_submissions").select("*").order("year", { ascending: false }).order("month", { ascending: false }).limit(48),
@@ -134,6 +137,7 @@ export default function Cashbook() {
         .gte("created_at", `${mFrom} 00:00:00`)
         .lte("created_at", `${mTo} 23:59:59`)
         .order("created_at", { ascending: false }).limit(20000),
+      sb.from("office_incomes").select("*").gte("received_on", mFrom).lte("received_on", mTo).order("received_on", { ascending: false }).limit(20000),
     ]);
     const realReceipts = rec.data ?? [];
     const existingNos = new Set(realReceipts.map((r: any) => String(r.receipt_no ?? "")).filter(Boolean));
@@ -152,7 +156,7 @@ export default function Cashbook() {
         farmers: p.farmers,
         _from_payment: true,
       }));
-    setReceipts([...realReceipts, ...paymentFallbackReceipts]); setExpenses(exp.data ?? []); setSubmissions(subs.data ?? []);
+    setReceipts([...realReceipts, ...paymentFallbackReceipts]); setExpenses(exp.data ?? []); setSubmissions(subs.data ?? []); setIncomes(inc.data ?? []);
   }
 
   function isLocked(stream: Stream) {
@@ -240,10 +244,12 @@ export default function Cashbook() {
     toast.success(t("saved")); load();
   }
 
-  async function downloadScan(path: string) {
+  async function downloadScan(path: string, mime?: string) {
     const { data, error } = await sb.storage.from("vouchers").createSignedUrl(path, 300);
     if (error) return toast.error(error.message);
-    window.open(data.signedUrl, "_blank");
+    const isImage = mime ? mime.startsWith("image/") : /\.(png|jpe?g|gif|webp|bmp)$/i.test(path);
+    if (isImage) setScanPreview({ url: data.signedUrl, isImage: true });
+    else window.open(data.signedUrl, "_blank");
   }
 
   // ---------- Monthly final submit per stream ----------
@@ -501,7 +507,7 @@ export default function Cashbook() {
           <StreamCashbook
             stream="irrigation" label={tx("Irrigation cash", "সেচ ক্যাশ")}
             month={monthLabel} mFrom={mFrom} mTo={mTo}
-            receipts={receipts} expenses={expenses} opening={openingCash.irrigation}
+            receipts={receipts} expenses={expenses} incomes={incomes} opening={openingCash.irrigation}
             setOpening={(n) => setOpening("irrigation", n)} locked={isLocked("irrigation")}
             canSubmit={isCommittee} isSuper={isSuper} brand={brand}
             onSubmit={() => submitStream("irrigation")}
@@ -514,7 +520,7 @@ export default function Cashbook() {
           <StreamCashbook
             stream="savings" label={tx("Savings cash", "সেভিং ক্যাশ")}
             month={monthLabel} mFrom={mFrom} mTo={mTo}
-            receipts={receipts} expenses={expenses} opening={openingCash.savings}
+            receipts={receipts} expenses={expenses} incomes={incomes} opening={openingCash.savings}
             setOpening={(n) => setOpening("savings", n)} locked={isLocked("savings")}
             canSubmit={isCommittee} isSuper={isSuper} brand={brand}
             onSubmit={() => submitStream("savings")}
@@ -550,20 +556,33 @@ export default function Cashbook() {
           <ExpenseHeadsManager heads={heads} canManage={isAdmin || isCommittee} officeId={officeId} reload={loadHeads} />
         </TabsContent>
       </Tabs>
+
+      <Dialog open={!!scanPreview} onOpenChange={(o) => { if (!o) setScanPreview(null); }}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader><DialogTitle>{tx("Voucher attachment", "ভাউচার সংযুক্তি")}</DialogTitle></DialogHeader>
+          {scanPreview?.isImage
+            ? <img src={scanPreview.url} alt={tx("Voucher", "ভাউচার")} className="max-h-[70vh] w-auto mx-auto rounded" />
+            : <div className="py-4 text-center text-muted-foreground">{tx("Preview not available", "প্রিভিউ পাওয়া যায়নি")}</div>}
+          <DialogFooter>
+            {scanPreview && <Button variant="outline" onClick={() => window.open(scanPreview.url, "_blank")}>{tx("Open in new tab", "নতুন ট্যাবে খুলুন")}</Button>}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
+
   );
 }
 
 // ====================== Stream cashbook view ======================
 function StreamCashbook(props: {
   stream: Stream; label: string; month: string; mFrom: string; mTo: string;
-  receipts: any[]; expenses: any[]; opening: number; setOpening: (n: number) => void;
+  receipts: any[]; expenses: any[]; incomes?: any[]; opening: number; setOpening: (n: number) => void;
   locked: boolean; canSubmit: boolean; isSuper: boolean; brand: any;
-  onSubmit: () => void; onEdit: (x: any) => void; onDelete: (x: any) => void; onScan: (p: string) => void;
+  onSubmit: () => void; onEdit: (x: any) => void; onDelete: (x: any) => void; onScan: (p: string, mime?: string) => void;
   submissions: any[]; onUnlock: (id: string) => void;
 }) {
   const { t, tx } = useLang();
-  const { stream, label, month, mFrom, mTo, receipts, expenses, opening, setOpening, locked, canSubmit, isSuper, onSubmit, onEdit, onDelete, onScan, submissions, onUnlock } = props;
+  const { stream, label, month, mFrom, mTo, receipts, expenses, incomes = [], opening, setOpening, locked, canSubmit, isSuper, onSubmit, onEdit, onDelete, onScan, submissions, onUnlock } = props;
 
   const [consolidated, setConsolidated] = useState(true);
   const [previewOpen, setPreviewOpen] = useState(false);
@@ -572,6 +591,19 @@ function StreamCashbook(props: {
 
   const streamReceipts = useMemo(() => receipts.filter(x => STREAM_INCOME_KINDS[stream].has(x.kind)), [receipts, stream]);
   const streamExpenses = useMemo(() => expenses.filter(x => x.stream === stream), [expenses, stream]);
+  // Office income entries (office_incomes) feed the income side too. Their stream
+  // is stored as "sech"/"saving" — map it to the cashbook "irrigation"/"savings".
+  const streamIncomes = useMemo(() => {
+    const mapStream = (s: string) => (s === "sech" || s === "irrigation") ? "irrigation" : "savings";
+    return incomes.filter(x => mapStream(String(x.stream ?? "")) === stream);
+  }, [incomes, stream]);
+  const officeIncomeRows = useMemo(() =>
+    streamIncomes.map(x => ({
+      date: x.received_on, kind: "income", ref: x.receipt_no || "—",
+      label: tx("Office income", "অফিস আয়"),
+      desc: [x.income_type, x.payer_name, x.note].filter(Boolean).join(" · "),
+      amount: Number(x.amount), raw: x,
+    })), [streamIncomes, tx]);
 
   // Income rows — either one row per receipt, or one consolidated row per kind
   // (cash-book style) with description "রশিদ নং X – Y (n টি)".
@@ -598,11 +630,12 @@ function StreamCashbook(props: {
   const entries = useMemo(() => {
     const rows: any[] = [
       ...incomeRows,
+      ...officeIncomeRows,
       ...streamExpenses.map(x => ({ date: x.expense_date, kind: "expense", ref: x.voucher_no || "—", label: x.head, desc: x.payee || x.note || "", amount: Number(x.amount), raw: x })),
     ].sort((a, b) => a.date.localeCompare(b.date));
     let bal = Number(opening || 0);
     return rows.map(row => { bal += row.kind === "income" ? row.amount : -row.amount; return { ...row, balance: bal }; });
-  }, [incomeRows, streamExpenses, opening]);
+  }, [incomeRows, officeIncomeRows, streamExpenses, opening]);
 
   // Pagination — keep running balance intact but show a page at a time.
   const pageCount = Math.max(1, Math.ceil(entries.length / pageSize));
@@ -613,7 +646,7 @@ function StreamCashbook(props: {
     [entries, safePage, pageSize],
   );
 
-  const totalIncome = streamReceipts.reduce((s, x) => s + Number(x.amount), 0);
+  const totalIncome = streamReceipts.reduce((s, x) => s + Number(x.amount), 0) + streamIncomes.reduce((s, x) => s + Number(x.amount), 0);
   const totalExpense = streamExpenses.reduce((s, x) => s + Number(x.amount), 0);
   const closing = Number(opening || 0) + totalIncome - totalExpense;
 
@@ -725,7 +758,7 @@ function StreamCashbook(props: {
               <TableCell className="text-right">
                 {row.kind === "expense" && (
                   <div className="flex justify-end gap-1">
-                    {row.raw?.attachment_path && <Button size="icon" variant="ghost" title={tx("Scan", "স্ক্যান")} onClick={() => onScan(row.raw.attachment_path)}><Paperclip className="h-4 w-4" /></Button>}
+                    {row.raw?.attachment_path && <Button size="icon" variant="ghost" title={tx("View voucher", "ভাউচার ভিউ")} onClick={() => onScan(row.raw.attachment_path, row.raw.attachment_mime)}><Paperclip className="h-4 w-4" /></Button>}
                     {(!locked || isSuper) && <Button size="icon" variant="ghost" title={t("edit")} onClick={() => onEdit(row.raw)}><Pencil className="h-4 w-4" /></Button>}
                     {(!locked || isSuper) && <Button size="icon" variant="ghost" title={t("delete")} onClick={() => onDelete(row.raw)}><Trash2 className="h-4 w-4" /></Button>}
                   </div>

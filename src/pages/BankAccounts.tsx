@@ -18,7 +18,7 @@ import { useAuth } from "@/auth/AuthProvider";
 import { exportTablePDF, exportExcel } from "@/lib/exports";
 import { useLang } from "@/i18n/LanguageProvider";
 import { logAudit } from "@/lib/audit";
-import { postBankOpening, postBankCashTransfer } from "@/lib/accountingPosting";
+import { postBankOpening, postBankCashTransfer, postBankExternal } from "@/lib/accountingPosting";
 import { partitionOpenings, summarizeBackfill } from "@/lib/bankOpening";
 import { assertSechTransfer, isSechStream } from "@/lib/cashStreamGuard";
 
@@ -60,7 +60,7 @@ export default function BankAccounts() {
   const [deleting, setDeleting] = useState(false);
 
   const [a, setA] = useState<any>({ bank_name: "", branch: "", account_no: "", account_title: "", account_type: "savings", stream: "other", opening_balance: 0, is_active: true });
-  const [tx, setTx] = useState<any>({ bank_account_id: "", txn_type: "deposit", amount: 0, txn_date: new Date().toISOString().slice(0, 10), reference_no: "", note: "", post_cashbook: true });
+  const [tx, setTx] = useState<any>({ bank_account_id: "", txn_type: "deposit", amount: 0, txn_date: new Date().toISOString().slice(0, 10), reference_no: "", note: "", post_cashbook: true, cash_source: "cash" });
   const [xf, setXf] = useState<any>({ from_id: "", to_id: "", amount: 0, txn_date: new Date().toISOString().slice(0, 10), note: "" });
   const [sm, setSm] = useState<any>({ bank_account_id: "", direction: "deposit", amount: 0, txn_date: new Date().toISOString().slice(0, 10), note: "" });
 
@@ -255,26 +255,39 @@ export default function BankAccounts() {
     const acc = accounts.find(a => a.id === cur.bank_account_id);
     const cbStream = cashbookStreamForAccount(acc?.stream);
     if (await isCashbookLocked(cur.txn_date, cbStream)) return toast.error("এই মাসের ক্যাশবুক লক করা — ব্যাংক লেনদেন করা যাবে না");
-    const { post_cashbook, ...txnRow } = cur;
+    const { post_cashbook, cash_source, ...txnRow } = cur;
+    const isMovement = cur.txn_type === "deposit" || cur.txn_type === "withdraw";
+    // "cash" = নগদ ↔ ব্যাংক ট্রান্সফার (নগদে প্রভাব ফেলে, ক্যাশবুকে মিরর হয়)।
+    // "external" = সরাসরি ব্যাংক জমা/উত্তোলন (নগদ স্পর্শ করে না, শুধু ব্যাংক লেজার)।
+    const isCashSource = (cash_source ?? "cash") === "cash";
     // Link the bank row with its mirrored cashbook row so edits/deletes stay paired.
-    const linkId = (post_cashbook && (cur.txn_type === "deposit" || cur.txn_type === "withdraw"))
+    const linkId = (post_cashbook && isCashSource && isMovement)
       ? crypto.randomUUID() : null;
     const { data: insData, error } = await sb.from("bank_transactions").insert({ ...txnRow, created_by: user?.id, link_id: linkId }).select();
     if (error) return toast.error("লেনদেন সংরক্ষণ ব্যর্থ: " + error.message);
     const insertedTxn = Array.isArray(insData) ? insData[0] : insData;
-    void logAudit({ office_id: acc?.office_id ?? null, module: "bank_transaction", action_type: "create", reference_id: cur.bank_account_id, new_data: { ...txnRow, id: insertedTxn?.id, link_id: linkId } });
+    void logAudit({ office_id: acc?.office_id ?? null, module: "bank_transaction", action_type: "create", reference_id: cur.bank_account_id, new_data: { ...txnRow, id: insertedTxn?.id, link_id: linkId, cash_source: cash_source ?? "cash" } });
 
-    // Auto-generate a balanced Dr/Cr journal entry for the cash ↔ bank movement.
-    if (insertedTxn?.id && (cur.txn_type === "deposit" || cur.txn_type === "withdraw")) {
-      void postBankCashTransfer({
-        bankTxnId: insertedTxn.id, direction: cur.txn_type, amount: Number(cur.amount),
-        bankLabel: acc ? `${acc.bank_name} — ${acc.account_no}` : null,
-        entryDate: cur.txn_date, officeId: acc?.office_id ?? null, createdBy: user?.id,
-      });
+    // Auto-generate a balanced Dr/Cr journal entry for the movement.
+    if (insertedTxn?.id && isMovement) {
+      const bankLabelJ = acc ? `${acc.bank_name} — ${acc.account_no}` : null;
+      if (isCashSource) {
+        // নগদ ↔ ব্যাংক: Dr Bank / Cr Cash (deposit) — নগদে প্রভাব।
+        void postBankCashTransfer({
+          bankTxnId: insertedTxn.id, direction: cur.txn_type, amount: Number(cur.amount),
+          bankLabel: bankLabelJ, entryDate: cur.txn_date, officeId: acc?.office_id ?? null, createdBy: user?.id,
+        });
+      } else {
+        // সরাসরি ব্যাংক: নগদ স্পর্শ করে না, শুধু ব্যাংক লেজার।
+        void postBankExternal({
+          bankTxnId: insertedTxn.id, direction: cur.txn_type, amount: Number(cur.amount),
+          bankLabel: bankLabelJ, entryDate: cur.txn_date, officeId: acc?.office_id ?? null, createdBy: user?.id,
+        });
+      }
     }
 
-    // Auto-link to Cashbook: deposit (cash→bank) = expense; withdraw (bank→cash) = receipt.
-    // Routed to the correct cash stream based on the bank account's stream.
+    // Auto-link to Cashbook only for cash-source movements: deposit = expense (নগদ কমল),
+    // withdraw = receipt (নগদ বাড়ল). External bank movements never touch the cashbook.
     if (linkId) {
       const bankLabel = acc ? `${acc.bank_name} — ${acc.account_no}` : "Bank";
       const ref = cur.reference_no ? ` (Ref: ${cur.reference_no})` : "";
@@ -300,7 +313,7 @@ export default function BankAccounts() {
     }
 
     toast.success("Saved"); setOpenT(false); load();
-    setTx({ bank_account_id: "", txn_type: "deposit", amount: 0, txn_date: new Date().toISOString().slice(0, 10), reference_no: "", note: "", post_cashbook: true });
+    setTx({ bank_account_id: "", txn_type: "deposit", amount: 0, txn_date: new Date().toISOString().slice(0, 10), reference_no: "", note: "", post_cashbook: true, cash_source: "cash" });
   }
 
   // সেচ নগদ ↔ ব্যাংক কুইক অ্যাকশন — শুধুমাত্র সেচ-স্ট্রিমের অ্যাকাউন্ট অনুমোদিত।
@@ -314,7 +327,7 @@ export default function BankAccounts() {
       bank_account_id: sm.bank_account_id, txn_type: sm.direction, amount: Number(sm.amount),
       txn_date: sm.txn_date, reference_no: "",
       note: sm.note || (sm.direction === "deposit" ? "সেচ নগদ ব্যাংকে জমা" : "ব্যাংক থেকে সেচ নগদ উত্তোলন"),
-      post_cashbook: true,
+      post_cashbook: true, cash_source: "cash",
     });
     setSm({ bank_account_id: "", direction: "deposit", amount: 0, txn_date: new Date().toISOString().slice(0, 10), note: "" });
   }
@@ -403,10 +416,23 @@ export default function BankAccounts() {
                   <div><Label>Reference</Label><Input value={tx.reference_no} onChange={e => setTx({ ...tx, reference_no: e.target.value })} /></div>
                   <div className="col-span-2"><Label>Note</Label><Input value={tx.note} onChange={e => setTx({ ...tx, note: e.target.value })} /></div>
                   {(tx.txn_type === "deposit" || tx.txn_type === "withdraw") && (
-                    <label className="col-span-2 flex items-center gap-2 text-sm">
-                      <input type="checkbox" checked={!!tx.post_cashbook} onChange={e => setTx({ ...tx, post_cashbook: e.target.checked })} />
-                      <span>Cashbook এ {tx.txn_type === "deposit" ? "expense (Bank Deposit)" : "receipt (Bank Withdraw)"} হিসেবে যোগ করুন</span>
-                    </label>
+                    <>
+                      <div className="col-span-2"><Label>উৎস / Source</Label>
+                        <Select value={tx.cash_source ?? "cash"} onValueChange={v => setTx({ ...tx, cash_source: v, post_cashbook: v === "cash" })}>
+                          <SelectTrigger><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="cash">{tx.txn_type === "deposit" ? "নগদ থেকে ব্যাংকে জমা (নগদ কমবে)" : "ব্যাংক থেকে নগদে উত্তোলন (নগদ বাড়বে)"}</SelectItem>
+                            <SelectItem value="external">{tx.txn_type === "deposit" ? "সরাসরি ব্যাংক জমা (নগদে প্রভাব নেই)" : "সরাসরি ব্যাংক খরচ (নগদে প্রভাব নেই)"}</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      {(tx.cash_source ?? "cash") === "cash" && (
+                        <label className="col-span-2 flex items-center gap-2 text-sm">
+                          <input type="checkbox" checked={!!tx.post_cashbook} onChange={e => setTx({ ...tx, post_cashbook: e.target.checked })} />
+                          <span>Cashbook এ {tx.txn_type === "deposit" ? "expense (Bank Deposit)" : "receipt (Bank Withdraw)"} হিসেবে যোগ করুন</span>
+                        </label>
+                      )}
+                    </>
                   )}
                 </div>
                 <DialogFooter><Button variant="outline" onClick={() => setOpenT(false)}>Cancel</Button><Button onClick={saveTxn}>Save</Button></DialogFooter>

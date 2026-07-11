@@ -21,6 +21,7 @@ import { useAuth } from "@/auth/AuthProvider";
 import { exportTablePDF } from "@/lib/exports";
 import { getFiscalStartMonth, listFiscalYears, monthRange, quarterRange } from "@/lib/accounting";
 import { useLang } from "@/i18n/LanguageProvider";
+import { postDayClose, type DayCloseResult } from "@/lib/accountingPosting";
 
 type Period = {
   id: string;
@@ -195,6 +196,10 @@ export default function PeriodClose() {
         </CardContent>
       </Card>
 
+      <DayCloseCard officeId={officeId === NONE ? null : officeId} />
+
+
+
       <Card>
         <CardHeader><CardTitle className="text-lg">{t("closedPeriods")}</CardTitle></CardHeader>
         <CardContent>
@@ -330,3 +335,47 @@ function exportSnapshotPDF(p: Period) {
     { from: p.period_start, to: p.period_end },
   );
 }
+
+function DayCloseCard({ officeId }: { officeId: string | null }) {
+  const { t } = useLang();
+  const { user } = useAuth();
+  const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
+  const [busy, setBusy] = useState(false);
+  const [result, setResult] = useState<DayCloseResult | null>(null);
+
+  async function run() {
+    setBusy(true); setResult(null);
+    try {
+      const res = await postDayClose({ date, officeId, createdBy: user?.id });
+      setResult(res);
+      if (res.ok) toast.success(`ডে-ক্লোজ সম্পন্ন — আয় ${res.incomePosted}, খরচ ${res.expensePosted} লেজারে পোস্ট (${res.skipped} বাদ)`);
+      else toast.error(res.message ?? "ডে-ক্লোজ ব্যর্থ");
+    } finally { setBusy(false); }
+  }
+
+  return (
+    <Card>
+      <CardHeader><CardTitle className="text-lg">ডে-ক্লোজ (দিনের আয়/খরচ লেজারে পোস্ট)</CardTitle></CardHeader>
+      <CardContent className="space-y-3">
+        <p className="text-sm text-muted-foreground">
+          নির্বাচিত তারিখের সব অফিস আয় ও খরচ balanced জার্নাল হিসেবে লেজারে পোস্ট হবে। ব্যাংক লেনদেন তৈরির সময়ই লেজারে যায়। ইতিমধ্যে পোস্ট হওয়া এন্ট্রি আবার পোস্ট হবে না।
+        </p>
+        <div className="flex flex-wrap items-end gap-3">
+          <div>
+            <Label>{t("date") || "তারিখ"}</Label>
+            <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+          </div>
+          <Button onClick={run} disabled={busy}>
+            <Lock className="mr-1 h-4 w-4" /> {busy ? "পোস্ট হচ্ছে…" : "ডে-ক্লোজ চালান"}
+          </Button>
+        </div>
+        {result && result.ok && (
+          <div className="text-sm">
+            আয় পোস্ট: <b>{result.incomePosted}</b> · খরচ পোস্ট: <b>{result.expensePosted}</b> · বাদ: <b>{result.skipped}</b>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+

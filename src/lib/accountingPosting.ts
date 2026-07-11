@@ -16,6 +16,10 @@ const ACC = {
   irrigationIncome: { code: "4010", name: "Irrigation Income", name_bn: "সেচ আয়", type: "income" },
   discountExpense: { code: "5050", name: "Discount Expense", name_bn: "ডিসকাউন্ট খরচ", type: "expense" },
   openingEquity: { code: "3000", name: "Opening Balance Equity", name_bn: "প্রারম্ভিক জের (মূলধন)", type: "equity" },
+  bankOtherIncome: { code: "4090", name: "Bank/Other Income", name_bn: "ব্যাংক/অন্যান্য আয়", type: "income" },
+  bankOtherExpense: { code: "5090", name: "Bank/Other Expense", name_bn: "ব্যাংক/অন্যান্য খরচ", type: "expense" },
+  officeIncome: { code: "4080", name: "Office Income", name_bn: "অফিস আয়", type: "income" },
+  generalExpense: { code: "5080", name: "General Expense", name_bn: "সাধারণ খরচ", type: "expense" },
 } as const;
 
 const cache = new Map<string, string>();
@@ -311,4 +315,134 @@ export async function postBankCashTransfer(opts: {
         ],
   });
   return "posted";
+}
+
+/** Stable journal reference for an external (non-cash) bank deposit/withdraw. */
+export const bankExternalRef = (bankTxnId: string) => `BANK-EXT-${bankTxnId}`;
+
+/**
+ * সরাসরি ব্যাংক (নগদ ব্যতীত) জমা/উত্তোলনের জার্নাল পোস্ট করে — নগদ স্পর্শ করে না:
+ *   deposit  (বাইরে থেকে ব্যাংকে): Dr Bank(1020)        / Cr Bank/Other Income(4090)
+ *   withdraw (ব্যাংক থেকে বাইরে):  Dr Bank/Other Exp(5090) / Cr Bank(1020)
+ * শুধু ব্যাংক লেজারে হিট করে; সেচ/সমিতি নগদে কোনো প্রভাব নেই। Best-effort।
+ */
+export async function postBankExternal(opts: {
+  bankTxnId: string;
+  direction: "deposit" | "withdraw";
+  amount: number;
+  bankLabel?: string | null;
+  entryDate?: string | null;
+  officeId?: string | null;
+  createdBy?: string | null;
+}): Promise<"posted" | "skipped"> {
+  const amount = Math.round(Number(opts.amount) || 0);
+  if (amount <= 0) return "skipped";
+  const isDeposit = opts.direction === "deposit";
+  const [bank, other] = await Promise.all([
+    accountId(ACC.bank),
+    accountId(isDeposit ? ACC.bankOtherIncome : ACC.bankOtherExpense),
+  ]);
+  if (!bank || !other) return "skipped";
+  const label = opts.bankLabel ? ` — ${opts.bankLabel}` : "";
+  await createJournal({
+    reference: bankExternalRef(opts.bankTxnId),
+    description: `${isDeposit ? "সরাসরি ব্যাংক জমা" : "সরাসরি ব্যাংক উত্তোলন"}${label}`,
+    officeId: opts.officeId,
+    createdBy: opts.createdBy,
+    entryDate: opts.entryDate ?? null,
+    lines: isDeposit
+      ? [
+          { account_id: bank, debit: amount, credit: 0, description: "ব্যাংকে জমা", position: 1 },
+          { account_id: other, debit: 0, credit: amount, description: "ব্যাংক/অন্যান্য আয়", position: 2 },
+        ]
+      : [
+          { account_id: other, debit: amount, credit: 0, description: "ব্যাংক/অন্যান্য খরচ", position: 1 },
+          { account_id: bank, debit: 0, credit: amount, description: "ব্যাংক থেকে উত্তোলন", position: 2 },
+        ],
+  });
+  return "posted";
+}
+
+/** Idempotency: does a posted/unposted journal with this reference already exist? */
+async function journalExists(reference: string): Promise<boolean> {
+  try {
+    const { data } = await db.from("journal_entries").select("id").eq("reference", reference).maybeSingle();
+    return !!(data as any)?.id;
+  } catch {
+    return false;
+  }
+}
+
+export interface DayCloseResult {
+  ok: boolean;
+  incomePosted: number;
+  expensePosted: number;
+  skipped: number;
+  message?: string;
+}
+
+/**
+ * ডে-ক্লোজ: নির্বাচিত তারিখের সব আয় (office_incomes) ও খরচ (expenses) balanced
+ * জার্নাল হিসেবে লেজারে পোস্ট করে। ব্যাংক লেনদেন তৈরির সময়ই লেজারে পোস্ট হয়ে যায়,
+ * তাই এখানে শুধু বাকি আয়/ব্যয় পোস্ট হয়। Idempotent — reference key দিয়ে ডুপ্লিকেট
+ * এড়ানো হয় (INCOME-<id>, EXPENSE-<id>)। ব্যাংক-ডিপোজিট মিরর expense বাদ যায়।
+ */
+export async function postDayClose(opts: {
+  date: string; // YYYY-MM-DD
+  officeId?: string | null;
+  createdBy?: string | null;
+}): Promise<DayCloseResult> {
+  const { date } = opts;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return { ok: false, incomePosted: 0, expensePosted: 0, skipped: 0, message: "সঠিক তারিখ দিন" };
+  let incomePosted = 0, expensePosted = 0, skipped = 0;
+
+  try {
+    const [cash, income, expense] = await Promise.all([
+      accountId(ACC.cash), accountId(ACC.officeIncome), accountId(ACC.generalExpense),
+    ]);
+    if (!cash || !income || !expense) return { ok: false, incomePosted, expensePosted, skipped, message: "আবশ্যক হিসাব পাওয়া যায়নি" };
+
+    // Office incomes for the day → Dr Cash / Cr Office Income.
+    const { data: incs } = await db.from("office_incomes").select("*").eq("received_on", date);
+    for (const r of (incs ?? []) as any[]) {
+      const amt = Math.round(Number(r.amount) || 0);
+      if (amt <= 0) { skipped++; continue; }
+      const ref = `INCOME-${r.id}`;
+      if (await journalExists(ref)) { skipped++; continue; }
+      await createJournal({
+        reference: ref,
+        description: `অফিস আয়${r.receipt_no ? ` (রসিদ: ${r.receipt_no})` : ""}`,
+        officeId: r.office_id ?? opts.officeId ?? null, createdBy: opts.createdBy, entryDate: date,
+        lines: [
+          { account_id: cash, debit: amt, credit: 0, description: "নগদ আয়", position: 1 },
+          { account_id: income, debit: 0, credit: amt, description: "অফিস আয়", position: 2 },
+        ],
+      });
+      incomePosted++;
+    }
+
+    // Expenses for the day (excluding bank-deposit mirrors, already journaled) → Dr Expense / Cr Cash.
+    const { data: exps } = await db.from("expenses").select("*").eq("expense_date", date).is("deleted_at", null);
+    for (const r of (exps ?? []) as any[]) {
+      if (r.is_bank_deposit) { skipped++; continue; }
+      const amt = Math.round(Number(r.amount) || 0);
+      if (amt <= 0) { skipped++; continue; }
+      const ref = `EXPENSE-${r.id}`;
+      if (await journalExists(ref)) { skipped++; continue; }
+      await createJournal({
+        reference: ref,
+        description: `খরচ${r.head ? ` — ${r.head}` : ""}${r.voucher_no ? ` (${r.voucher_no})` : ""}`,
+        officeId: r.office_id ?? opts.officeId ?? null, createdBy: opts.createdBy, entryDate: date,
+        lines: [
+          { account_id: expense, debit: amt, credit: 0, description: r.head || "খরচ", position: 1 },
+          { account_id: cash, debit: 0, credit: amt, description: "নগদ কমেছে", position: 2 },
+        ],
+      });
+      expensePosted++;
+    }
+
+    return { ok: true, incomePosted, expensePosted, skipped };
+  } catch (e: any) {
+    return { ok: false, incomePosted, expensePosted, skipped, message: e?.message ?? "ডে-ক্লোজ ব্যর্থ" };
+  }
 }
