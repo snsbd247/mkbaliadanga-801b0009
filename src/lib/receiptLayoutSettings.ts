@@ -241,7 +241,7 @@ export const RECEIPT_PAPER_PRESETS: ReceiptPaperPreset[] = [
     labelBn: "A5 ল্যান্ডস্কেপ (ডিফল্ট)",
     settings: {
       defaultPaperSize: "a5", defaultOrientation: "l",
-      irrigationPagePaddingPx: 48, irrigationBottomPaddingPx: 42, holdingBottomPaddingPx: 12,
+      irrigationPagePaddingPx: 28, irrigationBottomPaddingPx: 18, holdingBottomPaddingPx: 12,
     },
   },
   {
