@@ -364,6 +364,7 @@ function InvoiceListTab({ seasons, offices, isSuper }: any) {
         // farmer's current (possibly edited) land — past seasons must keep their
         // original area even after the land is later increased.
         land_size: invoiceLandSize(inv),
+        parcel_size: invoiceParcelSize(inv),
       },
       season: inv.seasons,
     };
