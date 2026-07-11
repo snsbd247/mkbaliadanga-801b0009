@@ -18,7 +18,7 @@ export type ReceiptKind = "irrigation" | "savings" | "loan";
 export const IRRIGATION_RECEIPT_PAGE = {
   paper: "a5" as const,
   orientation: "l" as const,
-  margins: { t: 6, r: 4, b: 6, l: 4 },
+  margins: { t: 4, r: 2, b: 4, l: 2 },
   /** Render width (px) for html2canvas that yields the A5-landscape aspect. */
   renderWidthPx: 1040,
   /** A5 landscape aspect ratio (210mm / 148mm) for preview containers. */
