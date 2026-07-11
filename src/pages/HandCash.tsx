@@ -30,6 +30,7 @@ export default function HandCash() {
 
   const [year, setYear] = useState(today.getFullYear());
   const [month, setMonth] = useState(today.getMonth() + 1);
+  const [stream, setStream] = useState<"irrigation" | "savings">("irrigation");
   const [openingBalance, setOpeningBalance] = useState<number>(0);
   const [receipts, setReceipts] = useState<any[]>([]);
   const [expenses, setExpenses] = useState<any[]>([]);
