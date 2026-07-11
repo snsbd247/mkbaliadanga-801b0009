@@ -13,15 +13,12 @@ import { FileDown, FileSpreadsheet, Lock, Unlock, CheckCircle2 } from "lucide-re
 import { toast } from "sonner";
 import { useAuth } from "@/auth/AuthProvider";
 import { useLang } from "@/i18n/LanguageProvider";
+import { receiptRange } from "@/lib/handCash";
 
 const sb = db as any;
 
 type DayRow = { date: string; opening: number; income: number; expense: number; closing: number; receiptFrom: string; receiptTo: string };
 
-const receiptNum = (s: unknown) => {
-  const m = String(s ?? "").match(/(\d+)/);
-  return m ? Number(m[1]) : NaN;
-};
 
 const MONTHS_BN = ["জানুয়ারি", "ফেব্রুয়ারি", "মার্চ", "এপ্রিল", "মে", "জুন", "জুলাই", "আগস্ট", "সেপ্টেম্বর", "অক্টোবর", "নভেম্বর", "ডিসেম্বর"];
 
@@ -70,16 +67,13 @@ export default function HandCash() {
   const rows: DayRow[] = useMemo(() => {
     const incomeByDay = new Map<string, number>();
     const expenseByDay = new Map<string, number>();
-    const receiptNosByDay = new Map<string, number[]>();
+    const receiptNosByDay = new Map<string, unknown[]>();
     receipts.forEach((r: any) => {
       const d = String(r.receipt_date).slice(0, 10);
       incomeByDay.set(d, (incomeByDay.get(d) ?? 0) + Number(r.amount || 0));
-      const num = receiptNum(r.receipt_no);
-      if (!Number.isNaN(num)) {
-        const arr = receiptNosByDay.get(d) ?? [];
-        arr.push(num);
-        receiptNosByDay.set(d, arr);
-      }
+      const arr = receiptNosByDay.get(d) ?? [];
+      arr.push(r.receipt_no);
+      receiptNosByDay.set(d, arr);
     });
     expenses.forEach((e: any) => {
       const d = String(e.expense_date).slice(0, 10);
@@ -92,9 +86,7 @@ export default function HandCash() {
       const income = incomeByDay.get(d) ?? 0;
       const expense = expenseByDay.get(d) ?? 0;
       const closing = opening + income - expense;
-      const nos = (receiptNosByDay.get(d) ?? []).sort((a, b) => a - b);
-      const receiptFrom = nos.length ? String(nos[0]) : "";
-      const receiptTo = nos.length ? String(nos[nos.length - 1]) : "";
+      const { from: receiptFrom, to: receiptTo } = receiptRange(receiptNosByDay.get(d) ?? []);
       out.push({ date: d, opening, income, expense, closing, receiptFrom, receiptTo });
       opening = closing;
     }
