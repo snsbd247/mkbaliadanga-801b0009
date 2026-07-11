@@ -314,3 +314,49 @@ export async function postBankCashTransfer(opts: {
   });
   return "posted";
 }
+
+/** Stable journal reference for an external (non-cash) bank deposit/withdraw. */
+export const bankExternalRef = (bankTxnId: string) => `BANK-EXT-${bankTxnId}`;
+
+/**
+ * সরাসরি ব্যাংক (নগদ ব্যতীত) জমা/উত্তোলনের জার্নাল পোস্ট করে — নগদ স্পর্শ করে না:
+ *   deposit  (বাইরে থেকে ব্যাংকে): Dr Bank(1020)        / Cr Bank/Other Income(4090)
+ *   withdraw (ব্যাংক থেকে বাইরে):  Dr Bank/Other Exp(5090) / Cr Bank(1020)
+ * শুধু ব্যাংক লেজারে হিট করে; সেচ/সমিতি নগদে কোনো প্রভাব নেই। Best-effort।
+ */
+export async function postBankExternal(opts: {
+  bankTxnId: string;
+  direction: "deposit" | "withdraw";
+  amount: number;
+  bankLabel?: string | null;
+  entryDate?: string | null;
+  officeId?: string | null;
+  createdBy?: string | null;
+}): Promise<"posted" | "skipped"> {
+  const amount = Math.round(Number(opts.amount) || 0);
+  if (amount <= 0) return "skipped";
+  const isDeposit = opts.direction === "deposit";
+  const [bank, other] = await Promise.all([
+    accountId(ACC.bank),
+    accountId(isDeposit ? ACC.bankOtherIncome : ACC.bankOtherExpense),
+  ]);
+  if (!bank || !other) return "skipped";
+  const label = opts.bankLabel ? ` — ${opts.bankLabel}` : "";
+  await createJournal({
+    reference: bankExternalRef(opts.bankTxnId),
+    description: `${isDeposit ? "সরাসরি ব্যাংক জমা" : "সরাসরি ব্যাংক উত্তোলন"}${label}`,
+    officeId: opts.officeId,
+    createdBy: opts.createdBy,
+    entryDate: opts.entryDate ?? null,
+    lines: isDeposit
+      ? [
+          { account_id: bank, debit: amount, credit: 0, description: "ব্যাংকে জমা", position: 1 },
+          { account_id: other, debit: 0, credit: amount, description: "ব্যাংক/অন্যান্য আয়", position: 2 },
+        ]
+      : [
+          { account_id: other, debit: amount, credit: 0, description: "ব্যাংক/অন্যান্য খরচ", position: 1 },
+          { account_id: bank, debit: 0, credit: amount, description: "ব্যাংক থেকে উত্তোলন", position: 2 },
+        ],
+  });
+  return "posted";
+}
