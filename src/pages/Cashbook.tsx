@@ -604,6 +604,15 @@ function StreamCashbook(props: {
     return rows.map(row => { bal += row.kind === "income" ? row.amount : -row.amount; return { ...row, balance: bal }; });
   }, [incomeRows, streamExpenses, opening]);
 
+  // Pagination — keep running balance intact but show a page at a time.
+  const pageCount = Math.max(1, Math.ceil(entries.length / pageSize));
+  const safePage = Math.min(page, pageCount - 1);
+  useEffect(() => { setPage(0); }, [month, pageSize, consolidated]);
+  const pagedEntries = useMemo(
+    () => entries.slice(safePage * pageSize, safePage * pageSize + pageSize),
+    [entries, safePage, pageSize],
+  );
+
   const totalIncome = streamReceipts.reduce((s, x) => s + Number(x.amount), 0);
   const totalExpense = streamExpenses.reduce((s, x) => s + Number(x.amount), 0);
   const closing = Number(opening || 0) + totalIncome - totalExpense;
