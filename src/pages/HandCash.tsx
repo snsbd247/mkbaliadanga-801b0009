@@ -16,7 +16,12 @@ import { useLang } from "@/i18n/LanguageProvider";
 
 const sb = db as any;
 
-type DayRow = { date: string; opening: number; income: number; expense: number; closing: number };
+type DayRow = { date: string; opening: number; income: number; expense: number; closing: number; receiptFrom: string; receiptTo: string };
+
+const receiptNum = (s: unknown) => {
+  const m = String(s ?? "").match(/(\d+)/);
+  return m ? Number(m[1]) : NaN;
+};
 
 const MONTHS_BN = ["জানুয়ারি", "ফেব্রুয়ারি", "মার্চ", "এপ্রিল", "মে", "জুন", "জুলাই", "আগস্ট", "সেপ্টেম্বর", "অক্টোবর", "নভেম্বর", "ডিসেম্বর"];
 
@@ -42,7 +47,7 @@ export default function HandCash() {
 
   async function load() {
     const [rec, exp, sub] = await Promise.all([
-      sb.from("receipts").select("receipt_date,amount").gte("receipt_date", mFrom).lte("receipt_date", mTo).limit(20000),
+      sb.from("receipts").select("receipt_date,amount,receipt_no").gte("receipt_date", mFrom).lte("receipt_date", mTo).limit(20000),
       sb.from("expenses").select("expense_date,amount").is("deleted_at", null).gte("expense_date", mFrom).lte("expense_date", mTo).limit(20000),
       sb.from("hand_cash_submissions").select("*").eq("year", year).eq("month", month).is("office_id", officeId ?? null).maybeSingle(),
     ]);
@@ -65,9 +70,16 @@ export default function HandCash() {
   const rows: DayRow[] = useMemo(() => {
     const incomeByDay = new Map<string, number>();
     const expenseByDay = new Map<string, number>();
+    const receiptNosByDay = new Map<string, number[]>();
     receipts.forEach((r: any) => {
       const d = String(r.receipt_date).slice(0, 10);
       incomeByDay.set(d, (incomeByDay.get(d) ?? 0) + Number(r.amount || 0));
+      const num = receiptNum(r.receipt_no);
+      if (!Number.isNaN(num)) {
+        const arr = receiptNosByDay.get(d) ?? [];
+        arr.push(num);
+        receiptNosByDay.set(d, arr);
+      }
     });
     expenses.forEach((e: any) => {
       const d = String(e.expense_date).slice(0, 10);
@@ -80,11 +92,15 @@ export default function HandCash() {
       const income = incomeByDay.get(d) ?? 0;
       const expense = expenseByDay.get(d) ?? 0;
       const closing = opening + income - expense;
-      out.push({ date: d, opening, income, expense, closing });
+      const nos = (receiptNosByDay.get(d) ?? []).sort((a, b) => a - b);
+      const receiptFrom = nos.length ? String(nos[0]) : "";
+      const receiptTo = nos.length ? String(nos[nos.length - 1]) : "";
+      out.push({ date: d, opening, income, expense, closing, receiptFrom, receiptTo });
       opening = closing;
     }
     return out;
   }, [receipts, expenses, openingBalance]);
+
 
   const totalIncome = rows.reduce((s, r) => s + r.income, 0);
   const totalExpense = rows.reduce((s, r) => s + r.expense, 0);
@@ -125,14 +141,16 @@ export default function HandCash() {
     load();
   }
 
+  const rangeLabel = (r: DayRow) => (r.receiptFrom ? (r.receiptFrom === r.receiptTo ? r.receiptFrom : `${r.receiptFrom}–${r.receiptTo}`) : "—");
   function exportPdf() {
-    exportTablePDF(tx("Hand Cash", "হ্যান্ড ক্যাশ"), [tx("Date", "তারিখ"), tx("Opening balance", "প্রারম্ভিক জমা"), tx("Income", "আয়"), tx("Expense", "ব্যয়"), tx("Closing", "সমাপনী")],
-      rows.map(r => [fmtDate(r.date), r.opening, r.income, r.expense, r.closing]), { from: mFrom, to: mTo });
+    exportTablePDF(tx("Hand Cash", "হ্যান্ড ক্যাশ"), [tx("Date", "তারিখ"), tx("Receipt no.", "রশিদ নং"), tx("Opening balance", "প্রারম্ভিক জমা"), tx("Income", "আয়"), tx("Expense", "ব্যয়"), tx("Closing", "সমাপনী")],
+      rows.map(r => [fmtDate(r.date), rangeLabel(r), r.opening, r.income, r.expense, r.closing]), { from: mFrom, to: mTo });
   }
   function exportXlsx() {
     exportExcel("hand-cash", "HandCash",
-      rows.map(r => ({ "তারিখ": r.date, "প্রারম্ভিক জমা": r.opening, "আয়": r.income, "ব্যয়": r.expense, "সমাপনী": r.closing })), { from: mFrom, to: mTo });
+      rows.map(r => ({ "তারিখ": r.date, "রশিদ নং": rangeLabel(r), "প্রারম্ভিক জমা": r.opening, "আয়": r.income, "ব্যয়": r.expense, "সমাপনী": r.closing })), { from: mFrom, to: mTo });
   }
+
 
   const years = Array.from({ length: 6 }, (_, i) => today.getFullYear() - i);
 
@@ -178,16 +196,18 @@ export default function HandCash() {
       <Card className="overflow-x-auto"><Table>
         <TableHeader><TableRow>
           <TableHead>{tx("Date", "তারিখ")}</TableHead>
+          <TableHead>{tx("Receipt no.", "রশিদ নং")}</TableHead>
           <TableHead className="text-right">{tx("Opening balance", "প্রারম্ভিক জমা")}</TableHead>
           <TableHead className="text-right">{tx("Income", "আয়")}</TableHead>
           <TableHead className="text-right">{tx("Expense", "ব্যয়")}</TableHead>
           <TableHead className="text-right">{tx("Closing", "সমাপনী")}</TableHead>
         </TableRow></TableHeader>
         <TableBody>
-          {rows.length === 0 && <TableRow><TableCell colSpan={5} className="text-center py-8 text-muted-foreground">{tx("No transactions this month", "এই মাসে কোনো লেনদেন নেই")}</TableCell></TableRow>}
+          {rows.length === 0 && <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">{tx("No transactions this month", "এই মাসে কোনো লেনদেন নেই")}</TableCell></TableRow>}
           {rows.map((r) => (
             <TableRow key={r.date}>
               <TableCell>{fmtDate(r.date)}</TableCell>
+              <TableCell>{rangeLabel(r)}</TableCell>
               <TableCell className="text-right">{money(r.opening)}</TableCell>
               <TableCell className="text-right text-success">{r.income ? money(r.income) : "—"}</TableCell>
               <TableCell className="text-right text-destructive">{r.expense ? money(r.expense) : "—"}</TableCell>
@@ -196,7 +216,7 @@ export default function HandCash() {
           ))}
           {rows.length > 0 && (
             <TableRow className="bg-muted/60 font-bold">
-              <TableCell className="text-right">{tx("Total", "মোট")}</TableCell>
+              <TableCell className="text-right" colSpan={2}>{tx("Total", "মোট")}</TableCell>
               <TableCell />
               <TableCell className="text-right text-success">{money(totalIncome)}</TableCell>
               <TableCell className="text-right text-destructive">{money(totalExpense)}</TableCell>
