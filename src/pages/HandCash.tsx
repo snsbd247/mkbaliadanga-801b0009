@@ -199,6 +199,25 @@ export default function HandCash() {
         <div><div className="text-xs text-muted-foreground">{tx("Closing balance", "সমাপনী জমা")}</div><div className="text-lg font-bold text-primary">{money(finalClosing)}</div></div>
       </Card>
 
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+        <Card className="p-3">
+          <div className="text-sm font-semibold mb-2">{tx("Irrigation hand cash", "সেচ হ্যান্ড ক্যাশ")}</div>
+          <div className="grid grid-cols-3 gap-2">
+            <div><div className="text-xs text-muted-foreground">{tx("Income", "আয়")}</div><div className="font-bold text-success">{money(streamTotals.sech.income)}</div></div>
+            <div><div className="text-xs text-muted-foreground">{tx("Expense", "ব্যয়")}</div><div className="font-bold text-destructive">{money(streamTotals.sech.expense)}</div></div>
+            <div><div className="text-xs text-muted-foreground">{tx("Net", "নিট")}</div><div className="font-bold text-primary">{money(streamTotals.sech.income - streamTotals.sech.expense)}</div></div>
+          </div>
+        </Card>
+        <Card className="p-3">
+          <div className="text-sm font-semibold mb-2">{tx("Savings hand cash", "সঞ্চয় হ্যান্ড ক্যাশ")}</div>
+          <div className="grid grid-cols-3 gap-2">
+            <div><div className="text-xs text-muted-foreground">{tx("Income", "আয়")}</div><div className="font-bold text-success">{money(streamTotals.savings.income)}</div></div>
+            <div><div className="text-xs text-muted-foreground">{tx("Expense", "ব্যয়")}</div><div className="font-bold text-destructive">{money(streamTotals.savings.expense)}</div></div>
+            <div><div className="text-xs text-muted-foreground">{tx("Net", "নিট")}</div><div className="font-bold text-primary">{money(streamTotals.savings.income - streamTotals.savings.expense)}</div></div>
+          </div>
+        </Card>
+      </div>
+
       <Card className="overflow-x-auto"><Table>
         <TableHeader><TableRow>
           <TableHead>{tx("Date", "তারিখ")}</TableHead>
