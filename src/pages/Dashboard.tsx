@@ -28,6 +28,8 @@ export default function Dashboard() {
   const [officeName, setOfficeName] = useState<string>("");
   const [stats, setStats] = useState<Stat[]>([]);
   const [recon, setRecon] = useState<ReconcileResult | null>(null);
+  const [officeRecon, setOfficeRecon] = useState<{ office: string; stream: string; submitted: number }[]>([]);
+  const auditedRef = useRef<Set<string>>(new Set());
   const [recent, setRecent] = useState<any[]>([]);
   const [pending, setPending] = useState<any[]>([]);
   const [trend, setTrend] = useState<any[]>([]);
