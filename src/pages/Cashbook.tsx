@@ -556,7 +556,20 @@ export default function Cashbook() {
           <ExpenseHeadsManager heads={heads} canManage={isAdmin || isCommittee} officeId={officeId} reload={loadHeads} />
         </TabsContent>
       </Tabs>
+
+      <Dialog open={!!scanPreview} onOpenChange={(o) => { if (!o) setScanPreview(null); }}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader><DialogTitle>{tx("Voucher attachment", "ভাউচার সংযুক্তি")}</DialogTitle></DialogHeader>
+          {scanPreview?.isImage
+            ? <img src={scanPreview.url} alt={tx("Voucher", "ভাউচার")} className="max-h-[70vh] w-auto mx-auto rounded" />
+            : <div className="py-4 text-center text-muted-foreground">{tx("Preview not available", "প্রিভিউ পাওয়া যায়নি")}</div>}
+          <DialogFooter>
+            {scanPreview && <Button variant="outline" onClick={() => window.open(scanPreview.url, "_blank")}>{tx("Open in new tab", "নতুন ট্যাবে খুলুন")}</Button>}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
+
   );
 }
 
