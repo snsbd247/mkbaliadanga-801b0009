@@ -786,7 +786,7 @@ function StreamCashbook(props: {
               <TableCell className="font-mono text-xs">{row.ref}</TableCell>
               <TableCell>{fmtDate(row.date)}</TableCell>
               <TableCell>{row.label}</TableCell>
-              <TableCell className="text-xs text-muted-foreground">{row.desc || row.raw?.payee || row.raw?.note || ""}{row.raw?.is_bank_deposit && <Badge variant="outline" className="ml-1">{tx("Bank", "ব্যাংক")}</Badge>}</TableCell>
+              <TableCell className="text-xs text-muted-foreground">{row.desc || row.raw?.payee || row.raw?.note || ""}{(row.isTransfer || row.raw?.is_bank_deposit) && <Badge variant="outline" className="ml-1">{tx("Bank transfer", "ব্যাংক স্থানান্তর")}</Badge>}</TableCell>
               <TableCell className="text-right text-success">{row.kind === "income" ? money(row.amount) : "—"}</TableCell>
               <TableCell className="text-right text-destructive">{row.kind === "expense" ? money(row.amount) : "—"}</TableCell>
               <TableCell className={`text-right font-semibold ${row.balance < 0 ? "due-text" : ""}`}>{money(row.balance)}</TableCell>
