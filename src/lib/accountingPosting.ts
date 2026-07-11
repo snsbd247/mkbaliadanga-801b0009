@@ -326,8 +326,9 @@ export async function postBankCashTransfer(opts: {
   if (!cash || !bank) return "skipped";
   const label = opts.bankLabel ? ` — ${opts.bankLabel}` : "";
   const isDeposit = opts.direction === "deposit";
-  await createJournal({
-    reference: bankCashTransferRef(opts.bankTxnId),
+  const ref = bankCashTransferRef(opts.bankTxnId);
+  const jid = await createJournal({
+    reference: ref,
     description: `${isDeposit ? "নগদ ব্যাংকে জমা" : "ব্যাংক থেকে নগদ উত্তোলন"}${label}`,
     officeId: opts.officeId,
     createdBy: opts.createdBy,
@@ -341,6 +342,11 @@ export async function postBankCashTransfer(opts: {
           { account_id: cash, debit: amount, credit: 0, description: "নগদ বৃদ্ধি", position: 1 },
           { account_id: bank, debit: 0, credit: amount, description: "ব্যাংক থেকে উত্তোলন", position: 2 },
         ],
+  });
+  await auditJournalPosting({
+    action: isDeposit ? "bank_deposit_cash" : "bank_withdraw_cash",
+    reference: ref, journalId: jid, officeId: opts.officeId,
+    detail: { amount, direction: opts.direction, source: "cash", bank_txn_id: opts.bankTxnId },
   });
   return "posted";
 }
