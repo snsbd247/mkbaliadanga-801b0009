@@ -649,7 +649,7 @@ function copyHtml(d: BnReceiptData, copyLabel: string, signatureUrl: string | nu
       </table>
 
       ${tpl.show_signature_line !== false ? `
-      <div style="position:relative;z-index:1;display:flex;justify-content:space-between;align-items:flex-end;margin-top:54px;font-size:19px;line-height:1.2;">
+      <div style="position:relative;z-index:1;display:flex;justify-content:space-between;align-items:flex-end;margin-top:26px;font-size:20px;line-height:1.2;">
         <div style="border-top:1px solid #111;padding-top:2px;min-width:260px;">${lang === "bn" ? "সদস্যের স্বাক্ষর/প্রদানকারীর স্বাক্ষর" : "Member / Payer signature"}</div>
         <div style="text-align:right;min-width:300px;">
           ${signatureUrl
