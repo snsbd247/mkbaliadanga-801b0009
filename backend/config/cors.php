@@ -16,6 +16,7 @@ return [
     // Google AI Studio apps run on rotating preview origins. Allow the known
     // editor + preview hosts by pattern instead of a fixed origin.
     'allowed_origins_patterns' => [
+        '#^https://[a-z0-9-]+usercontent\.goog$#',
         '#^https://([a-z0-9-]+\.)*usercontent\.goog$#',
         '#^https://aistudio\.google\.com$#',
         '#^https://ai\.studio$#',

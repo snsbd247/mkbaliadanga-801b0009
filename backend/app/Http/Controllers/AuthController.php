@@ -20,14 +20,18 @@ class AuthController extends Controller
     public function login(Request $request): JsonResponse
     {
         $data = $request->validate([
-            // Frontend sends `identifier`; accept `login` as a fallback alias.
-            'identifier' => ['required_without:login', 'string'],
-            'login' => ['required_without:identifier', 'string'],
+            // Frontends may send different field names (`identifier`, `login`,
+            // `username`, `email`, `user_id`). Accept all as the same login.
+            'identifier' => ['required_without_all:login,username,email,user_id', 'string'],
+            'login' => ['required_without_all:identifier,username,email,user_id', 'string'],
+            'username' => ['required_without_all:identifier,login,email,user_id', 'string'],
+            'email' => ['required_without_all:identifier,login,username,user_id', 'string'],
+            'user_id' => ['required_without_all:identifier,login,username,email', 'string'],
             'password' => ['required', 'string'],
             'device' => ['sometimes', 'string'],
         ]);
 
-        $identifier = $data['identifier'] ?? $data['login'];
+        $identifier = $data['identifier'] ?? $data['login'] ?? $data['username'] ?? $data['email'] ?? $data['user_id'];
         // Historical typo compatibility: older deployment notes created the
         // canonical account as `suparadmin`, but admins naturally type
         // `superadmin`. Treat both as the same login name without creating a
