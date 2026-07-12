@@ -19,6 +19,7 @@ import { NoOfficeBanner } from "@/components/layout/NoOfficeBanner";
 import { SmsProviderStatusCard } from "@/components/dashboard/SmsProviderStatusCard";
 import { LumpSumDueCard } from "@/components/dashboard/LumpSumDueCard";
 import { computeSavingsHandCash, reconcileBalances, type ReconcileResult } from "@/lib/cashReconcile";
+import { getCollectionTotal } from "@/lib/collectionTotals";
 
 interface Stat { label: string; value: string; icon: any; tone?: "default" | "danger" | "warn" | "success"; delta?: number | null; href?: string; hint?: string }
 
