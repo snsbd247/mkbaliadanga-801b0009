@@ -20,6 +20,7 @@ const num = (v: unknown): number => {
   return Number.isFinite(x) ? x : 0;
 };
 const r2 = (v: number) => Math.round(v * 100) / 100;
+const rTaka = (v: number) => Math.round(Number(v) || 0);
 
 export interface GeneratedInvoice {
   billed_farmer_id: string;
@@ -77,8 +78,8 @@ export function generateInvoices(input: GenerateInvoicesInput): GeneratedInvoice
   const totalPaid = Math.min(num(input.paid_amount), totalPayable);
 
   return calced.map(({ split, calc }) => {
-    const paid = totalPayable > 0 ? r2((calc.payable_amount / totalPayable) * totalPaid) : 0;
-    const due = r2(Math.max(calc.payable_amount - paid, 0));
+    const paid = totalPayable > 0 ? rTaka((calc.payable_amount / totalPayable) * totalPaid) : 0;
+    const due = rTaka(Math.max(calc.payable_amount - paid, 0));
     let status: InvoiceStatus;
     if (paid >= calc.payable_amount && calc.payable_amount > 0) status = "paid";
     else if (paid > 0) status = "partial_paid";
