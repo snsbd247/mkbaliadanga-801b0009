@@ -1612,7 +1612,7 @@ export default function FarmerDetail() {
                   const renderRow = (l: any) => {
                     const matched = resolveRateForLand(rateMap, l);
                     const rate = matched ? Number(matched.rate_per_shotok) : 0;
-                    const total = rate * Number(l.land_size || 0);
+                    const total = roundTaka(rate * Number(l.land_size || 0));
                     return (
                       <TableRow key={l.id}>
                         <TableCell className="text-xs max-w-md whitespace-normal">{buildLocLine(l)}</TableCell>
@@ -1638,7 +1638,7 @@ export default function FarmerDetail() {
                         <TableCell className="text-xs">{l.patwari_name_bn || l.patwari_name || <span className="text-muted-foreground">—</span>}</TableCell>
                         <TableCell>{landTypeLabel(landTypeRows, (l as any).land_type_id, l.field_type) || t((l.field_type as any) ?? "")}</TableCell>
                         <TableCell className="text-right">{rate ? money2(rate) : <span className="text-muted-foreground">—</span>}</TableCell>
-                        <TableCell className="text-right">{rate ? money2(total) : <span className="text-muted-foreground">—</span>}</TableCell>
+                        <TableCell className="text-right">{rate ? money(total) : <span className="text-muted-foreground">—</span>}</TableCell>
                         <TableCell>
                           {(() => {
                             const m = landSeasonStatus(l.id);
@@ -1708,14 +1708,14 @@ export default function FarmerDetail() {
                     const sizeSum = rows.reduce((s, l) => s + Number(l.land_size || 0), 0);
                     const amtSum = rows.reduce((s, l) => {
                       const m = resolveRateForLand(rateMap, l);
-                      return s + (m ? Number(m.rate_per_shotok) * Number(l.land_size || 0) : 0);
+                      return s + (m ? roundTaka(Number(m.rate_per_shotok) * Number(l.land_size || 0)) : 0);
                     }, 0);
                     return (
                       <TableRow className="bg-muted/40 font-semibold">
                         <TableCell colSpan={2} className="text-right">{label} ({tx("Subtotal", "উপ-মোট")})</TableCell>
                         <TableCell className="text-right">{fmtLand(sizeSum)}</TableCell>
                         <TableCell colSpan={5} />
-                        <TableCell className="text-right">{money2(amtSum)}</TableCell>
+                        <TableCell className="text-right">{money(amtSum)}</TableCell>
                         <TableCell />
                         <TableCell />
                         <TableCell />
@@ -1742,14 +1742,14 @@ export default function FarmerDetail() {
                     const totalSize = lands.reduce((s, l) => s + Number(l.land_size || 0), 0);
                     const totalAmt = lands.reduce((s, l) => {
                       const m = resolveRateForLand(rateMap, l);
-                      return s + (m ? Number(m.rate_per_shotok) * Number(l.land_size || 0) : 0);
+                      return s + (m ? roundTaka(Number(m.rate_per_shotok) * Number(l.land_size || 0)) : 0);
                     }, 0);
                     out.push(
                       <TableRow key="grand" className="bg-muted/70 font-bold border-t-2">
                         <TableCell colSpan={2} className="text-right">{tx("Grand Total", "সর্বমোট")}</TableCell>
                         <TableCell className="text-right">{fmtLand(totalSize)}</TableCell>
                         <TableCell colSpan={5} />
-                        <TableCell className="text-right">{money2(totalAmt)}</TableCell>
+                        <TableCell className="text-right">{money(totalAmt)}</TableCell>
                         <TableCell />
                         <TableCell />
                         <TableCell />
