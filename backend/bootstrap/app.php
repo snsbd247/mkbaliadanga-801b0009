@@ -48,6 +48,12 @@ return Application::configure(basePath: dirname(__DIR__))
             if ($e instanceof \Illuminate\Auth\AuthenticationException) {
                 return response()->json(['message' => 'Unauthenticated.'], 401);
             }
+            if ($e instanceof \Illuminate\Validation\ValidationException) {
+                return response()->json([
+                    'message' => $e->getMessage(),
+                    'errors' => $e->errors(),
+                ], $e->status);
+            }
             if ($e instanceof \Symfony\Component\HttpKernel\Exception\HttpExceptionInterface) {
                 $status = $e->getStatusCode();
                 return response()->json([
