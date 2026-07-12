@@ -19,6 +19,7 @@ import { NoOfficeBanner } from "@/components/layout/NoOfficeBanner";
 import { SmsProviderStatusCard } from "@/components/dashboard/SmsProviderStatusCard";
 import { LumpSumDueCard } from "@/components/dashboard/LumpSumDueCard";
 import { computeSavingsHandCash, reconcileBalances, type ReconcileResult } from "@/lib/cashReconcile";
+import { getCollectionTotal } from "@/lib/collectionTotals";
 
 interface Stat { label: string; value: string; icon: any; tone?: "default" | "danger" | "warn" | "success"; delta?: number | null; href?: string; hint?: string }
 
@@ -126,17 +127,22 @@ export default function Dashboard() {
     const irrCollection = sum(allPayments.filter((p: any) => p.kind === "irrigation"), "amount");
     const irrigationDue = sum(irrData, "due_amount");
     const loanDue = totalLoan;
-    const todayCollect = sum(allPayments.filter((p: any) => paymentDateKey(p) === today), "amount");
     const monthStart = today.slice(0, 7) + "-01";
     const prevMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1).toISOString().slice(0, 10);
+    const prevMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0).toISOString().slice(0, 10);
     const day30Start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 29).toISOString().slice(0, 10);
-    const [{ data: monthPayAll }, { data: prevMonthPay }, { data: pay30 }] = await Promise.all([
-      db.from("payments").select("amount,created_at,occurred_at,status").is("deleted_at", null).gte("created_at", monthStart),
-      db.from("payments").select("amount,created_at,occurred_at,status").is("deleted_at", null).gte("created_at", prevMonthStart).lt("created_at", monthStart),
+    // Today / this-month / prev-month collection use the SAME sources as the
+    // Collection Report (irrigation_invoice_payments + loan_payments + savings
+    // deposits) so the dashboard cards and the report always agree.
+    const [todayTot, monthTot, prevMonthTot, { data: pay30 }] = await Promise.all([
+      getCollectionTotal(today, today),
+      getCollectionTotal(monthStart, today),
+      getCollectionTotal(prevMonthStart, prevMonthEnd),
       db.from("payments").select("amount,created_at,occurred_at,status").is("deleted_at", null).gte("created_at", day30Start),
     ]);
-    const monthCollect = sum((monthPayAll ?? []).filter(isApprovedPayment), "amount");
-    const prevMonthCollect = sum((prevMonthPay ?? []).filter(isApprovedPayment), "amount");
+    const todayCollect = todayTot.total;
+    const monthCollect = monthTot.total;
+    const prevMonthCollect = prevMonthTot.total;
     const momDelta = prevMonthCollect > 0 ? ((monthCollect - prevMonthCollect) / prevMonthCollect) * 100 : null;
     const pendingCount = (pendingW.data?.length ?? 0) + (pendingL.data?.length ?? 0);
 
