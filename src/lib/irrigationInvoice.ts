@@ -43,6 +43,8 @@ const n = (v: any): number => {
   return Number.isFinite(x) && x > 0 ? x : 0;
 };
 const r2 = (v: number) => Math.round(v * 100) / 100;
+/** Round to whole taka (round figure) — invoices/payments must never carry paisa. */
+const rTaka = (v: number) => Math.round(Number(v) || 0);
 
 export const SHATAK_PER_BIGHA = 33;
 export type CalculationBasis = "per_shotok" | "per_bigha" | "flat" | "custom";
