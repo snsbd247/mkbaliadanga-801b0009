@@ -13,14 +13,18 @@ return [
     'paths' => ['api/*', 'sanctum/csrf-cookie', 'login', 'logout'],
     'allowed_methods' => ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     'allowed_origins' => empty($origins) ? [] : $origins,
-    // Google AI Studio apps run on rotating *.usercontent.goog / aistudio
-    // subdomains, so match them by pattern instead of a fixed origin.
+    // Google AI Studio apps run on rotating preview origins. Allow the known
+    // editor + preview hosts by pattern instead of a fixed origin.
     'allowed_origins_patterns' => [
         '#^https://([a-z0-9-]+\.)*usercontent\.goog$#',
         '#^https://aistudio\.google\.com$#',
+        '#^https://ai\.studio$#',
+        '#^https://ai\.google\.dev$#',
         '#^https://([a-z0-9-]+\.)*scf\.usercontent\.goog$#',
     ],
-    'allowed_headers' => ['Accept', 'Authorization', 'Content-Type', 'X-Requested-With'],
+    // AI Studio/generated apps may send extra non-sensitive request headers;
+    // echo allowed requested headers so preflight does not fail.
+    'allowed_headers' => ['*'],
     'exposed_headers' => [],
     'max_age' => 3600,
     'supports_credentials' => true,
