@@ -303,8 +303,9 @@ export default function Dashboard() {
       { label: t("loanOutstanding"), value: money(totalLoan), icon: HandCoins, tone: "danger", href: "/loans" },
       
       { label: t("totalIrrigationCollection"), value: money(irrCollection), icon: Droplets, href: "/reports/collections" },
-      { label: t("todayCollection"), value: money(todayCollect), icon: CalendarClock, tone: "success", href: "/payments?period=today" },
-      { label: t("thisMonthCollection"), value: money(monthCollect), icon: CalendarClock, delta: momDelta, href: "/payments?period=this_month" },
+      { label: t("todayCollection"), value: money(todayCollect), icon: CalendarClock, tone: "success", href: "/payments?period=today", hint: lang === "bn" ? "আজকের (আজ ০০:০০–২৩:৫৯) সব স্ট্রিমের কালেকশন: সেচ ইনভয়েস পেমেন্ট + লোন কিস্তি + অনুমোদিত সঞ্চয়/শেয়ার জমা। বাতিল রসিদ গণনা হয় না। মাসিক কালেকশন রিপোর্টের একই সোর্স ব্যবহার করে।" : "Today's collection (00:00–23:59) across all streams: irrigation invoice payments + loan installments + approved savings/share deposits. Voided receipts excluded. Uses the same source as the Collection Report." },
+      { label: t("thisMonthCollection"), value: money(monthCollect), icon: CalendarClock, delta: momDelta, href: "/payments?period=this_month", hint: lang === "bn" ? "চলতি মাসের ১ তারিখ থেকে আজ পর্যন্ত সব স্ট্রিমের কালেকশন: সেচ ইনভয়েস পেমেন্ট + লোন কিস্তি + অনুমোদিত সঞ্চয়/শেয়ার জমা। বাতিল রসিদ গণনা হয় না। কালেকশন রিপোর্টে একই তারিখ রেঞ্জ দিলে টোটাল ১০০% মিলবে।" : "This month's collection (1st to today) across all streams: irrigation invoice payments + loan installments + approved savings/share deposits. Voided receipts excluded. Matches the Collection Report 100% for the same date range." },
+
       { label: lang === "bn" ? "সেচের বাকি" : "Irrigation Due", value: money(irrigationDue), icon: Droplets, tone: "danger", href: "/reports/irrigation-due" },
       
       { label: lang === "bn" ? "সেচ হ্যান্ড ক্যাশ" : "Irrigation Hand Cash", value: money(handCashBalance), icon: Banknote, tone: handCashBalance < 0 ? "danger" : "success", href: "/hand-cash", hint: lang === "bn" ? "নেট = সব সেচ রশিদ (+ব্যাংক ট্রান্সফার) − সেচ ব্যয়। Cash Book সেচ ক্যাশ ক্লোজিং-এর সমান।" : "Net = all irrigation receipts (+bank transfers) − irrigation expenses. Equals Cash Book Irrigation cash closing." },
