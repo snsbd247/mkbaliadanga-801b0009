@@ -137,10 +137,12 @@ export interface InvoiceCalcResult {
 }
 
 export function calcInvoice(input: InvoiceCalcInput): InvoiceCalcResult {
-  const irrigation = baseIrrigationAmount(input.land_size_shotok, input.rate_per_shotok, input.basis ?? "per_shotok");
-  const maintenance = r2((irrigation * n(input.settings.maintenance_percent)) / 100);
-  const canal = r2((irrigation * n(input.settings.canal_percent)) / 100);
-  const other = r2(n(input.other_charge));
+  // Base charge is rounded to whole taka so invoices are always round figures
+  // (no paisa left behind as due when the operator collects a rounded amount).
+  const irrigation = rTaka(baseIrrigationAmount(input.land_size_shotok, input.rate_per_shotok, input.basis ?? "per_shotok"));
+  const maintenance = rTaka((irrigation * n(input.settings.maintenance_percent)) / 100);
+  const canal = rTaka((irrigation * n(input.settings.canal_percent)) / 100);
+  const other = rTaka(n(input.other_charge));
 
   const dueDate = new Date(input.due_date);
   const today = input.as_of ? new Date(input.as_of) : new Date();
@@ -151,14 +153,14 @@ export function calcInvoice(input: InvoiceCalcInput): InvoiceCalcResult {
   let delay_fee = 0;
   if (is_overdue && input.settings.auto_apply_delay_fee) {
     // Canal & maintenance excluded from delay-fee base (not billed to farmer).
-    delay_fee = r2((irrigation * n(input.settings.delay_fee_percent)) / 100);
+    delay_fee = rTaka((irrigation * n(input.settings.delay_fee_percent)) / 100);
   }
 
   // Canal & maintenance charges are NOT added to the payable amount —
   // they previously inflated the total above the actual land (irrigation) charge.
-  const payable = r2(irrigation + delay_fee + other);
-  const paid = Math.min(r2(n(input.paid_amount)), payable);
-  const due = r2(payable - paid);
+  const payable = rTaka(irrigation + delay_fee + other);
+  const paid = Math.min(rTaka(n(input.paid_amount)), payable);
+  const due = rTaka(payable - paid);
 
   let status: InvoiceStatus;
   if (paid >= payable && payable > 0) status = "paid";
