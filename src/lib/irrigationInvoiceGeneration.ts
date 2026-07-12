@@ -20,6 +20,7 @@ const num = (v: unknown): number => {
   return Number.isFinite(x) ? x : 0;
 };
 const r2 = (v: number) => Math.round(v * 100) / 100;
+const rTaka = (v: number) => Math.round(Number(v) || 0);
 
 export interface GeneratedInvoice {
   billed_farmer_id: string;
