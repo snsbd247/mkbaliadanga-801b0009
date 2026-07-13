@@ -76,9 +76,9 @@ describe("barga split — 2 sharecroppers × 0.3330 on a 0.6650 parcel", () => {
     });
 
     const a = dueRows.find((r) => r.billed_farmer_id === scA)!;
-    // 0.3330 shotok × 100 = 33.30 — not the full-parcel 66.50.
-    expect(a.payable_amount).toBeCloseTo(33.3, 1);
+    // 0.3330 shotok × 100 = 33.30, rounded to whole taka — not the full-parcel 66.50.
+    expect(a.payable_amount).toBe(33);
     const total = dueRows.reduce((acc, r) => acc + r.payable_amount, 0);
-    expect(total).toBeCloseTo(66.6, 1);
+    expect(total).toBe(66);
   });
 });
