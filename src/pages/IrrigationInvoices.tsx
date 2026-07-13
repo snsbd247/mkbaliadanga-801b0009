@@ -2413,14 +2413,15 @@ function ManualInvoiceDialog({ open, onOpenChange, seasons, userId }: any) {
     setBusy(true);
     try {
       const land = lands.find((l: any) => l.id === landId);
-      const billed = await resolveBilledFarmer(landId, dueDate);
-      // Phase 4: bill only this farmer's split area (owner remainder or borga share),
-      // not the whole parcel — otherwise a sharecropper is charged for the full land.
+      // Phase 4: bill only THIS farmer's split area (borga share or owner
+      // remainder), not the whole parcel — otherwise a sharecropper is charged
+      // for the full land.
       const splits = await resolveBillingSplits(landId, dueDate);
       const mySplit = splits.find((s: any) => s.billed_farmer_id === farmerId);
-      const billedArea = mySplit && mySplit.billed_area > 0
-        ? mySplit.billed_area
-        : Number(land?.land_size ?? 0);
+      if (!mySplit) {
+        return toast.error(tx("This farmer has no billable share on the selected land.", "নির্বাচিত জমিতে এই কৃষকের বিলযোগ্য কোনো অংশ নেই।"));
+      }
+      const billedArea = mySplit.billed_area > 0 ? mySplit.billed_area : Number(land?.land_size ?? 0);
       const rawSettings = await getChargeSettings(land?.office_id ?? null);
       // No auto delay fee at generation — penalty is added at payment time only.
       const settings = { ...rawSettings, auto_apply_delay_fee: false };
@@ -2439,9 +2440,9 @@ function ManualInvoiceDialog({ open, onOpenChange, seasons, userId }: any) {
         office_id: land?.office_id ?? null,
         season_id: seasonId,
         land_id: landId,
-        owner_farmer_id: billed.owner_farmer_id,
-        farmer_id: billed.billed_farmer_id,
-        is_borga: billed.is_borga,
+        owner_farmer_id: mySplit.owner_farmer_id,
+        farmer_id: farmerId,
+        is_borga: mySplit.is_borga,
         irrigation_amount: calc.irrigation_amount,
         maintenance_amount: calc.maintenance_amount,
         canal_amount: calc.canal_amount,
