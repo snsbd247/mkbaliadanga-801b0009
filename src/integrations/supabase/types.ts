@@ -6792,6 +6792,7 @@ export type Database = {
         Args: { _source: string; _target: string }
         Returns: Json
       }
+      merge_farmers_health: { Args: never; Returns: Json }
       next_cashbook_voucher_no: {
         Args: { _office: string; _stream: string }
         Returns: number
