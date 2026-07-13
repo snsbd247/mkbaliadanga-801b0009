@@ -2389,6 +2389,24 @@ function ManualInvoiceDialog({ open, onOpenChange, seasons, userId }: any) {
   const [manualReason, setManualReason] = useState("");
   const isManualRate = !!seasonId && !!landId && (!rateRow || rateRow.rate_per_shotok <= 0);
 
+  // Resolve the billable area for the SELECTED farmer only (borga share or owner
+  // remainder), so the invoice is never calculated on the whole parcel.
+  const [split, setSplit] = useState<{ billed_area: number; is_borga: boolean; owner_farmer_id: string } | null>(null);
+  useEffect(() => {
+    if (!landId || !farmerId) { setSplit(null); return; }
+    let cancelled = false;
+    (async () => {
+      const splits = await resolveBillingSplits(landId, dueDate);
+      if (cancelled) return;
+      const mine = splits.find((s: any) => s.billed_farmer_id === farmerId) ?? null;
+      setSplit(mine ? { billed_area: Number(mine.billed_area) || 0, is_borga: !!mine.is_borga, owner_farmer_id: mine.owner_farmer_id } : null);
+    })();
+    return () => { cancelled = true; };
+  }, [landId, farmerId, dueDate]);
+
+  const selectedLand = lands.find((l: any) => l.id === landId);
+  const billedAreaPreview = split && split.billed_area > 0 ? split.billed_area : Number(selectedLand?.land_size ?? 0);
+
   async function save() {
     if (!farmerId || !landId || !seasonId || !rate) return toast.error(tx("Fill all fields", "সব ফিল্ড পূরণ করুন"));
     if (isManualRate && manualReason.trim().length < 3) return toast.error(tx("Enter manual rate reason (at least 3 chars)", "ম্যানুয়াল রেটের কারণ লিখুন (অন্তত ৩ অক্ষর)"));
