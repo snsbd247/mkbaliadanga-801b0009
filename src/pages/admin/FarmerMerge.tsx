@@ -128,6 +128,29 @@ export default function FarmerMerge() {
         </AlertDescription>
       </Alert>
 
+      <Card className="p-4 space-y-3">
+        <div className="flex items-center justify-between">
+          <div className="font-medium">{tx("Merge readiness check", "মার্জ প্রস্তুতি চেক")}</div>
+          <Button variant="outline" size="sm" onClick={checkHealth} disabled={healthLoading}>
+            <RefreshCw className={`h-4 w-4 mr-2 ${healthLoading ? "animate-spin" : ""}`} />
+            {tx("Recheck", "পুনরায় চেক")}
+          </Button>
+        </div>
+        {healthErr ? (
+          <p className="text-sm text-destructive">
+            {tx("Health check unavailable — the database update may not be deployed on this server.", "হেলথ চেক পাওয়া যায়নি — এই সার্ভারে ডাটাবেস আপডেট ডিপ্লয় নাও হতে পারে।")}
+          </p>
+        ) : health ? (
+          <div className="flex flex-wrap gap-2 text-sm">
+            <StatusBadge ok={health.rpc_exists} label={tx("RPC available", "RPC উপলব্ধ")} />
+            <StatusBadge ok={health.authenticated_can_execute} label={tx("Execute permission", "এক্সিকিউট অনুমতি")} />
+            <StatusBadge ok={health.caller_is_admin} label={tx("You are admin", "আপনি অ্যাডমিন")} />
+          </div>
+        ) : (
+          <p className="text-sm text-muted-foreground">{tx("Checking…", "চেক করা হচ্ছে…")}</p>
+        )}
+      </Card>
+
       <Card className="p-5 grid gap-5 md:grid-cols-2">
         <div className="space-y-2">
           <Label>{tx("Duplicate farmer (source — will be deactivated)", "ডুপ্লিকেট কৃষক (সোর্স — নিষ্ক্রিয় হবে)")}</Label>
