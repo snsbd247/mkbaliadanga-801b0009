@@ -17,6 +17,15 @@ import { useLang } from "@/i18n/LanguageProvider";
 import { AlertTriangle, GitMerge, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
+function StatusBadge({ ok, label }: { ok: boolean; label: string }) {
+  return (
+    <Badge variant={ok ? "default" : "destructive"} className="gap-1">
+      {ok ? <CheckCircle2 className="h-3.5 w-3.5" /> : <XCircle className="h-3.5 w-3.5" />}
+      {label}
+    </Badge>
+  );
+}
+
 export default function FarmerMerge() {
   const { tx } = useLang();
   const [source, setSource] = useState<FarmerLite | null>(null);
