@@ -91,7 +91,8 @@ export default function FarmerMerge() {
     setBusy(false);
     setConfirmOpen(false);
     if (error) {
-      toast.error(error.message || tx("Farmer merge failed.", "কৃষক একত্রীকরণ ব্যর্থ হয়েছে।"));
+      toast.error(friendlyMergeError(error as any));
+      checkHealth();
       return;
     }
     const c = (data as any)?.moved_counts;
