@@ -2522,6 +2522,15 @@ function ManualInvoiceDialog({ open, onOpenChange, seasons, userId }: any) {
                 ))}
               </SelectContent>
             </Select>
+            {landId && farmerId && split && (
+              <p className="mt-1 text-xs text-muted-foreground">
+                {split.is_borga
+                  ? tx("Sharecropper (borga) — billable area:", "বর্গাদার — বিলযোগ্য পরিমাণ:")
+                  : tx("Owner remainder — billable area:", "মালিকের অবশিষ্ট — বিলযোগ্য পরিমাণ:")}{" "}
+                <b>{formatLandSize(billedAreaPreview, "short")}</b>
+                {selectedLand ? ` / ${formatLandSize(selectedLand.land_size, "short")} (${tx("full parcel", "সম্পূর্ণ জমি")})` : ""}
+              </p>
+            )}
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
