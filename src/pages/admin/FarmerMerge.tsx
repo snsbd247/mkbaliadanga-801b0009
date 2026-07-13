@@ -1,6 +1,8 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { db } from "@/lib/db";
+import { Badge } from "@/components/ui/badge";
+import { CheckCircle2, XCircle, RefreshCw } from "lucide-react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -15,12 +17,63 @@ import { useLang } from "@/i18n/LanguageProvider";
 import { AlertTriangle, GitMerge, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
+function StatusBadge({ ok, label }: { ok: boolean; label: string }) {
+  return (
+    <Badge variant={ok ? "default" : "destructive"} className="gap-1">
+      {ok ? <CheckCircle2 className="h-3.5 w-3.5" /> : <XCircle className="h-3.5 w-3.5" />}
+      {label}
+    </Badge>
+  );
+}
+
 export default function FarmerMerge() {
   const { tx } = useLang();
   const [source, setSource] = useState<FarmerLite | null>(null);
   const [target, setTarget] = useState<FarmerLite | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [busy, setBusy] = useState(false);
+
+  type Health = { rpc_exists: boolean; authenticated_can_execute: boolean; caller_is_admin: boolean } | null;
+  const [health, setHealth] = useState<Health>(null);
+  const [healthErr, setHealthErr] = useState<string | null>(null);
+  const [healthLoading, setHealthLoading] = useState(false);
+
+  async function checkHealth() {
+    setHealthLoading(true);
+    setHealthErr(null);
+    const { data, error } = await db.rpc("merge_farmers_health" as any, {});
+    setHealthLoading(false);
+    if (error) {
+      setHealth(null);
+      setHealthErr(error.message);
+      return;
+    }
+    setHealth(data as Health);
+  }
+
+  useEffect(() => {
+    checkHealth();
+  }, []);
+
+  function friendlyMergeError(error: { message?: string; code?: string }): string {
+    const msg = error?.message || "";
+    const code = (error as any)?.code || "";
+    // RPC missing / not exposed (PostgREST schema cache)
+    if (code === "PGRST202" || /not (found|available)|does not exist|schema cache/i.test(msg)) {
+      return tx(
+        "The merge feature is not available on this server yet. Please deploy the latest database update, then reload this page. If it persists, contact your developer.",
+        "এই সার্ভারে মার্জ ফিচারটি এখনো উপলব্ধ নয়। অনুগ্রহ করে সর্বশেষ ডাটাবেস আপডেট ডিপ্লয় করে পেজটি রিলোড করুন। সমস্যা থাকলে ডেভেলপারের সাথে যোগাযোগ করুন।"
+      );
+    }
+    // Permission errors
+    if (code === "42501" || /permission denied|only administrators|not authorized/i.test(msg)) {
+      return tx(
+        "You don't have permission to merge farmers. Only an administrator can perform this action.",
+        "কৃষক মার্জ করার অনুমতি আপনার নেই। শুধুমাত্র একজন অ্যাডমিন এই কাজটি করতে পারবেন।"
+      );
+    }
+    return msg || tx("Farmer merge failed.", "কৃষক একত্রীকরণ ব্যর্থ হয়েছে।");
+  }
 
   const validationError = (() => {
     if (!source || !target) return null;
@@ -47,7 +100,8 @@ export default function FarmerMerge() {
     setBusy(false);
     setConfirmOpen(false);
     if (error) {
-      toast.error(error.message || tx("Farmer merge failed.", "কৃষক একত্রীকরণ ব্যর্থ হয়েছে।"));
+      toast.error(friendlyMergeError(error as any));
+      checkHealth();
       return;
     }
     const c = (data as any)?.moved_counts;
@@ -82,6 +136,29 @@ export default function FarmerMerge() {
           )}
         </AlertDescription>
       </Alert>
+
+      <Card className="p-4 space-y-3">
+        <div className="flex items-center justify-between">
+          <div className="font-medium">{tx("Merge readiness check", "মার্জ প্রস্তুতি চেক")}</div>
+          <Button variant="outline" size="sm" onClick={checkHealth} disabled={healthLoading}>
+            <RefreshCw className={`h-4 w-4 mr-2 ${healthLoading ? "animate-spin" : ""}`} />
+            {tx("Recheck", "পুনরায় চেক")}
+          </Button>
+        </div>
+        {healthErr ? (
+          <p className="text-sm text-destructive">
+            {tx("Health check unavailable — the database update may not be deployed on this server.", "হেলথ চেক পাওয়া যায়নি — এই সার্ভারে ডাটাবেস আপডেট ডিপ্লয় নাও হতে পারে।")}
+          </p>
+        ) : health ? (
+          <div className="flex flex-wrap gap-2 text-sm">
+            <StatusBadge ok={health.rpc_exists} label={tx("RPC available", "RPC উপলব্ধ")} />
+            <StatusBadge ok={health.authenticated_can_execute} label={tx("Execute permission", "এক্সিকিউট অনুমতি")} />
+            <StatusBadge ok={health.caller_is_admin} label={tx("You are admin", "আপনি অ্যাডমিন")} />
+          </div>
+        ) : (
+          <p className="text-sm text-muted-foreground">{tx("Checking…", "চেক করা হচ্ছে…")}</p>
+        )}
+      </Card>
 
       <Card className="p-5 grid gap-5 md:grid-cols-2">
         <div className="space-y-2">
