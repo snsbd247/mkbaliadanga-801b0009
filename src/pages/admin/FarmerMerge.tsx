@@ -24,6 +24,48 @@ export default function FarmerMerge() {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [busy, setBusy] = useState(false);
 
+  type Health = { rpc_exists: boolean; authenticated_can_execute: boolean; caller_is_admin: boolean } | null;
+  const [health, setHealth] = useState<Health>(null);
+  const [healthErr, setHealthErr] = useState<string | null>(null);
+  const [healthLoading, setHealthLoading] = useState(false);
+
+  async function checkHealth() {
+    setHealthLoading(true);
+    setHealthErr(null);
+    const { data, error } = await db.rpc("merge_farmers_health" as any, {});
+    setHealthLoading(false);
+    if (error) {
+      setHealth(null);
+      setHealthErr(error.message);
+      return;
+    }
+    setHealth(data as Health);
+  }
+
+  useEffect(() => {
+    checkHealth();
+  }, []);
+
+  function friendlyMergeError(error: { message?: string; code?: string }): string {
+    const msg = error?.message || "";
+    const code = (error as any)?.code || "";
+    // RPC missing / not exposed (PostgREST schema cache)
+    if (code === "PGRST202" || /not (found|available)|does not exist|schema cache/i.test(msg)) {
+      return tx(
+        "The merge feature is not available on this server yet. Please deploy the latest database update, then reload this page. If it persists, contact your developer.",
+        "এই সার্ভারে মার্জ ফিচারটি এখনো উপলব্ধ নয়। অনুগ্রহ করে সর্বশেষ ডাটাবেস আপডেট ডিপ্লয় করে পেজটি রিলোড করুন। সমস্যা থাকলে ডেভেলপারের সাথে যোগাযোগ করুন।"
+      );
+    }
+    // Permission errors
+    if (code === "42501" || /permission denied|only administrators|not authorized/i.test(msg)) {
+      return tx(
+        "You don't have permission to merge farmers. Only an administrator can perform this action.",
+        "কৃষক মার্জ করার অনুমতি আপনার নেই। শুধুমাত্র একজন অ্যাডমিন এই কাজটি করতে পারবেন।"
+      );
+    }
+    return msg || tx("Farmer merge failed.", "কৃষক একত্রীকরণ ব্যর্থ হয়েছে।");
+  }
+
   const validationError = (() => {
     if (!source || !target) return null;
     if (source.id === target.id)
