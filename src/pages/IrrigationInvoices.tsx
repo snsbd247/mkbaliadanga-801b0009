@@ -26,7 +26,7 @@ import { money, fmtDate } from "@/lib/format";
 import { formatLandSize } from "@/lib/irrigationCalc";
 import { matchesDagSearch, formatDagNumbers } from "@/lib/dagNumbers";
 import {
-  calcInvoice, getChargeSettings, generateInvoiceNo, resolveBilledFarmer, resolveBillingSplits, describeBaseCalculation,
+  calcInvoice, getChargeSettings, generateInvoiceNo, resolveBillingSplits, describeBaseCalculation,
   DEFAULT_SETTINGS, type ChargeSettings, type InvoiceStatus,
 } from "@/lib/irrigationInvoice";
 import { loadSeasonRateMap, resolveRateForLand, type RateRow } from "@/lib/seasonRates";
@@ -2389,20 +2389,39 @@ function ManualInvoiceDialog({ open, onOpenChange, seasons, userId }: any) {
   const [manualReason, setManualReason] = useState("");
   const isManualRate = !!seasonId && !!landId && (!rateRow || rateRow.rate_per_shotok <= 0);
 
+  // Resolve the billable area for the SELECTED farmer only (borga share or owner
+  // remainder), so the invoice is never calculated on the whole parcel.
+  const [split, setSplit] = useState<{ billed_area: number; is_borga: boolean; owner_farmer_id: string } | null>(null);
+  useEffect(() => {
+    if (!landId || !farmerId) { setSplit(null); return; }
+    let cancelled = false;
+    (async () => {
+      const splits = await resolveBillingSplits(landId, dueDate);
+      if (cancelled) return;
+      const mine = splits.find((s: any) => s.billed_farmer_id === farmerId) ?? null;
+      setSplit(mine ? { billed_area: Number(mine.billed_area) || 0, is_borga: !!mine.is_borga, owner_farmer_id: mine.owner_farmer_id } : null);
+    })();
+    return () => { cancelled = true; };
+  }, [landId, farmerId, dueDate]);
+
+  const selectedLand = lands.find((l: any) => l.id === landId);
+  const billedAreaPreview = split && split.billed_area > 0 ? split.billed_area : Number(selectedLand?.land_size ?? 0);
+
   async function save() {
     if (!farmerId || !landId || !seasonId || !rate) return toast.error(tx("Fill all fields", "সব ফিল্ড পূরণ করুন"));
     if (isManualRate && manualReason.trim().length < 3) return toast.error(tx("Enter manual rate reason (at least 3 chars)", "ম্যানুয়াল রেটের কারণ লিখুন (অন্তত ৩ অক্ষর)"));
     setBusy(true);
     try {
       const land = lands.find((l: any) => l.id === landId);
-      const billed = await resolveBilledFarmer(landId, dueDate);
-      // Phase 4: bill only this farmer's split area (owner remainder or borga share),
-      // not the whole parcel — otherwise a sharecropper is charged for the full land.
+      // Phase 4: bill only THIS farmer's split area (borga share or owner
+      // remainder), not the whole parcel — otherwise a sharecropper is charged
+      // for the full land.
       const splits = await resolveBillingSplits(landId, dueDate);
       const mySplit = splits.find((s: any) => s.billed_farmer_id === farmerId);
-      const billedArea = mySplit && mySplit.billed_area > 0
-        ? mySplit.billed_area
-        : Number(land?.land_size ?? 0);
+      if (!mySplit) {
+        return toast.error(tx("This farmer has no billable share on the selected land.", "নির্বাচিত জমিতে এই কৃষকের বিলযোগ্য কোনো অংশ নেই।"));
+      }
+      const billedArea = mySplit.billed_area > 0 ? mySplit.billed_area : Number(land?.land_size ?? 0);
       const rawSettings = await getChargeSettings(land?.office_id ?? null);
       // No auto delay fee at generation — penalty is added at payment time only.
       const settings = { ...rawSettings, auto_apply_delay_fee: false };
@@ -2421,9 +2440,9 @@ function ManualInvoiceDialog({ open, onOpenChange, seasons, userId }: any) {
         office_id: land?.office_id ?? null,
         season_id: seasonId,
         land_id: landId,
-        owner_farmer_id: billed.owner_farmer_id,
-        farmer_id: billed.billed_farmer_id,
-        is_borga: billed.is_borga,
+        owner_farmer_id: mySplit.owner_farmer_id,
+        farmer_id: farmerId,
+        is_borga: mySplit.is_borga,
         irrigation_amount: calc.irrigation_amount,
         maintenance_amount: calc.maintenance_amount,
         canal_amount: calc.canal_amount,
@@ -2503,6 +2522,15 @@ function ManualInvoiceDialog({ open, onOpenChange, seasons, userId }: any) {
                 ))}
               </SelectContent>
             </Select>
+            {landId && farmerId && split && (
+              <p className="mt-1 text-xs text-muted-foreground">
+                {split.is_borga
+                  ? tx("Sharecropper (borga) — billable area:", "বর্গাদার — বিলযোগ্য পরিমাণ:")
+                  : tx("Owner remainder — billable area:", "মালিকের অবশিষ্ট — বিলযোগ্য পরিমাণ:")}{" "}
+                <b>{formatLandSize(billedAreaPreview, "short")}</b>
+                {selectedLand ? ` / ${formatLandSize(selectedLand.land_size, "short")} (${tx("full parcel", "সম্পূর্ণ জমি")})` : ""}
+              </p>
+            )}
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
