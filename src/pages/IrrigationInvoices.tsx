@@ -1618,11 +1618,13 @@ function GenerateTab({ seasons, offices, userId, isSuper }: any) {
       if (skipExisting) {
         const { data: existing } = await db
           .from("irrigation_invoices" as any)
-          .select("land_id")
+          .select("land_id,farmer_id")
           .eq("season_id", seasonId)
           .neq("invoice_status", "cancelled")
           .is("deleted_at", null);
-        skip = new Set((existing as any[] | null ?? []).map((r: any) => r.land_id));
+        skip = new Set((existing as any[] | null ?? [])
+          .filter((r: any) => r.land_id && r.farmer_id)
+          .map((r: any) => `${r.land_id}:${r.farmer_id}`));
       }
 
       const targetOffice = officeId || (lands?.[0]?.office_id ?? null);
@@ -1661,7 +1663,6 @@ function GenerateTab({ seasons, offices, userId, isSuper }: any) {
 
       const eligible = (lands ?? []).filter((l: any) => {
         if (!(Number(l.land_size) > 0)) { addExcluded(l, tx("Land size is zero", "জমির পরিমাণ শূন্য")); return false; }
-        if (skip.has(l.id)) { addExcluded(l, tx("Invoice already exists", "ইতিমধ্যে ইনভয়েস আছে")); return false; }
         if (!matchesLandTypeFilter(l)) { addExcluded(l, tx("Land type not in selected filter", "জমির ধরন নির্বাচিত ফিল্টারে নেই")); return false; }
         return true;
       });
@@ -1682,7 +1683,9 @@ function GenerateTab({ seasons, offices, userId, isSuper }: any) {
         if (!(resolved.rate > 0)) { noRate++; addExcluded(l, tx("No configured rate for this land type", "জমির ধরনে রেট কনফিগার নেই")); continue; }
         // Phase 4: split billable area between owner and active sharecroppers
         const splits = await resolveBillingSplits(l.id, dueDate);
+        let addedForLand = 0;
         for (const split of splits) {
+          if (skipExisting && skip.has(`${l.id}:${split.billed_farmer_id}`)) continue;
           const billedArea = split.billed_area > 0 ? split.billed_area : Number(l.land_size);
           const calc = calcInvoice({
             land_size_shotok: billedArea,
@@ -1698,6 +1701,10 @@ function GenerateTab({ seasons, offices, userId, isSuper }: any) {
             is_borga: split.is_borga,
           };
           previewArr.push({ land: l, billed, billedArea, calc, settings, rate: resolved.rate, rateRow: matched, resolved });
+          addedForLand++;
+        }
+        if (skipExisting && splits.length > 0 && addedForLand === 0) {
+          addExcluded(l, tx("Invoice already exists for all billable farmers", "সব বিলযোগ্য কৃষকের ইনভয়েস ইতিমধ্যে আছে"));
         }
       }
 
@@ -2362,16 +2369,37 @@ function ManualInvoiceDialog({ open, onOpenChange, seasons, userId }: any) {
 
   useEffect(() => {
     if (!farmerId) { setLands([]); return; }
+    let cancelled = false;
     (async () => {
       const [{ data: own }, { data: rels }] = await Promise.all([
-        db.from("lands").select("id,dag_no,land_size,mouza,owner_farmer_id,office_id,field_type,notes").eq("farmer_id", farmerId).is("deleted_at", null),
-        db.from("land_relations").select("land_id, lands(id,dag_no,land_size,mouza,owner_farmer_id,office_id,field_type)").eq("sharecropper_farmer_id", farmerId).is("deleted_at", null),
+        db.from("lands").select("id,dag_no,land_size,mouza,owner_farmer_id,farmer_id,office_id,field_type,notes").eq("farmer_id", farmerId).is("deleted_at", null),
+        db.from("land_relations").select("land_id,area_decimal,share_percentage,valid_from,valid_to, lands(id,dag_no,land_size,mouza,owner_farmer_id,farmer_id,office_id,field_type,notes)").eq("sharecropper_farmer_id", farmerId).is("deleted_at", null),
       ]);
-      const ids = new Set((own ?? []).map((l: any) => l.id));
-      const sc = (rels ?? []).map((r: any) => r.lands).filter((l: any) => l && !ids.has(l.id));
-      setLands([...(own ?? []), ...sc]);
+      const byId = new Map<string, any>();
+      for (const l of (own ?? []) as any[]) if (l?.id) byId.set(l.id, l);
+      for (const r of (rels ?? []) as any[]) {
+        const l = r?.lands;
+        if (l?.id && !byId.has(l.id)) byId.set(l.id, l);
+      }
+      const annotated = await Promise.all(Array.from(byId.values()).map(async (l: any) => {
+        try {
+          const splits = await resolveBillingSplits(l.id, dueDate);
+          const mine = splits.find((s: any) => s.billed_farmer_id === farmerId) ?? null;
+          if (!mine) return null;
+          return {
+            ...l,
+            __billable_area: Number(mine.billed_area) || 0,
+            __is_borga: !!mine.is_borga,
+            __owner_farmer_id: mine.owner_farmer_id,
+          };
+        } catch {
+          return l;
+        }
+      }));
+      if (!cancelled) setLands(annotated.filter(Boolean));
     })();
-  }, [farmerId]);
+    return () => { cancelled = true; };
+  }, [farmerId, dueDate]);
 
   const [rateRow, setRateRow] = useState<RateRow | null>(null);
 
@@ -2405,7 +2433,9 @@ function ManualInvoiceDialog({ open, onOpenChange, seasons, userId }: any) {
   }, [landId, farmerId, dueDate]);
 
   const selectedLand = lands.find((l: any) => l.id === landId);
-  const billedAreaPreview = split && split.billed_area > 0 ? split.billed_area : Number(selectedLand?.land_size ?? 0);
+  const billedAreaPreview = split && split.billed_area > 0
+    ? split.billed_area
+    : Number(selectedLand?.__billable_area ?? selectedLand?.land_size ?? 0);
 
   async function save() {
     if (!farmerId || !landId || !seasonId || !rate) return toast.error(tx("Fill all fields", "সব ফিল্ড পূরণ করুন"));
@@ -2517,7 +2547,10 @@ function ManualInvoiceDialog({ open, onOpenChange, seasons, userId }: any) {
               <SelectContent>
                 {lands.map((l: any) => (
                   <SelectItem key={l.id} value={l.id}>
-                    {l.mouza} • Dag {formatDagNumbers(l.dag_no)} ({formatLandSize(l.land_size, "short")})
+                    {l.mouza} • Dag {formatDagNumbers(l.dag_no)} ({formatLandSize(l.__billable_area ?? l.land_size, "short")}
+                    {Number(l.__billable_area ?? l.land_size) !== Number(l.land_size)
+                      ? ` / ${tx("full", "পূর্ণ")} ${formatLandSize(l.land_size, "short")}`
+                      : ""})
                   </SelectItem>
                 ))}
               </SelectContent>
