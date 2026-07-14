@@ -24,13 +24,13 @@ function areaFromRoundedCharge(inv: any, snap: any): number | undefined {
   const amount = positive(inv?.irrigation_amount)
     ?? positive(snap?.calc?.irrigation_amount)
     ?? positive(snap?.irrigation_amount);
-  const rate = positive(inv?.applied_rate)
+  const rawRate = positive(inv?.applied_rate)
     ?? positive(inv?.season_rate)
     ?? positive(inv?.rate_per_shotok)
     ?? positive(snap?.applied_rate)
     ?? positive(snap?.rate_per_shotok)
     ?? positive(snap?.calc?.rate_per_shotok);
-  if (!amount || !rate) return undefined;
+  if (!amount || !rawRate) return undefined;
 
   const basis = String(
     inv?.calculation_basis
@@ -43,7 +43,14 @@ function areaFromRoundedCharge(inv: any, snap: any): number | undefined {
   );
   if (basis === "flat") return undefined;
 
-  const raw = basis === "per_bigha" ? (amount / rate) * 33 : amount / rate;
+  // Normalize rate to per-shotok. Season rate is usually stored per একর (e.g. 3637)
+  // — matches normalizeIrrigationRatePerAcre's ">= 500 ⇒ per acre" heuristic.
+  let ratePerShotok: number;
+  if (basis === "per_bigha") ratePerShotok = rawRate / 33;
+  else if (basis === "per_acre" || rawRate >= 500) ratePerShotok = rawRate / 100;
+  else ratePerShotok = rawRate;
+
+  const raw = amount / ratePerShotok;
   if (!Number.isFinite(raw) || raw <= 0) return undefined;
 
   // Invoice amounts are rounded to whole taka, so reverse-calculation can be
