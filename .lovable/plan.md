@@ -1,40 +1,48 @@
-# ব্যাংক–লেজার, ক্যাশবুক ও ডে-ক্লোজ ঠিক করার প্ল্যান
+# Plan: Session ends on browser close (not on tab close)
 
-## এখন কীভাবে করা আছে (বর্তমান অবস্থা)
+## Goal
+- Closing the **browser** → session ends → next visit shows login.
+- Closing a **tab** or opening a **new tab** → session stays alive.
+- Language preference should NOT auto-revert to Bengali on fresh visit.
+- No impact to any existing module (Irrigation, Savings, Loan, Cashbook, Reports, Farmer Portal, etc.).
 
-- **ব্যাংক ডিপোজিট → সেচ লেজার সমস্যা:** `BankAccounts.tsx` এ যেকোনো `deposit` করলেই সবসময় ধরে নেয় "নগদ → ব্যাংক" এবং একটি `expenses` সারি (stream=irrigation/savings) তৈরি করে যা সেচ নগদ কমিয়ে দেয় (`postBankCashTransfer` → Dr Bank / Cr Cash)। ফলে বাইরে থেকে আসা আলাদা ব্যাংক ডিপোজিটও সেচ ক্যাশ/লেজারে হিট করে। "শুধু ব্যাংকের আলাদা লেজার" বলে কোনো আলাদা পথ নেই।
-- **ইনকাম ক্যাশবুকে আসে না:** `Cashbook.tsx` শুধু `receipts`, `expenses`, `payments` টানে — `office_incomes` (আয় এন্ট্রি) টানে না, তাই আয় ক্যাশবুকে দেখায় না। খরচ (`expenses`) আসে, কিন্তু আয়ের উৎস বাদ পড়ে।
-- **ভাওচার ছবি:** আপলোড হয় (`vouchers`/`expenses` → storage bucket `vouchers`), কিন্তু আয়/ব্যয় ডিটেইল দেখার সময় ছবি প্রিভিউ দেখানো হয় না।
-- **ডে-ক্লোজ:** `PeriodClose.tsx` মাসিক পিরিয়ড ক্লোজ করে (`close_accounting_period` RPC)। প্রতিটি লেনদেন আলাদাভাবে best-effort লেজারে পোস্ট করে; দিনশেষে সব ইনকাম/এক্সপেন্স/ব্যাংক একসাথে লেজারে পোস্ট করার নিশ্চিত ধাপ নেই।
+## Approach (technical)
 
-## কাজের ধাপ
+Browsers don't fire a reliable "browser closed" event. The standard, safe pattern is:
 
-### ১. ব্যাংক ডিপোজিট সঠিক লেজারে রাউট করা
-- `BankAccounts.tsx` ট্রানজেকশন ফর্মে ডিপোজিটের জন্য একটি **উৎস নির্বাচন** যোগ করা:
-  - **নগদ থেকে জমা (transfer):** বর্তমান আচরণ — সেচ/সমিতি নগদ কমবে, ক্যাশবুকে expense মিরর হবে, journal = Dr Bank / Cr Cash।
-  - **সরাসরি ব্যাংক ডিপোজিট (external):** নগদে কোনো প্রভাব নয়, ক্যাশবুকে expense তৈরি হবে না; journal = Dr Bank / Cr (নির্বাচিত আয়/মূলধন হিসাব)। শুধু ব্যাংক লেজারে হিট করবে।
-- একই বিভাজন উত্তোলনের ক্ষেত্রেও (নগদে ফেরত vs সরাসরি ব্যাংক খরচ)।
-- `accountingPosting.ts` এ `postBankCashTransfer` অক্ষত রেখে নতুন `postBankExternal` হেল্পার যোগ করা যা নগদ স্পর্শ করে না।
-- সেচ স্ট্রিম গার্ড (`cashStreamGuard`) অপরিবর্তিত থাকবে যাতে সেচ ও সমিতি নগদ না মেশে।
+1. **Store auth token in `sessionStorage`** (dies when the last tab of that browser process is closed) instead of `localStorage`.
+2. **Share `sessionStorage` across tabs** using the well-known "sessionStorage handoff" trick:
+   - On tab load: if `sessionStorage` is empty, broadcast `REQUEST_SESSION` via `BroadcastChannel` (fallback: `localStorage` event ping).
+   - Any already-open tab responds with its session snapshot → new tab writes it into its own `sessionStorage`.
+   - Result: new tabs inherit the session; when the LAST tab closes, no tab can respond → next fresh visit has no session → login screen.
+3. **Keep the Supabase JS client's `persistSession` behavior intact** by providing a custom `storage` adapter that reads/writes via this shared-session layer (already the correct extension point — no schema or RLS change).
+4. **Laravel token (`mkb_api_token`)** and **farmer portal token (`farmer_portal_token`)**: migrate to the same shared-session storage helper.
+5. **Language (`lang`)**: keep in `localStorage` (user preference is device-level, not session-level). Fix `FarmerPortalLogin` which force-sets `bn` on every mount — only set default when no preference is stored, so refreshes after logout don't flip English users to Bangla.
 
-### ২. আয় ও ব্যয় ক্যাশবুকে দেখানো
-- `Cashbook.tsx` এর ডেটা লোডে `office_incomes` যোগ করা (আয়/জমা দিকে), সঠিক stream ও তারিখ রেঞ্জ ফিল্টারসহ, `.limit(20000)` দিয়ে।
-- আয় এন্ট্রিগুলো ক্যাশবুক রো হিসেবে debit/জমা দিকে ম্যাপ করা; খরচ আগের মতোই credit/খরচ দিকে।
+## Files to change
 
-### ৩. ভাওচার ছবি ডিটেইলে ভিউ
-- আয়/ব্যয় ডিটেইল ডায়ালগে `attachment_path` থাকলে `vouchers` bucket থেকে signed URL তৈরি করে ছবি/PDF প্রিভিউ + "ছবি দেখুন" লিংক দেখানো (Cashbook ও OfficeIncomeTab দুই জায়গায়)।
+```text
+src/lib/sharedSessionStorage.ts        (new) - sessionStorage + BroadcastChannel handoff
+src/integrations/supabase/client.ts    - use shared storage as `auth.storage`
+src/lib/laravel-auth.ts                - token via shared storage
+src/lib/api/client.ts                  - token via shared storage (if applicable)
+src/pages/FarmerPortalLogin.tsx        - stop forcing lang=bn on mount
+src/i18n/LanguageProvider.tsx          - verify default only when unset
+```
 
-### ৪. ডে-ক্লোজে সব লেজারে পোস্ট
-- একটি **ডে-ক্লোজ** অ্যাকশন: নির্বাচিত তারিখের সব unposted আয় (`office_incomes`), খরচ (`expenses`), ও ব্যাংক লেনদেন (`bank_transactions`) খুঁজে balanced journal তৈরি করে লেজারে পোস্ট করবে (idempotent — ইতিমধ্যে পোস্ট হলে বাদ)।
-- ডুপ্লিকেট এড়াতে stable reference key ব্যবহার (যেমন `INCOME-<id>`, `EXPENSE-<id>`) এবং পোস্ট হওয়া রেকর্ডে ফ্ল্যাগ/চেক।
+Note: `src/integrations/supabase/client.ts` is marked auto-generated but the `storage:` option is the sanctioned override point; only that one line changes.
 
-## কারিগরি বিবরণ
-- মূল ফাইল: `src/pages/BankAccounts.tsx`, `src/pages/Cashbook.tsx`, `src/lib/accountingPosting.ts`, `src/lib/sechBankTransfer.ts`, `src/pages/irrigation/OfficeIncomeTab.tsx`, এবং ডে-ক্লোজের জন্য `src/pages/PeriodClose.tsx` বা নতুন ছোট কম্পোনেন্ট।
-- সব পোস্টিং best-effort, balanced-guard সহ; কোনো এক্সিস্টিং মডিউল (সেচ ইনভয়েস, সেভিং, লোন, রিপোর্ট) ভাঙবে না।
-- লাইভ Laravel/MySQL: প্রয়োজনে API সাইডেও একই রাউটিং যাচাই করা হবে; ফ্রন্টএন্ড লজিক আগে ঠিক করে ভেরিফাই করা হবে।
+## Safety / no-regression checklist
+- Supabase's `onAuthStateChange`, refresh-token flow, RLS, and all queries continue to work — only the *storage backend* changes.
+- Farmer portal, Laravel-mode VPS, and Lovable Cloud all use the same helper → consistent behavior.
+- No DB migration, no RPC change, no permission change → zero risk to Irrigation / Savings / Loan / Cashbook / Reports / Payments modules.
+- Existing logged-in users get logged out **once** after deploy (storage key moves from `localStorage` to `sessionStorage`) — expected and acceptable.
 
-## ভেরিফিকেশন
-- সেচ নগদ→ব্যাংক জমা: সেচ ক্যাশ কমবে, ব্যাংক বাড়বে (আগের মতো)।
-- সরাসরি ব্যাংক ডিপোজিট: সেচ ক্যাশ অপরিবর্তিত, শুধু ব্যাংক লেজার বাড়বে।
-- আয়/ব্যয় ক্যাশবুকে দৃশ্যমান; ভাওচার ছবি ডিটেইলে দেখা যাবে।
-- ডে-ক্লোজের পর সব এন্ট্রি লেজারে হিট করবে, ব্যালান্স মিলবে।
+## Verification
+1. Login → open several tabs → all stay logged in.
+2. Close individual tabs → remaining tabs stay logged in.
+3. Close the **entire browser** → reopen → visit site → login page appears. ✅
+4. Toggle language to English → logout → visit again → language stays English. ✅
+5. Smoke-test one page from each major module to confirm no regression.
+
+Shall I proceed with this plan?
