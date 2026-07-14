@@ -1799,6 +1799,8 @@ function GenerateTab({ seasons, offices, userId, isSuper }: any) {
             owner_farmer_id: row.billed.owner_farmer_id,
             farmer_id: row.billed.billed_farmer_id,
             is_borga: row.billed.is_borga,
+            billed_area_shotok: billedArea,
+            parcel_area_shotok: Number(row.land.land_size) || null,
             irrigation_amount: calc.irrigation_amount,
             maintenance_amount: calc.maintenance_amount,
             canal_amount: calc.canal_amount,
