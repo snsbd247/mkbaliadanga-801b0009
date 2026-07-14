@@ -8,6 +8,8 @@
  * Nothing here imports Supabase, so importing this file is always safe.
  */
 
+import { sharedSessionStorage } from "@/lib/sharedSessionStorage";
+
 const TOKEN_KEY = "mkb_api_token";
 
 /** Resolve the API base URL, or null when running in Supabase mode. */
@@ -29,20 +31,23 @@ export function isLaravelMode(): boolean {
 
 // ── Token storage ────────────────────────────────────────────────────
 export function getToken(): string | null {
+  const s = sharedSessionStorage.getItem(TOKEN_KEY);
+  if (s) return s;
   try {
-    return localStorage.getItem(TOKEN_KEY);
-  } catch {
-    return null;
-  }
+    const legacy = localStorage.getItem(TOKEN_KEY);
+    if (legacy) {
+      sharedSessionStorage.setItem(TOKEN_KEY, legacy);
+      try { localStorage.removeItem(TOKEN_KEY); } catch {}
+      return legacy;
+    }
+  } catch {}
+  return null;
 }
 
 export function setToken(token: string | null): void {
-  try {
-    if (token) localStorage.setItem(TOKEN_KEY, token);
-    else localStorage.removeItem(TOKEN_KEY);
-  } catch {
-    /* ignore (private mode / SSR) */
-  }
+  try { localStorage.removeItem(TOKEN_KEY); } catch {}
+  if (token) sharedSessionStorage.setItem(TOKEN_KEY, token);
+  else sharedSessionStorage.removeItem(TOKEN_KEY);
 }
 
 export function clearToken(): void {

@@ -1,4 +1,5 @@
 import axios, { AxiosError, AxiosInstance } from "axios";
+import { sharedSessionStorage } from "@/lib/sharedSessionStorage";
 
 const TOKEN_KEY = "mkb_api_token";
 
@@ -17,13 +18,23 @@ export class ApiError extends Error {
 }
 
 export function getApiToken(): string | null {
-  try { return localStorage.getItem(TOKEN_KEY); } catch { return null; }
+  const s = sharedSessionStorage.getItem(TOKEN_KEY);
+  if (s) return s;
+  // Legacy: migrate any pre-existing localStorage token to sessionStorage once.
+  try {
+    const legacy = localStorage.getItem(TOKEN_KEY);
+    if (legacy) {
+      sharedSessionStorage.setItem(TOKEN_KEY, legacy);
+      try { localStorage.removeItem(TOKEN_KEY); } catch {}
+      return legacy;
+    }
+  } catch {}
+  return null;
 }
 export function setApiToken(t: string | null) {
-  try {
-    if (t) localStorage.setItem(TOKEN_KEY, t);
-    else localStorage.removeItem(TOKEN_KEY);
-  } catch {}
+  try { localStorage.removeItem(TOKEN_KEY); } catch {}
+  if (t) sharedSessionStorage.setItem(TOKEN_KEY, t);
+  else sharedSessionStorage.removeItem(TOKEN_KEY);
 }
 
 function resolveBaseURL(): string {
