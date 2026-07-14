@@ -775,6 +775,40 @@ class RpcController extends Controller
         }
     }
 
+    private function isBaseTable(string $table): bool
+    {
+        try {
+            $rows = DB::select(
+                'SELECT TABLE_TYPE AS table_type
+                   FROM information_schema.TABLES
+                  WHERE TABLE_SCHEMA = DATABASE()
+                    AND TABLE_NAME = ?
+                  LIMIT 1',
+                [$table]
+            );
+            $type = strtoupper((string) ($rows[0]->table_type ?? $rows[0]->TABLE_TYPE ?? ''));
+            return $type === '' || $type === 'BASE TABLE';
+        } catch (\Throwable $e) {
+            return true;
+        }
+    }
+
+    private function moveFarmerReference(string $table, string $column, string $source, string $target): void
+    {
+        if (! Schema::hasTable($table) || ! Schema::hasColumn($table, $column) || ! $this->isBaseTable($table)) {
+            return;
+        }
+
+        try {
+            DB::table($table)->where($column, $source)->update([$column => $target]);
+        } catch (\Throwable $e) {
+            if (str_contains($e->getMessage(), 'not updatable')) {
+                return;
+            }
+            throw $e;
+        }
+    }
+
     /**
      * Readiness check for the Farmer Merge screen. Mirrors the Postgres
      * `merge_farmers_health` function so the UI status badges work on the VPS.
@@ -840,7 +874,7 @@ class RpcController extends Controller
             $tables = $this->tablesWithColumn('farmer_id', ['farmers']);
 
             foreach ($tables as $tbl) {
-                DB::table($tbl)->where('farmer_id', $source)->update(['farmer_id' => $target]);
+                $this->moveFarmerReference($tbl, 'farmer_id', $source, $target);
             }
 
             // Land/transfer tables may reference farmers through domain-specific
@@ -854,7 +888,7 @@ class RpcController extends Controller
                 'cultivator_farmer_id',
             ] as $column) {
                 foreach ($this->tablesWithColumn($column, ['farmers']) as $tbl) {
-                    DB::table($tbl)->where($column, $source)->update([$column => $target]);
+                    $this->moveFarmerReference($tbl, $column, $source, $target);
                 }
             }
 
