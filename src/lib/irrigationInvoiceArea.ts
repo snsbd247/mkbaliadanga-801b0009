@@ -56,17 +56,27 @@ function areaFromRoundedCharge(inv: any, snap: any): number | undefined {
 export function invoiceBilledArea(inv: any): number | undefined {
   const snap = parseSnapshot(inv?.calculation_snapshot);
   const chargeArea = areaFromRoundedCharge(inv, snap);
-  return positive(inv?.billed_area_shotok)
+  const stored =
+    positive(inv?.billed_area_shotok)
     ?? positive(snap?.backfill_new?.billed_area_shotok)
     ?? positive(snap?.new?.billed_area_shotok)
     ?? positive(snap?.billed_area_shotok)
-    ?? chargeArea
     ?? positive(snap?.land_size_shotok)
     ?? positive(snap?.calc?.land_size_shotok)
     ?? positive(inv?.lands?.billed_area_shotok)
     ?? positive(inv?.land?.billed_area_shotok)
     ?? positive(inv?.lands?.land_size)
     ?? positive(inv?.land?.land_size);
+
+  // If the invoice's own charge ÷ rate disagrees meaningfully with the stored
+  // area (legacy rows where billed_area_shotok was backfilled from the wrong
+  // parcel value), prefer the reverse-calculated area so the printed শতক always
+  // matches the printed চার্জ. Same-value or missing charge-area → keep stored.
+  if (chargeArea && stored) {
+    const ratio = chargeArea / stored;
+    if (ratio < 0.9 || ratio > 1.1) return chargeArea;
+  }
+  return stored ?? chargeArea;
 }
 
 export function invoiceParcelArea(inv: any): number | undefined {
