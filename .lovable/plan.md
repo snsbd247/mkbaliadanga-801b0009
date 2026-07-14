@@ -1,61 +1,79 @@
-## সমস্যা
+# বর্গা ইনভয়েস Backfill ও Guard প্ল্যান
 
-MASUD ALAM (মালিক) — Dag 223, মোট 0.665 শতক জমি; দুই বর্গাদার SOFIQUL (0.333) ও MD. A. SALAM (0.333)।
+## ১. Backfill Migration (`is_borga=true` পুরনো ইনভয়েস)
 
-- ইনভয়েস **প্রিভিউ** এ সঠিক 0.333 দেখাচ্ছে ✅
-- কিন্তু ইনভয়েস **সেভ** করার পর জমির পরিমাণ ও ক্যালকুলেশন পুরো 0.665 দেখাচ্ছে ❌
-- সেই ইনভয়েসের **পেমেন্ট রিসিদ**েও 0.665 দেখাচ্ছে ❌
+প্রতিটি row-এর জন্য:
 
-## মূল কারণ
+- **প্রকৃত area** = `land_relations.area_decimal` (active row, `deleted_at IS NULL`); না থাকলে `share_percentage/100 * lands.land_size`
+- relation না পেলে **skip** (audit এ যাবে)
+- **নতুন amounts:**
+  - `ratio = new_area / old_billed_area` (old=০ হলে skip)
+  - `irrigation_amount = round(old_irrigation_amount * ratio)`
+  - `payable_amount = irrigation_amount + delay_fee + other_charge − discount_amount` (maintenance/canal বাদ — memory অনুযায়ী)
+  - `due_amount = max(payable − paid, 0)`
+  - `paid ≥ payable` → status `paid`, নাহলে `paid>0` → `partial`, নাহলে unchanged
+- **`calculation_snapshot`** এ merge:
+  ```json
+  { "backfilled_at": "…", "backfill_source": "borga_area_fix_2026_07_14",
+    "old": { "billed_area_shotok":…, "payable_amount":…, "irrigation_amount":…, "due_amount":… },
+    "new": { "billed_area_shotok":…, "payable_amount":…, "irrigation_amount":…, "due_amount":… } }
+  ```
 
-`irrigation_invoices` টেবিলে জমির পরিমাণের জন্য কোনো নিজস্ব কলাম নেই (`area_decimal` নেই)। বর্তমানে বর্গার হিস্যা শুধু `calculation_snapshot.billed_area_shotok` JSON-এ যাচ্ছে।
+### Safe Mode (default)
+- **শুধু `paid_amount = 0`** ইনভয়েস আপডেট হবে
+- `paid_amount > 0` কিন্তু `paid ≤ new_payable` → skip + audit (later phase)
+- `paid > new_payable` → skip + audit (manual review)
 
-ইনভয়েস/রিসিদ ডিসপ্লের বেশ কিছু জায়গা snapshot না পড়ে সরাসরি join-এ আসা `lands.land_size` (পুরো ডাগের 0.665) পড়ছে। ফলে টাকা সঠিক হলেও area ভুল দেখাচ্ছে; আবার কিছু জায়গায় area থেকে টাকাও পুনঃগণনা হচ্ছে বলে টাকাও ভুল দেখাচ্ছে।
+### Audit Table
+`irrigation_invoice_backfill_audit` (নতুন):
+`invoice_id, invoice_no, farmer_id, old_area, new_area, old_payable, new_payable, paid_amount, action` (`updated` | `skipped_paid` | `skipped_overpaid` | `skipped_no_relation`), `reason, created_at`. RLS: admin-only read.
 
-## প্ল্যান
+Payment/receipt rows **touch হবে না** — শুধু invoice এর area+amounts।
 
-### ১. ডাটাবেসে নতুন কলাম যোগ (schema-only, ডাটা মুছবে না)
-`irrigation_invoices` টেবিলে যোগ:
-- `billed_area_shotok numeric` — এই ইনভয়েসে বিল করা প্রকৃত জমি (বর্গার হিস্যা বা পুরো ডাগ)
-- `parcel_area_shotok numeric` — পুরো ডাগের মোট (রেফারেন্সের জন্য)
-- `is_borga` কলাম আগেই আছে — ব্যবহার হবে
+## ২. Invoice Edit/Regenerate Recalc
 
-পুরনো ইনভয়েসগুলোর জন্য one-time backfill: `calculation_snapshot->>'billed_area_shotok'` না থাকলে `lands.land_size` কপি হবে। ফলে পুরনো নন-বর্গা ইনভয়েসে কিছু বদলাবে না।
+`src/pages/IrrigationInvoices.tsx` এ edit/regenerate পাথে ইতিমধ্যে `billedArea` বসছে (আগের ফিক্স)। এখন **guard যোগ:**
+- Insert/update payload validate — `is_borga && billed_area_shotok > parcel_area_shotok` হলে throw
+- edit-এ area পরিবর্তন হলে `irrigation_amount`/`payable_amount`/`due_amount` snapshot-এ old রেখে recalc হবে
 
-### ২. ইনভয়েস তৈরির সময় নতুন কলাম fill করা
-`src/pages/IrrigationInvoices.tsx` (bulk generate + single-land dialog উভয়) এর payload-এ যোগ:
-```
-billed_area_shotok: billedArea,
-parcel_area_shotok: Number(row.land.land_size),
-```
-প্রিভিউতে যা 0.333 দেখাচ্ছে (`billedArea`) হুবহু সেটাই সেভ হবে। ক্যালকুলেশন লজিক ইতিমধ্যে `billedArea` দিয়েই হচ্ছে — শুধু persistence যোগ হবে।
+## ৩. Billing Validation (নতুন invoice)
 
-### ৩. ডিসপ্লে সবখানে snapshot-first পড়া
-`invoiceLandSize()` helper কে update করে priority:
-1. `inv.billed_area_shotok` (নতুন কলাম)
-2. `calculation_snapshot.billed_area_shotok`
-3. fallback `inv.lands.land_size`
+`src/lib/irrigationInvoice.ts` বা payload builder-এ:
+- borga farmer এর জন্য `land_relations` না থাকলে error
+- `billed_area_shotok` কখনো `parcel_area_shotok` অতিক্রম করবে না — assert
 
-এই helper ব্যবহার করে সংশোধন হবে (শুধু presentation, business logic অক্ষত):
-- ইনভয়েস তালিকা / প্রিন্ট view
-- `src/lib/irrigationInvoicePdf.ts` (ইনভয়েস PDF)
-- `src/lib/irrigationReceiptData.ts` + `bnReceipts.ts` (সেচ রশিদ area)
-- `PaidLandHistory`, `IrrigationDueReport`, `InvoiceReport`, `FarmerStatement`, `FarmerProfileReport`
+## ৪. PDF / Excel Export
 
-### ৪. Regression Guard
-- অন্য মডিউল (Saving/Loan/Cashbook/Bank/Report totals) `irrigation_invoices.payable_amount / paid_amount / due_amount` পড়ে — সেগুলো অপরিবর্তিত থাকবে।
-- ইনভয়েস তৈরি পেজের UI, rate override, manual rate, delay-fee, carry-forward — কোনোটাই touch হবে না।
-- Type regeneration migration approve করার পরে হবে; তারপর কোড কম্পাইল হবে।
+`invoiceLandSize()` helper snapshot-first — আগের ফিক্সে হয়ে গেছে। ভেরিফাই করব:
+- `src/lib/irrigationInvoicePdf.ts`
+- `src/lib/irrigationReceiptData.ts` + `bnReceipts.ts`
+- `PaidLandHistory`, `IrrigationDueReport`, `InvoiceReport`, `FarmerStatement`, `FarmerProfileReport`, `IrrigationPaymentCoverageAdmin` XLSX
+- non-borga invoice untouched (fallback `lands.land_size` কাজ করছে)
 
-### ৫. Verification
-1. উক্ত জমিতে একটি নতুন ইনভয়েস তৈরি → 0.333 শতক ও শুধু ঐ অংশের টাকা দেখা।
-2. পেমেন্ট রিসিভ → রশিদে 0.333 দেখা।
-3. পুরনো নন-বর্গা ইনভয়েস → আগের মতোই পুরো জমি (backfill এ mismatch থাকবে না)।
-4. মালিকের নিজের হিস্যা যদি থাকত (এখানে 0) → সেটিও আলাদা row হিসেবে সঠিক।
+## ৫. Automated Tests (vitest)
+
+`src/lib/__tests__/irrigationBorgaBilling.test.ts`:
+1. একজন বর্গাদার `area_decimal=0.333` → billed=0.333, payable=rate*0.333
+2. দুইজন বর্গাদার 50/50 → দুইটি ইনভয়েস, প্রত্যেকটা অর্ধেক
+3. `area_decimal` NULL হলে `share_percentage` fallback
+4. non-borga → পুরো `land_size`
+5. `billed > parcel` → validation throw
+
+## ৬. Verification
+
+- MASUD ALAM INV-20260707-0001: 0.665→0.333, payable 2519→~1261, paid=0 → **updated**
+- ৯টি 50% invoice: area অর্ধেক, payable অর্ধেক
+- INV-20260706182030-0001 (paid=450, new_payable~225): **skipped_overpaid** — audit-এ থাকবে
+- INV-20260708-0011 (rel_pct=100): area unchanged, no-op
+- পুরনো সেচ রশিদ reprint → নতুন area দেখাবে; payment amount অপরিবর্তিত
+
+## ৭. Rollback
+
+`calculation_snapshot.old` থেকে reverse migration সম্ভব — audit table-ই source of truth।
 
 ## Technical Notes
-- Migration: `ALTER TABLE public.irrigation_invoices ADD COLUMN ... ; UPDATE ... SET billed_area_shotok = COALESCE((calculation_snapshot->>'billed_area_shotok')::numeric, ...);` + `NOTIFY pgrst, 'reload schema';`
-- কোনো RLS/policy পরিবর্তন নেই।
-- কোনো নতুন RPC নেই।
 
-অনুমতি দিলে বাস্তবায়ন শুরু করি।
+- Single migration file: audit table CREATE + GRANT + RLS + backfill DO block
+- কোনো RPC/policy বদল নেই
+- non-borga ইনভয়েস, অন্য মডিউল (loan/savings/cashbook/bank/shares) অপরিবর্তিত
+- Migration approve করার পরে code (validation + tests) যোগ হবে

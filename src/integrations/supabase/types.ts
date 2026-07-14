@@ -2719,6 +2719,69 @@ export type Database = {
           },
         ]
       }
+      irrigation_invoice_backfill_audit: {
+        Row: {
+          action: string
+          backfill_source: string
+          created_at: string
+          farmer_id: string | null
+          id: string
+          invoice_id: string
+          invoice_no: string | null
+          land_id: string | null
+          new_area: number | null
+          new_due: number | null
+          new_irrigation_amount: number | null
+          new_payable: number | null
+          old_area: number | null
+          old_due: number | null
+          old_irrigation_amount: number | null
+          old_payable: number | null
+          paid_amount: number | null
+          reason: string | null
+        }
+        Insert: {
+          action: string
+          backfill_source?: string
+          created_at?: string
+          farmer_id?: string | null
+          id?: string
+          invoice_id: string
+          invoice_no?: string | null
+          land_id?: string | null
+          new_area?: number | null
+          new_due?: number | null
+          new_irrigation_amount?: number | null
+          new_payable?: number | null
+          old_area?: number | null
+          old_due?: number | null
+          old_irrigation_amount?: number | null
+          old_payable?: number | null
+          paid_amount?: number | null
+          reason?: string | null
+        }
+        Update: {
+          action?: string
+          backfill_source?: string
+          created_at?: string
+          farmer_id?: string | null
+          id?: string
+          invoice_id?: string
+          invoice_no?: string | null
+          land_id?: string | null
+          new_area?: number | null
+          new_due?: number | null
+          new_irrigation_amount?: number | null
+          new_payable?: number | null
+          old_area?: number | null
+          old_due?: number | null
+          old_irrigation_amount?: number | null
+          old_payable?: number | null
+          paid_amount?: number | null
+          reason?: string | null
+        }
+        Relationships: []
+      }
       irrigation_invoice_payments: {
         Row: {
           canal_collected: number
