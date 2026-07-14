@@ -4,6 +4,7 @@ import { normalizeIrrigationRatePerAcre } from "@/lib/bnReceipts";
 import { joinNotes } from "@/lib/irrigationExports";
 import { buildMemberSummary } from "@/lib/receiptMemberSummary";
 import { resolveMouzaName } from "@/lib/mouzaQuery";
+import { invoiceBilledArea } from "@/lib/irrigationInvoiceArea";
 
 // Placeholders shown on the receipt when patwari data is missing, so the field
 // is never silently blank.
@@ -313,16 +314,6 @@ export async function buildIrrigationReceiptEnrichment(
       ),
     ).join("/") || null;
 
-  const invoiceBilledArea = (inv: any): number => {
-    const snap = inv?.calculation_snapshot;
-    const v =
-      inv?.billed_area_shotok ??
-      snap?.billed_area_shotok ??
-      snap?.land_size_shotok ??
-      inv?.lands?.land_size;
-    const n = Number(v);
-    return Number.isFinite(n) && n > 0 ? n : 0;
-  };
   const ratePerAcre = normalizeIrrigationRatePerAcre(
     primaryCharge?.season_rate,
     primaryCharge?.irrigation_amount,
@@ -348,7 +339,7 @@ export async function buildIrrigationReceiptEnrichment(
       ),
     ).join(", ") || null;
   const landSize =
-    invoiceRows.reduce((s, inv) => s + invoiceBilledArea(inv), 0) || null;
+    invoiceRows.reduce((s, inv) => s + (invoiceBilledArea(inv) ?? 0), 0) || null;
   const billInfo =
     Array.from(
       new Set(

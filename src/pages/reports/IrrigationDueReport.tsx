@@ -18,6 +18,7 @@ import { useAuth } from "@/auth/AuthProvider";
 import { useLang } from "@/i18n/LanguageProvider";
 import { isLaravelBackend } from "@/lib/backend";
 import { SearchableSelect } from "@/components/SearchableSelect";
+import { invoiceBilledArea } from "@/lib/irrigationInvoiceArea";
 
 type Row = {
   farmer_id: string;
@@ -137,8 +138,8 @@ export default function IrrigationDueReport() {
       const parsedDueFrom = parseFilterDate(dueFrom);
       const parsedDueTo = parseFilterDate(dueTo);
       const invoiceSelect = isLaravelBackend
-        ? "id,farmer_id,land_id,season_id,payable_amount,amount,paid_amount,due_amount,office_id,generated_at,issue_date,created_at,due_date,invoice_status,status,deleted_at"
-        : "id,farmer_id,land_id,season_id,payable_amount,paid_amount,due_amount,office_id,generated_at,created_at,due_date,invoice_status,deleted_at";
+        ? "id,farmer_id,land_id,season_id,payable_amount,amount,paid_amount,due_amount,office_id,generated_at,issue_date,created_at,due_date,invoice_status,status,deleted_at,billed_area_shotok,parcel_area_shotok,calculation_snapshot,is_borga"
+        : "id,farmer_id,land_id,season_id,payable_amount,paid_amount,due_amount,office_id,generated_at,created_at,due_date,invoice_status,deleted_at,billed_area_shotok,parcel_area_shotok,calculation_snapshot,is_borga";
       let q = db.from("irrigation_invoices").select(invoiceSelect).is("deleted_at", null).neq("invoice_status", "cancelled").limit(10000);
       if (officeId !== "all") q = q.eq("office_id", officeId);
       if (seasonId !== "all") q = q.eq("season_id", seasonId);
@@ -196,7 +197,7 @@ export default function IrrigationDueReport() {
         const pw = land?.patwari_id ? patwariById[land.patwari_id] : null;
         const own = land?.owner_farmer_id ? ownerById[land.owner_farmer_id] : null;
         const key = `${r.farmer_id}|${r.land_id}|${r.season_id}`;
-        const shatak = Number(land?.land_size ?? land?.area_decimal ?? 0);
+        const shatak = Number(invoiceBilledArea({ ...r, lands: land }) ?? land?.land_size ?? land?.area_decimal ?? 0);
         const dag = land?.dag_no ? formatDagNumbers(land.dag_no) : (land?.dag_numbers ? formatDagNumbers(land.dag_numbers) : "");
         const resolvedMouza = resolveMouzaName(landWithMouza) || land?.mouza || "";
         const cur = grouped.get(key) ?? {

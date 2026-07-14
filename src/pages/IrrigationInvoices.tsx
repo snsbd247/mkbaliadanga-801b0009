@@ -63,7 +63,7 @@ type Invoice = any;
 function invoiceLandSize(inv: any): number | undefined {
   if (inv?.billed_area_shotok != null && Number(inv.billed_area_shotok) > 0) return Number(inv.billed_area_shotok);
   const snap = inv?.calculation_snapshot;
-  const v = snap?.billed_area_shotok ?? snap?.land_size_shotok ?? snap?.parcel_size_shotok;
+  const v = snap?.backfill_new?.billed_area_shotok ?? snap?.new?.billed_area_shotok ?? snap?.billed_area_shotok ?? snap?.land_size_shotok ?? snap?.calc?.land_size_shotok ?? snap?.parcel_size_shotok;
   if (v != null && Number(v) > 0) return Number(v);
   return inv?.lands?.land_size;
 }
@@ -71,7 +71,7 @@ function invoiceLandSize(inv: any): number | undefined {
 /** Full parcel size frozen on the invoice (for barga "billed portion / total" display). */
 function invoiceParcelSize(inv: any): number | undefined {
   if (inv?.parcel_area_shotok != null && Number(inv.parcel_area_shotok) > 0) return Number(inv.parcel_area_shotok);
-  const v = inv?.calculation_snapshot?.parcel_size_shotok;
+  const v = inv?.calculation_snapshot?.parcel_size_shotok ?? inv?.calculation_snapshot?.parcel_area_shotok;
   if (v != null && Number(v) > 0) return Number(v);
   return inv?.lands?.land_size;
 }

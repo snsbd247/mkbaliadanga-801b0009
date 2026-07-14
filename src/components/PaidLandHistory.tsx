@@ -19,6 +19,7 @@ import { useReceiptRenderArgs } from "@/lib/receiptOptions";
 import { fetchPaymentReceiptData } from "@/lib/buildPaymentReceiptData";
 import { IrrigationReceiptPreviewDialog } from "@/components/receipts/IrrigationReceiptPreviewDialog";
 import { buildMemberSummary } from "@/lib/receiptMemberSummary";
+import { invoiceBilledArea } from "@/lib/irrigationInvoiceArea";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import * as XLSX from "xlsx";
@@ -84,7 +85,7 @@ export function PaidLandHistory({ farmerId }: Props) {
         .from("irrigation_invoice_payments")
         .select(
           "collected_amount, irrigation_collected, maintenance_collected, canal_collected, delay_fee_collected, current_invoice_collected, previous_due_collected, created_at, " +
-          "invoice:irrigation_invoices!inner(invoice_no, farmer_id, season_rate, irrigation_amount, land_type_name, due_amount, is_borga, lands(dag_no, mouza, mouzas(name_bn,name), land_size, notes, patwaris(name,name_bn,mobile), owner:farmers!lands_owner_farmer_id_fkey(name_bn,name_en,member_no,farmer_code,account_number,voter_number,savings_inactive,is_voter)), seasons(name,year,type)), " +
+          "invoice:irrigation_invoices!inner(invoice_no, farmer_id, season_rate, irrigation_amount, land_type_name, due_amount, is_borga, billed_area_shotok, parcel_area_shotok, calculation_snapshot, lands(dag_no, mouza, mouzas(name_bn,name), land_size, notes, patwaris(name,name_bn,mobile), owner:farmers!lands_owner_farmer_id_fkey(name_bn,name_en,member_no,farmer_code,account_number,voter_number,savings_inactive,is_voter)), seasons(name,year,type)), " +
           "payment:payments(id, receipt_no, created_at, status, voided_at, verify_token)"
         )
         .eq("invoice.farmer_id", farmerId)
@@ -92,7 +93,8 @@ export function PaidLandHistory({ farmerId }: Props) {
       db.from("farmers").select("name_bn,name_en,member_no,farmer_code,account_number,voter_number,savings_inactive,is_voter,father_name,mobile,village,office_id,union_id").eq("id", farmerId).maybeSingle(),
     ]);
     const list: PaidRow[] = (data ?? []).map((r: any) => {
-      const acreRate = normalizeIrrigationRatePerAcre(r.invoice?.season_rate, r.invoice?.irrigation_amount, r.invoice?.lands?.land_size);
+      const billedArea = invoiceBilledArea(r.invoice);
+      const acreRate = normalizeIrrigationRatePerAcre(r.invoice?.season_rate, r.invoice?.irrigation_amount, billedArea ?? r.invoice?.lands?.land_size);
       const owner = r.invoice?.lands?.owner;
       const ownerMember = owner?.member_no || owner?.farmer_code || null;
       const isBorga = !!r.invoice?.is_borga;
@@ -104,7 +106,7 @@ export function PaidLandHistory({ farmerId }: Props) {
         amount: Number(r.collected_amount || 0),
         dag_no: r.invoice?.lands?.dag_no ?? "—",
         mouza: resolveMouzaName(r.invoice?.lands) || "—",
-        land_size: r.invoice?.lands?.land_size != null ? Number(r.invoice.lands.land_size) : null,
+        land_size: billedArea != null ? Number(billedArea) : (r.invoice?.lands?.land_size != null ? Number(r.invoice.lands.land_size) : null),
         land_type: r.invoice?.land_type_name ?? "—",
         acre_rate: acreRate,
         bigha_rate: acreRate != null ? Math.round(ratePerBighaFromAcre(acreRate) ?? 0) : null,
