@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import { Wallet, ArrowUpDown, FileDown } from "lucide-react";
 import { useLang } from "@/i18n/LanguageProvider";
 import { exportTablePDF } from "@/lib/exports";
+import { invoiceBilledArea, invoiceParcelArea } from "@/lib/irrigationInvoiceArea";
 
 type Inv = any;
 type SortKey = "due_date" | "payable_amount" | "due_amount" | "paid_amount" | "invoice_status" | "generated_at";
@@ -46,7 +47,7 @@ export default function IrrigationInvoicesTab({ farmerId }: { farmerId: string }
         const list = (data as any[]) ?? [];
         setRows(list);
         const ownerIds = Array.from(new Set(
-          list.map((r: any) => r.lands?.owner_type === "borgadar" ? r.lands?.owner_farmer_id : null).filter(Boolean)
+          list.map((r: any) => r.is_borga ? (r.owner_farmer_id ?? r.lands?.owner_farmer_id) : null).filter(Boolean)
         )) as string[];
         if (ownerIds.length) {
           const { data: owners } = await db.from("farmers").select("id,name_en,name_bn,farmer_code").in("id", ownerIds);
@@ -65,12 +66,18 @@ export default function IrrigationInvoicesTab({ farmerId }: { farmerId: string }
     const parts: string[] = [];
     if (l.mouza) parts.push(String(l.mouza));
     if (l.dag_no) parts.push(`দাগ ${l.dag_no}`);
-    if (l.land_size != null) parts.push(`${l.land_size} শতক`);
+    const billedArea = invoiceBilledArea(r);
+    const parcelArea = invoiceParcelArea(r);
+    if (billedArea != null) parts.push(`${billedArea.toFixed(4)} শতক`);
     const main = parts.join(" • ");
     let sub = "";
-    if (l.owner_type === "borgadar") {
-      const oname = l.owner_farmer_id ? ownerNames[l.owner_farmer_id] : "";
-      sub = `বর্গা${oname ? ` — মালিক: ${oname}` : ""}`;
+    if (r.is_borga) {
+      const ownerId = r.owner_farmer_id ?? l.owner_farmer_id;
+      const oname = ownerId ? ownerNames[ownerId] : "";
+      const total = parcelArea != null && billedArea != null && Math.abs(parcelArea - billedArea) > 0.0001
+        ? ` — পূর্ণ জমি: ${parcelArea.toFixed(4)} শতক`
+        : "";
+      sub = `বর্গা${oname ? ` — মালিক: ${oname}` : ""}${total}`;
     } else if (l.owner_type === "owner") {
       sub = "নিজ মালিক";
     }

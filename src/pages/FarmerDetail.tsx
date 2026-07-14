@@ -69,6 +69,7 @@ import { LandNoteCell } from "@/components/farmers/LandNoteCell";
 import { Textarea } from "@/components/ui/textarea";
 import { LandTypeSelect, useLandTypes, landTypeLabel } from "@/components/locations/LandTypeSelect";
 import { buildMemberSummary } from "@/lib/receiptMemberSummary";
+import { invoiceBilledArea, invoiceParcelArea } from "@/lib/irrigationInvoiceArea";
 
 type LandRow = LandExportRow & { id: string; mouza_id?: string | null; ward_id?: string | null; owner_farmer_id?: string | null; land_type_id?: string | null };
 
@@ -542,6 +543,15 @@ export default function FarmerDetail() {
     if (!farmer) return;
     const k = (p.kind as string) || "savings";
     const kind: BnReceiptData["kind"] = k === "loan" ? "loan" : k === "irrigation" ? "irrigation" : "savings";
+    if (kind === "irrigation" && p.id) {
+      try {
+        const data = await fetchPaymentReceiptData(p.id, { brand, receiptArgs, tx });
+        await downloadBnReceiptPdf(data, copy, receiptArgs.options);
+        return;
+      } catch {
+        // Fall back to the legacy builder below if the canonical payment lookup fails.
+      }
+    }
     const prefix = kind === "loan" ? "LOAN" : kind === "irrigation" ? "IRR" : "SAV";
     const description = p.note
       ?? (kind === "loan" ? "ঋণের কিস্তি গ্রহণ" : kind === "savings" ? "সঞ্চয় জমা গ্রহণ" : "সেচ চার্জ গ্রহণ");
@@ -554,7 +564,7 @@ export default function FarmerDetail() {
       if (allocIds.length) {
         const { data } = await db
           .from("irrigation_invoices")
-          .select("id,invoice_no,irrigation_amount,maintenance_amount,canal_amount,delay_fee,due_amount,discount_amount,season_rate,is_borga,note,seasons(name,year,status),land_type_name,irrigation_category_name,lands(mouza,mouzas(name_bn,name),dag_no,land_size,field_type,land_type_id,owner_type,owner_farmer_id,notes,patwaris(name,name_bn,mobile),owner:farmers!lands_owner_farmer_id_fkey(name_bn,name_en,member_no,farmer_code,account_number,voter_number,savings_inactive,is_voter))")
+          .select("id,invoice_no,irrigation_amount,maintenance_amount,canal_amount,delay_fee,due_amount,discount_amount,season_rate,is_borga,billed_area_shotok,parcel_area_shotok,calculation_snapshot,note,seasons(name,year,status),land_type_name,irrigation_category_name,lands(mouza,mouzas(name_bn,name),dag_no,land_size,field_type,land_type_id,owner_type,owner_farmer_id,notes,patwaris(name,name_bn,mobile),owner:farmers!lands_owner_farmer_id_fkey(name_bn,name_en,member_no,farmer_code,account_number,voter_number,savings_inactive,is_voter))")
           .in("id", allocIds);
         invoiceRows = data ?? [];
       }
@@ -570,7 +580,7 @@ export default function FarmerDetail() {
         .filter(Boolean)
         .flatMap((s) => s.split(/[,;\s]+/))
         .filter(Boolean))).join(", ") || null;
-      const landSize = invoiceRows.reduce((s, inv) => s + Number(inv?.lands?.land_size || 0), 0) || null;
+      const landSize = invoiceRows.reduce((s, inv) => s + Number(invoiceBilledArea(inv) || 0), 0) || null;
       const billInfo = Array.from(new Set(invoiceRows
         .map((inv) => inv?.seasons?.name || inv?.irrigation_category_name || inv?.land_type_name || null)
         .filter(Boolean))).join("/") || "সেচ চার্জ";
@@ -584,7 +594,7 @@ export default function FarmerDetail() {
         member_summary: buildMemberSummary({ cultivator: farmer, owner: ownerFarmer, isBorga }),
         owner_self: !isBorga,
         land_owner_label: isBorga && ownerName ? `${ownerName}${ownerMember ? "-" + ownerMember : ""}` : "নিজ",
-        rate: normalizeIrrigationRatePerAcre(primary?.season_rate, primary?.irrigation_amount, land?.land_size),
+        rate: normalizeIrrigationRatePerAcre(primary?.season_rate, primary?.irrigation_amount, invoiceBilledArea(primary) ?? land?.land_size),
         current_season_charge: invoiceRows.reduce((s, inv) => s + Number(inv?.irrigation_amount || 0), 0),
         current_penalty: invoiceRows.reduce((s, inv) => s + Number(inv?.delay_fee || 0), 0),
         maintenance_charge: invoiceRows.reduce((s, inv) => s + Number(inv?.maintenance_amount || 0), 0),
@@ -684,7 +694,7 @@ export default function FarmerDetail() {
         mobile: inv.farmers?.mobile,
         village: inv.farmers?.village ?? null,
       },
-      land: { mouza: resolveMouzaName(inv.lands) || inv.lands?.mouza, dag_no: inv.lands?.dag_no, land_size: (inv.billed_area_shotok ?? inv.calculation_snapshot?.billed_area_shotok ?? inv.calculation_snapshot?.land_size_shotok ?? inv.lands?.land_size), parcel_size: (inv.parcel_area_shotok ?? inv.calculation_snapshot?.parcel_size_shotok ?? inv.lands?.land_size) },
+      land: { mouza: resolveMouzaName(inv.lands) || inv.lands?.mouza, dag_no: inv.lands?.dag_no, land_size: invoiceBilledArea(inv), parcel_size: invoiceParcelArea(inv) },
       season: inv.seasons,
     };
   }

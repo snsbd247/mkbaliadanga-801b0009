@@ -6,6 +6,7 @@ import { db } from "@/lib/db";
 import { Button } from "@/components/ui/button";
 import { useBranding } from "@/lib/branding";
 import { useLang } from "@/i18n/LanguageProvider";
+import { invoiceBilledArea } from "@/lib/irrigationInvoiceArea";
 
 function safeText(value: unknown) {
   if (value === null || value === undefined || value === "") return "";
@@ -109,8 +110,7 @@ export default function FarmerProfileReport() {
 
         const pw = row.lands?.patwaris;
         // Phase 4: prefer the billed (split) area over the full parcel size
-        const snap = row.calculation_snapshot as any;
-        const billedArea = Number(snap?.billed_area_shotok ?? snap?.land_size_shotok ?? row.lands?.land_size ?? 0);
+        const billedArea = Number(invoiceBilledArea(row) ?? 0);
         return {
           id: row.id,
           mouza: safeText(resolveMouzaName(row.lands) || row.lands?.mouza),
