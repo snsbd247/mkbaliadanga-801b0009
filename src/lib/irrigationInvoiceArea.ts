@@ -53,6 +53,21 @@ function areaFromRoundedCharge(inv: any, snap: any): number | undefined {
   return Math.abs(raw - rounded3) <= 0.00035 ? rounded3 : rounded4;
 }
 
+export function invoiceBilledArea(inv: any): number | undefined {
+  const snap = parseSnapshot(inv?.calculation_snapshot);
+  const chargeArea = areaFromRoundedCharge(inv, snap);
+  const stored =
+    positive(inv?.billed_area_shotok)
+    ?? positive(snap?.backfill_new?.billed_area_shotok)
+    ?? positive(snap?.new?.billed_area_shotok)
+    ?? positive(snap?.billed_area_shotok)
+    ?? positive(snap?.land_size_shotok)
+    ?? positive(snap?.calc?.land_size_shotok)
+    ?? positive(inv?.lands?.billed_area_shotok)
+    ?? positive(inv?.land?.billed_area_shotok)
+    ?? positive(inv?.lands?.land_size)
+    ?? positive(inv?.land?.land_size);
+
   // If the invoice's own charge ÷ rate disagrees meaningfully with the stored
   // area (legacy rows where billed_area_shotok was backfilled from the wrong
   // parcel value), prefer the reverse-calculated area so the printed শতক always
