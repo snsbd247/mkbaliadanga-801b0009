@@ -742,12 +742,16 @@ class RpcController extends Controller
     {
         try {
             $rows = DB::select(
-                'SELECT TABLE_NAME AS table_name
-                   FROM information_schema.COLUMNS
-                  WHERE TABLE_SCHEMA = DATABASE()
-                    AND COLUMN_NAME = ?
-                  ORDER BY TABLE_NAME',
-                [$column]
+                'SELECT c.TABLE_NAME AS table_name
+                   FROM information_schema.COLUMNS c
+                   JOIN information_schema.TABLES t
+                     ON t.TABLE_SCHEMA = c.TABLE_SCHEMA
+                    AND t.TABLE_NAME = c.TABLE_NAME
+                  WHERE c.TABLE_SCHEMA = DATABASE()
+                    AND c.COLUMN_NAME = ?
+                    AND t.TABLE_TYPE = ?
+                  ORDER BY c.TABLE_NAME',
+                [$column, 'BASE TABLE']
             );
 
             return collect($rows)
@@ -757,7 +761,17 @@ class RpcController extends Controller
                 ->values()
                 ->all();
         } catch (\Throwable $e) {
-            return [];
+            try {
+                return collect(Schema::getTables())
+                    ->filter(fn ($table) => (($table['type'] ?? 'table') === 'table'))
+                    ->map(fn ($table) => (string) ($table['name'] ?? ''))
+                    ->filter(fn ($table) => $table !== '' && ! in_array($table, $exclude, true) && Schema::hasColumn($table, $column))
+                    ->unique()
+                    ->values()
+                    ->all();
+            } catch (\Throwable $inner) {
+                return [];
+            }
         }
     }
 
