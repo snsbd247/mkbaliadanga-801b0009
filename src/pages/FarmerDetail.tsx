@@ -684,7 +684,7 @@ export default function FarmerDetail() {
         mobile: inv.farmers?.mobile,
         village: inv.farmers?.village ?? null,
       },
-      land: { mouza: resolveMouzaName(inv.lands) || inv.lands?.mouza, dag_no: inv.lands?.dag_no, land_size: inv.lands?.land_size },
+      land: { mouza: resolveMouzaName(inv.lands) || inv.lands?.mouza, dag_no: inv.lands?.dag_no, land_size: (inv.billed_area_shotok ?? inv.calculation_snapshot?.billed_area_shotok ?? inv.calculation_snapshot?.land_size_shotok ?? inv.lands?.land_size), parcel_size: (inv.parcel_area_shotok ?? inv.calculation_snapshot?.parcel_size_shotok ?? inv.lands?.land_size) },
       season: inv.seasons,
     };
   }
