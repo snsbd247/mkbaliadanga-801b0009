@@ -24,13 +24,13 @@ function areaFromRoundedCharge(inv: any, snap: any): number | undefined {
   const amount = positive(inv?.irrigation_amount)
     ?? positive(snap?.calc?.irrigation_amount)
     ?? positive(snap?.irrigation_amount);
-  const rawRate = positive(inv?.applied_rate)
+  const rate = positive(inv?.applied_rate)
     ?? positive(inv?.season_rate)
     ?? positive(inv?.rate_per_shotok)
     ?? positive(snap?.applied_rate)
     ?? positive(snap?.rate_per_shotok)
     ?? positive(snap?.calc?.rate_per_shotok);
-  if (!amount || !rawRate) return undefined;
+  if (!amount || !rate) return undefined;
 
   const basis = String(
     inv?.calculation_basis
@@ -43,14 +43,7 @@ function areaFromRoundedCharge(inv: any, snap: any): number | undefined {
   );
   if (basis === "flat") return undefined;
 
-  // Normalize rate to per-shotok. Season rate is usually stored per একর (e.g. 3637)
-  // — matches normalizeIrrigationRatePerAcre's ">= 500 ⇒ per acre" heuristic.
-  let ratePerShotok: number;
-  if (basis === "per_bigha") ratePerShotok = rawRate / 33;
-  else if (basis === "per_acre" || rawRate >= 500) ratePerShotok = rawRate / 100;
-  else ratePerShotok = rawRate;
-
-  const raw = amount / ratePerShotok;
+  const raw = basis === "per_bigha" ? (amount / rate) * 33 : amount / rate;
   if (!Number.isFinite(raw) || raw <= 0) return undefined;
 
   // Invoice amounts are rounded to whole taka, so reverse-calculation can be
@@ -59,21 +52,6 @@ function areaFromRoundedCharge(inv: any, snap: any): number | undefined {
   const rounded4 = Math.round(raw * 10000) / 10000;
   return Math.abs(raw - rounded3) <= 0.00035 ? rounded3 : rounded4;
 }
-
-export function invoiceBilledArea(inv: any): number | undefined {
-  const snap = parseSnapshot(inv?.calculation_snapshot);
-  const chargeArea = areaFromRoundedCharge(inv, snap);
-  const stored =
-    positive(inv?.billed_area_shotok)
-    ?? positive(snap?.backfill_new?.billed_area_shotok)
-    ?? positive(snap?.new?.billed_area_shotok)
-    ?? positive(snap?.billed_area_shotok)
-    ?? positive(snap?.land_size_shotok)
-    ?? positive(snap?.calc?.land_size_shotok)
-    ?? positive(inv?.lands?.billed_area_shotok)
-    ?? positive(inv?.land?.billed_area_shotok)
-    ?? positive(inv?.lands?.land_size)
-    ?? positive(inv?.land?.land_size);
 
   // If the invoice's own charge ÷ rate disagrees meaningfully with the stored
   // area (legacy rows where billed_area_shotok was backfilled from the wrong
