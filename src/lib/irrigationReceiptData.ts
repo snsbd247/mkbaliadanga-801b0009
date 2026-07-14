@@ -313,10 +313,20 @@ export async function buildIrrigationReceiptEnrichment(
       ),
     ).join("/") || null;
 
+  const invoiceBilledArea = (inv: any): number => {
+    const snap = inv?.calculation_snapshot;
+    const v =
+      inv?.billed_area_shotok ??
+      snap?.billed_area_shotok ??
+      snap?.land_size_shotok ??
+      inv?.lands?.land_size;
+    const n = Number(v);
+    return Number.isFinite(n) && n > 0 ? n : 0;
+  };
   const ratePerAcre = normalizeIrrigationRatePerAcre(
     primaryCharge?.season_rate,
     primaryCharge?.irrigation_amount,
-    primaryCharge?.lands?.land_size,
+    invoiceBilledArea(primaryCharge) || primaryCharge?.lands?.land_size,
   );
   const ownerMember = ownerFarmer?.member_no || ownerFarmer?.farmer_code || null;
   // "কৃষক এবং মালিক সভ্য সদস্য": বর্গা জমি → "বর্গাদারের Savings No / মালিকের Savings No";
@@ -338,7 +348,7 @@ export async function buildIrrigationReceiptEnrichment(
       ),
     ).join(", ") || null;
   const landSize =
-    invoiceRows.reduce((s, inv) => s + Number(inv?.lands?.land_size || 0), 0) || null;
+    invoiceRows.reduce((s, inv) => s + invoiceBilledArea(inv), 0) || null;
   const billInfo =
     Array.from(
       new Set(
