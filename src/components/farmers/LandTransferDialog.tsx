@@ -11,7 +11,7 @@ import { Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { useLang } from "@/i18n/LanguageProvider";
 import { useAuth } from "@/auth/AuthProvider";
-import { normalizeLandSize } from "@/lib/landMath";
+import { normalizeLandSize, formatLand } from "@/lib/landMath";
 
 type Props = {
   open: boolean;
@@ -271,7 +271,7 @@ export default function LandTransferDialog({ open, onOpenChange, sourceLand, sou
         {sourceLand && (
           <div className="space-y-3 text-sm">
             <div className="rounded-md bg-muted p-2 text-xs">
-              {tx("Source", "মূল")}: <b>{sourceLand.dag_no}</b> — {sourceLand.mouza ?? "—"} — <b>{totalLand.toFixed(2)}</b> {tx("decimal", "শতক")}
+              {tx("Source", "মূল")}: <b>{sourceLand.dag_no}</b> — {sourceLand.mouza ?? "—"} — <b>{formatLand(totalLand)}</b> {tx("decimal", "শতক")}
               <div className="text-muted-foreground mt-1">{isBorgaGive ? tx("Borga: the owner keeps this parcel — only the given-out area moves to the sharecropper. The remaining area stays with the owner.", "বর্গা: মালিক এই জমির মালিকানা রাখবেন — শুধু বর্গা দেওয়া অংশ বর্গাদারের কাছে যাবে। অবশিষ্ট অংশ মালিকের কাছেই থাকবে।") : tx("The original land row will be archived. New land rows will be created for each recipient. History is preserved.", "মূল জমির রেকর্ড আর্কাইভ হবে। প্রতিটি প্রাপকের জন্য নতুন জমির রেকর্ড তৈরি হবে। ইতিহাস অপরিবর্তিত থাকবে।")}</div>
             </div>
 
@@ -323,7 +323,7 @@ export default function LandTransferDialog({ open, onOpenChange, sourceLand, sou
                 ))}
               </div>
               <div className="mt-2 text-xs text-muted-foreground">
-                {tx("Allocated", "বরাদ্দ")}: <b>{effectiveSum.toFixed(2)}</b> / {totalLand.toFixed(2)} {tx("decimal", "শতক")}
+                {tx("Allocated", "বরাদ্দ")}: <b>{formatLand(effectiveSum)}</b> / {formatLand(totalLand)} {tx("decimal", "শতক")}
                 {!equalSplit && effectiveSum > totalLand && <span className="text-destructive ml-2">{tx("(over-allocated)", "(অতিরিক্ত)")}</span>}
                 {effectiveSum < totalLand && <span className="ml-2">{isBorgaGive ? tx("Remaining stays with the owner.", "অবশিষ্ট অংশ মালিকের কাছে থাকবে।") : tx("Remaining will be lost.", "অবশিষ্ট হারিয়ে যাবে।")}</span>}
               </div>
