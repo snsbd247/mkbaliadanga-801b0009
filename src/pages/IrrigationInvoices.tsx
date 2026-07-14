@@ -52,6 +52,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Link } from "react-router-dom";
 import { OfficeIncomeTab } from "@/pages/irrigation/OfficeIncomeTab";
+import { invoiceBilledArea, invoiceParcelArea } from "@/lib/irrigationInvoiceArea";
 
 type Invoice = any;
 
@@ -61,19 +62,12 @@ type Invoice = any;
  * does NOT retroactively change the area shown on past-season invoices/receipts.
  */
 function invoiceLandSize(inv: any): number | undefined {
-  if (inv?.billed_area_shotok != null && Number(inv.billed_area_shotok) > 0) return Number(inv.billed_area_shotok);
-  const snap = inv?.calculation_snapshot;
-  const v = snap?.backfill_new?.billed_area_shotok ?? snap?.new?.billed_area_shotok ?? snap?.billed_area_shotok ?? snap?.land_size_shotok ?? snap?.calc?.land_size_shotok ?? snap?.parcel_size_shotok;
-  if (v != null && Number(v) > 0) return Number(v);
-  return inv?.lands?.land_size;
+  return invoiceBilledArea(inv);
 }
 
 /** Full parcel size frozen on the invoice (for barga "billed portion / total" display). */
 function invoiceParcelSize(inv: any): number | undefined {
-  if (inv?.parcel_area_shotok != null && Number(inv.parcel_area_shotok) > 0) return Number(inv.parcel_area_shotok);
-  const v = inv?.calculation_snapshot?.parcel_size_shotok ?? inv?.calculation_snapshot?.parcel_area_shotok;
-  if (v != null && Number(v) > 0) return Number(v);
-  return inv?.lands?.land_size;
+  return invoiceParcelArea(inv);
 }
 
 const mouzaName = (r: any) => resolveRowMouzaName(r);
