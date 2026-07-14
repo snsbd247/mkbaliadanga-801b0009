@@ -700,6 +700,157 @@ class RpcController extends Controller
         }
     }
 
+    /** True when the user holds admin, super_admin or developer role. */
+    private function isAdminUser($user): bool
+    {
+        if (! $user) {
+            return false;
+        }
+        try {
+            foreach (['admin', 'super_admin', 'developer'] as $role) {
+                if (method_exists($user, 'hasRole') && $user->hasRole($role)) {
+                    return true;
+                }
+            }
+            if (isset($user->id) && Schema::hasTable('roles') && Schema::hasTable('user_roles')) {
+                $hasRole = DB::table('roles')
+                    ->join('user_roles', 'user_roles.role_id', '=', 'roles.id')
+                    ->where('user_roles.user_id', $user->id)
+                    ->whereIn('roles.name', ['admin', 'super_admin', 'developer'])
+                    ->exists();
+                if ($hasRole) {
+                    return true;
+                }
+            }
+        } catch (\Throwable $e) {
+            // Fall through to canonical username guard.
+        }
+        return strtolower((string) ($user->username ?? '')) === 'ismail162';
+    }
+
+    /**
+     * Readiness check for the Farmer Merge screen. Mirrors the Postgres
+     * `merge_farmers_health` function so the UI status badges work on the VPS.
+     */
+    protected function rpc_merge_farmers_health(array $p, Request $request): array
+    {
+        $user = $request->user();
+        return [
+            'rpc_exists'                 => method_exists($this, 'rpc_merge_farmers'),
+            'authenticated_can_execute'  => method_exists($this, 'rpc_merge_farmers'),
+            'caller_is_admin'            => $this->isAdminUser($user),
+            'caller_id'                  => $user->id ?? null,
+        ];
+    }
+
+    /**
+     * Merge a duplicate (source) farmer into a kept (target) farmer. Moves every
+     * table that has a `farmer_id` column, marks the source inactive/merged and
+     * writes an audit log. Admin/super_admin/developer only.
+     */
+    protected function rpc_merge_farmers(array $p, Request $request): array
+    {
+        $source = $p['_source'] ?? $p['source'] ?? null;
+        $target = $p['_target'] ?? $p['target'] ?? null;
+
+        if (! $source || ! $target) {
+            abort(422, 'Source and target are required');
+        }
+        if ($source === $target) {
+            abort(422, 'Source and target must be different farmers');
+        }
+
+        $user = $request->user();
+        if (! $this->isAdminUser($user)) {
+            abort(403, 'Only administrators can merge farmers');
+        }
+
+        $sourceFarmer = DB::table('farmers')->where('id', $source)->first();
+        if (! $sourceFarmer) {
+            abort(404, 'Source farmer not found');
+        }
+        $targetFarmer = DB::table('farmers')->where('id', $target)->first();
+        if (! $targetFarmer) {
+            abort(404, 'Target farmer not found');
+        }
+
+        $countFor = function (string $table) use ($source) {
+            return Schema::hasTable($table) && Schema::hasColumn($table, 'farmer_id')
+                ? (int) DB::table($table)->where('farmer_id', $source)->count()
+                : 0;
+        };
+
+        $counts = [
+            'lands'      => $countFor('lands'),
+            'irrigation' => $countFor('irrigation_invoices'),
+            'savings'    => $countFor('savings_transactions'),
+            'loans'      => $countFor('loans'),
+            'payments'   => $countFor('payments'),
+        ];
+
+        DB::transaction(function () use ($source, $target, $user) {
+            // Every public table that owns a farmer_id column.
+            $tables = DB::table('information_schema.columns')
+                ->where('table_schema', DB::raw('DATABASE()'))
+                ->where('column_name', 'farmer_id')
+                ->where('table_name', '<>', 'farmers')
+                ->pluck('table_name');
+
+            foreach ($tables as $tbl) {
+                DB::table($tbl)->where('farmer_id', $source)->update(['farmer_id' => $target]);
+            }
+
+            $update = [
+                'status'      => 'inactive',
+                'merged_into' => $target,
+                'merged_at'   => now(),
+            ];
+            if (Schema::hasColumn('farmers', 'merged_by')) {
+                $update['merged_by'] = $user->id ?? null;
+            }
+            if (Schema::hasColumn('farmers', 'updated_at')) {
+                $update['updated_at'] = now();
+            }
+            DB::table('farmers')->where('id', $source)->update($update);
+        });
+
+        // Verify nothing remains linked to the source in the key tables.
+        $leftover = $countFor('lands') + $countFor('irrigation_invoices')
+            + $countFor('savings_transactions') + $countFor('loans') + $countFor('payments');
+        if ($leftover !== 0) {
+            abort(500, "Merge verification failed: $leftover records still linked to the source farmer");
+        }
+
+        // Audit log.
+        try {
+            if (Schema::hasTable('audit_logs')) {
+                $row = [];
+                if (Schema::hasColumn('audit_logs', 'id'))        $row['id'] = (string) Str::uuid();
+                if (Schema::hasColumn('audit_logs', 'user_id'))   $row['user_id'] = $user->id ?? null;
+                if (Schema::hasColumn('audit_logs', 'action'))    $row['action'] = 'farmer.merge';
+                if (Schema::hasColumn('audit_logs', 'entity'))    $row['entity'] = 'farmer';
+                if (Schema::hasColumn('audit_logs', 'entity_type')) $row['entity_type'] = 'farmer';
+                if (Schema::hasColumn('audit_logs', 'entity_id')) $row['entity_id'] = $source;
+                if (Schema::hasColumn('audit_logs', 'office_id')) $row['office_id'] = $targetFarmer->office_id ?? null;
+                if (Schema::hasColumn('audit_logs', 'meta'))      $row['meta'] = json_encode([
+                    'kept_farmer'      => $target,
+                    'duplicate_farmer' => $source,
+                    'office_id'        => $targetFarmer->office_id ?? null,
+                    'merged_at'        => now()->toISOString(),
+                    'moved_counts'     => $counts,
+                ]);
+                if (Schema::hasColumn('audit_logs', 'created_at')) $row['created_at'] = now();
+                DB::table('audit_logs')->insert($row);
+            }
+        } catch (\Throwable $e) {
+            // Audit failure must not break the merge.
+        }
+
+        return ['ok' => true, 'moved_counts' => $counts];
+    }
+
+
+
     /**
      * Dry-run precheck: count blocking transactional records for a farmer
      * WITHOUT deleting anything. Used by the UI before showing the delete action.
