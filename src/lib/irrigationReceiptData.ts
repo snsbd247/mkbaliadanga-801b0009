@@ -76,7 +76,7 @@ const tx = (en: string, bn: string) => bn; // receipts are Bengali
 // build. Land + patwari + owner are fetched with separate queries below so both
 // the Lovable Cloud and VPS backends produce identical receipt data.
 export const IRRIGATION_INVOICE_SELECT =
-  "id,invoice_no,farmer_id,payable_amount,paid_amount,due_amount,discount_amount,discount_reason,irrigation_amount,maintenance_amount,canal_amount,delay_fee,other_charge,is_borga,land_id,note,due_date,season_rate,land_type_name,irrigation_category_name,seasons(name,year,status)";
+  "id,invoice_no,farmer_id,payable_amount,paid_amount,due_amount,discount_amount,discount_reason,irrigation_amount,maintenance_amount,canal_amount,delay_fee,other_charge,is_borga,billed_area_shotok,parcel_area_shotok,calculation_snapshot,land_id,note,due_date,season_rate,land_type_name,irrigation_category_name,seasons(name,year,status)";
 
 export interface IrrigationEnrichInput {
   farmerId: string | null;
@@ -313,10 +313,20 @@ export async function buildIrrigationReceiptEnrichment(
       ),
     ).join("/") || null;
 
+  const invoiceBilledArea = (inv: any): number => {
+    const snap = inv?.calculation_snapshot;
+    const v =
+      inv?.billed_area_shotok ??
+      snap?.billed_area_shotok ??
+      snap?.land_size_shotok ??
+      inv?.lands?.land_size;
+    const n = Number(v);
+    return Number.isFinite(n) && n > 0 ? n : 0;
+  };
   const ratePerAcre = normalizeIrrigationRatePerAcre(
     primaryCharge?.season_rate,
     primaryCharge?.irrigation_amount,
-    primaryCharge?.lands?.land_size,
+    invoiceBilledArea(primaryCharge) || primaryCharge?.lands?.land_size,
   );
   const ownerMember = ownerFarmer?.member_no || ownerFarmer?.farmer_code || null;
   // "কৃষক এবং মালিক সভ্য সদস্য": বর্গা জমি → "বর্গাদারের Savings No / মালিকের Savings No";
@@ -338,7 +348,7 @@ export async function buildIrrigationReceiptEnrichment(
       ),
     ).join(", ") || null;
   const landSize =
-    invoiceRows.reduce((s, inv) => s + Number(inv?.lands?.land_size || 0), 0) || null;
+    invoiceRows.reduce((s, inv) => s + invoiceBilledArea(inv), 0) || null;
   const billInfo =
     Array.from(
       new Set(

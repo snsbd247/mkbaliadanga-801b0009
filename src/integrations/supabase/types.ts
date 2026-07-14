@@ -2791,6 +2791,7 @@ export type Database = {
       irrigation_invoices: {
         Row: {
           applied_rate: number | null
+          billed_area_shotok: number | null
           calculation_snapshot: Json | null
           canal_amount: number
           cancel_reason: string | null
@@ -2828,6 +2829,7 @@ export type Database = {
           override_reason: string | null
           owner_farmer_id: string
           paid_amount: number
+          parcel_area_shotok: number | null
           payable_amount: number
           previous_due_amount: number
           rate_source: string | null
@@ -2839,6 +2841,7 @@ export type Database = {
         }
         Insert: {
           applied_rate?: number | null
+          billed_area_shotok?: number | null
           calculation_snapshot?: Json | null
           canal_amount?: number
           cancel_reason?: string | null
@@ -2876,6 +2879,7 @@ export type Database = {
           override_reason?: string | null
           owner_farmer_id: string
           paid_amount?: number
+          parcel_area_shotok?: number | null
           payable_amount?: number
           previous_due_amount?: number
           rate_source?: string | null
@@ -2887,6 +2891,7 @@ export type Database = {
         }
         Update: {
           applied_rate?: number | null
+          billed_area_shotok?: number | null
           calculation_snapshot?: Json | null
           canal_amount?: number
           cancel_reason?: string | null
@@ -2924,6 +2929,7 @@ export type Database = {
           override_reason?: string | null
           owner_farmer_id?: string
           paid_amount?: number
+          parcel_area_shotok?: number | null
           payable_amount?: number
           previous_due_amount?: number
           rate_source?: string | null
@@ -6846,6 +6852,7 @@ export type Database = {
         Args: { _invoice_id: string; _reason: string }
         Returns: {
           applied_rate: number | null
+          billed_area_shotok: number | null
           calculation_snapshot: Json | null
           canal_amount: number
           cancel_reason: string | null
@@ -6883,6 +6890,7 @@ export type Database = {
           override_reason: string | null
           owner_farmer_id: string
           paid_amount: number
+          parcel_area_shotok: number | null
           payable_amount: number
           previous_due_amount: number
           rate_source: string | null
