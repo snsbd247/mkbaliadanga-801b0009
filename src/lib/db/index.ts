@@ -354,7 +354,14 @@ async function laravelRpc<T = any>(name: string, params?: Record<string, unknown
     // Laravel returns the raw value; supabase callers expect it under `data`.
     return { data: (data?.result ?? data) as T, error: null };
   } catch (e: any) {
-    return { data: null, error: { message: e?.message || "RPC failed" } };
+    const body = e?.response?.data;
+    const message =
+      body?.message ||
+      body?.error ||
+      (typeof body === "string" ? body : null) ||
+      e?.message ||
+      "RPC failed";
+    return { data: null, error: { message, code: String(e?.response?.status ?? "") } as any };
   }
 }
 
