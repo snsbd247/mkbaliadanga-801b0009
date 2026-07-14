@@ -61,6 +61,7 @@ type Invoice = any;
  * does NOT retroactively change the area shown on past-season invoices/receipts.
  */
 function invoiceLandSize(inv: any): number | undefined {
+  if (inv?.billed_area_shotok != null && Number(inv.billed_area_shotok) > 0) return Number(inv.billed_area_shotok);
   const snap = inv?.calculation_snapshot;
   const v = snap?.billed_area_shotok ?? snap?.land_size_shotok ?? snap?.parcel_size_shotok;
   if (v != null && Number(v) > 0) return Number(v);
@@ -69,6 +70,7 @@ function invoiceLandSize(inv: any): number | undefined {
 
 /** Full parcel size frozen on the invoice (for barga "billed portion / total" display). */
 function invoiceParcelSize(inv: any): number | undefined {
+  if (inv?.parcel_area_shotok != null && Number(inv.parcel_area_shotok) > 0) return Number(inv.parcel_area_shotok);
   const v = inv?.calculation_snapshot?.parcel_size_shotok;
   if (v != null && Number(v) > 0) return Number(v);
   return inv?.lands?.land_size;
