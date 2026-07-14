@@ -742,12 +742,16 @@ class RpcController extends Controller
     {
         try {
             $rows = DB::select(
-                'SELECT TABLE_NAME AS table_name
-                   FROM information_schema.COLUMNS
-                  WHERE TABLE_SCHEMA = DATABASE()
-                    AND COLUMN_NAME = ?
-                  ORDER BY TABLE_NAME',
-                [$column]
+                'SELECT c.TABLE_NAME AS table_name
+                   FROM information_schema.COLUMNS c
+                   JOIN information_schema.TABLES t
+                     ON t.TABLE_SCHEMA = c.TABLE_SCHEMA
+                    AND t.TABLE_NAME = c.TABLE_NAME
+                  WHERE c.TABLE_SCHEMA = DATABASE()
+                    AND c.COLUMN_NAME = ?
+                    AND t.TABLE_TYPE = ?
+                  ORDER BY c.TABLE_NAME',
+                [$column, 'BASE TABLE']
             );
 
             return collect($rows)
@@ -757,7 +761,51 @@ class RpcController extends Controller
                 ->values()
                 ->all();
         } catch (\Throwable $e) {
-            return [];
+            try {
+                return collect(Schema::getTables())
+                    ->filter(fn ($table) => (($table['type'] ?? 'table') === 'table'))
+                    ->map(fn ($table) => (string) ($table['name'] ?? ''))
+                    ->filter(fn ($table) => $table !== '' && ! in_array($table, $exclude, true) && Schema::hasColumn($table, $column))
+                    ->unique()
+                    ->values()
+                    ->all();
+            } catch (\Throwable $inner) {
+                return [];
+            }
+        }
+    }
+
+    private function isBaseTable(string $table): bool
+    {
+        try {
+            $rows = DB::select(
+                'SELECT TABLE_TYPE AS table_type
+                   FROM information_schema.TABLES
+                  WHERE TABLE_SCHEMA = DATABASE()
+                    AND TABLE_NAME = ?
+                  LIMIT 1',
+                [$table]
+            );
+            $type = strtoupper((string) ($rows[0]->table_type ?? $rows[0]->TABLE_TYPE ?? ''));
+            return $type === '' || $type === 'BASE TABLE';
+        } catch (\Throwable $e) {
+            return true;
+        }
+    }
+
+    private function moveFarmerReference(string $table, string $column, string $source, string $target): void
+    {
+        if (! Schema::hasTable($table) || ! Schema::hasColumn($table, $column) || ! $this->isBaseTable($table)) {
+            return;
+        }
+
+        try {
+            DB::table($table)->where($column, $source)->update([$column => $target]);
+        } catch (\Throwable $e) {
+            if (str_contains($e->getMessage(), 'not updatable')) {
+                return;
+            }
+            throw $e;
         }
     }
 
@@ -826,7 +874,7 @@ class RpcController extends Controller
             $tables = $this->tablesWithColumn('farmer_id', ['farmers']);
 
             foreach ($tables as $tbl) {
-                DB::table($tbl)->where('farmer_id', $source)->update(['farmer_id' => $target]);
+                $this->moveFarmerReference($tbl, 'farmer_id', $source, $target);
             }
 
             // Land/transfer tables may reference farmers through domain-specific
@@ -840,7 +888,7 @@ class RpcController extends Controller
                 'cultivator_farmer_id',
             ] as $column) {
                 foreach ($this->tablesWithColumn($column, ['farmers']) as $tbl) {
-                    DB::table($tbl)->where($column, $source)->update([$column => $target]);
+                    $this->moveFarmerReference($tbl, $column, $source, $target);
                 }
             }
 

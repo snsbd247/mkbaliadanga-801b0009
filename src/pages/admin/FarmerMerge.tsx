@@ -72,6 +72,12 @@ export default function FarmerMerge() {
         "কৃষক মার্জ করার অনুমতি আপনার নেই। শুধুমাত্র একজন অ্যাডমিন এই কাজটি করতে পারবেন।"
       );
     }
+    if (/not updatable|target table .* of the UPDATE is not updatable|lands_with_location/i.test(msg)) {
+      return tx(
+        "Farmer merge is blocked because this server is still trying to update a read-only land view. Deploy the latest backend update, then reload this page and try again.",
+        "এই সার্ভার এখনও read-only জমির view আপডেট করার চেষ্টা করছে, তাই কৃষক মার্জ আটকে গেছে। সর্বশেষ backend update deploy করে পেজ reload দিয়ে আবার চেষ্টা করুন।"
+      );
+    }
     return msg || tx("Farmer merge failed.", "কৃষক একত্রীকরণ ব্যর্থ হয়েছে।");
   }
 
