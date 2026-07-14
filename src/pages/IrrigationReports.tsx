@@ -14,6 +14,7 @@ import { formatDagNumbers } from "@/lib/dagNumbers";
 import { ExportDialog, type ExportColumn } from "@/components/exports/ExportDialog";
 import { FileDown } from "lucide-react";
 import { useLang } from "@/i18n/LanguageProvider";
+import { invoiceBilledArea } from "@/lib/irrigationInvoiceArea";
 
 const IrrigationReportCharts = lazy(() => import("./irrigation/IrrigationReportCharts"));
 
@@ -240,7 +241,7 @@ export default function IrrigationReports() {
           { key: "mobile", label: t("irr_colMobile" as any), accessor: (r: any) => r.farmers?.mobile ?? "" },
           { key: "mouza", label: t("irr_colMouza" as any), accessor: (r: any) => resolveMouzaName(r.lands) || "" },
           { key: "dag_no", label: t("irr_colDagNo" as any), accessor: (r: any) => formatDagNumbers(r.lands?.dag_no) },
-          { key: "land_size", label: t("irr_colLandSize" as any), accessor: (r: any) => r.lands?.land_size ?? "" },
+          { key: "land_size", label: t("irr_colLandSize" as any), accessor: (r: any) => invoiceBilledArea(r) ?? "" },
           { key: "rate", label: t("irr_colRate" as any), accessor: (r: any) => r.rate ?? "" },
           { key: "total", label: t("irr_colTotal" as any), accessor: (r: any) => r.total ?? r.payable_amount ?? 0 },
           { key: "owner_name", label: "মালিকের নাম", accessor: (r: any) => r.owner?.name_bn || r.owner?.name_en || "" },

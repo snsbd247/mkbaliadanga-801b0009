@@ -13,6 +13,7 @@ import { FarmerSearchSelect } from "@/components/farmers/FarmerSearchSelect";
 import { MouzaSelect } from "@/components/locations/MouzaSelect";
 import { fetchReceiptAuditLogs } from "@/lib/receiptAudit";
 import { previewEdit, checkConsistency, type EditBaseline } from "@/lib/combinedReceiptValidation";
+import { invoiceBilledArea } from "@/lib/irrigationInvoiceArea";
 
 type EditForm = { mouza: string; land_size: number; owner_farmer_id: string; patwari_id: string; delay_fee: number; amount: number; note: string; reason: string; receipt_no: string };
 
@@ -74,13 +75,13 @@ export function EditReceiptDialog({
       let base: EditBaseline | null = null;
       if (invId) {
         const { data: inv } = await db.from("irrigation_invoices")
-          .select("land_id,owner_farmer_id,delay_fee,payable_amount,due_amount,paid_amount,lands(mouza,land_size)").eq("id", invId).maybeSingle();
+          .select("land_id,owner_farmer_id,delay_fee,payable_amount,due_amount,paid_amount,billed_area_shotok,parcel_area_shotok,calculation_snapshot,lands(mouza,land_size)").eq("id", invId).maybeSingle();
         if (inv) {
           lId = (inv as any).land_id ?? null;
           owner = (inv as any).owner_farmer_id ?? "";
           delay = Number((inv as any).delay_fee || 0);
           mouza = (inv as any).lands?.mouza ?? "";
-          land_size = Number((inv as any).lands?.land_size || 0);
+          land_size = Number(invoiceBilledArea(inv) || 0);
           base = {
             payable_amount: Number((inv as any).payable_amount || 0),
             due_amount: Number((inv as any).due_amount || 0),
