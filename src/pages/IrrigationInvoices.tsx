@@ -2477,6 +2477,8 @@ function ManualInvoiceDialog({ open, onOpenChange, seasons, userId }: any) {
         owner_farmer_id: mySplit.owner_farmer_id,
         farmer_id: farmerId,
         is_borga: mySplit.is_borga,
+        billed_area_shotok: billedArea,
+        parcel_area_shotok: Number(land?.land_size ?? 0) || null,
         irrigation_amount: calc.irrigation_amount,
         maintenance_amount: calc.maintenance_amount,
         canal_amount: calc.canal_amount,
