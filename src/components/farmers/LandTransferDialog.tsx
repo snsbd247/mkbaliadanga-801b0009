@@ -323,7 +323,7 @@ export default function LandTransferDialog({ open, onOpenChange, sourceLand, sou
                 ))}
               </div>
               <div className="mt-2 text-xs text-muted-foreground">
-                {tx("Allocated", "বরাদ্দ")}: <b>{effectiveSum.toFixed(2)}</b> / {totalLand.toFixed(2)} {tx("decimal", "শতক")}
+                {tx("Allocated", "বরাদ্দ")}: <b>{formatLand(effectiveSum)}</b> / {formatLand(totalLand)} {tx("decimal", "শতক")}
                 {!equalSplit && effectiveSum > totalLand && <span className="text-destructive ml-2">{tx("(over-allocated)", "(অতিরিক্ত)")}</span>}
                 {effectiveSum < totalLand && <span className="ml-2">{isBorgaGive ? tx("Remaining stays with the owner.", "অবশিষ্ট অংশ মালিকের কাছে থাকবে।") : tx("Remaining will be lost.", "অবশিষ্ট হারিয়ে যাবে।")}</span>}
               </div>
