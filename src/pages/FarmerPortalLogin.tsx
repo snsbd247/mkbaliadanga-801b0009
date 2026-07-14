@@ -21,7 +21,12 @@ export default function FarmerPortalLogin() {
   const nav = useNavigate();
   const brand = useBranding();
   const { t, setLang } = useLang();
-  useEffect(() => { setLang("bn"); }, [setLang]);
+  // Only default to Bangla on this page when the user has no saved preference.
+  useEffect(() => {
+    try {
+      if (!localStorage.getItem("lang")) setLang("bn");
+    } catch { setLang("bn"); }
+  }, [setLang]);
   const { user, isSuper, isAdmin, isCommittee, rolesLoaded, roles } = useAuth();
   const [identifier, setIdentifier] = useState("");
   const [mobile, setMobile] = useState("");
