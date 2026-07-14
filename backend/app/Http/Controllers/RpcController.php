@@ -30,6 +30,8 @@ class RpcController extends Controller
         'get_billed_farmer_for_land',
         'generate_invoice_no',
         'delete_payment_cascade',
+        'merge_farmers',
+        'merge_farmers_health',
     ];
 
     public function handle(Request $request, string $name): JsonResponse
@@ -729,6 +731,37 @@ class RpcController extends Controller
     }
 
     /**
+     * MySQL/MariaDB can expose INFORMATION_SCHEMA column names as upper-case
+     * object properties (TABLE_NAME) unless they are explicitly aliased. The
+     * Farmer Merge flow uses this helper instead of pluck('table_name') so it
+     * works consistently on local sandbox, production VPS, MySQL and MariaDB.
+     *
+     * @return array<int, string>
+     */
+    private function tablesWithColumn(string $column, array $exclude = []): array
+    {
+        try {
+            $rows = DB::select(
+                'SELECT TABLE_NAME AS table_name
+                   FROM information_schema.COLUMNS
+                  WHERE TABLE_SCHEMA = DATABASE()
+                    AND COLUMN_NAME = ?
+                  ORDER BY TABLE_NAME',
+                [$column]
+            );
+
+            return collect($rows)
+                ->map(fn ($row) => (string) ($row->table_name ?? $row->TABLE_NAME ?? ''))
+                ->filter(fn ($table) => $table !== '' && ! in_array($table, $exclude, true))
+                ->unique()
+                ->values()
+                ->all();
+        } catch (\Throwable $e) {
+            return [];
+        }
+    }
+
+    /**
      * Readiness check for the Farmer Merge screen. Mirrors the Postgres
      * `merge_farmers_health` function so the UI status badges work on the VPS.
      */
@@ -790,14 +823,25 @@ class RpcController extends Controller
 
         DB::transaction(function () use ($source, $target, $user) {
             // Every public table that owns a farmer_id column.
-            $tables = DB::table('information_schema.columns')
-                ->where('table_schema', DB::raw('DATABASE()'))
-                ->where('column_name', 'farmer_id')
-                ->where('table_name', '<>', 'farmers')
-                ->pluck('table_name');
+            $tables = $this->tablesWithColumn('farmer_id', ['farmers']);
 
             foreach ($tables as $tbl) {
                 DB::table($tbl)->where('farmer_id', $source)->update(['farmer_id' => $target]);
+            }
+
+            // Land/transfer tables may reference farmers through domain-specific
+            // columns, not farmer_id. Move those too so the duplicate farmer has
+            // no hidden ownership/sharecropper/transfer references after merge.
+            foreach ([
+                'owner_farmer_id',
+                'sharecropper_farmer_id',
+                'source_farmer_id',
+                'recipient_farmer_id',
+                'cultivator_farmer_id',
+            ] as $column) {
+                foreach ($this->tablesWithColumn($column, ['farmers']) as $tbl) {
+                    DB::table($tbl)->where($column, $source)->update([$column => $target]);
+                }
             }
 
             $update = [
