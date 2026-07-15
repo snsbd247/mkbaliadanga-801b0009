@@ -624,18 +624,19 @@ export default function Cashbook() {
 // ====================== Stream cashbook view ======================
 function StreamCashbook(props: {
   stream: Stream; label: string; month: string; mFrom: string; mTo: string;
-  receipts: any[]; expenses: any[]; incomes?: any[]; opening: number; setOpening: (n: number) => void;
+  receipts: any[]; excludedReceipts?: any[]; expenses: any[]; incomes?: any[]; opening: number; setOpening: (n: number) => void;
   locked: boolean; canSubmit: boolean; isSuper: boolean; brand: any;
   onSubmit: () => void; onEdit: (x: any) => void; onDelete: (x: any) => void; onScan: (p: string, mime?: string) => void;
   submissions: any[]; onUnlock: (id: string) => void;
 }) {
   const { t, tx } = useLang();
-  const { stream, label, month, mFrom, mTo, receipts, expenses, incomes = [], opening, setOpening, locked, canSubmit, isSuper, onSubmit, onEdit, onDelete, onScan, submissions, onUnlock } = props;
+  const { stream, label, month, mFrom, mTo, receipts, excludedReceipts = [], expenses, incomes = [], opening, setOpening, locked, canSubmit, isSuper, onSubmit, onEdit, onDelete, onScan, submissions, onUnlock } = props;
 
   const [consolidated, setConsolidated] = useState(true);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [pageSize, setPageSize] = useState(100);
   const [page, setPage] = useState(0);
+  const [search, setSearch] = useState("");
 
   const streamReceipts = useMemo(() => receipts.filter(x => STREAM_INCOME_KINDS[stream].has(x.kind)), [receipts, stream]);
   const streamExpenses = useMemo(() => expenses.filter(x => x.stream === stream), [expenses, stream]);
