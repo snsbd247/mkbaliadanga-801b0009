@@ -350,6 +350,19 @@ export default function Payments() {
     return () => { cancelled = true; };
   }, [allocs, receiptNo, officeId]);
 
+  // Debounced live validation for a manually typed receipt no. Server RPC first,
+  // client-side fallback if not deployed. Blocks submit when result is not ok.
+  useEffect(() => {
+    const raw = receiptNo.trim();
+    if (!raw) { setManualCheck(null); return; }
+    let cancelled = false;
+    const timer = setTimeout(async () => {
+      const res = await validateManualReceiptNo(raw);
+      if (!cancelled) setManualCheck(res);
+    }, 350);
+    return () => { cancelled = true; clearTimeout(timer); };
+  }, [receiptNo]);
+
   // Auto-download the freshly-saved receipt as soon as its row appears in the list
   useEffect(() => {
     if (!pendingAutoId) return;
