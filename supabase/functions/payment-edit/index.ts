@@ -71,7 +71,14 @@ Deno.serve(async (req) => {
     const newOwner = body.owner_farmer_id ? String(body.owner_farmer_id) : null
     const newFee = body.delay_fee != null ? Math.round(Number(body.delay_fee) || 0) : null
     const newReceiptNo = body.receipt_no != null ? String(body.receipt_no).trim() : null
+    const newReceiptDate = body.receipt_date != null ? String(body.receipt_date).trim() : null
     const newPatwariId = body.patwari_id !== undefined ? (body.patwari_id ? String(body.patwari_id) : null) : undefined
+
+    if (newReceiptDate && !/^\d{4}-\d{2}-\d{2}$/.test(newReceiptDate)) {
+      return new Response(JSON.stringify({ error: 'Invalid receipt_date' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+    }
+
+    const createdAtPatch = newReceiptDate ? `${newReceiptDate}T00:00:00Z` : null
 
     // ---- Load payment + allocations ----
     const { data: pay, error: payErr } = await svc.from('payments')
@@ -186,10 +193,9 @@ Deno.serve(async (req) => {
       await svc.from('payments').update({ note: newNote }).eq('id', paymentId)
     }
 
-    // 4b) Receipt number
+    // 4b) Receipt number + date
     if (newReceiptNo != null && newReceiptNo !== String((pay as any).receipt_no ?? '')) {
       if (!newReceiptNo) return new Response(JSON.stringify({ error: 'receipt_no cannot be empty' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
-      // Ensure uniqueness so two receipts never share a number.
       const { data: dup } = await svc.from('payments').select('id').eq('receipt_no', newReceiptNo).neq('id', paymentId).maybeSingle()
       if (dup) return new Response(JSON.stringify({ error: `রিসিপ্ট নম্বর ইতিমধ্যে ব্যবহৃত: ${newReceiptNo}` }), { status: 409, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
       const oldReceiptNo = String((pay as any).receipt_no ?? '')
@@ -213,6 +219,19 @@ Deno.serve(async (req) => {
         .update({ description: `সেচ পেমেন্ট ${newReceiptNo} — Irrigation income` })
         .eq('reference_type', 'irrigation_payment').eq('reference_id', paymentId)
         .eq('description', `সেচ পেমেন্ট ${oldReceiptNo} — Irrigation income`)
+    }
+    if (newReceiptDate != null && newReceiptDate !== String((pay as any).created_at ?? '').slice(0, 10)) {
+      before.created_at = (pay as any).created_at || null
+      after.created_at = createdAtPatch
+      await svc.from('payments').update({ created_at: createdAtPatch }).eq('id', paymentId)
+      const receiptDatePatch = newReceiptDate
+      if (invId) {
+        const q = svc.from('receipts').update({ receipt_date: receiptDatePatch }).eq('reference_id', invId).eq('kind', 'irrigation')
+        await q
+      } else {
+        const q = svc.from('receipts').update({ receipt_date: receiptDatePatch }).eq('reference_id', paymentId).eq('kind', 'irrigation')
+        await q
+      }
     }
 
     // 4c) Receipt patwari override (manual selection / edit)
