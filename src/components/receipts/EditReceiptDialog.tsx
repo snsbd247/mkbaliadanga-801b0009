@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
 import { db } from "@/lib/db";
 import { useLang } from "@/i18n/LanguageProvider";
 import { money } from "@/lib/format";
@@ -125,7 +124,7 @@ export function EditReceiptDialog({
       if (!ok) return toast.error(tx("Cannot save: ", "সংরক্ষণ করা যাচ্ছে না: ") + errors.join("; "));
     }
     setLoading(true);
-    const { data, error } = await supabase.functions.invoke("payment-edit", {
+    const { data, error } = await db.functions.invoke("payment-edit", {
       body: {
         payment_id: payment.id,
         reason: form.reason.trim(),
@@ -141,7 +140,7 @@ export function EditReceiptDialog({
     });
     setLoading(false);
     if (error || (data as any)?.error) {
-      // supabase.functions.invoke returns a generic "non-2xx" message on HTTP
+      // db.functions.invoke returns a generic "non-2xx" message on HTTP
       // errors; the real reason is in the Response body (error.context). Read it
       // so users see the actual cause (e.g. duplicate receipt no, over-payment).
       let serverMsg: string | null = (data as any)?.error ?? null;
