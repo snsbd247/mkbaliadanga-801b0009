@@ -717,14 +717,34 @@ function StreamCashbook(props: {
     return rows.map(row => { bal += row.kind === "income" ? row.amount : -row.amount; return { ...row, balance: bal }; });
   }, [incomeRows, officeIncomeRows, realExpenses, transferRows, opening]);
 
+  // Search — filter by receipt/voucher no, description, head, payee, note.
+  const filteredEntries = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return entries;
+    return entries.filter((r) => {
+      const hay = [
+        r.ref, r.label, r.desc,
+        r.raw?.receipt_no, r.raw?.voucher_no, r.raw?.payee, r.raw?.note,
+      ].filter(Boolean).join(" ").toLowerCase();
+      return hay.includes(q);
+    });
+  }, [entries, search]);
+
   // Pagination — keep running balance intact but show a page at a time.
-  const pageCount = Math.max(1, Math.ceil(entries.length / pageSize));
+  const pageCount = Math.max(1, Math.ceil(filteredEntries.length / pageSize));
   const safePage = Math.min(page, pageCount - 1);
-  useEffect(() => { setPage(0); }, [month, pageSize, consolidated]);
+  useEffect(() => { setPage(0); }, [month, pageSize, consolidated, search]);
   const pagedEntries = useMemo(
-    () => entries.slice(safePage * pageSize, safePage * pageSize + pageSize),
-    [entries, safePage, pageSize],
+    () => filteredEntries.slice(safePage * pageSize, safePage * pageSize + pageSize),
+    [filteredEntries, safePage, pageSize],
   );
+
+  // Reconciliation — missing receipt numbers within the visible income range.
+  const reconciliation = useMemo(() => {
+    if (stream !== "irrigation") return { missing: [] as ReturnType<typeof explainGaps> };
+    const gaps = findReceiptGaps(collectionReceipts);
+    return { missing: explainGaps(gaps, excludedReceipts) };
+  }, [collectionReceipts, excludedReceipts, stream]);
 
   // Operational income/expense exclude bank transfers; transfers are netted into
   // the cash balance separately so closing still reflects true cash in hand.
