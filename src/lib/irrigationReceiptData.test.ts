@@ -76,7 +76,9 @@ describe("buildIrrigationReceiptEnrichment", () => {
 
     expect(e.farmerExtras.mouza).toBe("বালিয়াডাঙ্গা");
     expect(e.farmerExtras.dag_no).toBe("১২৩, ৪৫৬");
-    expect(e.farmerExtras.land_size).toBe(1.5);
+    // Synthetic row has charge=rate, so canonical display snaps area to the
+    // charge-derived 1.0000 rather than the stale parcel size 1.5000.
+    expect(e.farmerExtras.land_size).toBe(1);
     expect(e.owner_self).toBe(true);
     expect(e.cultivator_label).toBe("মোঃ মাসুদ-02473");
     expect(e.land_owner_label).toBe("নিজ");
