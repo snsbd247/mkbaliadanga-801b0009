@@ -71,6 +71,8 @@ export default function Payments() {
   const [category, setCategory] = useState<string>("general");
   const [note, setNote] = useState("");
   const [receiptNo, setReceiptNo] = useState("");
+  const [manualDate, setManualDate] = useState("");
+  const [manualCheck, setManualCheck] = useState<import("@/lib/manualReceiptValidation").ManualReceiptCheck | null>(null);
 
   const [allocs, setAllocs] = useState<Allocation[]>([{ kind: "irrigation", reference_id: "", amount: 0 }]);
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
