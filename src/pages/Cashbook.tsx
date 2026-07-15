@@ -24,6 +24,7 @@ import { downloadBnReceiptPdf } from "@/lib/bnReceipts";
 import { nextMonthlyReceiptNo } from "@/lib/monthlyReceiptNo";
 import { autoReceiptNo } from "@/lib/receiptNo";
 import { CashbookA4Preview } from "@/components/cashbook/CashbookA4Preview";
+import { findReceiptGaps, explainGaps } from "@/lib/cashbookReconcile";
 
 const sb = db as any;
 
