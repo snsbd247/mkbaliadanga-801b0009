@@ -940,7 +940,7 @@ function StreamCashbook(props: {
             <TableCell className={`text-right ${closing < 0 ? "due-text" : ""}`}>{money(closing)}</TableCell>
             <TableCell></TableCell>
           </TableRow>
-          {entries.length === 0 && <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-6">{t("noData")}</TableCell></TableRow>}
+          {filteredEntries.length === 0 && <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-6">{t("noData")}</TableCell></TableRow>}
         </TableBody>
       </Table></Card>
 
