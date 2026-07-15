@@ -611,14 +611,30 @@ export default function Payments() {
       // Primary kind = first allocation kind (kept for backward compat)
       const primary = allocs[0];
 
-      // Auto-generate receipt number if user didn't supply one.
-      // Unified paid-receipt serial shared across all streams (RCP-YYYY-MM-NNNN).
+      // Auto-generate receipt number if user didn't supply one. If they did,
+      // it must have passed the manual-receipt gap-fill validation so it does
+      // NOT advance the shared serial counter.
       let finalReceiptNo: string | null = receiptNo.trim() || null;
+      if (finalReceiptNo) {
+        const check = manualCheck ?? await validateManualReceiptNo(finalReceiptNo);
+        if (check.status !== "ok_gap" && check.status !== "ok_manual") {
+          setManualCheck(check);
+          toast.error(tx(
+            `Manual receipt # rejected: ${check.reason}`,
+            `ম্যানুয়াল রশিদ নং গ্রহণযোগ্য নয়: ${check.reason}`,
+          ));
+          return;
+        }
+      }
       if (!finalReceiptNo) {
         const allIrr = allocs.every(a => a.kind === "irrigation");
         finalReceiptNo = await nextUnifiedReceiptNo(officeId, allIrr ? "IRR" : "PAY", idemKey);
       }
 
+      // Manual backdate — applies to created_at + occurred_at so the row lands
+      // in the right day for cashbook, reports, and receipt PDF. Time-of-day is
+      // preserved as noon local so ordering across the same day stays sane.
+      const backdate = manualDate ? new Date(`${manualDate}T12:00:00`).toISOString() : null;
 
       const payload: any = {
         farmer_id: farmerId,
@@ -631,6 +647,7 @@ export default function Payments() {
         status,
         idempotency_key: idemKey,
         receipt_no: finalReceiptNo,
+        ...(backdate ? { created_at: backdate, occurred_at: backdate } : {}),
       };
 
 
