@@ -84,6 +84,7 @@ class FunctionController extends Controller
         $newOwner = $request->filled('owner_farmer_id') ? (string) $request->input('owner_farmer_id') : null;
         $newFee = $request->has('delay_fee') && $request->input('delay_fee') !== null ? (int) round((float) $request->input('delay_fee')) : null;
         $newReceiptNo = $request->has('receipt_no') && $request->input('receipt_no') !== null ? trim((string) $request->input('receipt_no')) : null;
+        $newReceiptDate = $request->has('receipt_date') && $request->input('receipt_date') !== null ? trim((string) $request->input('receipt_date')) : null;
         $newPatwariProvided = $request->has('patwari_id');
         $newPatwariId = $newPatwariProvided && $request->filled('patwari_id') ? (string) $request->input('patwari_id') : null;
 
@@ -104,6 +105,9 @@ class FunctionController extends Controller
         }
         if ($newPatwariId && ! DB::table('patwaris')->where('id', $newPatwariId)->exists()) {
             return response()->json(['error' => 'ভুল পাটুয়ারি: patwari not found'], 400);
+        }
+        if ($newReceiptDate !== null && ! preg_match('/^\d{4}-\d{2}-\d{2}$/', $newReceiptDate)) {
+            return response()->json(['error' => 'Invalid receipt_date'], 400);
         }
 
         if ($invId && Schema::hasTable('irrigation_invoices')) {
@@ -208,6 +212,20 @@ class FunctionController extends Controller
                     ->where('reference_id', $paymentId)
                     ->where('description', "সেচ পেমেন্ট {$oldReceipt} — Irrigation income")
                     ->update(['description' => "সেচ পেমেন্ট {$newReceiptNo} — Irrigation income"]);
+            }
+        }
+        if ($newReceiptDate !== null && $newReceiptDate !== substr((string) ($pay->created_at ?? ''), 0, 10)) {
+            $before['created_at'] = $pay->created_at ?? null;
+            $after['created_at'] = $newReceiptDate . ' 00:00:00';
+            DB::table('payments')->where('id', $paymentId)->update(['created_at' => $newReceiptDate . ' 00:00:00']);
+            if (Schema::hasTable('receipts')) {
+                $receiptQuery = DB::table('receipts')->where('kind', 'irrigation');
+                if ($invId !== null) {
+                    $receiptQuery->where('reference_id', $invId);
+                } else {
+                    $receiptQuery->where('reference_id', $paymentId);
+                }
+                $receiptQuery->update(['receipt_date' => $newReceiptDate]);
             }
         }
 
