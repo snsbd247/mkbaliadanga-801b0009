@@ -61,7 +61,7 @@ const newKey = () =>
 
 export default function Payments() {
   const { t, tx } = useLang();
-  const { user, officeId } = useAuth();
+  const { user, officeId, isSuper } = useAuth();
   const [params, setParams] = useSearchParams();
   const brand = useBranding();
   const receiptArgs = useReceiptRenderArgs();
