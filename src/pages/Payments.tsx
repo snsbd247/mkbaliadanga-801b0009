@@ -247,7 +247,7 @@ export default function Payments() {
     // All writes happen server-side (payment-edit edge function) so that users with
     // the payments edit permission — not just admins — can safely edit, and every
     // linked module (invoice due/paid, allocation, savings, audit) stays consistent.
-    const { data, error } = await supabase.functions.invoke("payment-edit", {
+    const { data, error } = await db.functions.invoke("payment-edit", {
       body: {
         payment_id: p.id,
         reason: editForm.reason.trim(),
