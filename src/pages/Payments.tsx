@@ -36,6 +36,7 @@ import { autoReceiptNo } from "@/lib/receiptNo";
 import { paymentInitialStatus } from "@/lib/approvalMatrix";
 import { computeInvoiceDue } from "@/lib/irrigationDue";
 import { nextMonthlyReceiptNo, nextUnifiedReceiptNo, peekMonthlyReceiptNo } from "@/lib/monthlyReceiptNo";
+import { validateManualReceiptNo } from "@/lib/manualReceiptValidation";
 import { ReceiptCopyMenu } from "@/components/receipts/ReceiptCopyMenu";
 import { IrrigationReceiptPreviewDialog } from "@/components/receipts/IrrigationReceiptPreviewDialog";
 import { ReceiptSettingsButton } from "@/components/receipts/ReceiptSettingsButton";
