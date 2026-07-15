@@ -47,7 +47,7 @@ export async function buildPaymentReceiptData(p: any, ctx: ReceiptBuildContext):
     if (refIds.length === 0 && p.id) {
       const { data: iip } = await db
         .from("irrigation_invoice_payments")
-        .select("invoice_id,collected_amount")
+        .select("invoice_id,collected_amount,current_invoice_collected,previous_due_collected")
         .eq("payment_id", p.id);
       const invRefs = (iip ?? []).map((r: any) => r.invoice_id).filter(Boolean);
       if (invRefs.length) {
@@ -57,10 +57,41 @@ export async function buildPaymentReceiptData(p: any, ctx: ReceiptBuildContext):
       }
     }
 
+    const linkRows = p.id
+      ? await db
+          .from("irrigation_invoice_payments")
+          .select("invoice_id,current_invoice_collected,previous_due_collected")
+          .eq("payment_id", p.id)
+          .then(({ data }: any) => data ?? [])
+      : [];
+    const currentInvoiceCollected = linkRows.reduce(
+      (s: number, r: any) => s + Number(r.current_invoice_collected || 0),
+      0,
+    );
+    const previousDueCollected = linkRows.reduce(
+      (s: number, r: any) => s + Number(r.previous_due_collected || 0),
+      0,
+    );
+    const hasReceiptSplit = currentInvoiceCollected > 0 || previousDueCollected > 0;
+
     irrEnriched = await buildIrrigationReceiptEnrichment({
       farmerId: p.farmer_id ?? null,
       refIds,
       paymentAmount: collectedFromOutstanding,
+      ...(hasReceiptSplit
+        ? {
+            currentInvoiceIds: linkRows
+              .filter((r: any) => Number(r.current_invoice_collected || 0) > 0)
+              .map((r: any) => r.invoice_id)
+              .filter(Boolean),
+            previousDueInvoiceIds: linkRows
+              .filter((r: any) => Number(r.previous_due_collected || 0) > 0)
+              .map((r: any) => r.invoice_id)
+              .filter(Boolean),
+            currentInvoiceCollected,
+            previousDueCollected,
+          }
+        : {}),
       paymentNote: p.note ?? null,
       manualPatwariId: p.patwari_id ?? null,
       manualPatwari: p.patwaris ?? null,
@@ -114,6 +145,7 @@ export async function buildPaymentReceiptData(p: any, ctx: ReceiptBuildContext):
           discount_amount: irrEnriched.discount_amount,
           total_outstanding: irrEnriched.total_outstanding,
           collected_from_outstanding: irrEnriched.collected_from_outstanding,
+          due_penalty: irrEnriched.due_penalty,
           remark: irrEnriched.remark,
           holding_description: irrEnriched.holding_description,
           patwari_name: irrEnriched.patwari_name,

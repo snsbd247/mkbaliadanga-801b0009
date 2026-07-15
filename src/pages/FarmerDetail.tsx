@@ -600,7 +600,9 @@ export default function FarmerDetail() {
         maintenance_charge: invoiceRows.reduce((s, inv) => s + Number(inv?.maintenance_amount || 0), 0),
         canal_charge: invoiceRows.reduce((s, inv) => s + Number(inv?.canal_amount || 0), 0),
         discount_amount: invoiceRows.reduce((s, inv) => s + Number(inv?.discount_amount || 0), 0),
-        total_outstanding: invoiceRows.reduce((s, inv) => s + Number(inv?.due_amount || 0), 0),
+        // Legacy fallback only: do not print the farmer's remaining ledger due
+        // as this receipt's বকেয়া amount.
+        total_outstanding: 0,
         holding_description: invoiceRows.map((inv) => (inv?.lands?.notes ?? "").trim()).filter(Boolean).join(" || ") || null,
         patwari_name: patwari ? (patwari.name_bn || patwari.name) : null,
         patwari_mobile: patwari?.mobile ?? null,
