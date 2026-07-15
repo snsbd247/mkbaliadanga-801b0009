@@ -179,16 +179,25 @@ class FunctionController extends Controller
             if ($newReceiptNo === '') return response()->json(['error' => 'receipt_no cannot be empty'], 400);
             $dup = DB::table('payments')->where('receipt_no', $newReceiptNo)->where('id', '<>', $paymentId)->exists();
             if ($dup) return response()->json(['error' => "রিসিপ্ট নম্বর ইতিমধ্যে ব্যবহৃত: $newReceiptNo"], 409);
+            $oldReceipt = (string) ($pay->receipt_no ?? '');
             $before['receipt_no'] = $pay->receipt_no ?? null; $after['receipt_no'] = $newReceiptNo;
             DB::table('payments')->where('id', $paymentId)->update(['receipt_no' => $newReceiptNo]);
             if (Schema::hasTable('irrigation_invoice_payments')) {
                 DB::table('irrigation_invoice_payments')->where('payment_id', $paymentId)->update(['receipt_no' => $newReceiptNo]);
             }
             if (Schema::hasTable('receipts')) {
-                DB::table('receipts')->where('reference_id', $paymentId)->where('kind', 'irrigation')->update(['receipt_no' => $newReceiptNo]);
+                $receiptQuery = DB::table('receipts')->where('kind', 'irrigation');
+                if ($invId !== null) {
+                    $receiptQuery->where('reference_id', $invId);
+                } else {
+                    $receiptQuery->where('reference_id', $paymentId);
+                }
+                if ($oldReceipt !== '') {
+                    $receiptQuery->where('receipt_no', $oldReceipt);
+                }
+                $receiptQuery->update(['receipt_no' => $newReceiptNo]);
             }
             if (Schema::hasTable('ledger_entries')) {
-                $oldReceipt = (string) ($pay->receipt_no ?? '');
                 DB::table('ledger_entries')
                     ->where('reference_type', 'irrigation_payment')
                     ->where('reference_id', $paymentId)
