@@ -819,7 +819,58 @@ function StreamCashbook(props: {
             )}
           </div>
         </div>
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <Input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder={tx("Search by receipt / voucher no, head, note…", "রশিদ / ভাউচার নং, খাত, নোট দিয়ে খুঁজুন…")}
+            className="max-w-md"
+          />
+          {search && (
+            <Button size="sm" variant="ghost" onClick={() => setSearch("")}>
+              {tx("Clear", "মুছুন")}
+            </Button>
+          )}
+          {search && (
+            <span className="text-xs text-muted-foreground">
+              {tx("Matches", "মিল")}: {filteredEntries.length} / {entries.length}
+            </span>
+          )}
+        </div>
       </Card>
+
+      {stream === "irrigation" && reconciliation.missing.length > 0 && (
+        <Card className="p-4 border-destructive/40">
+          <div className="flex items-center justify-between mb-2">
+            <h4 className="font-semibold text-destructive">
+              {tx("Missing receipt numbers in range", "রেঞ্জে অনুপস্থিত রশিদ নম্বর")}
+            </h4>
+            <Badge variant="outline">{reconciliation.missing.length}</Badge>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {reconciliation.missing.map((m) => (
+              <Badge
+                key={m.no}
+                variant={m.reason === "unknown" ? "destructive" : "secondary"}
+                className="font-mono"
+                title={
+                  m.reason === "voided" ? tx("Voided", "বাতিল")
+                  : m.reason === "deleted" ? tx("Deleted", "মুছে ফেলা")
+                  : m.reason === "unapproved" ? tx("Unapproved", "অনুমোদিত নয়")
+                  : tx("Unknown gap — investigate", "অজানা গ্যাপ — যাচাই করুন")
+                }
+              >
+                #{m.no} · {
+                  m.reason === "voided" ? tx("voided", "বাতিল")
+                  : m.reason === "deleted" ? tx("deleted", "মুছে ফেলা")
+                  : m.reason === "unapproved" ? tx("unapproved", "অনুমোদিত নয়")
+                  : tx("unknown", "অজানা")
+                }
+              </Badge>
+            ))}
+          </div>
+        </Card>
+      )}
 
       <CashbookA4Preview
         open={previewOpen}
