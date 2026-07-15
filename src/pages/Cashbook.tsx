@@ -133,9 +133,14 @@ export default function Cashbook() {
       sb.from("receipts").select("*, farmers(name_en,farmer_code,member_no)").gte("receipt_date", mFrom).lte("receipt_date", mTo).order("receipt_date", { ascending: false }).limit(20000),
       sb.from("expenses").select("*").is("deleted_at", null).gte("expense_date", mFrom).lte("expense_date", mTo).order("expense_date", { ascending: false }).limit(20000),
       sb.from("cashbook_submissions").select("*").order("year", { ascending: false }).order("month", { ascending: false }).limit(48),
-      sb.from("payments").select("id,kind,status,receipt_no,amount,method,note,created_at,occurred_at,office_id,farmer_id,farmers(name_en,farmer_code,member_no)")
+      // Include ALL non-deleted, non-voided irrigation payments so their
+      // receipt numbers appear in the cashbook range. Filtering by
+      // status="approved" alone hid pending receipts (e.g. #4754) and made
+      // the daily range look like it skipped a number.
+      sb.from("payments").select("id,kind,status,receipt_no,amount,method,note,created_at,occurred_at,office_id,farmer_id,voided_at,deleted_at,farmers(name_en,farmer_code,member_no)")
         .eq("kind", "irrigation")
-        .eq("status", "approved")
+        .is("deleted_at", null)
+        .is("voided_at", null)
         .gte("created_at", `${mFrom} 00:00:00`)
         .lte("created_at", `${mTo} 23:59:59`)
         .order("created_at", { ascending: false }).limit(20000),
