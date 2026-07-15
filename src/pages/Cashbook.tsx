@@ -130,7 +130,7 @@ export default function Cashbook() {
   }
 
   async function load() {
-    const [rec, exp, subs, pay, inc] = await Promise.all([
+    const [rec, exp, subs, pay, inc, payExcluded] = await Promise.all([
       sb.from("receipts").select("*, farmers(name_en,farmer_code,member_no)").gte("receipt_date", mFrom).lte("receipt_date", mTo).order("receipt_date", { ascending: false }).limit(20000),
       sb.from("expenses").select("*").is("deleted_at", null).gte("expense_date", mFrom).lte("expense_date", mTo).order("expense_date", { ascending: false }).limit(20000),
       sb.from("cashbook_submissions").select("*").order("year", { ascending: false }).order("month", { ascending: false }).limit(48),
@@ -146,6 +146,14 @@ export default function Cashbook() {
         .lte("created_at", `${mTo} 23:59:59`)
         .order("created_at", { ascending: false }).limit(20000),
       sb.from("office_incomes").select("*").gte("received_on", mFrom).lte("received_on", mTo).order("received_on", { ascending: false }).limit(20000),
+      // Explicitly load voided/deleted irrigation payments so the reconciliation
+      // panel can explain each missing receipt number in the daily range.
+      sb.from("payments").select("id,receipt_no,amount,status,voided_at,deleted_at,void_reason,created_at,occurred_at")
+        .eq("kind", "irrigation")
+        .or("voided_at.not.is.null,deleted_at.not.is.null")
+        .gte("created_at", `${mFrom} 00:00:00`)
+        .lte("created_at", `${mTo} 23:59:59`)
+        .limit(5000),
     ]);
     const realReceipts = rec.data ?? [];
     const existingNos = new Set(realReceipts.map((r: any) => String(r.receipt_no ?? "")).filter(Boolean));
@@ -163,8 +171,21 @@ export default function Cashbook() {
         office_id: p.office_id,
         farmers: p.farmers,
         _from_payment: true,
+        _inclusion_reason: p.status === "approved" ? "approved" : (p.status || "pending"),
       }));
-    setReceipts([...realReceipts, ...paymentFallbackReceipts]); setExpenses(exp.data ?? []); setSubmissions(subs.data ?? []); setIncomes(inc.data ?? []);
+    const excluded = (payExcluded.data ?? [])
+      .filter((p: any) => p.receipt_no)
+      .map((p: any) => ({
+        receipt_no: String(p.receipt_no),
+        amount: Number(p.amount ?? 0),
+        receipt_date: String(p.occurred_at || p.created_at || mFrom).slice(0, 10),
+        void_reason: p.void_reason ?? null,
+        _excluded_reason: (p.deleted_at ? "deleted" : p.voided_at ? "voided" : "unapproved") as
+          "deleted" | "voided" | "unapproved",
+      }));
+    setReceipts([...realReceipts, ...paymentFallbackReceipts]);
+    setExcludedReceipts(excluded);
+    setExpenses(exp.data ?? []); setSubmissions(subs.data ?? []); setIncomes(inc.data ?? []);
   }
 
   function isLocked(stream: Stream) {
