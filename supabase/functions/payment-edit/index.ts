@@ -192,8 +192,19 @@ Deno.serve(async (req) => {
       // Ensure uniqueness so two receipts never share a number.
       const { data: dup } = await svc.from('payments').select('id').eq('receipt_no', newReceiptNo).neq('id', paymentId).maybeSingle()
       if (dup) return new Response(JSON.stringify({ error: `রিসিপ্ট নম্বর ইতিমধ্যে ব্যবহৃত: ${newReceiptNo}` }), { status: 409, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
-      before.receipt_no = (pay as any).receipt_no ?? null; after.receipt_no = newReceiptNo
+      const oldReceiptNo = String((pay as any).receipt_no ?? '')
+      before.receipt_no = oldReceiptNo || null; after.receipt_no = newReceiptNo
       await svc.from('payments').update({ receipt_no: newReceiptNo }).eq('id', paymentId)
+      await svc.from('irrigation_invoice_payments').update({ receipt_no: newReceiptNo }).eq('payment_id', paymentId)
+      await svc.from('receipts').update({ receipt_no: newReceiptNo }).eq('reference_id', paymentId).eq('kind', 'irrigation')
+      await svc.from('ledger_entries')
+        .update({ description: `সেচ পেমেন্ট ${newReceiptNo} — Cash received` })
+        .eq('reference_type', 'irrigation_payment').eq('reference_id', paymentId)
+        .eq('description', `সেচ পেমেন্ট ${oldReceiptNo} — Cash received`)
+      await svc.from('ledger_entries')
+        .update({ description: `সেচ পেমেন্ট ${newReceiptNo} — Irrigation income` })
+        .eq('reference_type', 'irrigation_payment').eq('reference_id', paymentId)
+        .eq('description', `সেচ পেমেন্ট ${oldReceiptNo} — Irrigation income`)
     }
 
     // 4c) Receipt patwari override (manual selection / edit)
