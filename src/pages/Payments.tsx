@@ -1058,11 +1058,63 @@ export default function Payments() {
             </div>
 
             <div>
-              <Label>Field Receipt # <span className="text-xs text-muted-foreground">(optional — auto-generated if blank)</span></Label>
-              <Input value={receiptNo} onChange={e => setReceiptNo(e.target.value)} placeholder="e.g. 12345" />
+              <Label>
+                {tx("Receipt # (manual / gap-fill)", "রশিদ নং (ম্যানুয়াল / গ্যাপ পূরণ)")}{" "}
+                <span className="text-xs text-muted-foreground">
+                  {tx("(optional — auto-generated if blank)", "(ঐচ্ছিক — ফাঁকা থাকলে অটো)")}
+                </span>
+              </Label>
+              <Input
+                value={receiptNo}
+                onChange={e => setReceiptNo(e.target.value)}
+                placeholder={tx("e.g. 4754 to fill a gap", "যেমন 4754 — গ্যাপে বসাতে")}
+                disabled={!isAdmin && !isSuper && receiptNo.trim() === ""}
+              />
               {!receiptNo.trim() && previewSerial && (
                 <p className="mt-1 text-xs text-muted-foreground">
-                  Auto serial preview: <span className="font-mono font-semibold text-foreground">{previewSerial}</span>
+                  {tx("Auto serial preview", "অটো সিরিয়াল প্রিভিউ")}:{" "}
+                  <span className="font-mono font-semibold text-foreground">{previewSerial}</span>
+                </p>
+              )}
+              {receiptNo.trim() && manualCheck && (
+                <p className={`mt-1 text-xs font-medium ${
+                  manualCheck.status === "ok_gap" || manualCheck.status === "ok_manual"
+                    ? "text-success"
+                    : "text-destructive"
+                }`}>
+                  {manualCheck.status === "ok_gap" && tx(
+                    "Fills a gap — serial counter unaffected",
+                    "গ্যাপ পূরণ হবে — সিরিয়াল অক্ষত থাকবে",
+                  )}
+                  {manualCheck.status === "ok_manual" && tx(
+                    "Manual code accepted (does not touch serial)",
+                    "ম্যানুয়াল কোড গ্রহণযোগ্য (সিরিয়াল প্রভাবিত নয়)",
+                  )}
+                  {manualCheck.status === "duplicate" && tx(
+                    "Duplicate — this receipt # is already used",
+                    "ডুপ্লিকেট — এই রশিদ নং ইতিমধ্যে ব্যবহৃত",
+                  )}
+                  {manualCheck.status === "would_break_serial" && tx(
+                    `Would break serial (next auto = ${manualCheck.next_serial}). Use a number in the gap.`,
+                    `সিরিয়াল ভাঙবে (পরবর্তী অটো = ${manualCheck.next_serial})। গ্যাপের নম্বর দিন।`,
+                  )}
+                  {manualCheck.status === "invalid_format" && tx("Invalid receipt no", "রশিদ নং সঠিক নয়")}
+                </p>
+              )}
+            </div>
+            <div>
+              <Label>{tx("Manual date (optional)", "ম্যানুয়াল তারিখ (ঐচ্ছিক)")}</Label>
+              <Input
+                type="date"
+                value={manualDate}
+                onChange={e => setManualDate(e.target.value)}
+                max={new Date().toISOString().slice(0, 10)}
+                disabled={!isAdmin && !isSuper}
+              />
+              {manualDate && (
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {tx("Receipt will be recorded on", "রশিদ এই তারিখে রেকর্ড হবে")}:{" "}
+                  <span className="font-semibold text-foreground">{manualDate}</span>
                 </p>
               )}
             </div>
