@@ -38,29 +38,57 @@ export async function buildPaymentReceiptData(p: any, ctx: ReceiptBuildContext):
     const irrAllocs = (p.payment_allocations ?? []).filter((a: any) => a.kind === "irrigation");
     let refIds = irrAllocs.map((a: any) => a.reference_id).filter(Boolean);
     let collectedFromOutstanding = irrAllocs.reduce((s: number, a: any) => s + Number(a.amount || 0), 0) || Number(p.amount || 0);
+    let linkRows: any[] = [];
 
     // Irrigation payments link their specific invoice(s) through
     // irrigation_invoice_payments (one payment row per invoice), NOT
     // payment_allocations. Without this, refIds stays empty and the receipt
     // falls back to the farmer's FIRST invoice — making every receipt show the
     // same mouza/dag/owner even when each invoice is for a different land.
-    if (refIds.length === 0 && p.id) {
+    if (p.id) {
       const { data: iip } = await db
         .from("irrigation_invoice_payments")
-        .select("invoice_id,collected_amount")
+        .select("invoice_id,collected_amount,current_invoice_collected,previous_due_collected")
         .eq("payment_id", p.id);
-      const invRefs = (iip ?? []).map((r: any) => r.invoice_id).filter(Boolean);
+      linkRows = iip ?? [];
+    }
+
+    if (refIds.length === 0 && linkRows.length) {
+      const invRefs = linkRows.map((r: any) => r.invoice_id).filter(Boolean);
       if (invRefs.length) {
         refIds = invRefs;
-        const sum = (iip ?? []).reduce((s: number, r: any) => s + Number(r.collected_amount || 0), 0);
+        const sum = linkRows.reduce((s: number, r: any) => s + Number(r.collected_amount || 0), 0);
         if (sum > 0) collectedFromOutstanding = sum;
       }
     }
+    const currentInvoiceCollected = linkRows.reduce(
+      (s: number, r: any) => s + Number(r.current_invoice_collected || 0),
+      0,
+    );
+    const previousDueCollected = linkRows.reduce(
+      (s: number, r: any) => s + Number(r.previous_due_collected || 0),
+      0,
+    );
+    const hasReceiptSplit = currentInvoiceCollected > 0 || previousDueCollected > 0;
 
     irrEnriched = await buildIrrigationReceiptEnrichment({
       farmerId: p.farmer_id ?? null,
       refIds,
       paymentAmount: collectedFromOutstanding,
+      ...(hasReceiptSplit
+        ? {
+            currentInvoiceIds: linkRows
+              .filter((r: any) => Number(r.current_invoice_collected || 0) > 0)
+              .map((r: any) => r.invoice_id)
+              .filter(Boolean),
+            previousDueInvoiceIds: linkRows
+              .filter((r: any) => Number(r.previous_due_collected || 0) > 0)
+              .map((r: any) => r.invoice_id)
+              .filter(Boolean),
+            currentInvoiceCollected,
+            previousDueCollected,
+          }
+        : {}),
       paymentNote: p.note ?? null,
       manualPatwariId: p.patwari_id ?? null,
       manualPatwari: p.patwaris ?? null,
@@ -114,6 +142,7 @@ export async function buildPaymentReceiptData(p: any, ctx: ReceiptBuildContext):
           discount_amount: irrEnriched.discount_amount,
           total_outstanding: irrEnriched.total_outstanding,
           collected_from_outstanding: irrEnriched.collected_from_outstanding,
+          due_penalty: irrEnriched.due_penalty,
           remark: irrEnriched.remark,
           holding_description: irrEnriched.holding_description,
           patwari_name: irrEnriched.patwari_name,

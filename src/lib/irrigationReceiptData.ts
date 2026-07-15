@@ -83,6 +83,14 @@ export interface IrrigationEnrichInput {
   farmerId: string | null;
   refIds?: string[];
   paymentAmount?: number;
+  /** Invoice ids where this receipt was applied as current/হাল collection. */
+  currentInvoiceIds?: string[];
+  /** Invoice ids where this receipt was applied as previous-due/বকেয়া collection. */
+  previousDueInvoiceIds?: string[];
+  /** Amount applied to current/হাল invoices by this receipt. */
+  currentInvoiceCollected?: number;
+  /** Amount applied to previous-due/বকেয়া invoices by this receipt. */
+  previousDueCollected?: number;
   paymentNote?: string | null;
   /** Patwari explicitly saved on the payment/receipt (manual selection or later edit). */
   manualPatwariId?: string | null;
@@ -110,6 +118,7 @@ export interface IrrigationEnriched {
   discount_amount: number;
   total_outstanding: number;
   collected_from_outstanding: number;
+  due_penalty: number;
   remark: string | null;
   holding_description: string | null;
   patwari_name: string | null;
@@ -253,20 +262,6 @@ export async function buildIrrigationReceiptEnrichment(
     paymentPatwari = p ?? null;
   }
 
-  let totalOutstanding = 0;
-  if (farmerId) {
-    const { data: allDues } = await db
-      .from("irrigation_invoices")
-      .select("due_amount")
-      .eq("farmer_id", farmerId)
-      .is("deleted_at", null)
-      .neq("invoice_status", "cancelled");
-    totalOutstanding = (allDues ?? []).reduce(
-      (s: number, r: any) => s + Number(r.due_amount || 0),
-      0,
-    );
-  }
-
   const anyBorga = invoiceRows.some((inv) => !!inv?.is_borga);
   const ownerInvoice =
     invoiceRows.find((inv) => inv?.is_borga && inv?.lands?.owner) ?? primaryCharge;
@@ -366,6 +361,37 @@ export async function buildIrrigationReceiptEnrichment(
   // "জমির নোট / পাটুয়ারীর নাম-মোবাইল" ফরম্যাট পরিষ্কার থাকে।
   const holdingDescription = landNotes || null;
 
+  const currentIdSet = new Set(input.currentInvoiceIds ?? []);
+  const previousIdSet = new Set(input.previousDueInvoiceIds ?? []);
+  const hasReceiptSplit =
+    currentIdSet.size > 0 ||
+    previousIdSet.size > 0 ||
+    Number(input.currentInvoiceCollected ?? 0) > 0 ||
+    Number(input.previousDueCollected ?? 0) > 0;
+  const currentRows = hasReceiptSplit
+    ? invoiceRows.filter((inv) => currentIdSet.has(inv?.id))
+    : invoiceRows;
+  const previousRows = hasReceiptSplit
+    ? invoiceRows.filter((inv) => previousIdSet.has(inv?.id))
+    : [];
+
+  const currentCollected = Number(input.currentInvoiceCollected ?? 0) || 0;
+  const previousCollected = Number(input.previousDueCollected ?? 0) || 0;
+  const currentPenaltyTotal = currentRows.reduce((s, inv) => s + Number(inv?.delay_fee || 0), 0);
+  const previousPenaltyTotal = previousRows.reduce((s, inv) => s + Number(inv?.delay_fee || 0), 0);
+  const currentPenalty = hasReceiptSplit ? Math.min(currentPenaltyTotal, currentCollected) : currentPenaltyTotal;
+  const previousPenalty = hasReceiptSplit ? Math.min(previousPenaltyTotal, previousCollected) : 0;
+  const currentCharge = hasReceiptSplit
+    ? Math.max(0, currentCollected - currentPenalty)
+    : currentRows.reduce((s, inv) => s + Number(inv?.irrigation_amount || 0), 0);
+  // This value feeds the official receipt's "চার্জের পরিমাণ (বকেয়া)" row.
+  // It must be the arrear amount covered by THIS receipt, not the farmer's
+  // whole remaining ledger due; otherwise a current-season receipt can show an
+  // unrelated old due (e.g. ১০০০৳) while the collected total is only ৭২৭৳.
+  const receiptPreviousDueCharge = hasReceiptSplit
+    ? Math.max(0, previousCollected - previousPenalty)
+    : 0;
+
   dbg("resolved fields", {
     mouza,
     dagNo,
@@ -376,6 +402,10 @@ export async function buildIrrigationReceiptEnrichment(
     patwari: patwari?.name_bn || patwari?.name || null,
     patwariSource,
     holdingDescription,
+    currentCharge,
+    currentPenalty,
+    receiptPreviousDueCharge,
+    previousPenalty,
   });
 
   return {
@@ -398,19 +428,17 @@ export async function buildIrrigationReceiptEnrichment(
             ownerMember ? "-" + ownerMember : ""
           }`
         : null,
-    current_season_charge: invoiceRows.reduce(
-      (s, inv) => s + Number(inv?.irrigation_amount || 0),
-      0,
-    ),
-    penalty_amount: invoiceRows.reduce((s, inv) => s + Number(inv?.delay_fee || 0), 0),
+    current_season_charge: currentCharge,
+    penalty_amount: currentPenalty,
     maintenance_charge: invoiceRows.reduce(
       (s, inv) => s + Number(inv?.maintenance_amount || 0),
       0,
     ),
     canal_charge: invoiceRows.reduce((s, inv) => s + Number(inv?.canal_amount || 0), 0),
     discount_amount: invoiceRows.reduce((s, inv) => s + Number(inv?.discount_amount || 0), 0),
-    total_outstanding: totalOutstanding,
-    collected_from_outstanding: collectedFromOutstanding || Number(paymentAmount || 0),
+    total_outstanding: receiptPreviousDueCharge,
+    collected_from_outstanding: previousCollected,
+    due_penalty: previousPenalty,
     remark: paymentNote ?? primaryCharge?.invoice_no ?? null,
     holding_description: holdingDescription,
     patwari_name: patwariDisp.name,

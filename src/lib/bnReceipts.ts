@@ -103,7 +103,7 @@ export interface BnReceiptData {
   penalty_amount?: number | null;              // বিলম্ব ফি
   maintenance_charge?: number | null;          // রক্ষণাবেক্ষণ
   canal_charge?: number | null;                // নালা চার্জ
-  total_outstanding?: number | null;           // বকেয়া (whole ledger)
+  total_outstanding?: number | null;           // এই রশিদে আদায়কৃত বকেয়া চার্জ (whole ledger নয়)
   collected_from_outstanding?: number | null;  // বকেয়া থেকে সংগৃহীত
   discount_amount?: number | null;             // ছাড়/ডিসকাউন্ট (হাল চার্জ থেকে)
   remark?: string | null;                      // রিমার্ক/নোট

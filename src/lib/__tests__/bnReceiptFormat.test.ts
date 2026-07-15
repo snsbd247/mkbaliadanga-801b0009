@@ -76,8 +76,8 @@ describe("bnReceipts official irrigation formatting", () => {
     expect(html()).toContain("মাত্র।");
   });
 
-  it("renders land size with 4 decimal places in acre", () => {
-    expect(html()).toContain("০.৩৩০০ একর");
+  it("renders land size with 4 decimal places in shotok/decimal", () => {
+    expect(html()).toContain("৩৩.০০০০ শতক");
   });
 
   it("renders patwari mobile in Bengali digits", () => {
