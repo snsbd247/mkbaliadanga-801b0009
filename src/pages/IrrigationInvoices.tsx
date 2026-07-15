@@ -182,6 +182,10 @@ function InvoiceListTab({ seasons, offices, isSuper }: any) {
       if (status === "due") {
         // Unified outstanding view: any non-cancelled invoice with money still owed.
         q = q.gt("due_amount", 0).neq("invoice_status", "cancelled");
+      } else if (status === "overdue") {
+        // Overdue is a derived state (not stored on the row): outstanding + past due_date.
+        const today = new Date().toISOString().slice(0, 10);
+        q = q.gt("due_amount", 0).neq("invoice_status", "cancelled").lt("due_date", today);
       } else if (status !== "all") {
         q = q.eq("invoice_status", status);
       }
