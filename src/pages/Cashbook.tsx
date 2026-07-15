@@ -944,7 +944,7 @@ function StreamCashbook(props: {
         </TableBody>
       </Table></Card>
 
-      {entries.length > 0 && (
+      {filteredEntries.length > 0 && (
         <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
           <div className="flex items-center gap-2">
             <span className="text-muted-foreground">{tx("Rows per page", "প্রতি পেজে")}</span>
