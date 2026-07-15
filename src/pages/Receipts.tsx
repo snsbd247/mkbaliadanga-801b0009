@@ -65,14 +65,22 @@ export default function Receipts() {
 
   async function load() {
     setLoading(true);
-    let q = db.from("payments").select(PAY_SELECT).is("deleted_at", null).order("created_at", { ascending: false }).limit(500);
+    let q = db.from("payments").select(PAY_SELECT).is("deleted_at", null).order("receipt_no", { ascending: false }).limit(500);
     if (receiptNo.trim()) q = q.ilike("receipt_no", `%${receiptNo.trim()}%`);
     if (from) q = q.gte("created_at", new Date(from).toISOString());
     if (to) { const end = new Date(to); end.setHours(23, 59, 59, 999); q = q.lte("created_at", end.toISOString()); }
     if (farmerId) q = q.eq("farmer_id", farmerId);
     const { data, error } = await q;
     if (error) { toast.error(error.message); setLoading(false); return; }
-    const rows = data ?? [];
+    const rows: any[] = (data ?? []).slice().sort((a, b) => {
+      const aNum = Number.isFinite(Number(a.receipt_no)) ? Number(a.receipt_no) : NaN;
+      const bNum = Number.isFinite(Number(b.receipt_no)) ? Number(b.receipt_no) : NaN;
+      if (!Number.isNaN(aNum) && !Number.isNaN(bNum)) return bNum - aNum;
+      if (a.receipt_no && b.receipt_no) return String(b.receipt_no).localeCompare(String(a.receipt_no), undefined, { numeric: true, sensitivity: 'base' });
+      if (a.receipt_no) return -1;
+      if (b.receipt_no) return 1;
+      return 0;
+    });
     setList(rows);
     await resolveMouzas(rows);
     setLoading(false);
