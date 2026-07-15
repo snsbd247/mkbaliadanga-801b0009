@@ -181,6 +181,25 @@ class FunctionController extends Controller
             if ($dup) return response()->json(['error' => "রিসিপ্ট নম্বর ইতিমধ্যে ব্যবহৃত: $newReceiptNo"], 409);
             $before['receipt_no'] = $pay->receipt_no ?? null; $after['receipt_no'] = $newReceiptNo;
             DB::table('payments')->where('id', $paymentId)->update(['receipt_no' => $newReceiptNo]);
+            if (Schema::hasTable('irrigation_invoice_payments')) {
+                DB::table('irrigation_invoice_payments')->where('payment_id', $paymentId)->update(['receipt_no' => $newReceiptNo]);
+            }
+            if (Schema::hasTable('receipts')) {
+                DB::table('receipts')->where('reference_id', $paymentId)->where('kind', 'irrigation')->update(['receipt_no' => $newReceiptNo]);
+            }
+            if (Schema::hasTable('ledger_entries')) {
+                $oldReceipt = (string) ($pay->receipt_no ?? '');
+                DB::table('ledger_entries')
+                    ->where('reference_type', 'irrigation_payment')
+                    ->where('reference_id', $paymentId)
+                    ->where('description', "সেচ পেমেন্ট {$oldReceipt} — Cash received")
+                    ->update(['description' => "সেচ পেমেন্ট {$newReceiptNo} — Cash received"]);
+                DB::table('ledger_entries')
+                    ->where('reference_type', 'irrigation_payment')
+                    ->where('reference_id', $paymentId)
+                    ->where('description', "সেচ পেমেন্ট {$oldReceipt} — Irrigation income")
+                    ->update(['description' => "সেচ পেমেন্ট {$newReceiptNo} — Irrigation income"]);
+            }
         }
 
         if ($newPatwariProvided && Schema::hasColumn('payments', 'patwari_id') && $newPatwariId !== ($pay->patwari_id ?? null)) {
