@@ -62,11 +62,10 @@ describe("buildIrrigationReceiptEnrichment", () => {
   });
 
   it("derives land/charge fields + cultivator savings number (self land)", async () => {
-    // Query order: invoices, lands, patwari-by-id, totalOutstanding, cultivator.
+    // Query order: invoices, lands, patwari-by-id, cultivator.
     resultQueue.push({ data: [baseInvoice] });
     resultQueue.push({ data: [baseLand] });
     resultQueue.push({ data: [patwariRow] });
-    resultQueue.push({ data: [{ due_amount: 0 }] });
     resultQueue.push({ data: { id: "cult-1", name_bn: "মোঃ মাসুদ", member_no: "02473", farmer_code: "02473", account_number: "01711", savings_inactive: false, is_voter: false } });
 
     const e = await buildIrrigationReceiptEnrichment({
@@ -91,7 +90,6 @@ describe("buildIrrigationReceiptEnrichment", () => {
     resultQueue.push({ data: [baseInvoice] });
     resultQueue.push({ data: [baseLand] });
     resultQueue.push({ data: [patwariRow] });
-    resultQueue.push({ data: [{ due_amount: 0 }] });
     resultQueue.push({ data: { id: "cult-1", name_bn: "মোঃ মাসুদ", member_no: "1920", account_number: "1920", savings_inactive: false, is_voter: true } });
 
     const e = await buildIrrigationReceiptEnrichment({
@@ -109,7 +107,6 @@ describe("buildIrrigationReceiptEnrichment", () => {
     resultQueue.push({ data: [baseLand] });
     resultQueue.push({ data: [patwariRow] });
     resultQueue.push({ data: { id: "pat-manual", name: "Manual", name_bn: "ম্যানুয়াল পাটুয়ারি", mobile: "0180000000" } });
-    resultQueue.push({ data: [{ due_amount: 0 }] });
     resultQueue.push({ data: { id: "cult-1", name_bn: "মোঃ মাসুদ", member_no: "1920", account_number: "1920", savings_inactive: false, is_voter: true } });
 
     const e = await buildIrrigationReceiptEnrichment({
@@ -129,11 +126,10 @@ describe("buildIrrigationReceiptEnrichment", () => {
   it("shows borgadar savings number and নাই for a non-voter owner", async () => {
     const borgaInvoice = { ...baseInvoice, is_borga: true };
     const borgaLand = { ...baseLand, owner_farmer_id: "own-1", patwari_id: null };
-    // Query order: invoices, lands, owner farmers, totalOutstanding, cultivator.
+    // Query order: invoices, lands, owner farmers, cultivator.
     resultQueue.push({ data: [borgaInvoice] });
     resultQueue.push({ data: [borgaLand] });
     resultQueue.push({ data: [{ id: "own-1", name_bn: "মালিক সাহেব", member_no: "1687", farmer_code: null, account_number: "01925", is_voter: false, savings_inactive: false }] });
-    resultQueue.push({ data: [{ due_amount: 0 }] });
     resultQueue.push({ data: { id: "cult-1", name_bn: "বর্গা চাষি", member_no: "02473", account_number: "01711", savings_inactive: false, is_voter: true } });
 
     const e = await buildIrrigationReceiptEnrichment({
@@ -158,7 +154,6 @@ describe("buildIrrigationReceiptEnrichment", () => {
     resultQueue.push({ data: [baseInvoice] });
     resultQueue.push({ data: [baseLand] });
     resultQueue.push({ data: [patwariRow] });
-    resultQueue.push({ data: [{ due_amount: 0 }] });
     resultQueue.push({ data: { id: "cult-1", name_bn: "মোঃ সুজাউর", member_no: "02933", farmer_code: "02933", account_number: "2933", savings_inactive: false, is_voter: false } });
 
     const e = await buildIrrigationReceiptEnrichment({
@@ -170,6 +165,30 @@ describe("buildIrrigationReceiptEnrichment", () => {
     expect(e.cultivator_label).toBe("মোঃ সুজাউর-02933");
     expect(e.member_summary).toBe("নাই");
     expect(e.member_summary).not.toContain("2933");
+  });
+
+  it("prints receipt arrear from this payment split, not the farmer ledger due", async () => {
+    const currentInvoice = { ...baseInvoice, id: "cur", due_amount: 0, irrigation_amount: 727, delay_fee: 0 };
+    const oldInvoice = { ...baseInvoice, id: "old", due_amount: 1000, irrigation_amount: 1000, delay_fee: 0 };
+    resultQueue.push({ data: [currentInvoice, oldInvoice] });
+    resultQueue.push({ data: [baseLand] });
+    resultQueue.push({ data: [patwariRow] });
+    resultQueue.push({ data: { id: "cult-1", name_bn: "মোঃ মাসুদ", member_no: "02473", farmer_code: "02473", account_number: "01711", savings_inactive: false, is_voter: false } });
+
+    const e = await buildIrrigationReceiptEnrichment({
+      farmerId: "cult-1",
+      refIds: ["cur", "old"],
+      paymentAmount: 727,
+      currentInvoiceIds: ["cur"],
+      previousDueInvoiceIds: [],
+      currentInvoiceCollected: 727,
+      previousDueCollected: 0,
+      paymentNote: null,
+    });
+
+    expect(e.current_season_charge).toBe(727);
+    expect(e.total_outstanding).toBe(0);
+    expect(e.collected_from_outstanding).toBe(0);
   });
 
   it("returns safe defaults when no invoices exist", async () => {
