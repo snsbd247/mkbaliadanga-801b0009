@@ -569,7 +569,7 @@ export default function Payments() {
 
   function resetForm() {
     setAllocs([{ kind: "irrigation", reference_id: "", amount: 0 }]);
-    setNote(""); setReceiptNo(""); setReceiptFile(null); setIdemKey(newKey());
+    setNote(""); setReceiptNo(""); setManualDate(""); setManualCheck(null); setReceiptFile(null); setIdemKey(newKey());
   }
 
   async function pay() {
