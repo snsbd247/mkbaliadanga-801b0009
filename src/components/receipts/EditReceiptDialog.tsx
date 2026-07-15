@@ -14,9 +14,9 @@ import { fetchReceiptAuditLogs } from "@/lib/receiptAudit";
 import { previewEdit, checkConsistency, type EditBaseline } from "@/lib/combinedReceiptValidation";
 import { invoiceBilledArea } from "@/lib/irrigationInvoiceArea";
 
-type EditForm = { mouza: string; land_size: number; owner_farmer_id: string; patwari_id: string; delay_fee: number; amount: number; note: string; reason: string; receipt_no: string };
+type EditForm = { mouza: string; land_size: number; owner_farmer_id: string; patwari_id: string; delay_fee: number; amount: number; note: string; reason: string; receipt_no: string; receipt_date: string };
 
-const EMPTY: EditForm = { mouza: "", land_size: 0, owner_farmer_id: "", patwari_id: "", delay_fee: 0, amount: 0, note: "", reason: "", receipt_no: "" };
+const EMPTY: EditForm = { mouza: "", land_size: 0, owner_farmer_id: "", patwari_id: "", delay_fee: 0, amount: 0, note: "", reason: "", receipt_no: "", receipt_date: new Date().toISOString().slice(0, 10) };
 
 /** Human-readable field labels used by the master-detail edit history. */
 function useFieldLabels() {
@@ -30,6 +30,7 @@ function useFieldLabels() {
     patwari_id: tx("Patwari", "পাটুয়ারি"),
     note: tx("Note", "নোট"),
     receipt_no: tx("Receipt #", "রশিদ নং"),
+    receipt_date: tx("Receipt date", "রশিদ তারিখ"),
   }), [tx]);
 }
 
@@ -94,11 +95,23 @@ export function EditReceiptDialog({
       if (payment.office_id) pq = pq.eq("office_id", payment.office_id);
       const { data: patwariRows } = await pq;
       if (cancelled) return;
+      const paymentDate = payment?.created_at ? new Date(payment.created_at).toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10);
       setInvoiceId(invId);
       setLandId(lId);
       setBaseline(base);
       setPatwaris((patwariRows as any[]) ?? []);
-      setForm({ mouza, land_size, owner_farmer_id: owner, patwari_id: payment.patwari_id ?? "", delay_fee: delay, amount: Number(payment.amount || 0), note: payment.note ?? "", reason: "", receipt_no: payment.receipt_no ?? "" });
+      setForm({
+        mouza,
+        land_size,
+        owner_farmer_id: owner,
+        patwari_id: payment.patwari_id ?? "",
+        delay_fee: delay,
+        amount: Number(payment.amount || 0),
+        note: payment.note ?? "",
+        reason: "",
+        receipt_no: payment.receipt_no ?? "",
+        receipt_date: paymentDate,
+      });
       setLoading(false);
     })();
     return () => { cancelled = true; };
@@ -109,6 +122,7 @@ export function EditReceiptDialog({
     if (!form.reason.trim()) return toast.error(tx("Reason is required", "কারণ আবশ্যক"));
     const amt = Math.round(Number(form.amount) || 0);
     if (amt < 0 || Number.isNaN(amt)) return toast.error(tx("Enter a valid amount", "সঠিক অঙ্ক দিন"));
+    if (form.receipt_date && !/^\d{4}-\d{2}-\d{2}$/.test(form.receipt_date)) return toast.error(tx("Enter a valid date", "সঠিক তারিখ দিন"));
     if (baseline && amt > baseline.payable_amount + (Math.round(Number(form.delay_fee) || 0) - baseline.delay_fee)) {
       return toast.error(tx("Amount exceeds payable", "অঙ্ক প্রদেয়র চেয়ে বেশি"));
     }
@@ -136,6 +150,7 @@ export function EditReceiptDialog({
         patwari_id: invoiceId ? (form.patwari_id || null) : null,
         delay_fee: invoiceId ? Math.round(Number(form.delay_fee) || 0) : null,
         receipt_no: form.receipt_no.trim() || null,
+        receipt_date: form.receipt_date.trim() || null,
       },
     });
     setLoading(false);
@@ -187,7 +202,7 @@ export function EditReceiptDialog({
         ) : (
           <div className="space-y-3">
             {!invoiceId && (
-              <p className="text-xs text-muted-foreground">{tx("This receipt has no linked irrigation invoice; only amount can be edited.", "এই রসিদে কোনো সেচ ইনভয়েস যুক্ত নেই; শুধু টাকা এডিট করা যাবে।")}</p>
+              <p className="text-xs text-muted-foreground">{tx("This receipt has no linked irrigation invoice; amount, receipt no and date can be edited.", "এই রসিদে কোনো সেচ ইনভয়েস যুক্ত নেই; টাকা, রশিদ নং এবং তারিখ এডিট করা যাবে।")}</p>
             )}
             {invoiceId && (<>
               <div>
@@ -229,9 +244,15 @@ export function EditReceiptDialog({
               <Label>{tx("Amount (৳)", "টাকা (৳)")}</Label>
               <Input type="number" step={1} value={form.amount || ""} onChange={(e) => setForm((f) => ({ ...f, amount: Math.round(Number(e.target.value || 0)) }))} />
             </div>
-            <div>
-              <Label>{tx("Receipt #", "রশিদ নং")}</Label>
-              <Input value={form.receipt_no} onChange={(e) => setForm((f) => ({ ...f, receipt_no: e.target.value }))} placeholder={tx("Receipt number", "রশিদ নম্বর")} />
+            <div className="grid gap-3 md:grid-cols-2">
+              <div>
+                <Label>{tx("Receipt date", "রশিদ তারিখ")}</Label>
+                <Input type="date" value={form.receipt_date} onChange={(e) => setForm((f) => ({ ...f, receipt_date: e.target.value }))} />
+              </div>
+              <div>
+                <Label>{tx("Receipt #", "রশিদ নং")}</Label>
+                <Input value={form.receipt_no} onChange={(e) => setForm((f) => ({ ...f, receipt_no: e.target.value }))} placeholder={tx("Receipt number", "রশিদ নম্বর")} />
+              </div>
             </div>
             <div>
               <Label>{tx("Note", "নোট")}</Label>
