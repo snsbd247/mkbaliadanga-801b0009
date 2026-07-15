@@ -1,79 +1,81 @@
-# বর্গা ইনভয়েস Backfill ও Guard প্ল্যান
+## লক্ষ্য
 
-## ১. Backfill Migration (`is_borga=true` পুরনো ইনভয়েস)
+Payments পেজে পেমেন্ট রিসিভ করার সময় ইউজার চাইলে (১) রশিদ নম্বর এবং (২) রশিদের তারিখ ম্যানুয়ালি বসাতে পারবেন — যাতে পুরনো গ্যাপ (যেমন 4754) পূরণ করা যায়। কিছু না দিলে আগের মতো সিরিয়াল অনুযায়ী অটো-জেনারেট হবে, কাউন্টার ভাঙবে না, অন্য মডিউল অক্ষত থাকবে।
 
-প্রতিটি row-এর জন্য:
+## UI পরিবর্তন — `src/pages/Payments.tsx`
 
-- **প্রকৃত area** = `land_relations.area_decimal` (active row, `deleted_at IS NULL`); না থাকলে `share_percentage/100 * lands.land_size`
-- relation না পেলে **skip** (audit এ যাবে)
-- **নতুন amounts:**
-  - `ratio = new_area / old_billed_area` (old=০ হলে skip)
-  - `irrigation_amount = round(old_irrigation_amount * ratio)`
-  - `payable_amount = irrigation_amount + delay_fee + other_charge − discount_amount` (maintenance/canal বাদ — memory অনুযায়ী)
-  - `due_amount = max(payable − paid, 0)`
-  - `paid ≥ payable` → status `paid`, নাহলে `paid>0` → `partial`, নাহলে unchanged
-- **`calculation_snapshot`** এ merge:
-  ```json
-  { "backfilled_at": "…", "backfill_source": "borga_area_fix_2026_07_14",
-    "old": { "billed_area_shotok":…, "payable_amount":…, "irrigation_amount":…, "due_amount":… },
-    "new": { "billed_area_shotok":…, "payable_amount":…, "irrigation_amount":…, "due_amount":… } }
-  ```
+Payments ফর্মে বিদ্যমান "Field Receipt #" ইনপুটটির নাম পরিষ্কার করে "রশিদ নং (ম্যানুয়াল / গ্যাপ পূরণ)" রাখা হবে। পাশে নতুন একটি "রশিদের তারিখ (ঐচ্ছিক)" date-picker যোগ হবে (ডিফল্ট: আজ, ফাঁকা রাখলে সার্ভার-সাইড `now()`)।
 
-### Safe Mode (default)
-- **শুধু `paid_amount = 0`** ইনভয়েস আপডেট হবে
-- `paid_amount > 0` কিন্তু `paid ≤ new_payable` → skip + audit (later phase)
-- `paid > new_payable` → skip + audit (manual review)
+Live validation বার:
+- ফাঁকা → auto serial preview (আগের মতো)।
+- সংখ্যা এবং current serial-start (পরবর্তী auto নম্বর) থেকে ছোট → সবুজ ব্যাজ "গ্যাপ পূরণ — সিরিয়াল অক্ষত থাকবে"।
+- current serial-start-এর সমান/বড় → লাল ব্যাজ "সিরিয়াল ব্রেক করবে — অনুমোদিত নয়"।
+- একই নম্বর অন্য active payment/receipt-এ থাকলে → লাল ব্যাজ "ডুপ্লিকেট"।
 
-### Audit Table
-`irrigation_invoice_backfill_audit` (নতুন):
-`invoice_id, invoice_no, farmer_id, old_area, new_area, old_payable, new_payable, paid_amount, action` (`updated` | `skipped_paid` | `skipped_overpaid` | `skipped_no_relation`), `reason, created_at`. RLS: admin-only read.
+Permission: `payments_manual_receipt` (নতুন) বা `isSuper`/`isAdmin` না থাকলে ইনপুট দুটি disabled + tooltip "শুধু admin".
 
-Payment/receipt rows **touch হবে না** — শুধু invoice এর area+amounts।
+## সার্ভার-সাইড গার্ড — নতুন RPC
 
-## ২. Invoice Edit/Regenerate Recalc
+`supabase/migrations/…_manual_receipt_validation.sql`-এ নতুন RPC:
 
-`src/pages/IrrigationInvoices.tsx` এ edit/regenerate পাথে ইতিমধ্যে `billedArea` বসছে (আগের ফিক্স)। এখন **guard যোগ:**
-- Insert/update payload validate — `is_borga && billed_area_shotok > parcel_area_shotok` হলে throw
-- edit-এ area পরিবর্তন হলে `irrigation_amount`/`payable_amount`/`due_amount` snapshot-এ old রেখে recalc হবে
+```
+public.validate_manual_receipt_no(_no text)
+  returns table(status text, reason text)
+```
 
-## ৩. Billing Validation (নতুন invoice)
+status = `ok_gap` (গ্যাপে পড়ে), `duplicate`, `would_break_serial`, `invalid_format`. Payments.tsx ইনসার্টের আগেই এটি কল করবে; সার্ভার সত্য উৎস (single source of truth) — কেউ ক্লায়েন্ট বাইপাস করলেও গার্ডেড।
 
-`src/lib/irrigationInvoice.ts` বা payload builder-এ:
-- borga farmer এর জন্য `land_relations` না থাকলে error
-- `billed_area_shotok` কখনো `parcel_area_shotok` অতিক্রম করবে না — assert
+`next_serial_receipt_no()` অপরিবর্তিত থাকবে — ম্যানুয়ালি বসানো গ্যাপ নম্বর `max_used`-এর চেয়ে ছোট বলে counter এগোবে না; auto serial আগের মতোই চলবে।
 
-## ৪. PDF / Excel Export
+## Payments.tsx ইনসার্ট flow পরিবর্তন
 
-`invoiceLandSize()` helper snapshot-first — আগের ফিক্সে হয়ে গেছে। ভেরিফাই করব:
-- `src/lib/irrigationInvoicePdf.ts`
-- `src/lib/irrigationReceiptData.ts` + `bnReceipts.ts`
-- `PaidLandHistory`, `IrrigationDueReport`, `InvoiceReport`, `FarmerStatement`, `FarmerProfileReport`, `IrrigationPaymentCoverageAdmin` XLSX
-- non-borga invoice untouched (fallback `lands.land_size` কাজ করছে)
+```
+if (manualReceiptNo) {
+  const { data } = await db.rpc("validate_manual_receipt_no", { _no });
+  if (data.status !== "ok_gap") toast.error(...); return;
+}
+payload.receipt_no = manualReceiptNo || await nextUnifiedReceiptNo(...);
+if (manualDate) {
+  payload.created_at = manualDate;   // ISO
+  payload.occurred_at = manualDate;
+}
+```
 
-## ৫. Automated Tests (vitest)
+`occurred_at` fallback আগেই সার্ভারে `now()`; explicit দিলে সেটি ব্যবহার হবে।
 
-`src/lib/__tests__/irrigationBorgaBilling.test.ts`:
-1. একজন বর্গাদার `area_decimal=0.333` → billed=0.333, payable=rate*0.333
-2. দুইজন বর্গাদার 50/50 → দুইটি ইনভয়েস, প্রত্যেকটা অর্ধেক
-3. `area_decimal` NULL হলে `share_percentage` fallback
-4. non-borga → পুরো `land_size`
-5. `billed > parcel` → validation throw
+## Audit
 
-## ৬. Verification
+যখন manual override হবে, `system_audit_logs`-এ entry:
+`action='payment_manual_override'`, meta: `{ receipt_no, backdated_to, reason: 'gap-fill' }`. Cashbook reconciliation প্যানেলে এই receipt আর "missing" দেখাবে না — automatic।
 
-- MASUD ALAM INV-20260707-0001: 0.665→0.333, payable 2519→~1261, paid=0 → **updated**
-- ৯টি 50% invoice: area অর্ধেক, payable অর্ধেক
-- INV-20260706182030-0001 (paid=450, new_payable~225): **skipped_overpaid** — audit-এ থাকবে
-- INV-20260708-0011 (rel_pct=100): area unchanged, no-op
-- পুরনো সেচ রশিদ reprint → নতুন area দেখাবে; payment amount অপরিবর্তিত
+## যেসব মডিউলে impact নেই তা নিশ্চিতকরণ
 
-## ৭. Rollback
+- Cashbook: `receipt_date` = `occurred_at || created_at` — ম্যানুয়াল তারিখেই সঠিক দিনে পড়বে।
+- Irrigation invoice payments: `irrigation_invoice_payments.payment_id` FK — অপরিবর্তিত।
+- Receipt PDF: `buildPaymentReceiptData` `p.created_at` ব্যবহার করে — ম্যানুয়াল তারিখই ছাপবে।
+- Serial counter: গ্যাপ-নম্বর `max_used`-এর চেয়ে ছোট বলে `next_serial_receipt_no` অক্ষত।
+- Reports/collection: সব `created_at`/`occurred_at` ভিত্তিক — ব্যাকডেটেড রো সঠিক মাসে যাবে।
 
-`calculation_snapshot.old` থেকে reverse migration সম্ভব — audit table-ই source of truth।
+## Regression টেস্ট
 
-## Technical Notes
+`src/lib/__tests__/manualReceiptValidation.test.ts` — pure validation ফাংশনের ইউনিট টেস্ট:
+- gap number (4754 while serial=4770) → `ok_gap`
+- ≥ serial-start → `would_break_serial`
+- duplicate → `duplicate`
+- non-numeric গ্যাপ চেষ্টা → `invalid_format`
 
-- Single migration file: audit table CREATE + GRANT + RLS + backfill DO block
-- কোনো RPC/policy বদল নেই
-- non-borga ইনভয়েস, অন্য মডিউল (loan/savings/cashbook/bank/shares) অপরিবর্তিত
-- Migration approve করার পরে code (validation + tests) যোগ হবে
+## সিকিউরিটি
+
+- Manual override শুধু admin/super বা `payments_manual_receipt` permission-holder।
+- RPC `security definer`, `search_path=public`, শুধু `authenticated` grant।
+- Audit log প্রতি override-এ বাধ্যতামূলক।
+
+## ডেলিভারিতে যা যা থাকবে
+
+1. নতুন migration: RPC `validate_manual_receipt_no` + permission slug + grants।
+2. `src/pages/Payments.tsx`: ইনপুট UI, live validation, permission gate, insert flow।
+3. Audit log ইনসার্ট helper।
+4. Vitest ইউনিট টেস্ট।
+5. `mem://features/payment-manual-receipt.md` — নিয়মগুলো memory-তে সেভ।
+
+Approve করলে ধাপে ধাপে implement করি।

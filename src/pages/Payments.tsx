@@ -36,6 +36,7 @@ import { autoReceiptNo } from "@/lib/receiptNo";
 import { paymentInitialStatus } from "@/lib/approvalMatrix";
 import { computeInvoiceDue } from "@/lib/irrigationDue";
 import { nextMonthlyReceiptNo, nextUnifiedReceiptNo, peekMonthlyReceiptNo } from "@/lib/monthlyReceiptNo";
+import { validateManualReceiptNo } from "@/lib/manualReceiptValidation";
 import { ReceiptCopyMenu } from "@/components/receipts/ReceiptCopyMenu";
 import { IrrigationReceiptPreviewDialog } from "@/components/receipts/IrrigationReceiptPreviewDialog";
 import { ReceiptSettingsButton } from "@/components/receipts/ReceiptSettingsButton";
@@ -60,7 +61,7 @@ const newKey = () =>
 
 export default function Payments() {
   const { t, tx } = useLang();
-  const { user, officeId } = useAuth();
+  const { user, officeId, isSuper } = useAuth();
   const [params, setParams] = useSearchParams();
   const brand = useBranding();
   const receiptArgs = useReceiptRenderArgs();
@@ -71,6 +72,8 @@ export default function Payments() {
   const [category, setCategory] = useState<string>("general");
   const [note, setNote] = useState("");
   const [receiptNo, setReceiptNo] = useState("");
+  const [manualDate, setManualDate] = useState("");
+  const [manualCheck, setManualCheck] = useState<import("@/lib/manualReceiptValidation").ManualReceiptCheck | null>(null);
 
   const [allocs, setAllocs] = useState<Allocation[]>([{ kind: "irrigation", reference_id: "", amount: 0 }]);
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
@@ -347,6 +350,19 @@ export default function Payments() {
     return () => { cancelled = true; };
   }, [allocs, receiptNo, officeId]);
 
+  // Debounced live validation for a manually typed receipt no. Server RPC first,
+  // client-side fallback if not deployed. Blocks submit when result is not ok.
+  useEffect(() => {
+    const raw = receiptNo.trim();
+    if (!raw) { setManualCheck(null); return; }
+    let cancelled = false;
+    const timer = setTimeout(async () => {
+      const res = await validateManualReceiptNo(raw);
+      if (!cancelled) setManualCheck(res);
+    }, 350);
+    return () => { cancelled = true; clearTimeout(timer); };
+  }, [receiptNo]);
+
   // Auto-download the freshly-saved receipt as soon as its row appears in the list
   useEffect(() => {
     if (!pendingAutoId) return;
@@ -553,7 +569,7 @@ export default function Payments() {
 
   function resetForm() {
     setAllocs([{ kind: "irrigation", reference_id: "", amount: 0 }]);
-    setNote(""); setReceiptNo(""); setReceiptFile(null); setIdemKey(newKey());
+    setNote(""); setReceiptNo(""); setManualDate(""); setManualCheck(null); setReceiptFile(null); setIdemKey(newKey());
   }
 
   async function pay() {
@@ -595,14 +611,30 @@ export default function Payments() {
       // Primary kind = first allocation kind (kept for backward compat)
       const primary = allocs[0];
 
-      // Auto-generate receipt number if user didn't supply one.
-      // Unified paid-receipt serial shared across all streams (RCP-YYYY-MM-NNNN).
+      // Auto-generate receipt number if user didn't supply one. If they did,
+      // it must have passed the manual-receipt gap-fill validation so it does
+      // NOT advance the shared serial counter.
       let finalReceiptNo: string | null = receiptNo.trim() || null;
+      if (finalReceiptNo) {
+        const check = manualCheck ?? await validateManualReceiptNo(finalReceiptNo);
+        if (check.status !== "ok_gap" && check.status !== "ok_manual") {
+          setManualCheck(check);
+          toast.error(tx(
+            `Manual receipt # rejected: ${check.reason}`,
+            `ম্যানুয়াল রশিদ নং গ্রহণযোগ্য নয়: ${check.reason}`,
+          ));
+          return;
+        }
+      }
       if (!finalReceiptNo) {
         const allIrr = allocs.every(a => a.kind === "irrigation");
         finalReceiptNo = await nextUnifiedReceiptNo(officeId, allIrr ? "IRR" : "PAY", idemKey);
       }
 
+      // Manual backdate — applies to created_at + occurred_at so the row lands
+      // in the right day for cashbook, reports, and receipt PDF. Time-of-day is
+      // preserved as noon local so ordering across the same day stays sane.
+      const backdate = manualDate ? new Date(`${manualDate}T12:00:00`).toISOString() : null;
 
       const payload: any = {
         farmer_id: farmerId,
@@ -615,6 +647,7 @@ export default function Payments() {
         status,
         idempotency_key: idemKey,
         receipt_no: finalReceiptNo,
+        ...(backdate ? { created_at: backdate, occurred_at: backdate } : {}),
       };
 
 
@@ -1025,11 +1058,63 @@ export default function Payments() {
             </div>
 
             <div>
-              <Label>Field Receipt # <span className="text-xs text-muted-foreground">(optional — auto-generated if blank)</span></Label>
-              <Input value={receiptNo} onChange={e => setReceiptNo(e.target.value)} placeholder="e.g. 12345" />
+              <Label>
+                {tx("Receipt # (manual / gap-fill)", "রশিদ নং (ম্যানুয়াল / গ্যাপ পূরণ)")}{" "}
+                <span className="text-xs text-muted-foreground">
+                  {tx("(optional — auto-generated if blank)", "(ঐচ্ছিক — ফাঁকা থাকলে অটো)")}
+                </span>
+              </Label>
+              <Input
+                value={receiptNo}
+                onChange={e => setReceiptNo(e.target.value)}
+                placeholder={tx("e.g. 4754 to fill a gap", "যেমন 4754 — গ্যাপে বসাতে")}
+                disabled={!isAdmin && !isSuper && receiptNo.trim() === ""}
+              />
               {!receiptNo.trim() && previewSerial && (
                 <p className="mt-1 text-xs text-muted-foreground">
-                  Auto serial preview: <span className="font-mono font-semibold text-foreground">{previewSerial}</span>
+                  {tx("Auto serial preview", "অটো সিরিয়াল প্রিভিউ")}:{" "}
+                  <span className="font-mono font-semibold text-foreground">{previewSerial}</span>
+                </p>
+              )}
+              {receiptNo.trim() && manualCheck && (
+                <p className={`mt-1 text-xs font-medium ${
+                  manualCheck.status === "ok_gap" || manualCheck.status === "ok_manual"
+                    ? "text-success"
+                    : "text-destructive"
+                }`}>
+                  {manualCheck.status === "ok_gap" && tx(
+                    "Fills a gap — serial counter unaffected",
+                    "গ্যাপ পূরণ হবে — সিরিয়াল অক্ষত থাকবে",
+                  )}
+                  {manualCheck.status === "ok_manual" && tx(
+                    "Manual code accepted (does not touch serial)",
+                    "ম্যানুয়াল কোড গ্রহণযোগ্য (সিরিয়াল প্রভাবিত নয়)",
+                  )}
+                  {manualCheck.status === "duplicate" && tx(
+                    "Duplicate — this receipt # is already used",
+                    "ডুপ্লিকেট — এই রশিদ নং ইতিমধ্যে ব্যবহৃত",
+                  )}
+                  {manualCheck.status === "would_break_serial" && tx(
+                    `Would break serial (next auto = ${manualCheck.next_serial}). Use a number in the gap.`,
+                    `সিরিয়াল ভাঙবে (পরবর্তী অটো = ${manualCheck.next_serial})। গ্যাপের নম্বর দিন।`,
+                  )}
+                  {manualCheck.status === "invalid_format" && tx("Invalid receipt no", "রশিদ নং সঠিক নয়")}
+                </p>
+              )}
+            </div>
+            <div>
+              <Label>{tx("Manual date (optional)", "ম্যানুয়াল তারিখ (ঐচ্ছিক)")}</Label>
+              <Input
+                type="date"
+                value={manualDate}
+                onChange={e => setManualDate(e.target.value)}
+                max={new Date().toISOString().slice(0, 10)}
+                disabled={!isAdmin && !isSuper}
+              />
+              {manualDate && (
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {tx("Receipt will be recorded on", "রশিদ এই তারিখে রেকর্ড হবে")}:{" "}
+                  <span className="font-semibold text-foreground">{manualDate}</span>
                 </p>
               )}
             </div>
