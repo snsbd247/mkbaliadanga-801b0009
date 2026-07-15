@@ -24,6 +24,7 @@ import { downloadBnReceiptPdf } from "@/lib/bnReceipts";
 import { nextMonthlyReceiptNo } from "@/lib/monthlyReceiptNo";
 import { autoReceiptNo } from "@/lib/receiptNo";
 import { CashbookA4Preview } from "@/components/cashbook/CashbookA4Preview";
+import { findReceiptGaps, explainGaps } from "@/lib/cashbookReconcile";
 
 const sb = db as any;
 
@@ -73,6 +74,7 @@ export default function Cashbook() {
 
   const [farmers, setFarmers] = useState<any[]>([]);
   const [receipts, setReceipts] = useState<any[]>([]);
+  const [excludedReceipts, setExcludedReceipts] = useState<any[]>([]);
   const [expenses, setExpenses] = useState<any[]>([]);
   const [incomes, setIncomes] = useState<any[]>([]);
   const [heads, setHeads] = useState<any[]>([]);
@@ -129,7 +131,7 @@ export default function Cashbook() {
   }
 
   async function load() {
-    const [rec, exp, subs, pay, inc] = await Promise.all([
+    const [rec, exp, subs, pay, inc, payExcluded] = await Promise.all([
       sb.from("receipts").select("*, farmers(name_en,farmer_code,member_no)").gte("receipt_date", mFrom).lte("receipt_date", mTo).order("receipt_date", { ascending: false }).limit(20000),
       sb.from("expenses").select("*").is("deleted_at", null).gte("expense_date", mFrom).lte("expense_date", mTo).order("expense_date", { ascending: false }).limit(20000),
       sb.from("cashbook_submissions").select("*").order("year", { ascending: false }).order("month", { ascending: false }).limit(48),
@@ -145,6 +147,14 @@ export default function Cashbook() {
         .lte("created_at", `${mTo} 23:59:59`)
         .order("created_at", { ascending: false }).limit(20000),
       sb.from("office_incomes").select("*").gte("received_on", mFrom).lte("received_on", mTo).order("received_on", { ascending: false }).limit(20000),
+      // Explicitly load voided/deleted irrigation payments so the reconciliation
+      // panel can explain each missing receipt number in the daily range.
+      sb.from("payments").select("id,receipt_no,amount,status,voided_at,deleted_at,void_reason,created_at,occurred_at")
+        .eq("kind", "irrigation")
+        .or("voided_at.not.is.null,deleted_at.not.is.null")
+        .gte("created_at", `${mFrom} 00:00:00`)
+        .lte("created_at", `${mTo} 23:59:59`)
+        .limit(5000),
     ]);
     const realReceipts = rec.data ?? [];
     const existingNos = new Set(realReceipts.map((r: any) => String(r.receipt_no ?? "")).filter(Boolean));
@@ -162,8 +172,21 @@ export default function Cashbook() {
         office_id: p.office_id,
         farmers: p.farmers,
         _from_payment: true,
+        _inclusion_reason: p.status === "approved" ? "approved" : (p.status || "pending"),
       }));
-    setReceipts([...realReceipts, ...paymentFallbackReceipts]); setExpenses(exp.data ?? []); setSubmissions(subs.data ?? []); setIncomes(inc.data ?? []);
+    const excluded = (payExcluded.data ?? [])
+      .filter((p: any) => p.receipt_no)
+      .map((p: any) => ({
+        receipt_no: String(p.receipt_no),
+        amount: Number(p.amount ?? 0),
+        receipt_date: String(p.occurred_at || p.created_at || mFrom).slice(0, 10),
+        void_reason: p.void_reason ?? null,
+        _excluded_reason: (p.deleted_at ? "deleted" : p.voided_at ? "voided" : "unapproved") as
+          "deleted" | "voided" | "unapproved",
+      }));
+    setReceipts([...realReceipts, ...paymentFallbackReceipts]);
+    setExcludedReceipts(excluded);
+    setExpenses(exp.data ?? []); setSubmissions(subs.data ?? []); setIncomes(inc.data ?? []);
   }
 
   function isLocked(stream: Stream) {
@@ -531,7 +554,8 @@ export default function Cashbook() {
           <StreamCashbook
             stream="irrigation" label={tx("Irrigation cash", "সেচ ক্যাশ")}
             month={monthLabel} mFrom={mFrom} mTo={mTo}
-            receipts={receipts} expenses={expenses} incomes={incomes} opening={openingCash.irrigation}
+            receipts={receipts} excludedReceipts={excludedReceipts}
+            expenses={expenses} incomes={incomes} opening={openingCash.irrigation}
             setOpening={(n) => setOpening("irrigation", n)} locked={isLocked("irrigation")}
             canSubmit={isCommittee} isSuper={isSuper} brand={brand}
             onSubmit={() => submitStream("irrigation")}
@@ -544,7 +568,8 @@ export default function Cashbook() {
           <StreamCashbook
             stream="savings" label={tx("Savings cash", "সেভিং ক্যাশ")}
             month={monthLabel} mFrom={mFrom} mTo={mTo}
-            receipts={receipts} expenses={expenses} incomes={incomes} opening={openingCash.savings}
+            receipts={receipts} excludedReceipts={[]}
+            expenses={expenses} incomes={incomes} opening={openingCash.savings}
             setOpening={(n) => setOpening("savings", n)} locked={isLocked("savings")}
             canSubmit={isCommittee} isSuper={isSuper} brand={brand}
             onSubmit={() => submitStream("savings")}
@@ -600,18 +625,19 @@ export default function Cashbook() {
 // ====================== Stream cashbook view ======================
 function StreamCashbook(props: {
   stream: Stream; label: string; month: string; mFrom: string; mTo: string;
-  receipts: any[]; expenses: any[]; incomes?: any[]; opening: number; setOpening: (n: number) => void;
+  receipts: any[]; excludedReceipts?: any[]; expenses: any[]; incomes?: any[]; opening: number; setOpening: (n: number) => void;
   locked: boolean; canSubmit: boolean; isSuper: boolean; brand: any;
   onSubmit: () => void; onEdit: (x: any) => void; onDelete: (x: any) => void; onScan: (p: string, mime?: string) => void;
   submissions: any[]; onUnlock: (id: string) => void;
 }) {
   const { t, tx } = useLang();
-  const { stream, label, month, mFrom, mTo, receipts, expenses, incomes = [], opening, setOpening, locked, canSubmit, isSuper, onSubmit, onEdit, onDelete, onScan, submissions, onUnlock } = props;
+  const { stream, label, month, mFrom, mTo, receipts, excludedReceipts = [], expenses, incomes = [], opening, setOpening, locked, canSubmit, isSuper, onSubmit, onEdit, onDelete, onScan, submissions, onUnlock } = props;
 
   const [consolidated, setConsolidated] = useState(true);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [pageSize, setPageSize] = useState(100);
   const [page, setPage] = useState(0);
+  const [search, setSearch] = useState("");
 
   const streamReceipts = useMemo(() => receipts.filter(x => STREAM_INCOME_KINDS[stream].has(x.kind)), [receipts, stream]);
   const streamExpenses = useMemo(() => expenses.filter(x => x.stream === stream), [expenses, stream]);
@@ -692,14 +718,34 @@ function StreamCashbook(props: {
     return rows.map(row => { bal += row.kind === "income" ? row.amount : -row.amount; return { ...row, balance: bal }; });
   }, [incomeRows, officeIncomeRows, realExpenses, transferRows, opening]);
 
+  // Search — filter by receipt/voucher no, description, head, payee, note.
+  const filteredEntries = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return entries;
+    return entries.filter((r) => {
+      const hay = [
+        r.ref, r.label, r.desc,
+        r.raw?.receipt_no, r.raw?.voucher_no, r.raw?.payee, r.raw?.note,
+      ].filter(Boolean).join(" ").toLowerCase();
+      return hay.includes(q);
+    });
+  }, [entries, search]);
+
   // Pagination — keep running balance intact but show a page at a time.
-  const pageCount = Math.max(1, Math.ceil(entries.length / pageSize));
+  const pageCount = Math.max(1, Math.ceil(filteredEntries.length / pageSize));
   const safePage = Math.min(page, pageCount - 1);
-  useEffect(() => { setPage(0); }, [month, pageSize, consolidated]);
+  useEffect(() => { setPage(0); }, [month, pageSize, consolidated, search]);
   const pagedEntries = useMemo(
-    () => entries.slice(safePage * pageSize, safePage * pageSize + pageSize),
-    [entries, safePage, pageSize],
+    () => filteredEntries.slice(safePage * pageSize, safePage * pageSize + pageSize),
+    [filteredEntries, safePage, pageSize],
   );
+
+  // Reconciliation — missing receipt numbers within the visible income range.
+  const reconciliation = useMemo(() => {
+    if (stream !== "irrigation") return { missing: [] as ReturnType<typeof explainGaps> };
+    const gaps = findReceiptGaps(collectionReceipts);
+    return { missing: explainGaps(gaps, excludedReceipts) };
+  }, [collectionReceipts, excludedReceipts, stream]);
 
   // Operational income/expense exclude bank transfers; transfers are netted into
   // the cash balance separately so closing still reflects true cash in hand.
@@ -773,7 +819,58 @@ function StreamCashbook(props: {
             )}
           </div>
         </div>
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <Input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder={tx("Search by receipt / voucher no, head, note…", "রশিদ / ভাউচার নং, খাত, নোট দিয়ে খুঁজুন…")}
+            className="max-w-md"
+          />
+          {search && (
+            <Button size="sm" variant="ghost" onClick={() => setSearch("")}>
+              {tx("Clear", "মুছুন")}
+            </Button>
+          )}
+          {search && (
+            <span className="text-xs text-muted-foreground">
+              {tx("Matches", "মিল")}: {filteredEntries.length} / {entries.length}
+            </span>
+          )}
+        </div>
       </Card>
+
+      {stream === "irrigation" && reconciliation.missing.length > 0 && (
+        <Card className="p-4 border-destructive/40">
+          <div className="flex items-center justify-between mb-2">
+            <h4 className="font-semibold text-destructive">
+              {tx("Missing receipt numbers in range", "রেঞ্জে অনুপস্থিত রশিদ নম্বর")}
+            </h4>
+            <Badge variant="outline">{reconciliation.missing.length}</Badge>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {reconciliation.missing.map((m) => (
+              <Badge
+                key={m.no}
+                variant={m.reason === "unknown" ? "destructive" : "secondary"}
+                className="font-mono"
+                title={
+                  m.reason === "voided" ? tx("Voided", "বাতিল")
+                  : m.reason === "deleted" ? tx("Deleted", "মুছে ফেলা")
+                  : m.reason === "unapproved" ? tx("Unapproved", "অনুমোদিত নয়")
+                  : tx("Unknown gap — investigate", "অজানা গ্যাপ — যাচাই করুন")
+                }
+              >
+                #{m.no} · {
+                  m.reason === "voided" ? tx("voided", "বাতিল")
+                  : m.reason === "deleted" ? tx("deleted", "মুছে ফেলা")
+                  : m.reason === "unapproved" ? tx("unapproved", "অনুমোদিত নয়")
+                  : tx("unknown", "অজানা")
+                }
+              </Badge>
+            ))}
+          </div>
+        </Card>
+      )}
 
       <CashbookA4Preview
         open={previewOpen}
@@ -813,7 +910,15 @@ function StreamCashbook(props: {
               <TableCell className="font-mono text-xs">{row.ref}</TableCell>
               <TableCell>{fmtDate(row.date)}</TableCell>
               <TableCell>{row.label}</TableCell>
-              <TableCell className="text-xs text-muted-foreground">{row.desc || row.raw?.payee || row.raw?.note || ""}{(row.isTransfer || row.raw?.is_bank_deposit) && <Badge variant="outline" className="ml-1">{tx("Bank transfer", "ব্যাংক স্থানান্তর")}</Badge>}</TableCell>
+              <TableCell className="text-xs text-muted-foreground">
+                {row.desc || row.raw?.payee || row.raw?.note || ""}
+                {(row.isTransfer || row.raw?.is_bank_deposit) && <Badge variant="outline" className="ml-1">{tx("Bank transfer", "ব্যাংক স্থানান্তর")}</Badge>}
+                {row.raw?._from_payment && row.raw?._inclusion_reason && row.raw._inclusion_reason !== "approved" && (
+                  <Badge variant="outline" className="ml-1" title={tx("Included even though not yet approved", "অনুমোদিত না হলেও অন্তর্ভুক্ত")}>
+                    {row.raw._inclusion_reason}
+                  </Badge>
+                )}
+              </TableCell>
               <TableCell className="text-right text-success">{row.kind === "income" ? money(row.amount) : "—"}</TableCell>
               <TableCell className="text-right text-destructive">{row.kind === "expense" ? money(row.amount) : "—"}</TableCell>
               <TableCell className={`text-right font-semibold ${row.balance < 0 ? "due-text" : ""}`}>{money(row.balance)}</TableCell>
@@ -835,11 +940,11 @@ function StreamCashbook(props: {
             <TableCell className={`text-right ${closing < 0 ? "due-text" : ""}`}>{money(closing)}</TableCell>
             <TableCell></TableCell>
           </TableRow>
-          {entries.length === 0 && <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-6">{t("noData")}</TableCell></TableRow>}
+          {filteredEntries.length === 0 && <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-6">{t("noData")}</TableCell></TableRow>}
         </TableBody>
       </Table></Card>
 
-      {entries.length > 0 && (
+      {filteredEntries.length > 0 && (
         <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
           <div className="flex items-center gap-2">
             <span className="text-muted-foreground">{tx("Rows per page", "প্রতি পেজে")}</span>
