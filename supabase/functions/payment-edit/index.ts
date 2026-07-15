@@ -196,7 +196,15 @@ Deno.serve(async (req) => {
       before.receipt_no = oldReceiptNo || null; after.receipt_no = newReceiptNo
       await svc.from('payments').update({ receipt_no: newReceiptNo }).eq('id', paymentId)
       await svc.from('irrigation_invoice_payments').update({ receipt_no: newReceiptNo }).eq('payment_id', paymentId)
-      await svc.from('receipts').update({ receipt_no: newReceiptNo }).eq('reference_id', paymentId).eq('kind', 'irrigation')
+      if (invId) {
+        const q = svc.from('receipts').update({ receipt_no: newReceiptNo }).eq('reference_id', invId).eq('kind', 'irrigation')
+        if (oldReceiptNo) q.eq('receipt_no', oldReceiptNo)
+        await q
+      } else {
+        const q = svc.from('receipts').update({ receipt_no: newReceiptNo }).eq('reference_id', paymentId).eq('kind', 'irrigation')
+        if (oldReceiptNo) q.eq('receipt_no', oldReceiptNo)
+        await q
+      }
       await svc.from('ledger_entries')
         .update({ description: `সেচ পেমেন্ট ${newReceiptNo} — Cash received` })
         .eq('reference_type', 'irrigation_payment').eq('reference_id', paymentId)
