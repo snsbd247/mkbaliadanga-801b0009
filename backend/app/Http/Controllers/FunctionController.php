@@ -182,6 +182,9 @@ class FunctionController extends Controller
         if ($newReceiptNo !== null && $newReceiptNo !== (string) ($pay->receipt_no ?? '')) {
             if ($newReceiptNo === '') return response()->json(['error' => 'receipt_no cannot be empty'], 400);
             $dup = DB::table('payments')->where('receipt_no', $newReceiptNo)->where('id', '<>', $paymentId)->exists();
+            if (! $dup && Schema::hasTable('office_incomes')) {
+                $dup = DB::table('office_incomes')->where('receipt_no', $newReceiptNo)->exists();
+            }
             if ($dup) return response()->json(['error' => "রিসিপ্ট নম্বর ইতিমধ্যে ব্যবহৃত: $newReceiptNo"], 409);
             $oldReceipt = (string) ($pay->receipt_no ?? '');
             $before['receipt_no'] = $pay->receipt_no ?? null; $after['receipt_no'] = $newReceiptNo;
@@ -300,9 +303,11 @@ class FunctionController extends Controller
             return response()->json(['error' => 'ক্রমিক নম্বর অনেক বড়'], 400);
         }
 
-        // Highest ACTUALLY used numeric receipt number across payments and receipts.
+        // Highest ACTUALLY used numeric receipt number across payments, receipts,
+        // and office_incomes (office income shares the same unified serial —
+        // see nextUnifiedReceiptNo on the frontend).
         $maxUsed = 0;
-        foreach (['payments', 'receipts'] as $tbl) {
+        foreach (['payments', 'receipts', 'office_incomes'] as $tbl) {
             if (Schema::hasTable($tbl) && Schema::hasColumn($tbl, 'receipt_no')) {
                 $m = (int) (DB::table($tbl)
                     ->whereRaw("receipt_no REGEXP '^[0-9]+$'")

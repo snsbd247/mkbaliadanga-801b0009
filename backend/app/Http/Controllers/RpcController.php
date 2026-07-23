@@ -1482,9 +1482,11 @@ class RpcController extends Controller
     protected function rpc_next_serial_receipt_no(array $p): string
     {
         return DB::transaction(function () {
-            // Highest actually-used numeric receipt number across payments/receipts.
+            // Highest actually-used numeric receipt number across payments/receipts
+            // and office_incomes (office income shares this same unified serial —
+            // see nextUnifiedReceiptNo on the frontend).
             $maxUsed = 0;
-            foreach (['payments', 'receipts'] as $tbl) {
+            foreach (['payments', 'receipts', 'office_incomes'] as $tbl) {
                 if (Schema::hasTable($tbl) && Schema::hasColumn($tbl, 'receipt_no')) {
                     $m = (int) (DB::table($tbl)
                         ->whereRaw("receipt_no REGEXP '^[0-9]+$'")

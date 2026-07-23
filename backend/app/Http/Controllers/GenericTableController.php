@@ -872,6 +872,18 @@ class GenericTableController extends Controller
             if (Schema::hasColumn($table, 'id') && empty($row['id'])) {
                 $row['id'] = (string) Str::uuid();
             }
+            // office_incomes shares the unified receipt serial with payments (see
+            // nextUnifiedReceiptNo on the frontend), but nothing enforced
+            // cross-table uniqueness — a manually-typed or racing receipt_no could
+            // silently collide with one already issued to a payment. Guard it here.
+            if ($table === 'office_incomes' && ! empty($row['receipt_no'])) {
+                $collides = (Schema::hasTable('payments') && DB::table('payments')->where('receipt_no', $row['receipt_no'])->exists())
+                    || (Schema::hasTable('receipts') && DB::table('receipts')->where('receipt_no', $row['receipt_no'])->exists())
+                    || DB::table('office_incomes')->where('receipt_no', $row['receipt_no'])->exists();
+                if ($collides) {
+                    abort(409, "রিসিপ্ট নম্বর ইতিমধ্যে ব্যবহৃত: {$row['receipt_no']}");
+                }
+            }
             if (Schema::hasColumn($table, 'office_id') && empty($row['office_id'])) {
                 if ($officeId) $row['office_id'] = $officeId;
             }
