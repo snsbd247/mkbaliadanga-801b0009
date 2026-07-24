@@ -8,11 +8,13 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { ViewButton, EditButton } from "@/components/ui/action-icon-button";
 import { Search, FileSpreadsheet, FileDown, FileText, Ban, RotateCcw } from "lucide-react";
 import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
@@ -21,7 +23,11 @@ import { useLang } from "@/i18n/LanguageProvider";
 import { useAuth } from "@/auth/AuthProvider";
 import { toast } from "sonner";
 import { getFarmerDues } from "@/lib/farmerDues";
+import { loadFarmerBalanceSummary, type FarmerBalanceSummary } from "@/lib/dues";
 import { formatId5 } from "@/lib/idFormat";
+import { money } from "@/lib/format";
+
+const PAGE_SIZE_OPTIONS = [50, 100, 500, 1000] as const;
 
 type Row = {
   id: string;
@@ -29,6 +35,8 @@ type Row = {
   name_bn: string | null;
   account_number: string | null;
   voter_number: string | null;
+  member_no: string | null;
+  father_name: string | null;
   mobile: string | null;
   village: string | null;
   is_voter: boolean;
@@ -41,20 +49,27 @@ type Row = {
   offices?: { name: string | null } | null;
 };
 
+/** Village is shown as its own column now, so Location covers union/upazila/district only. */
 function locationOf(r: Row): string {
-  const v = r.villages?.name_bn || r.villages?.name || r.village || "";
-  const parts = [v, r.unions?.name, r.upazilas?.name, r.districts?.name].filter(Boolean);
+  const parts = [r.unions?.name, r.upazilas?.name, r.districts?.name].filter(Boolean);
   return parts.join(", ") || "—";
 }
 
+function villageOf(r: Row): string {
+  return r.villages?.name_bn || r.villages?.name || r.village || "—";
+}
+
 export default function VoterList() {
-  const { t } = useLang();
+  const { t, tx } = useLang();
   const { officeId, isSuper } = useAuth();
   const nav = useNavigate();
   const [tab, setTab] = useState<"active" | "cancelled">("active");
   const [q, setQ] = useState("");
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(false);
+  const [pageSize, setPageSize] = useState<number>(50);
+  const [page, setPage] = useState(0);
+  const [balances, setBalances] = useState<Record<string, FarmerBalanceSummary>>({});
 
   // Dialog state
   const [target, setTarget] = useState<Row | null>(null);
@@ -66,21 +81,23 @@ export default function VoterList() {
 
   useEffect(() => { document.title = `${t("pgVoterListDocTitle" as any)} — ${t("appName")}`; }, [t]);
 
+  useEffect(() => { setPage(0); }, [q, tab, pageSize]);
+
   useEffect(() => {
     const handle = setTimeout(load, 200);
     return () => clearTimeout(handle);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [q, tab]);
+  }, [q, tab, page, pageSize]);
 
   async function load() {
     setLoading(true);
     let qy: any = db
       .from("farmers")
-      .select("id,name_en,name_bn,account_number,voter_number,mobile,village,is_voter,voter_cancelled_at,voter_cancel_reason,offices(name),upazilas(name),districts(name)")
+      .select("id,name_en,name_bn,account_number,voter_number,member_no,father_name,mobile,village,is_voter,voter_cancelled_at,voter_cancel_reason,offices(name),upazilas(name),districts(name)")
       .not("voter_number", "is", null)
       .neq("voter_number", "")
       .order(tab === "active" ? "voter_number" : "voter_cancelled_at", { ascending: tab === "active" })
-      .limit(500);
+      .range(page * pageSize, page * pageSize + pageSize - 1);
 
     if (tab === "active") qy = qy.eq("is_voter", true);
     else qy = qy.eq("is_voter", false).not("voter_cancelled_at", "is", null);
@@ -91,11 +108,20 @@ export default function VoterList() {
       qy = qy.or(`voter_number.ilike.%${term}%,name_en.ilike.%${term}%,name_bn.ilike.%${term}%,mobile.ilike.%${term}%,account_number.ilike.%${term}%`);
     }
     const { data } = await (qy as any);
-    setRows((data as any) ?? []);
+    const list = (data as any) ?? [];
+    setRows(list);
     setLoading(false);
+
+    const ids = list.map((r: Row) => r.id).filter(Boolean);
+    if (ids.length) {
+      loadFarmerBalanceSummary(ids).then(setBalances).catch(() => setBalances({}));
+    } else {
+      setBalances({});
+    }
   }
 
   const total = rows.length;
+  const hasNextPage = rows.length === pageSize;
 
   async function loadDues(farmerId: string) {
     setDuesLoading(true);
@@ -149,28 +175,30 @@ export default function VoterList() {
     load();
   }
 
+  const EXPORT_HEAD = ["Farmer ID #", "Account No", "Name (EN)", "Name (BN)", "Father's Name", "Village", "Mobile", "Location", "Share Balance", "Savings Balance", "Loan Closing Balance"];
+  function exportRow(r: Row): (string | number)[] {
+    const bal = balances[r.id];
+    return [
+      r.member_no ?? "", r.account_number ?? "", r.name_en, r.name_bn ?? "", r.father_name ?? "",
+      villageOf(r), r.mobile ?? "", locationOf(r),
+      bal?.share_balance ?? 0, bal?.savings_bal ?? 0, bal?.loan_due ?? 0,
+    ];
+  }
+
   function exportExcel() {
     const wb = XLSX.utils.book_new();
-    const head = ["Voter #", "Account No", "Name (EN)", "Name (BN)", "Mobile", "Location", "Office"];
-    const data = [head, ...rows.map(r => [
-      r.voter_number ?? "", r.account_number ?? "", r.name_en, r.name_bn ?? "",
-      r.mobile ?? "", locationOf(r), r.offices?.name ?? "",
-    ])];
+    const data = [EXPORT_HEAD, ...rows.map(exportRow)];
     const ws = XLSX.utils.aoa_to_sheet(data);
-    ws["!cols"] = [{ wch: 14 }, { wch: 16 }, { wch: 24 }, { wch: 24 }, { wch: 14 }, { wch: 18 }, { wch: 20 }];
+    ws["!cols"] = [{ wch: 12 }, { wch: 14 }, { wch: 22 }, { wch: 22 }, { wch: 20 }, { wch: 16 }, { wch: 14 }, { wch: 18 }, { wch: 14 }, { wch: 14 }, { wch: 16 }];
     XLSX.utils.book_append_sheet(wb, ws, "Voters");
     XLSX.writeFile(wb, `voter-list-${tab}-${Date.now()}.xlsx`);
   }
 
   function exportCsv() {
-    const head = ["Voter #", "Account No", "Name (EN)", "Name (BN)", "Mobile", "Location", "Office"];
-    const escape = (v: string) => `"${String(v ?? "").replace(/"/g, '""')}"`;
-    const lines = [head.map(escape).join(",")];
+    const escape = (v: string | number) => `"${String(v ?? "").replace(/"/g, '""')}"`;
+    const lines = [EXPORT_HEAD.map(escape).join(",")];
     for (const r of rows) {
-      lines.push([
-        r.voter_number ?? "", r.account_number ?? "", r.name_en, r.name_bn ?? "",
-        r.mobile ?? "", locationOf(r), r.offices?.name ?? "",
-      ].map(escape).join(","));
+      lines.push(exportRow(r).map(escape).join(","));
     }
     const blob = new Blob(["\uFEFF" + lines.join("\n")], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
@@ -188,11 +216,8 @@ export default function VoterList() {
     doc.text(`${total} voter${total === 1 ? "" : "s"}`, 40, 52);
     autoTable(doc, {
       startY: 64,
-      head: [["Voter #", "Account No", "Name (EN)", "Name (BN)", "Mobile", "Location", "Office"]],
-      body: rows.map(r => [
-        r.voter_number ?? "", r.account_number ?? "", r.name_en, r.name_bn ?? "",
-        r.mobile ?? "", locationOf(r), r.offices?.name ?? "",
-      ]),
+      head: [EXPORT_HEAD],
+      body: rows.map(exportRow),
       styles: { fontSize: 9 },
       headStyles: { fillColor: [16, 122, 87] },
     });
@@ -232,61 +257,95 @@ export default function VoterList() {
       </Card>
 
       <Card>
+        <div data-table-wrap className="w-full overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>{t("pgVoterNumber")} #</TableHead>
-              <TableHead>{t("pgName")}</TableHead>
+              <TableHead>{t("farmerIdLabel" as any)} #</TableHead>
               <TableHead>{t("pgAccountNo")}</TableHead>
+              <TableHead>{t("pgName")}</TableHead>
+              <TableHead>{t("fatherName" as any)}</TableHead>
+              <TableHead>{t("village" as any)}</TableHead>
               <TableHead>{t("pgMobile")}</TableHead>
               <TableHead>{t("pgLocation")}</TableHead>
-              <TableHead>{t("pgOffice")}</TableHead>
+              <TableHead className="text-right">{t("pgShareBalanceLbl" as any)}</TableHead>
+              <TableHead className="text-right">{t("pgSavingsBalanceLbl" as any)}</TableHead>
+              <TableHead className="text-right">{t("pgLoanClosingBalance" as any)}</TableHead>
               {tab === "cancelled" && <TableHead>{t("pgReason")}</TableHead>}
-              {isSuper && <TableHead className="text-right">{t("pgAction")}</TableHead>}
+              <TableHead className="text-right">{t("pgAction")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {rows.map(r => (
+            {rows.map(r => {
+              const bal = balances[r.id];
+              return (
               <TableRow key={r.id}>
-                <TableCell className="font-mono cursor-pointer" onClick={() => nav(`/farmers/${r.id}`)}>{formatId5(r.voter_number)}</TableCell>
+                <TableCell className="font-mono cursor-pointer" onClick={() => nav(`/farmers/${r.id}`)}>{r.member_no ? formatId5(r.member_no) : "—"}</TableCell>
+                <TableCell className="font-mono text-xs">{r.account_number ? formatId5(r.account_number) : "—"}</TableCell>
                 <TableCell className="cursor-pointer" onClick={() => nav(`/farmers/${r.id}`)}>
                   <div className="font-medium">{r.name_en}</div>
                   {r.name_bn && <div className="text-xs text-muted-foreground">{r.name_bn}</div>}
                 </TableCell>
-                <TableCell className="font-mono text-xs">{r.account_number ? formatId5(r.account_number) : "—"}</TableCell>
+                <TableCell className="text-xs">{r.father_name ?? "—"}</TableCell>
+                <TableCell className="text-xs">{villageOf(r)}</TableCell>
                 <TableCell>{r.mobile ?? "—"}</TableCell>
                 <TableCell className="text-xs">{locationOf(r)}</TableCell>
-                <TableCell className="text-xs">{r.offices?.name ?? "—"}</TableCell>
+                <TableCell className="text-right font-mono text-xs">{bal ? money(bal.share_balance) : "…"}</TableCell>
+                <TableCell className="text-right font-mono text-xs">{bal ? money(bal.savings_bal) : "…"}</TableCell>
+                <TableCell className="text-right font-mono text-xs">{bal ? money(bal.loan_due) : "…"}</TableCell>
                 {tab === "cancelled" && (
                   <TableCell className="text-xs max-w-[220px] truncate" title={r.voter_cancel_reason ?? ""}>
                     {r.voter_cancel_reason ?? "—"}
                   </TableCell>
                 )}
-                {isSuper && (
-                  <TableCell className="text-right">
-                    {tab === "active" ? (
-                      <Button size="sm" variant="destructive" onClick={() => openDialog(r, "cancel")}>
-                        <Ban className="h-4 w-4 mr-1" />{t("cancel")}
-                      </Button>
-                    ) : (
-                      <Button size="sm" variant="outline" onClick={() => openDialog(r, "reactivate")}>
-                        <RotateCcw className="h-4 w-4 mr-1" />{t("p5c_reactivateOnly" as any)}
-                      </Button>
+                <TableCell className="text-right">
+                  <div className="flex items-center justify-end gap-1">
+                    <ViewButton title={t("viewTip")} onClick={() => nav(`/farmers/${r.id}`)} />
+                    <EditButton title={t("editTip")} onClick={() => nav(`/farmers/${r.id}`)} />
+                    {isSuper && (
+                      tab === "active" ? (
+                        <Button size="sm" variant="destructive" onClick={() => openDialog(r, "cancel")}>
+                          <Ban className="h-4 w-4 mr-1" />{t("cancel")}
+                        </Button>
+                      ) : (
+                        <Button size="sm" variant="outline" onClick={() => openDialog(r, "reactivate")}>
+                          <RotateCcw className="h-4 w-4 mr-1" />{t("p5c_reactivateOnly" as any)}
+                        </Button>
+                      )
                     )}
-                  </TableCell>
-                )}
+                  </div>
+                </TableCell>
               </TableRow>
-            ))}
+              );
+            })}
             {rows.length === 0 && (
               <TableRow>
-                <TableCell colSpan={isSuper ? (tab === "cancelled" ? 8 : 7) : (tab === "cancelled" ? 7 : 6)} className="text-center text-muted-foreground py-6">
+                <TableCell colSpan={tab === "cancelled" ? 12 : 11} className="text-center text-muted-foreground py-6">
                   {loading ? "…" : t("pgNoRecords")}
                 </TableCell>
               </TableRow>
             )}
           </TableBody>
         </Table>
+        </div>
       </Card>
+
+      <div className="flex items-center justify-between gap-3 mt-3 flex-wrap">
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <span>{tx("Rows per page", "প্রতি পাতায়")}</span>
+          <Select value={String(pageSize)} onValueChange={(v: string) => setPageSize(Number(v))}>
+            <SelectTrigger className="h-8 w-[90px]"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {PAGE_SIZE_OPTIONS.map((n) => <SelectItem key={n} value={String(n)}>{n}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-muted-foreground">{tx("Page", "পাতা")} {page + 1}</span>
+          <Button size="sm" variant="outline" disabled={page === 0} onClick={() => setPage((p: number) => p - 1)}>{t("prev")}</Button>
+          <Button size="sm" variant="outline" disabled={!hasNextPage} onClick={() => setPage((p: number) => p + 1)}>{t("next")}</Button>
+        </div>
+      </div>
 
       <Dialog open={!!target && !!mode} onOpenChange={(o) => { if (!o) { setTarget(null); setMode(null); } }}>
         <DialogContent>

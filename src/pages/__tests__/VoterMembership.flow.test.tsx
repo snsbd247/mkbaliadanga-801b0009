@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
+import { TooltipProvider } from "@/components/ui/tooltip";
 
 // --- mocks ---
 const rpcMock = vi.fn();
@@ -25,9 +26,16 @@ vi.mock("sonner", () => ({
 vi.mock("@/auth/AuthProvider", () => ({
   useAuth: () => ({ officeId: "off-1", isSuper: true, user: { id: "u1" } }),
 }));
-vi.mock("@/i18n/LanguageProvider", () => ({
-  useLang: () => ({ t: (k: string) => k, lang: "en" }),
-}));
+vi.mock("@/i18n/LanguageProvider", async () => {
+  const { translations } = await import("@/i18n/translations");
+  return {
+    useLang: () => ({
+      t: (k: string) => (translations.en as Record<string, string>)[k] ?? k,
+      tx: (en: string) => en,
+      lang: "en",
+    }),
+  };
+});
 
 // Stub farmer row returned by list query
 const SAMPLE = [{
@@ -38,10 +46,27 @@ const SAMPLE = [{
 
 function buildQueryChain(data: any[]) {
   const chain: any = {};
-  const passthrough = ["select","not","neq","order","limit","eq","or"];
+  const passthrough = ["select","not","neq","order","limit","range","eq","or","in","is"];
   for (const m of passthrough) chain[m] = vi.fn(() => chain);
   chain.then = (resolve: any) => Promise.resolve({ data, error: null }).then(resolve);
   return chain;
+}
+
+// Opening the cancel/reactivate dialog always fires a `farmer_dues_breakdown`
+// RPC call first (to show current balances) — independent of whichever
+// action RPC (`cancel_voter_membership` / `reactivate_voter_membership`) a
+// given test is stubbing. Give it a standing zero-dues response so it never
+// swallows a test's mockResolvedValueOnce meant for the action call.
+function mockActionRpc(response: { data: any; error: any }) {
+  rpcMock.mockImplementation((fn: string) => {
+    if (fn === "farmer_dues_breakdown") {
+      return Promise.resolve({
+        data: [{ savings_balance: 0, share_balance: 0, loan_due: 0, irrigation_due: 0 }],
+        error: null,
+      });
+    }
+    return Promise.resolve(response);
+  });
 }
 
 beforeEach(() => {
@@ -50,11 +75,12 @@ beforeEach(() => {
   toastError.mockReset();
   toastSuccess.mockReset();
   fromMock.mockImplementation(() => buildQueryChain(SAMPLE));
+  mockActionRpc({ data: null, error: null });
 });
 
 async function openCancelDialog() {
   const VoterList = (await import("@/pages/VoterList")).default;
-  render(<MemoryRouter><VoterList /></MemoryRouter>);
+  render(<MemoryRouter><TooltipProvider><VoterList /></TooltipProvider></MemoryRouter>);
   const cancelBtn = await screen.findByRole("button", { name: /^Cancel$/i });
   fireEvent.click(cancelBtn);
   const ta = await screen.findByPlaceholderText(/clear reason/i);
@@ -64,7 +90,7 @@ async function openCancelDialog() {
 
 describe("VoterList cancel flow", () => {
   it("shows detailed dues breakdown when DUES_BLOCK error returned", async () => {
-    rpcMock.mockResolvedValueOnce({
+    mockActionRpc({
       data: null,
       error: { message: 'DUES_BLOCK:{"savings_balance":150,"loan_due":200,"irrigation_due":50}' },
     });
@@ -79,7 +105,7 @@ describe("VoterList cancel flow", () => {
   });
 
   it("succeeds when RPC returns no error (dues = 0)", async () => {
-    rpcMock.mockResolvedValueOnce({ data: null, error: null });
+    mockActionRpc({ data: null, error: null });
     const confirm = await openCancelDialog();
     fireEvent.click(confirm);
     await waitFor(() => expect(toastSuccess).toHaveBeenCalled());
@@ -87,7 +113,7 @@ describe("VoterList cancel flow", () => {
   });
 
   it("surfaces generic RPC errors verbatim (e.g. wrong role / permission)", async () => {
-    rpcMock.mockResolvedValueOnce({
+    mockActionRpc({
       data: null,
       error: { message: "permission denied for function cancel_voter_membership" },
     });
@@ -99,14 +125,16 @@ describe("VoterList cancel flow", () => {
 
   it("blocks reason shorter than 3 chars without calling RPC", async () => {
     const VoterList = (await import("@/pages/VoterList")).default;
-    render(<MemoryRouter><VoterList /></MemoryRouter>);
+    render(<MemoryRouter><TooltipProvider><VoterList /></TooltipProvider></MemoryRouter>);
     const cancelBtn = await screen.findByRole("button", { name: /^Cancel$/i });
     fireEvent.click(cancelBtn);
     const ta = await screen.findByPlaceholderText(/clear reason/i);
     fireEvent.change(ta, { target: { value: "ab" } });
     const confirm = screen.getByRole("button", { name: /Confirm Cancel/i });
     expect(confirm).toBeDisabled();
-    expect(rpcMock).not.toHaveBeenCalled();
+    // Opening the dialog legitimately calls farmer_dues_breakdown; what must
+    // NOT happen is the actual cancel action firing on a too-short reason.
+    expect(rpcMock).not.toHaveBeenCalledWith("cancel_voter_membership", expect.anything());
   });
 });
 
@@ -114,7 +142,7 @@ describe("VoterList reactivate flow", () => {
   it("surfaces 'already active' error from reactivate RPC", async () => {
     // Simulate calling reactivate RPC directly via the same dialog path:
     // we reuse cancel button but stub RPC to mimic reactivate's duplicate error.
-    rpcMock.mockResolvedValueOnce({
+    mockActionRpc({
       data: null,
       error: { message: "Voter is already active" },
     });

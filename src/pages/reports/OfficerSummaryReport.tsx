@@ -48,12 +48,15 @@ export default function OfficerSummaryReport() {
     try {
       const out: Row[] = [];
 
+      // Irrigation rows are dated by the linked payment's receipt date
+      // (payments.created_at, kept in sync when a receipt's date is edited),
+      // not this row's own created_at — which goes stale the moment a
+      // receipt's date is corrected. Filtering happens client-side since the
+      // correct date lives behind a join.
       const [irrRes, lpRes, svRes] = await Promise.all([
         db.from("irrigation_invoice_payments")
-          .select("created_at,collected_amount,created_by")
+          .select("created_at,collected_amount,created_by,payments(created_at)")
           .gt("collected_amount", 0)
-          .gte("created_at", `${from}T00:00:00`)
-          .lte("created_at", `${to}T23:59:59`)
           .limit(5000),
         db.from("loan_payments")
           .select("paid_on,amount,collected_by")
@@ -66,11 +69,11 @@ export default function OfficerSummaryReport() {
           .limit(5000),
       ]);
 
-      for (const r of irrRes.data ?? []) out.push({
-        date: (r.created_at || "").slice(0, 10),
-        source: "irrigation", amount: Number(r.collected_amount || 0),
-        user_id: r.created_by,
-      });
+      for (const r of (irrRes.data ?? []) as any[]) {
+        const d = ((r as any).payments?.created_at || r.created_at || "").slice(0, 10);
+        if (d < from || d > to) continue;
+        out.push({ date: d, source: "irrigation", amount: Number(r.collected_amount || 0), user_id: r.created_by });
+      }
       for (const r of lpRes.data ?? []) out.push({
         date: r.paid_on, source: "loan", amount: Number(r.amount || 0),
         user_id: r.collected_by,

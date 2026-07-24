@@ -119,23 +119,34 @@ export default function CollectionReport() {
     try {
       const out: CollectionRow[] = [];
 
-      // 1) Irrigation collections (from irrigation_invoice_payments)
+      // 1) Irrigation collections (from irrigation_invoice_payments).
+      // Dated by the linked payment's receipt date (payments.created_at, kept
+      // in sync when a receipt's date is edited), never this row's own
+      // created_at — that's just the insert time and goes stale the moment
+      // someone corrects a receipt's date. Falls back to own created_at for
+      // legacy rows with no linked payment_id. Since the correct date lives
+      // behind a join, filtering happens client-side after the fetch instead
+      // of a (silently-dropped-on-the-Laravel-backend) dotted server filter.
       let irrQ: any = db
         .from("irrigation_invoice_payments")
-        .select("id,created_at,collected_amount,delay_fee_collected,maintenance_collected,canal_collected,irrigation_collected,current_invoice_collected,previous_due_collected,created_by,invoice_id,payments(receipt_no),irrigation_invoices!inner(invoice_no,farmer_id,farmers!irrigation_invoices_farmer_id_fkey(name_en,farmer_code,member_no))")
+        .select("id,created_at,payment_id,collected_amount,delay_fee_collected,maintenance_collected,canal_collected,irrigation_collected,current_invoice_collected,previous_due_collected,created_by,invoice_id,payments(receipt_no,created_at),irrigation_invoices!inner(invoice_no,farmer_id,farmers!irrigation_invoices_farmer_id_fkey(name_en,farmer_code,member_no))")
         .gt("collected_amount", 0)
         .order("created_at", { ascending: false });
-      if (from) irrQ = irrQ.gte("created_at", from);
-      if (to) irrQ = irrQ.lte("created_at", to + "T23:59:59");
-      if (farmerId !== ALL) irrQ = irrQ.eq("irrigation_invoices.farmer_id", farmerId);
       if (effectiveUserId) irrQ = irrQ.eq("created_by", effectiveUserId);
-      const { data: irr } = await irrQ;
+      const { data: irrData } = await irrQ;
+      const irr = (irrData ?? []).filter((r: any) => {
+        const d = (r.payments?.created_at || r.created_at || "").slice(0, 10);
+        if (from && d < from) return false;
+        if (to && d > to) return false;
+        return true;
+      });
       for (const r of irr ?? []) {
         const inv = (r as any).irrigation_invoices;
+        if (farmerId !== ALL && inv?.farmer_id !== farmerId) continue;
         const fn = nameForFarmer(inv?.farmers);
         out.push({
           source: "irrigation",
-          date: (r.created_at || "").slice(0, 10),
+          date: ((r as any).payments?.created_at || r.created_at || "").slice(0, 10),
           amount: Number(r.collected_amount || 0),
           farmer_id: inv?.farmer_id ?? null,
           farmer_code: fn.code,

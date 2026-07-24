@@ -1,3 +1,5 @@
+import { db } from "@/lib/db";
+
 // Shared, canonical irrigation-due computation.
 //
 // IMPORTANT: Both the Farmer List and FarmerDetail MUST use this helper so the
@@ -126,4 +128,82 @@ export function invoiceStatusBadge(status: string | null | undefined): InvoiceSt
       // NULL / empty / unknown
       return { label_en: "Pending", label_bn: "অনির্ধারিত", variant: "outline" };
   }
+}
+
+// ---------------------------------------------------------------------------
+// Bulk per-farmer balance summary (irrigation due, loan closing balance,
+// savings balance, share balance) for a given set of farmer ids.
+//
+// Mirrors the Farmer List's client-side due computation (queries scoped with
+// `.in("farmer_id", ids)` instead of relying on a Postgres/MySQL RPC), so it
+// works identically on both the Supabase and Laravel backends. Any screen
+// showing per-farmer balances for a page of rows (Voter/Savings List, Farmer
+// List, …) should use this instead of hand-rolling the same aggregation.
+// ---------------------------------------------------------------------------
+
+export interface FarmerBalanceSummary {
+  net_due: number;
+  loan_due: number;
+  irr_due: number;
+  savings_bal: number;
+  share_balance: number;
+}
+
+export async function loadFarmerBalanceSummary(
+  ids: string[],
+): Promise<Record<string, FarmerBalanceSummary>> {
+  const map: Record<string, FarmerBalanceSummary> = {};
+  if (!ids.length) return map;
+  ids.forEach((id) => { map[id] = { net_due: 0, loan_due: 0, irr_due: 0, savings_bal: 0, share_balance: 0 }; });
+
+  const [invoiceRes, savingsRes, loansRes] = await Promise.all([
+    db.from("irrigation_invoices")
+      .select("farmer_id,due_amount,invoice_status,deleted_at")
+      .in("farmer_id", ids)
+      .is("deleted_at", null),
+    db.from("savings_transactions")
+      .select("farmer_id,type,status,amount,deleted_at")
+      .in("farmer_id", ids)
+      .is("deleted_at", null),
+    db.from("loans")
+      .select("id,farmer_id,principal,total_payable,status,deleted_at")
+      .in("farmer_id", ids)
+      .is("deleted_at", null),
+  ]);
+
+  const irrByFarmer = computeIrrigationDueByFarmer((invoiceRes.data as any[]) ?? []);
+  Object.entries(irrByFarmer).forEach(([fid, due]) => {
+    map[fid] ??= { net_due: 0, loan_due: 0, irr_due: 0, savings_bal: 0, share_balance: 0 };
+    map[fid].irr_due += due;
+  });
+
+  ((savingsRes.data as any[]) ?? []).forEach((r) => {
+    if (!r.farmer_id || r.status !== "approved") return;
+    map[r.farmer_id] ??= { net_due: 0, loan_due: 0, irr_due: 0, savings_bal: 0, share_balance: 0 };
+    const amount = Number(r.amount || 0);
+    if (r.type === "deposit") map[r.farmer_id].savings_bal += amount;
+    if (r.type === "withdraw") map[r.farmer_id].savings_bal -= amount;
+    if (r.type === "share_collection") map[r.farmer_id].share_balance += amount;
+  });
+
+  const loans = ((loansRes.data as any[]) ?? []).filter((l) => l.status === "approved");
+  const loanIds = loans.map((l) => l.id).filter(Boolean);
+  const loanPaymentsRes = loanIds.length
+    ? await db.from("loan_payments").select("loan_id,amount,principal_amount").in("loan_id", loanIds)
+    : { data: [] as any[], error: null };
+
+  const paidByLoan: Record<string, number> = {};
+  ((loanPaymentsRes.data as any[]) ?? []).forEach((p) => {
+    if (!p.loan_id) return;
+    paidByLoan[p.loan_id] = (paidByLoan[p.loan_id] || 0) + Number(p.principal_amount || p.amount || 0);
+  });
+  loans.forEach((l) => {
+    if (!l.farmer_id) return;
+    map[l.farmer_id] ??= { net_due: 0, loan_due: 0, irr_due: 0, savings_bal: 0, share_balance: 0 };
+    const principal = Number(l.principal ?? l.total_payable ?? 0);
+    map[l.farmer_id].loan_due += Math.max(0, principal - (paidByLoan[l.id] || 0));
+  });
+
+  Object.values(map).forEach((d) => { d.net_due = d.loan_due + d.irr_due; });
+  return map;
 }

@@ -40,14 +40,27 @@ export default function SourceVsLedger() {
         if (to) out = out.lte(col, col === "entry_date" ? to : `${to}T23:59:59`);
         return out;
       };
-      const [pays, coll, exp, oinc, accsRes, ledgerRes] = await Promise.all([
+      // Irrigation collections are dated by the linked payment's receipt date
+      // (payments.created_at, kept in sync when a receipt's date is edited),
+      // not this row's own created_at — which goes stale the moment a
+      // receipt's date is corrected. Filtered client-side below instead of
+      // through dr(), since the correct date lives behind a join.
+      const [pays, collRaw, exp, oinc, accsRes, ledgerRes] = await Promise.all([
         dr(db.from("payments").select("amount,created_at").limit(50000) as any),
-        dr(db.from("irrigation_invoice_payments").select("collected_amount,created_at").limit(50000) as any),
+        db.from("irrigation_invoice_payments").select("collected_amount,created_at,payments(created_at)").limit(50000) as any,
         dr(db.from("expenses").select("amount,created_at").is("deleted_at", null).limit(20000) as any),
         dr(db.from("office_incomes").select("amount,created_at").limit(20000) as any),
         db.from("accounts").select("id,code,type"),
         dr(db.from("ledger_entries").select("account_id,debit,credit,entry_date").limit(50000) as any, "entry_date"),
       ]);
+      const coll = {
+        data: ((collRaw.data ?? []) as any[]).filter((r) => {
+          const d = (r.payments?.created_at || r.created_at || "").slice(0, 10);
+          if (from && d < from) return false;
+          if (to && d > to) return false;
+          return true;
+        }),
+      };
       const accts = (accsRes.data as Acct[]) ?? [];
       const byId = new Map(accts.map((a) => [a.id, a]));
       const ledger = (ledgerRes.data as Entry[]) ?? [];

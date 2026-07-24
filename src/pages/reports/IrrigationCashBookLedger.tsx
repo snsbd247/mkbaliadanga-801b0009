@@ -62,11 +62,20 @@ export default function IrrigationCashBookLedgerPage() {
     if (!officeId) return;
     setLoading(true);
     try {
-      let pq = sb.from("irrigation_invoice_payments")
-        .select("collected_amount,created_at,payments(receipt_no,method)").eq("office_id", officeId).gt("collected_amount", 0);
-      if (from) pq = pq.gte("created_at", from);
-      if (to) pq = pq.lte("created_at", `${to}T23:59:59`);
-      const { data: pays } = await pq;
+      // Dated by the linked payment's receipt date (payments.created_at, kept
+      // in sync when a receipt's date is edited), not this row's own
+      // created_at — which goes stale the moment a receipt's date is
+      // corrected. Filtering happens client-side since the correct date
+      // lives behind a join.
+      const pq = sb.from("irrigation_invoice_payments")
+        .select("collected_amount,created_at,payments(receipt_no,method,created_at)").eq("office_id", officeId).gt("collected_amount", 0);
+      const { data: paysRaw } = await pq;
+      const pays = ((paysRaw ?? []) as any[]).filter((p) => {
+        const d = (p.payments?.created_at || p.created_at || "").slice(0, 10);
+        if (from && d < from) return false;
+        if (to && d > to) return false;
+        return true;
+      });
 
       let eq = sb.from("expenses")
         .select("amount,expense_date,head,note").eq("office_id", officeId).is("deleted_at", null);
@@ -76,7 +85,7 @@ export default function IrrigationCashBookLedgerPage() {
 
       const next: CashEntry[] = [];
       for (const p of (pays ?? []) as any[])
-        next.push({ date: String(p.created_at).slice(0, 10), direction: "in", amount: Number(p.collected_amount || 0), head: p.payments?.method ?? tx("Irrigation collection", "সেচ আদায়"), ref: p.payments?.receipt_no ?? null });
+        next.push({ date: String(p.payments?.created_at || p.created_at).slice(0, 10), direction: "in", amount: Number(p.collected_amount || 0), head: p.payments?.method ?? tx("Irrigation collection", "সেচ আদায়"), ref: p.payments?.receipt_no ?? null });
       for (const e of exps ?? [])
         next.push({ date: String(e.expense_date).slice(0, 10), direction: "out", amount: Number(e.amount || 0), head: e.head ?? tx("Expense", "খরচ"), ref: e.note });
       setEntries(next);

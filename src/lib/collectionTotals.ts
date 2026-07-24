@@ -7,6 +7,13 @@
  *   - loan       : loan_payments.amount
  *   - savings    : savings_transactions deposits (approved)
  * Voided receipts contribute 0 (never counted).
+ *
+ * Irrigation rows are dated by the linked payment's receipt date
+ * (`payments.created_at`, kept in sync whenever a receipt's date is edited —
+ * see FunctionController::fn_payment_edit), NOT `irrigation_invoice_payments
+ * .created_at`, which is only the row's original insert time and goes stale
+ * the moment someone corrects a receipt's date. Rows with no linked payment
+ * (legacy data) fall back to their own created_at.
  */
 import { db } from "@/lib/db";
 
@@ -27,15 +34,17 @@ const SAVINGS_DEPOSIT_TYPES = [
   "profit",
 ];
 
+function irrigationReceiptDate(r: any): string {
+  return String(r.payments?.created_at || r.created_at || "").slice(0, 10);
+}
+
 /** Sum collections between [from, to] (inclusive, YYYY-MM-DD) across all streams. */
 export async function getCollectionTotal(from: string, to: string): Promise<CollectionTotal> {
   const [irr, lp, sv] = await Promise.all([
     db
       .from("irrigation_invoice_payments")
-      .select("collected_amount,created_at")
-      .gt("collected_amount", 0)
-      .gte("created_at", from)
-      .lte("created_at", to + "T23:59:59"),
+      .select("collected_amount,created_at,payment_id,payments(created_at)")
+      .gt("collected_amount", 0),
     db
       .from("loan_payments")
       .select("amount,paid_on")
@@ -51,7 +60,11 @@ export async function getCollectionTotal(from: string, to: string): Promise<Coll
       .lte("txn_date", to),
   ]);
 
-  const irrigation = (irr.data ?? []).reduce((s, r: any) => s + num(r.collected_amount), 0);
+  const irrRows = (irr.data ?? []).filter((r: any) => {
+    const d = irrigationReceiptDate(r);
+    return d >= from && d <= to;
+  });
+  const irrigation = irrRows.reduce((s, r: any) => s + num(r.collected_amount), 0);
   const loan = (lp.data ?? []).reduce((s, r: any) => s + num(r.amount), 0);
   const savings = (sv.data ?? []).reduce((s, r: any) => s + num(r.amount), 0);
   return { total: irrigation + loan + savings, irrigation, loan, savings };

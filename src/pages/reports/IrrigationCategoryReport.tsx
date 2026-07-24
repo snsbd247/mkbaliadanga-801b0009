@@ -51,15 +51,19 @@ export default function IrrigationCategoryReport() {
   async function load() {
     setLoading(true);
     try {
+      // Dated by the linked payment's receipt date (payments.created_at, kept
+      // in sync when a receipt's date is edited), not this row's own
+      // created_at — which goes stale the moment a receipt's date is
+      // corrected. Filtering happens client-side since the correct date
+      // lives behind a join.
       const { data, error } = await db
         .from("irrigation_invoice_payments")
-        .select("created_at,collected_amount,irrigation_collected,delay_fee_collected,maintenance_collected,canal_collected,previous_due_collected,current_invoice_collected")
-        .gte("created_at", from)
-        .lte("created_at", to + "T23:59:59");
+        .select("created_at,collected_amount,irrigation_collected,delay_fee_collected,maintenance_collected,canal_collected,previous_due_collected,current_invoice_collected,payments(created_at)");
       if (error) throw error;
       const map = new Map<string, Row>();
       for (const r of (data ?? []) as any[]) {
-        const d = String(r.created_at).slice(0, 10);
+        const d = String((r as any).payments?.created_at || r.created_at).slice(0, 10);
+        if (d < from || d > to) continue;
         const row = map.get(d) ?? { date: d, irrigation: 0, delay: 0, maintenance: 0, canal: 0, previous_due: 0, total: 0, count: 0 };
         row.irrigation += n(r.irrigation_collected);
         row.delay += n(r.delay_fee_collected);
