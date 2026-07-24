@@ -68,3 +68,30 @@ curl -X POST https://mohammadkhani.com/api/login \
   -d '{"login":"ismail162","password":"Admin@123"}'
 ```
 Returns `{ token, user }` → backend live. Log in through the site and confirm each module.
+
+## 7. cPanel / shared hosting (no root, SSH only)
+
+Use `scripts/update-cpanel.sh` instead of `scripts/update.sh` — same data-safety
+guarantees (DB backup first, `migrate --force` only, never `--seed`/`fresh`,
+auto-rollback on failure), but with no root, systemctl, sudoers, or Nginx.
+
+```bash
+# one-time clone
+git clone -b main https://github.com/snsbd247/mkbaliadanga-801b0009.git ~/mk_erp
+cd ~/mk_erp/backend && cp .env.example .env   # fill DB_*, APP_URL
+php artisan key:generate
+
+# every later update
+bash ~/mk_erp/scripts/update-cpanel.sh            # real deploy
+bash ~/mk_erp/scripts/update-cpanel.sh --dry-run  # check only, no changes
+```
+
+`DOC_ROOT` (default `<APP_DIR>/public_html`) controls where the built frontend
+is published; set it to your domain's actual document root if different, e.g.:
+```bash
+DOC_ROOT=/home/youruser/public_html bash ~/mk_erp/scripts/update-cpanel.sh
+```
+The script writes a `.htaccess` there for SPA routing (Apache has no Nginx-style
+reload step, so there's nothing else to restart for code changes to take effect —
+if PHP doesn't pick up the new code immediately, use cPanel's MultiPHP Manager /
+"Restart PHP-FPM" for the domain).
