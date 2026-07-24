@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { db } from "@/lib/db";
 import { isLaravelBackend } from "@/lib/backend";
+import { api } from "@/lib/api/client";
 export interface CompanyBranding {
   company_name: string;
   company_name_bn?: string | null;
@@ -29,6 +30,10 @@ const DEFAULTS: CompanyBranding = {
   company_name_bn: "স্মার্ট সেচ ও সমবায়",
 };
 
+// The API can live on a different origin than the frontend (e.g. a
+// dedicated api.<domain> subdomain), so storage URLs must be rebuilt against
+// the configured API base URL — never window.location.origin, which is the
+// frontend's own origin and would 404 whenever the two differ.
 function normalizeStorageUrl(url?: string | null): string | null | undefined {
   if (!url || !isLaravelBackend || typeof window === "undefined") return url;
   try {
@@ -37,7 +42,8 @@ function normalizeStorageUrl(url?: string | null): string | null | undefined {
     const [, , bucket, ...pathParts] = parsed.pathname.split("/");
     if (!bucket || pathParts.length === 0) return url;
     const safePath = pathParts.map((part) => encodeURIComponent(decodeURIComponent(part))).join("/");
-    return `${parsed.origin}/api/storage/public/${encodeURIComponent(bucket)}/${safePath}${parsed.search}`;
+    const apiOrigin = (api.defaults.baseURL || "").replace(/\/api\/?$/, "") || parsed.origin;
+    return `${apiOrigin}/api/storage/public/${encodeURIComponent(bucket)}/${safePath}${parsed.search}`;
   } catch {
     return url;
   }
