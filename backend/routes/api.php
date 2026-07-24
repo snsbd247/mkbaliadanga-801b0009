@@ -60,6 +60,12 @@ Route::prefix('auth')->group(function () {
 Route::get('/storage/public/{bucket}/{path}', [StorageController::class, 'publicFile'])
     ->where('path', '.*');
 
+// Public (no-auth) read of company_settings so the login screen can show the
+// cooperative's logo/name before a session exists. Read-only, single row.
+Route::get('/public/company-settings', function (\Illuminate\Http\Request $request) {
+    return app(GenericTableController::class)->select($request, 'company_settings');
+});
+
 // Public (no-auth) legacy সেচ receipt verification for printed QR codes.
 Route::get('/legacy-irrigation/verify/{receiptNo}', [LegacyIrrigationController::class, 'verify']);
 

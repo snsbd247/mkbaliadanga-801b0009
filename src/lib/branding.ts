@@ -62,8 +62,20 @@ const subs = new Set<(b: CompanyBranding) => void>();
 
 export async function loadBranding(force = false): Promise<CompanyBranding> {
   if (cached && !force) return cached;
-  const { data } = await db.from("company_settings").select("*").eq("id", 1).maybeSingle();
-  cached = normalizeBranding(((data as any) ?? DEFAULTS) as CompanyBranding);
+  let data: unknown = null;
+  try {
+    if (isLaravelBackend) {
+      // Public, unauthenticated read — the login screen needs the logo/name
+      // before a session (and thus a bearer token) exists.
+      const res = await api.get("/public/company-settings");
+      data = Array.isArray(res.data) ? res.data[0] : res.data;
+    } else {
+      data = (await db.from("company_settings").select("*").eq("id", 1).maybeSingle()).data;
+    }
+  } catch {
+    // Branding is cosmetic — fall back to defaults rather than blocking render.
+  }
+  cached = normalizeBranding((data ?? DEFAULTS) as CompanyBranding);
   subs.forEach((s) => s(cached!));
   return cached!;
 }
